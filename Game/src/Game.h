@@ -1,5 +1,7 @@
 #pragma once
 #include <Core/Window.h>
+#include <Core/Events/Event.h>
+#include "Core/Events/KeyEvent.h"
 namespace FooGame
 {
     class Game
@@ -15,6 +17,8 @@ namespace FooGame
         private:
             void Init();
             void Shutdown();
+            void OnEvent(Event& e);
+            bool OnKeyEvent(KeyPressedEvent& key);
     };
 
 }  // namespace FooGame

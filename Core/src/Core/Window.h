@@ -1,5 +1,7 @@
 #pragma once
+#include "Events/Event.h"
 #include "Defines.h"
+#include <functional>
 struct GLFWwindow;
 namespace FooGame
 {
@@ -11,6 +13,8 @@ namespace FooGame
     };
     class WindowsWindow
     {
+            using EventCallback = std::function<void(Event&)>;
+
         public:
             WindowsWindow(
                 GameSpecifications specifications = GameSpecifications());
@@ -18,6 +22,12 @@ namespace FooGame
             static WindowsWindow& Get();
             void Run();
             void Close();
+            GLFWwindow* GetWindowHandle() const { return m_WindowHandle; }
+            void SetOnEventFunction(const EventCallback& callback)
+            {
+                OnEventCallback = callback;
+            }
+            EventCallback OnEventCallback;
 
         private:
             void Init();
@@ -26,7 +36,6 @@ namespace FooGame
         private:
             GameSpecifications m_Specification;
             GLFWwindow* m_WindowHandle = nullptr;
-            bool m_Running             = false;
 
             float m_TimeStep      = 0.0f;
             float m_FrameTime     = 0.0f;

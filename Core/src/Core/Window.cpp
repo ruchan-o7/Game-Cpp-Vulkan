@@ -1,7 +1,9 @@
-#include "Window.h"
+#include "./Window.h"
 #include <utility>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include "Events/KeyEvent.h"
+#include "src/Core/Input/KeyCodes.h"
 namespace FooGame
 {
     static WindowsWindow* s_Instance = nullptr;
@@ -29,17 +31,46 @@ namespace FooGame
         m_WindowHandle =
             glfwCreateWindow(m_Specification.width, m_Specification.height,
                              "GAME", nullptr, nullptr);
+        glfwSetWindowUserPointer(m_WindowHandle, this);
         if (!glfwVulkanSupported())
         {
             std::cerr << "Vulkan not supported!\n";
             return;
         }
         // TODO: Init renderer
-        m_Running = true;
+        glfwSetKeyCallback(
+            m_WindowHandle,
+            [](GLFWwindow* window, int key, int scancode, int action, int mods)
+            {
+                WindowsWindow& data =
+                    *(WindowsWindow*)glfwGetWindowUserPointer(window);
+
+                switch (action)
+                {
+                    case GLFW_PRESS:
+                    {
+                        KeyPressedEvent event((KeyCode)key, 0);
+                        data.OnEventCallback(event);
+                        break;
+                    }
+                    case GLFW_RELEASE:
+                    {
+                        KeyReleasedEvent event((KeyCode)key);
+                        data.OnEventCallback(event);
+                        break;
+                    }
+                    case GLFW_REPEAT:
+                    {
+                        KeyPressedEvent event((KeyCode)key, true);
+                        data.OnEventCallback(event);
+                        break;
+                    }
+                }
+            });
     }
     void WindowsWindow::Run()
     {
-        while (!glfwWindowShouldClose(m_WindowHandle) && m_Running)
+        while (!glfwWindowShouldClose(m_WindowHandle))
         {
             glfwPollEvents();
         }
@@ -49,6 +80,10 @@ namespace FooGame
         // TODO: Renderer shutdown
         glfwDestroyWindow(m_WindowHandle);
         glfwTerminate();
+    }
+    void WindowsWindow::Close()
+    {
+        glfwSetWindowShouldClose(m_WindowHandle, true);
     }
     WindowsWindow::~WindowsWindow()
     {
