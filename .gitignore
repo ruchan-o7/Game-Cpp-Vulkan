@@ -3,7 +3,7 @@
 bin/
 bin-int/
 build/*
-
+.cache/*
 # Files
 imgui.ini
 *.vcxproj
