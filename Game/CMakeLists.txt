@@ -6,7 +6,9 @@ message("----------")
 message("Configuring ${PROJECT_NAME}")
 
 set(GAME_SOURCES
-	"src/main.cpp")
+	"src/main.cpp"
+	"src/Game.cpp")
+
 add_executable("${PROJECT_NAME}" "${GAME_SOURCES}")
 
 set_property(TARGET "${PROJECT_NAME}" PROPERTY FOLDER "Game")

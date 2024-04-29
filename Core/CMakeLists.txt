@@ -8,7 +8,9 @@ message("Configuring ${PROJECT_NAME}")
 find_package(Vulkan REQUIRED)
 
 set(CORE_SOURCES
-	"src/Core/demo.cpp")
+	"src/Core/demo.cpp"
+	"src/Core/Window.cpp"
+	)
 
 add_library("${PROJECT_NAME}" "${CORE_SOURCES}")
 
