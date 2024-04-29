@@ -1,2 +1,3 @@
-echo "Building...\n"
+@echo off
+echo Building...
 cmake --build build -j && .\build\Game\Debug\Game.exe
