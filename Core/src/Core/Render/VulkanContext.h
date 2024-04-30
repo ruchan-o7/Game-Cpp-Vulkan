@@ -1,5 +1,7 @@
 #pragma once
 #include <VkBootstrap.h>
+#include <vulkan/vulkan_core.h>
+#include <glm/glm.hpp>
 namespace FooGame
 {
 
@@ -33,16 +35,20 @@ namespace FooGame
             std::vector<VkFence> in_flight_fences;
             std::vector<VkFence> image_in_flight;
             size_t current_frame = 0;
+            VkBuffer vertexBuffer;
+            VkDeviceMemory vertexBufferMemory;
     };
     class Context
     {
         public:
-            static void Init();
-            static VkInstance GetInstance();
-            static VkDevice GetDevice();
-            static void DrawFrame();
-            static void ResizeSwapchain();
-            static void BeginDraw();
-            static void EndDraw();
+            void Init();
+            VkInstance GetInstance();
+            VkDevice GetDevice();
+            void DrawFrame();
+            void ResizeSwapchain();
+            void BeginDraw();
+            void EndDraw();
+            void DrawRectangle(glm::vec2 position, glm::vec2 size,
+                               glm::vec3 color);
     };
 }  // namespace FooGame

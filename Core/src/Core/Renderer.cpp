@@ -2,14 +2,17 @@
 #include "Render/VulkanContext.h"
 namespace FooGame
 {
+    // consider using stack alloc
+    Context* Renderer::s_Context = nullptr;
     void Renderer::Init()
     {
-        Context::Init();
+        s_Context = new Context;
+        s_Context->Init();
     }
 
     void Renderer::DrawFrame()
     {
-        Context::DrawFrame();
+        s_Context->DrawFrame();
     }
     void Renderer::Shutdown()
     {
@@ -18,15 +21,20 @@ namespace FooGame
 
     void Renderer::Resize()
     {
-        Context::ResizeSwapchain();
+        s_Context->ResizeSwapchain();
     }
     void Renderer::BeginDraw()
     {
-        Context::BeginDraw();
+        s_Context->BeginDraw();
+    }
+
+    VkDevice Renderer::GetDevice()
+    {
+        return s_Context->GetDevice();
     }
     void Renderer::EndDraw()
     {
-        Context::EndDraw();
+        s_Context->EndDraw();
     }
 
 }  // namespace FooGame

@@ -3,9 +3,9 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include "Events/KeyEvent.h"
-#include "src/Core/Events/ApplicationEvent.h"
-#include "src/Core/Input/KeyCodes.h"
-#include "src/Core/Renderer.h"
+#include "Events/ApplicationEvent.h"
+#include "Input/KeyCodes.h"
+#include "Renderer.h"
 namespace FooGame
 {
     static WindowsWindow* s_Instance = nullptr;

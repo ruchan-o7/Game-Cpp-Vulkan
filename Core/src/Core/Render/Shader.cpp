@@ -1,13 +1,13 @@
 #include "Shader.h"
 #include <vulkan/vulkan_core.h>
 #include "../File/FileHelper.h"
-#include "VulkanContext.h"
+#include "src/Core/Renderer.h"
 #include <iostream>
 namespace FooGame
 {
     Shader::Shader(std::string path) : m_Path(std::move(path))
     {
-        auto device = Context::GetDevice();
+        auto device = Renderer::GetDevice();
         auto code   = ReadFile(m_Path);
 
         VkShaderModuleCreateInfo create_info = {};
@@ -29,7 +29,7 @@ namespace FooGame
     }
     Shader::~Shader()
     {
-        auto device = Context::GetDevice();
+        auto device = Renderer::GetDevice();
         vkDestroyShaderModule(device, m_Module, nullptr);
     }
 }  // namespace FooGame

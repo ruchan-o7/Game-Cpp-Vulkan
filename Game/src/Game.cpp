@@ -22,7 +22,11 @@ namespace FooGame
         while (!m_Window->ShouldClose())
         {
             m_Window->PollEvents();
-            Renderer::DrawFrame();
+            {
+                Renderer::BeginDraw();
+                Renderer::DrawFrame();
+                Renderer::EndDraw();
+            }
         }
     }
 

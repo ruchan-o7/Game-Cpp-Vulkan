@@ -1,8 +1,10 @@
 #include "VulkanContext.h"
+#include <vulkan/vulkan_core.h>
 #include "GLFW/glfw3.h"
 #include "../Window.h"
 #include "../Render/Shader.h"
 #include "../Render/VulkanCheckResult.h"
+#include <cstdint>
 #include <iostream>
 #define MAX_FRAMES_IN_FLIGHT 2
 /// This is valid when executing from project level. For example run like this
@@ -11,8 +13,13 @@
 #define FRAG_PATH "./Shaders/frag.spv"
 namespace FooGame
 {
+    VkBuffer CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+                          VkMemoryPropertyFlags memoryFlags,
+                          VkDeviceMemory& memory);
+    void CreateVertexBuffer();
     RenderData renderData{};
     Init init{};
+    u32 imageIndex = 0;
 
     void CreateSwapchain()
     {
@@ -72,6 +79,10 @@ namespace FooGame
     }
     void CreateCommandBuffers()
     {
+        std::cout << "Command buffer size: "
+                  << renderData.command_buffers.size() << '\n';
+        std::cout << "Frame buffer size: " << renderData.framebuffers.size()
+                  << '\n';
         renderData.command_buffers.resize(renderData.framebuffers.size());
 
         VkCommandBufferAllocateInfo allocInfo = {};
@@ -87,63 +98,64 @@ namespace FooGame
             return;
         }
 
-        for (size_t i = 0; i < renderData.command_buffers.size(); i++)
-        {
-            VkCommandBufferBeginInfo begin_info = {};
-            begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-            if (init.disp.beginCommandBuffer(renderData.command_buffers[i],
-                                             &begin_info) != VK_SUCCESS)
-            {
-                return;
-            }
-
-            VkRenderPassBeginInfo render_pass_info = {};
-            render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            render_pass_info.renderPass        = renderData.render_pass;
-            render_pass_info.framebuffer       = renderData.framebuffers[i];
-            render_pass_info.renderArea.offset = {0, 0};
-            render_pass_info.renderArea.extent = init.swapchain.extent;
-            VkClearValue clearColor{{{0.0f, 0.0f, 0.0f, 1.0f}}};
-            render_pass_info.clearValueCount = 1;
-            render_pass_info.pClearValues    = &clearColor;
-
-            VkViewport viewport = {};
-            viewport.x          = 0.0f;
-            viewport.y          = 0.0f;
-            viewport.width      = (float)init.swapchain.extent.width;
-            viewport.height     = (float)init.swapchain.extent.height;
-            viewport.minDepth   = 0.0f;
-            viewport.maxDepth   = 1.0f;
-
-            VkRect2D scissor = {};
-            scissor.offset   = {0, 0};
-            scissor.extent   = init.swapchain.extent;
-
-            init.disp.cmdSetViewport(renderData.command_buffers[i], 0, 1,
-                                     &viewport);
-            init.disp.cmdSetScissor(renderData.command_buffers[i], 0, 1,
-                                    &scissor);
-
-            init.disp.cmdBeginRenderPass(renderData.command_buffers[i],
-                                         &render_pass_info,
-                                         VK_SUBPASS_CONTENTS_INLINE);
-
-            init.disp.cmdBindPipeline(renderData.command_buffers[i],
-                                      VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                      renderData.graphics_pipeline);
-
-            init.disp.cmdDraw(renderData.command_buffers[i], 3, 1, 0, 0);
-
-            init.disp.cmdEndRenderPass(renderData.command_buffers[i]);
-
-            if (init.disp.endCommandBuffer(renderData.command_buffers[i]) !=
-                VK_SUCCESS)
-            {
-                std::cerr << "failed to record command buffer\n";
-                return;
-            }
-        }
+        // for (size_t i = 0; i < renderData.command_buffers.size(); i++)
+        // {
+        //     VkCommandBufferBeginInfo begin_info = {};
+        //     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        //
+        //     if (init.disp.beginCommandBuffer(renderData.command_buffers[i],
+        //                                      &begin_info) != VK_SUCCESS)
+        //     {
+        //         return;
+        //     }
+        //
+        //     VkRenderPassBeginInfo render_pass_info = {};
+        //     render_pass_info.sType =
+        //     VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        //     render_pass_info.renderPass        = renderData.render_pass;
+        //     render_pass_info.framebuffer       = renderData.framebuffers[i];
+        //     render_pass_info.renderArea.offset = {0, 0};
+        //     render_pass_info.renderArea.extent = init.swapchain.extent;
+        //     VkClearValue clearColor{{{0.0f, 0.0f, 0.0f, 1.0f}}};
+        //     render_pass_info.clearValueCount = 1;
+        //     render_pass_info.pClearValues    = &clearColor;
+        //
+        //     VkViewport viewport = {};
+        //     viewport.x          = 0.0f;
+        //     viewport.y          = 0.0f;
+        //     viewport.width      = (float)init.swapchain.extent.width;
+        //     viewport.height     = (float)init.swapchain.extent.height;
+        //     viewport.minDepth   = 0.0f;
+        //     viewport.maxDepth   = 1.0f;
+        //
+        //     VkRect2D scissor = {};
+        //     scissor.offset   = {0, 0};
+        //     scissor.extent   = init.swapchain.extent;
+        //
+        //     init.disp.cmdSetViewport(renderData.command_buffers[i], 0, 1,
+        //                              &viewport);
+        //     init.disp.cmdSetScissor(renderData.command_buffers[i], 0, 1,
+        //                             &scissor);
+        //
+        //     init.disp.cmdBeginRenderPass(renderData.command_buffers[i],
+        //                                  &render_pass_info,
+        //                                  VK_SUBPASS_CONTENTS_INLINE);
+        //
+        //     init.disp.cmdBindPipeline(renderData.command_buffers[i],
+        //                               VK_PIPELINE_BIND_POINT_GRAPHICS,
+        //                               renderData.graphics_pipeline);
+        //
+        //     init.disp.cmdDraw(renderData.command_buffers[i], 3, 1, 0, 0);
+        //
+        //     init.disp.cmdEndRenderPass(renderData.command_buffers[i]);
+        //
+        //     if (init.disp.endCommandBuffer(renderData.command_buffers[i]) !=
+        //         VK_SUCCESS)
+        //     {
+        //         std::cerr << "failed to record command buffer\n";
+        //         return;
+        //     }
+        // }
     }
     void Context::Init()
     {
@@ -153,8 +165,11 @@ namespace FooGame
         // instance
         {
             vkb::InstanceBuilder instanceBuilder;
-            auto instance_ret = instanceBuilder.use_default_debug_messenger()
+            auto instance_ret = instanceBuilder
+#ifdef _DEBUG
+                                    .use_default_debug_messenger()
                                     .request_validation_layers()
+#endif
                                     .build();
             if (!instance_ret)
             {
@@ -464,6 +479,7 @@ namespace FooGame
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
             ResizeSwapchain();
+            return;
         }
         else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
         {
@@ -539,21 +555,186 @@ namespace FooGame
             (renderData.current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
         return;
     }
-    VkInstance Context::GetInstance()
-    {
-        return init.instance;
-    }
-    VkDevice Context::GetDevice()
-    {
-        return init.device;
-    }
 
     void Context::BeginDraw()
     {
+        VkCommandBufferBeginInfo beginInfo{};
+        auto currentFrame    = renderData.current_frame;
+        auto commandBuffer   = renderData.command_buffers[currentFrame];
+        auto swapchainExtent = init.swapchain.extent;
+        init.disp.waitForFences(1, &renderData.in_flight_fences[currentFrame],
+                                VK_TRUE, UINT64_MAX);
+        auto res = init.disp.acquireNextImageKHR(
+            init.swapchain, UINT64_MAX,
+            renderData.available_semaphores[currentFrame], nullptr,
+            &imageIndex);
+        if (res == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            ResizeSwapchain();
+            return;
+        }
+        init.disp.resetFences(1, &renderData.in_flight_fences[currentFrame]);
+        init.disp.resetCommandBuffer(renderData.command_buffers[currentFrame],
+                                     0);
+
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
+        {
+            throw std::runtime_error(
+                "failed to begin recording command buffer!");
+        }
+
+        VkRenderPassBeginInfo renderPassInfo{};
+        renderPassInfo.sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass  = renderData.render_pass;
+        renderPassInfo.framebuffer = renderData.framebuffers[imageIndex];
+        renderPassInfo.renderArea.offset = {0, 0};
+        renderPassInfo.renderArea.extent = swapchainExtent;
+
+        VkClearValue clearColor        = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+        renderPassInfo.clearValueCount = 1;
+        renderPassInfo.pClearValues    = &clearColor;
+
+        init.disp.cmdBeginRenderPass(commandBuffer, &renderPassInfo,
+                                     VK_SUBPASS_CONTENTS_INLINE);
+        init.disp.cmdBindPipeline(commandBuffer,
+                                  VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                  renderData.graphics_pipeline);
+
+        VkViewport viewport{};
+        viewport.x        = 0.0f;
+        viewport.y        = 0.0f;
+        viewport.width    = (float)swapchainExtent.width;
+        viewport.height   = (float)swapchainExtent.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        init.disp.cmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = {0, 0};
+        scissor.extent = swapchainExtent;
+
+        init.disp.cmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+        VkBuffer vertexBuffers[] = {renderData.vertexBuffer};
+        VkDeviceSize offsets[]   = {0};
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    }
+    /// chatgpt
+    // void DrawRectangle(VkCommandBuffer commandBuffer, VkBuffer vertexBuffer,
+    // uint32_t &vertexOffset, const glm::vec2 &position, const glm::vec2 &size,
+    // const glm::vec3 &color) {
+    //     // Define vertices for the rectangle
+    //     std::vector<Vertex> vertices = {
+    //         {{position.x, position.y}, color},
+    //         {{position.x + size.x, position.y}, color},
+    //         {{position.x + size.x, position.y + size.y}, color},
+    //         {{position.x, position.y + size.y}, color}
+    //     };
+    //
+    //     // Check if writing vertices would exceed the vertex buffer size
+    //     if (vertexOffset + vertices.size() > vertexBufferSize /
+    //     sizeof(Vertex)) {
+    //         // Handle buffer overflow
+    //         // You might want to resize the vertex buffer or handle the
+    //         overflow in some other way
+    //         // For simplicity, I'll just return without performing the draw
+    //         operation return;
+    //     }
+    //
+    //     // Copy vertices to vertex buffer
+    //     void* data;
+    //     vkMapMemory(device, vertexBufferMemory, vertexOffset *
+    //     sizeof(Vertex), vertices.size() * sizeof(Vertex), 0, &data);
+    //     memcpy(data, vertices.data(), vertices.size() * sizeof(Vertex));
+    //     vkUnmapMemory(device, vertexBufferMemory);
+    //
+    //     // Issue draw command
+    //     vkCmdDraw(commandBuffer, 4, 1, vertexOffset, 0);
+    //
+    //     // Increment the vertex offset
+    //     vertexOffset += vertices.size();
+    // }
+    void Context::DrawRectangle(glm::vec2 position, glm::vec2 size,
+                                glm::vec3 color)
+    {
+        auto currentFrame  = renderData.current_frame;
+        auto commandBuffer = renderData.command_buffers[currentFrame];
+        // std::vector<Vertex> vertices = {
+        //     {                  {position.x, position.y}, color},
+        //     {         {position.x + size.x, position.y}, color},
+        //     {{position.x + size.x, position.y + size.y}, color},
+        //     {         {position.x, position.y + size.y}, color}
+        // };
     }
 
     void Context::EndDraw()
     {
+        auto currentFrame  = renderData.current_frame;
+        auto commandBuffer = renderData.command_buffers[currentFrame];
+        init.disp.cmdEndRenderPass(commandBuffer);
+        init.disp.endCommandBuffer(commandBuffer);
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+        // VkSemaphore waitSemaphores[] =
+        // {imageAvailableSemaphores[currentFrame]};
+        VkSemaphore waitSemaphores[] = {
+            renderData.available_semaphores[currentFrame]};
+        VkPipelineStageFlags waitStages[] = {
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores    = waitSemaphores;
+        submitInfo.pWaitDstStageMask  = waitStages;
+
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers    = &commandBuffer;
+
+        VkSemaphore signalSemaphores[] = {
+            renderData.finished_semaphore[currentFrame]};
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores    = signalSemaphores;
+        auto res =
+            init.disp.queueSubmit(renderData.graphics_queue, 1, &submitInfo,
+                                  renderData.in_flight_fences[currentFrame]);
+
+        if (res != VK_SUCCESS)
+        {
+            std::cerr << "Failed to submit queue" << std::endl;
+        }
+        // if (vkQueueSubmit(graphicsQueue, 1, &submitInfo,
+        // inFlightFences[currentFrame]) != VK_SUCCESS)
+        // {
+        //     throw std::runtime_error("failed to submit draw command
+        //     buffer!");
+        // }
+
+        VkPresentInfoKHR presentInfo{};
+        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores    = signalSemaphores;
+
+        VkSwapchainKHR swapChains[] = {init.swapchain};
+        presentInfo.swapchainCount  = 1;
+        presentInfo.pSwapchains     = swapChains;
+
+        presentInfo.pImageIndices = &imageIndex;
+
+        res = init.disp.queuePresentKHR(renderData.present_queue, &presentInfo);
+        // res = vkQueuePresentKHR(presentQueue, &presentInfo);
+
+        if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR)
+        {
+            ResizeSwapchain();
+        }
+        else if (res != VK_SUCCESS)
+        {
+            std::cerr << "failed to present swap chain image!" << std::endl;
+        }
+
+        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
     void Context::ResizeSwapchain()
@@ -572,5 +753,73 @@ namespace FooGame
         (CreateFramebuffers());
         (CreateCommandpool());
         (CreateCommandBuffers());
+    }
+    VkInstance Context::GetInstance()
+    {
+        return init.instance;
+    }
+    VkDevice Context::GetDevice()
+    {
+        return init.device;
+    }
+
+    void CreateVertexBuffer()
+    {
+        VkDeviceSize bufferSize =
+            sizeof(1024 * 1024 * 1024);  // TODO: change for vertex structure
+        void* data;
+
+        renderData.vertexBuffer = CreateBuffer(
+            bufferSize,
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, renderData.vertexBufferMemory);
+        init.disp.mapMemory(renderData.vertexBufferMemory, 0, bufferSize, 0,
+                            &data);
+        init.disp.unmapMemory(renderData.vertexBufferMemory);
+    }
+    static u32 SelectMemoryType(u32 typeFilter,
+                                VkMemoryPropertyFlags properties)
+    {
+        VkPhysicalDeviceMemoryProperties memProperties;
+        vkGetPhysicalDeviceMemoryProperties(init.device.physical_device,
+                                            &memProperties);
+
+        for (u32 i = 0; i < memProperties.memoryTypeCount; i++)
+        {
+            if ((typeFilter & (1 << i)) &&
+                (memProperties.memoryTypes[i].propertyFlags & properties) ==
+                    properties)
+            {
+                return i;
+            }
+        }
+
+        return ~0u;
+    }
+    VkBuffer CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+                          VkMemoryPropertyFlags memoryFlags,
+                          VkDeviceMemory& memory)
+    {
+        VkBufferCreateInfo createInfo{};
+        createInfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        createInfo.size        = size;
+        createInfo.usage       = usage;
+        createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        VkBuffer buffer{};
+        init.disp.createBuffer(&createInfo, nullptr, &buffer);
+
+        VkMemoryRequirements memoryRequirements;
+        init.disp.getBufferMemoryRequirements(buffer, &memoryRequirements);
+
+        VkMemoryAllocateInfo allocInfo{};
+        allocInfo.sType          = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.allocationSize = memoryRequirements.size;
+        allocInfo.memoryTypeIndex =
+            SelectMemoryType(memoryRequirements.memoryTypeBits, memoryFlags);
+        init.disp.allocateMemory(&allocInfo, nullptr, &memory);
+        init.disp.bindBufferMemory(buffer, memory, 0);
+        return buffer;
     }
 }  // namespace FooGame

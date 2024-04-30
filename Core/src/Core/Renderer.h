@@ -1,4 +1,5 @@
 #pragma once
+#include "Render/VulkanContext.h"
 namespace FooGame
 {
     class Renderer
@@ -10,6 +11,11 @@ namespace FooGame
             static void DrawFrame();
             static void BeginDraw();
             static void EndDraw();
+
+            static VkDevice GetDevice();
+
+        private:
+            static Context* s_Context;
     };
 
 }  // namespace FooGame
