@@ -28,6 +28,8 @@ namespace FooGame
                 OnEventCallback = callback;
             }
             EventCallback OnEventCallback;
+            void PollEvents();
+            bool ShouldClose();
 
         private:
             void Init();

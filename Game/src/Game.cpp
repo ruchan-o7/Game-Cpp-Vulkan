@@ -1,8 +1,10 @@
 #include "Game.h"
 #include <iostream>
 #include "Core/Defines.h"
+#include "Core/Events/ApplicationEvent.h"
 #include "Core/Events/Event.h"
 #include "Core/Input/KeyCodes.h"
+#include "Core/Renderer.h"
 namespace FooGame
 {
     Game::Game()
@@ -17,7 +19,11 @@ namespace FooGame
 
     void Game::Run()
     {
-        m_Window->Run();
+        while (!m_Window->ShouldClose())
+        {
+            m_Window->PollEvents();
+            Renderer::DrawFrame();
+        }
     }
 
     void Game::Shutdown()
@@ -30,9 +36,10 @@ namespace FooGame
     }
     void Game::OnEvent(Event& e)
     {
-        std::cout << e.ToString() << std::endl;
         EventDispatcher dispatcher{e};
         dispatcher.Dispatch<KeyPressedEvent>(BIND_EVENT_FN(Game::OnKeyEvent));
+        dispatcher.Dispatch<WindowResizeEvent>(
+            BIND_EVENT_FN(Game::OnWindowResized));
     }
 
     bool Game::OnKeyEvent(KeyPressedEvent& key)
@@ -44,5 +51,10 @@ namespace FooGame
             return true;
         }
         return false;
+    }
+    bool Game::OnWindowResized(WindowResizeEvent& event)
+    {
+        Renderer::Resize();
+        return true;
     }
 }  // namespace FooGame

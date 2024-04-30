@@ -3,7 +3,9 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include "Events/KeyEvent.h"
+#include "src/Core/Events/ApplicationEvent.h"
 #include "src/Core/Input/KeyCodes.h"
+#include "src/Core/Renderer.h"
 namespace FooGame
 {
     static WindowsWindow* s_Instance = nullptr;
@@ -37,7 +39,6 @@ namespace FooGame
             std::cerr << "Vulkan not supported!\n";
             return;
         }
-        // TODO: Init renderer
         glfwSetKeyCallback(
             m_WindowHandle,
             [](GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -67,17 +68,29 @@ namespace FooGame
                     }
                 }
             });
+        glfwSetFramebufferSizeCallback(
+            m_WindowHandle,
+            [](GLFWwindow* window, int width, int height)
+            {
+                WindowsWindow& data =
+                    *(WindowsWindow*)glfwGetWindowUserPointer(window);
+                WindowResizeEvent e{static_cast<unsigned int>(width),
+                                    static_cast<unsigned int>(height)};
+                data.OnEventCallback(e);
+            });
+        Renderer::Init();
     }
-    void WindowsWindow::Run()
+    void WindowsWindow::PollEvents()
     {
-        while (!glfwWindowShouldClose(m_WindowHandle))
-        {
-            glfwPollEvents();
-        }
+        glfwPollEvents();
+    }
+    bool WindowsWindow::ShouldClose()
+    {
+        return glfwWindowShouldClose(m_WindowHandle);
     }
     void WindowsWindow::Shutdown()
     {
-        // TODO: Renderer shutdown
+        Renderer::Shutdown();
         glfwDestroyWindow(m_WindowHandle);
         glfwTerminate();
     }
