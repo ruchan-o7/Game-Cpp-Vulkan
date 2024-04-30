@@ -1,3 +1,3 @@
 @echo off
 echo Building...
-cmake --build build -j && .\build\Game\Debug\Game.exe
+cmake --build build -j
