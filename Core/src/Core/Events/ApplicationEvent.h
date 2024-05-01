@@ -1,5 +1,5 @@
 #pragma once
-#include "../Events/Event.h"
+#include "Event.h"
 #include <sstream>
 namespace FooGame
 {

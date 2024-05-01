@@ -1,10 +1,10 @@
 #include "Game.h"
 #include <iostream>
-#include "Core/Defines.h"
+#include "Core/Core/Base.h"
+#include "Core/Core/Renderer.h"
 #include "Core/Events/ApplicationEvent.h"
 #include "Core/Events/Event.h"
 #include "Core/Input/KeyCodes.h"
-#include "Core/Renderer.h"
 namespace FooGame
 {
     Game::Game()

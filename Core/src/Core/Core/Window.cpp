@@ -2,9 +2,9 @@
 #include <utility>
 #include <GLFW/glfw3.h>
 #include <iostream>
-#include "Events/KeyEvent.h"
-#include "Events/ApplicationEvent.h"
-#include "Input/KeyCodes.h"
+#include "../Events/KeyEvent.h"
+#include "../Events/ApplicationEvent.h"
+#include "../Input/KeyCodes.h"
 #include "Renderer.h"
 namespace FooGame
 {

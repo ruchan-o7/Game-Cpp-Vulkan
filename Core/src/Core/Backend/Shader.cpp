@@ -1,7 +1,7 @@
 #include "Shader.h"
 #include <vulkan/vulkan_core.h>
 #include "../File/FileHelper.h"
-#include "src/Core/Renderer.h"
+#include "../Core/Renderer.h"
 #include <iostream>
 namespace FooGame
 {

@@ -1,6 +1,6 @@
 #pragma once
-#include "Events/Event.h"
-#include "Defines.h"
+#include "../Events/Event.h"
+#include "Base.h"
 #include <functional>
 struct GLFWwindow;
 namespace FooGame

@@ -1,6 +1,6 @@
 #pragma once
 #include <ostream>
-#include "../Defines.h"
+#include "../Core/Base.h"
 namespace FooGame
 {
 

@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
-#include "../Defines.h"
+#include "../Core/Base.h"
+#include <sstream>
 namespace FooGame
 {
 

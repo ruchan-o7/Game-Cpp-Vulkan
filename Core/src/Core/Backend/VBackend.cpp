@@ -1,9 +1,9 @@
-#include "VulkanContext.h"
+#include "VBackend.h"
 #include <vulkan/vulkan_core.h>
 #include "GLFW/glfw3.h"
-#include "../Window.h"
-#include "../Render/Shader.h"
-#include "../Render/VulkanCheckResult.h"
+#include "../Core/Window.h"
+#include "Shader.h"
+#include "VulkanCheckResult.h"
 #include <cstdint>
 #include <iostream>
 #define MAX_FRAMES_IN_FLIGHT 2
