@@ -4,9 +4,11 @@ bin/
 bin-int/
 build/*
 .cache/*
+
 # Files
 imgui.ini
 *.vcxproj
 *.vcxproj.user
 *.vcxproj.filters
 *.sln
+Shaders/*.spv
