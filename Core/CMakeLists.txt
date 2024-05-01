@@ -8,12 +8,13 @@ message("Configuring ${PROJECT_NAME}")
 find_package(Vulkan REQUIRED)
 
 set(CORE_SOURCES
-	"src/Core/Core/Renderer.cpp"
+	"src/Core/Core/Renderer2D.cpp"
 	"src/Core/Core/Window.cpp"
 	"src/Core/File/FileHelper.cpp"
 	"src/Core/Input/Input.cpp"
 	"src/Core/Backend/VBackend.cpp"
 	"src/Core/Backend/Shader.cpp"
+	"src/Core/Backend/Buffer.cpp"
 	)
 
 add_library("${PROJECT_NAME}" "${CORE_SOURCES}")

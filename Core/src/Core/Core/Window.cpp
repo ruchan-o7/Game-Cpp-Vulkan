@@ -5,7 +5,7 @@
 #include "../Events/KeyEvent.h"
 #include "../Events/ApplicationEvent.h"
 #include "../Input/KeyCodes.h"
-#include "Renderer.h"
+#include "Renderer2D.h"
 namespace FooGame
 {
     static WindowsWindow* s_Instance = nullptr;
@@ -78,7 +78,7 @@ namespace FooGame
                                     static_cast<unsigned int>(height)};
                 data.OnEventCallback(e);
             });
-        Renderer::Init();
+        Renderer2D::Init();
     }
     void WindowsWindow::PollEvents()
     {
@@ -90,7 +90,7 @@ namespace FooGame
     }
     void WindowsWindow::Shutdown()
     {
-        Renderer::Shutdown();
+        Renderer2D::Shutdown();
         glfwDestroyWindow(m_WindowHandle);
         glfwTerminate();
     }

@@ -4,19 +4,64 @@
 #include "../Core/Window.h"
 #include "Shader.h"
 #include "VulkanCheckResult.h"
+#include "../Backend/Vertex.h"
 #include <cstdint>
 #include <iostream>
 #define MAX_FRAMES_IN_FLIGHT 2
 /// This is valid when executing from project level. For example run like this
 /// ./build/Game/Debug/Game.exe
+
+#define VS_CODE
+#ifndef VS_CODE
 #define VERT_PATH "./Shaders/vert.spv"
 #define FRAG_PATH "./Shaders/frag.spv"
+#else
+#define VERT_PATH \
+    "C:\\Users\\jcead\\dev\\CppProjects\\game_1\\Shaders\\vert.spv"
+#define FRAG_PATH \
+    "C:\\Users\\jcead\\dev\\CppProjects\\game_1\\Shaders\\frag.spv"
+#endif
 namespace FooGame
 {
+
+    struct Init
+    {
+            vkb::Instance instance;
+            vkb::InstanceDispatchTable inst_disp;
+            VkSurfaceKHR surface;
+            vkb::Device device;
+            vkb::DispatchTable disp;
+            vkb::Swapchain swapchain;
+    };
+    struct RenderData
+    {
+            VkQueue graphics_queue;
+            VkQueue present_queue;
+
+            std::vector<VkImage> swapchain_images;
+            std::vector<VkImageView> swapchain_image_views;
+            std::vector<VkFramebuffer> framebuffers;
+
+            VkRenderPass render_pass;
+            VkPipelineLayout pipeline_layout;
+            VkPipeline graphics_pipeline;
+
+            VkCommandPool command_pool;
+            std::vector<VkCommandBuffer> command_buffers;
+
+            std::vector<VkSemaphore> available_semaphores;
+            std::vector<VkSemaphore> finished_semaphore;
+            std::vector<VkFence> in_flight_fences;
+            std::vector<VkFence> image_in_flight;
+            size_t current_frame = 0;
+            VkBuffer vertexBuffer;
+            VkBuffer indexBuffer;
+            VkClearValue clearValue = {{{0.2f, 0.3f, 0.4f, 1.0f}}};
+    };
     VkBuffer CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                           VkMemoryPropertyFlags memoryFlags,
                           VkDeviceMemory& memory);
-    void CreateVertexBuffer();
+    // void CreateVertexBuffer();
     RenderData renderData{};
     Init init{};
     u32 imageIndex = 0;
@@ -207,17 +252,18 @@ namespace FooGame
         }
         // swapchain
         {
-            vkb::SwapchainBuilder swapchain_builder{init.device};
-            auto swap_ret =
-                swapchain_builder.set_old_swapchain(init.swapchain).build();
-            if (!swap_ret)
-            {
-                std::cerr << swap_ret.error().message() << " "
-                          << swap_ret.vk_result() << "\n";
-                return;
-            }
-            vkb::destroy_swapchain(init.swapchain);
-            init.swapchain = swap_ret.value();
+            CreateSwapchain();
+            // vkb::SwapchainBuilder swapchain_builder{init.device};
+            // auto swap_ret =
+            //     swapchain_builder.set_old_swapchain(init.swapchain).build();
+            // if (!swap_ret)
+            // {
+            //     std::cerr << swap_ret.error().message() << " "
+            //               << swap_ret.vk_result() << "\n";
+            //     return;
+            // }
+            // vkb::destroy_swapchain(init.swapchain);
+            // init.swapchain = swap_ret.value();
         }
         // queue
         {
@@ -310,11 +356,17 @@ namespace FooGame
             VkPipelineShaderStageCreateInfo shader_stages[] = {vert_stage_info,
                                                                frag_stage_info};
 
+            auto attributeDescrps = QuadVertex::GetAttributeDescrp();
+            auto bindingDescr     = QuadVertex::GetBindingDescription();
             VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
             vertex_input_info.sType =
                 VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-            vertex_input_info.vertexBindingDescriptionCount   = 0;
-            vertex_input_info.vertexAttributeDescriptionCount = 0;
+            vertex_input_info.pVertexAttributeDescriptions =
+                attributeDescrps.data();
+            vertex_input_info.vertexAttributeDescriptionCount =
+                attributeDescrps.size();
+            vertex_input_info.pVertexBindingDescriptions    = &bindingDescr;
+            vertex_input_info.vertexBindingDescriptionCount = 1;
 
             VkPipelineInputAssemblyStateCreateInfo input_assembly = {};
             input_assembly.sType =
@@ -464,97 +516,102 @@ namespace FooGame
             }
         }
     }
-    void Context::DrawFrame()
-    {
-        init.disp.waitForFences(
-            1, &renderData.in_flight_fences[renderData.current_frame], VK_TRUE,
-            UINT64_MAX);
-
-        uint32_t image_index = 0;
-        VkResult result      = init.disp.acquireNextImageKHR(
-            init.swapchain, UINT64_MAX,
-            renderData.available_semaphores[renderData.current_frame],
-            VK_NULL_HANDLE, &image_index);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR)
-        {
-            ResizeSwapchain();
-            return;
-        }
-        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-        {
-            std::cout << "failed to acquire swapchain image. Error " << result
-                      << "\n";
-            return;
-        }
-
-        if (renderData.image_in_flight[image_index] != VK_NULL_HANDLE)
-        {
-            init.disp.waitForFences(1, &renderData.image_in_flight[image_index],
-                                    VK_TRUE, UINT64_MAX);
-        }
-        renderData.image_in_flight[image_index] =
-            renderData.in_flight_fences[renderData.current_frame];
-
-        VkSubmitInfo submitInfo = {};
-        submitInfo.sType        = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-        VkSemaphore wait_semaphores[] = {
-            renderData.available_semaphores[renderData.current_frame]};
-        VkPipelineStageFlags wait_stages[] = {
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores    = wait_semaphores;
-        submitInfo.pWaitDstStageMask  = wait_stages;
-
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &renderData.command_buffers[image_index];
-
-        VkSemaphore signal_semaphores[] = {
-            renderData.finished_semaphore[renderData.current_frame]};
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores    = signal_semaphores;
-
-        init.disp.resetFences(
-            1, &renderData.in_flight_fences[renderData.current_frame]);
-
-        if (init.disp.queueSubmit(
-                renderData.graphics_queue, 1, &submitInfo,
-                renderData.in_flight_fences[renderData.current_frame]) !=
-            VK_SUCCESS)
-        {
-            std::cout << "failed to submit draw command buffer\n";
-            return;  //"failed to submit draw command buffer
-        }
-
-        VkPresentInfoKHR present_info = {};
-        present_info.sType            = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-        present_info.waitSemaphoreCount = 1;
-        present_info.pWaitSemaphores    = signal_semaphores;
-
-        VkSwapchainKHR swapChains[] = {init.swapchain};
-        present_info.swapchainCount = 1;
-        present_info.pSwapchains    = swapChains;
-
-        present_info.pImageIndices = &image_index;
-
-        result =
-            init.disp.queuePresentKHR(renderData.present_queue, &present_info);
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
-        {
-            ResizeSwapchain();
-        }
-        else if (result != VK_SUCCESS)
-        {
-            std::cerr << "failed to present swapchain image\n";
-            return;
-        }
-
-        renderData.current_frame =
-            (renderData.current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
-        return;
-    }
+    // void Context::DrawFrame()
+    // {
+    //     init.disp.waitForFences(
+    //         1, &renderData.in_flight_fences[renderData.current_frame],
+    //         VK_TRUE, UINT64_MAX);
+    //
+    //     uint32_t image_index = 0;
+    //     VkResult result      = init.disp.acquireNextImageKHR(
+    //         init.swapchain, UINT64_MAX,
+    //         renderData.available_semaphores[renderData.current_frame],
+    //         VK_NULL_HANDLE, &image_index);
+    //
+    //     if (result == VK_ERROR_OUT_OF_DATE_KHR)
+    //     {
+    //         ResizeSwapchain();
+    //         return;
+    //     }
+    //     else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+    //     {
+    //         std::cout << "failed to acquire swapchain image. Error " <<
+    //         result
+    //                   << "\n";
+    //         return;
+    //     }
+    //
+    //     if (renderData.image_in_flight[image_index] != VK_NULL_HANDLE)
+    //     {
+    //         init.disp.waitForFences(1,
+    //         &renderData.image_in_flight[image_index],
+    //                                 VK_TRUE, UINT64_MAX);
+    //     }
+    //     renderData.image_in_flight[image_index] =
+    //         renderData.in_flight_fences[renderData.current_frame];
+    //
+    //     VkSubmitInfo submitInfo = {};
+    //     submitInfo.sType        = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    //
+    //     VkSemaphore wait_semaphores[] = {
+    //         renderData.available_semaphores[renderData.current_frame]};
+    //     VkPipelineStageFlags wait_stages[] = {
+    //         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    //     submitInfo.waitSemaphoreCount = 1;
+    //     submitInfo.pWaitSemaphores    = wait_semaphores;
+    //     submitInfo.pWaitDstStageMask  = wait_stages;
+    //
+    //     submitInfo.commandBufferCount = 1;
+    //     submitInfo.pCommandBuffers =
+    //     &renderData.command_buffers[image_index];
+    //
+    //     VkSemaphore signal_semaphores[] = {
+    //         renderData.finished_semaphore[renderData.current_frame]};
+    //     submitInfo.signalSemaphoreCount = 1;
+    //     submitInfo.pSignalSemaphores    = signal_semaphores;
+    //
+    //     init.disp.resetFences(
+    //         1, &renderData.in_flight_fences[renderData.current_frame]);
+    //
+    //     if (init.disp.queueSubmit(
+    //             renderData.graphics_queue, 1, &submitInfo,
+    //             renderData.in_flight_fences[renderData.current_frame]) !=
+    //         VK_SUCCESS)
+    //     {
+    //         std::cout << "failed to submit draw command buffer\n";
+    //         return;  //"failed to submit draw command buffer
+    //     }
+    //
+    //     VkPresentInfoKHR present_info = {};
+    //     present_info.sType            = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    //
+    //     present_info.waitSemaphoreCount = 1;
+    //     present_info.pWaitSemaphores    = signal_semaphores;
+    //
+    //     VkSwapchainKHR swapChains[] = {init.swapchain};
+    //     present_info.swapchainCount = 1;
+    //     present_info.pSwapchains    = swapChains;
+    //
+    //     present_info.pImageIndices = &image_index;
+    //
+    //     result =
+    //         init.disp.queuePresentKHR(renderData.present_queue,
+    //         &present_info);
+    //     if (result == VK_ERROR_OUT_OF_DATE_KHR || result ==
+    //     VK_SUBOPTIMAL_KHR)
+    //     {
+    //         ResizeSwapchain();
+    //     }
+    //     else if (result != VK_SUCCESS)
+    //     {
+    //         std::cerr << "failed to present swapchain image\n";
+    //         return;
+    //     }
+    //
+    //     renderData.current_frame =
+    //         (renderData.current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
+    //     return;
+    // }
 
     void Context::BeginDraw()
     {
@@ -592,9 +649,8 @@ namespace FooGame
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = swapchainExtent;
 
-        VkClearValue clearColor        = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
         renderPassInfo.clearValueCount = 1;
-        renderPassInfo.pClearValues    = &clearColor;
+        renderPassInfo.pClearValues    = &renderData.clearValue;
 
         init.disp.cmdBeginRenderPass(commandBuffer, &renderPassInfo,
                                      VK_SUBPASS_CONTENTS_INLINE);
@@ -616,7 +672,7 @@ namespace FooGame
         scissor.extent = swapchainExtent;
 
         init.disp.cmdSetScissor(commandBuffer, 0, 1, &scissor);
-
+        assert(renderData.vertexBuffer != VK_NULL_HANDLE);
         VkBuffer vertexBuffers[] = {renderData.vertexBuffer};
         VkDeviceSize offsets[]   = {0};
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
@@ -656,18 +712,6 @@ namespace FooGame
     //     // Increment the vertex offset
     //     vertexOffset += vertices.size();
     // }
-    void Context::DrawRectangle(glm::vec2 position, glm::vec2 size,
-                                glm::vec3 color)
-    {
-        auto currentFrame  = renderData.current_frame;
-        auto commandBuffer = renderData.command_buffers[currentFrame];
-        // std::vector<Vertex> vertices = {
-        //     {                  {position.x, position.y}, color},
-        //     {         {position.x + size.x, position.y}, color},
-        //     {{position.x + size.x, position.y + size.y}, color},
-        //     {         {position.x, position.y + size.y}, color}
-        // };
-    }
 
     void Context::EndDraw()
     {
@@ -758,26 +802,27 @@ namespace FooGame
     {
         return init.instance;
     }
-    VkDevice Context::GetDevice()
+    vkb::Device Context::GetDevice()
     {
         return init.device;
     }
 
-    void CreateVertexBuffer()
-    {
-        VkDeviceSize bufferSize =
-            sizeof(1024 * 1024 * 1024);  // TODO: change for vertex structure
-        void* data;
-
-        renderData.vertexBuffer = CreateBuffer(
-            bufferSize,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, renderData.vertexBufferMemory);
-        init.disp.mapMemory(renderData.vertexBufferMemory, 0, bufferSize, 0,
-                            &data);
-        init.disp.unmapMemory(renderData.vertexBufferMemory);
-    }
+    // void CreateVertexBuffer()
+    // {
+    //     VkDeviceSize bufferSize =
+    //         sizeof(1024 * 1024 * 1024);  // TODO: change for vertex structure
+    //     void* data;
+    //
+    //     renderData.vertexBuffer = CreateBuffer(
+    //         bufferSize,
+    //         VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+    //             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+    //         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    //         renderData.vertexBuffer->GetData());
+    //     init.disp.mapMemory(renderData.vertexBufferMemory, 0, bufferSize, 0,
+    //                         &data);
+    //     init.disp.unmapMemory(renderData.vertexBufferMemory);
+    // }
     static u32 SelectMemoryType(u32 typeFilter,
                                 VkMemoryPropertyFlags properties)
     {
@@ -797,29 +842,58 @@ namespace FooGame
 
         return ~0u;
     }
-    VkBuffer CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
-                          VkMemoryPropertyFlags memoryFlags,
-                          VkDeviceMemory& memory)
+    // VkBuffer CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+    //                       VkMemoryPropertyFlags memoryFlags,
+    //                       VkDeviceMemory& memory)
+    // {
+    //     VkBufferCreateInfo createInfo{};
+    //     createInfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    //     createInfo.size        = size;
+    //     createInfo.usage       = usage;
+    //     createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    //
+    //     VkBuffer buffer{};
+    //     init.disp.createBuffer(&createInfo, nullptr, &buffer);
+    //
+    //     VkMemoryRequirements memoryRequirements;
+    //     init.disp.getBufferMemoryRequirements(buffer, &memoryRequirements);
+    //
+    //     VkMemoryAllocateInfo allocInfo{};
+    //     allocInfo.sType          = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    //     allocInfo.allocationSize = memoryRequirements.size;
+    //     allocInfo.memoryTypeIndex =
+    //         SelectMemoryType(memoryRequirements.memoryTypeBits, memoryFlags);
+    //     init.disp.allocateMemory(&allocInfo, nullptr, &memory);
+    //     init.disp.bindBufferMemory(buffer, memory, 0);
+    //     return buffer;
+    // }
+    void Context::DrawIndexed(u32 indexCount, u32 instanceCount, u32 firstIndex,
+                              u32 firstInstance, u32 vertexOffset)
     {
-        VkBufferCreateInfo createInfo{};
-        createInfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        createInfo.size        = size;
-        createInfo.usage       = usage;
-        createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        VkBuffer buffer{};
-        init.disp.createBuffer(&createInfo, nullptr, &buffer);
-
-        VkMemoryRequirements memoryRequirements;
-        init.disp.getBufferMemoryRequirements(buffer, &memoryRequirements);
-
-        VkMemoryAllocateInfo allocInfo{};
-        allocInfo.sType          = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memoryRequirements.size;
-        allocInfo.memoryTypeIndex =
-            SelectMemoryType(memoryRequirements.memoryTypeBits, memoryFlags);
-        init.disp.allocateMemory(&allocInfo, nullptr, &memory);
-        init.disp.bindBufferMemory(buffer, memory, 0);
-        return buffer;
+        auto currentFrame  = renderData.current_frame;
+        auto commandBuffer = renderData.command_buffers[currentFrame];
+        vkCmdBindIndexBuffer(commandBuffer, renderData.vertexBuffer,
+                             vertexOffset, VK_INDEX_TYPE_UINT32);
+        vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex,
+                         vertexOffset, firstInstance);
+    }
+    void Context::DrawNotIndexed(u32 vertexCount, u32 instanceCount,
+                                 u32 vertexOffset)
+    {
+        auto currentFrame  = renderData.current_frame;
+        auto commandBuffer = renderData.command_buffers[currentFrame];
+        vkCmdDraw(commandBuffer, vertexCount, instanceCount, vertexOffset, 0);
+    }
+    void Context::BindVertexBuffer(VkBuffer buffer)
+    {
+        renderData.vertexBuffer = buffer;
+    }
+    void Context::BindIndexBuffer(VkBuffer buffer)
+    {
+        renderData.indexBuffer = buffer;
+    }
+    void Context::SetClearColor(VkClearValue clearVal)
+    {
+        renderData.clearValue = clearVal;
     }
 }  // namespace FooGame

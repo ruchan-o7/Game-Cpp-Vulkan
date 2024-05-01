@@ -1,7 +1,7 @@
 #include "Game.h"
 #include <iostream>
 #include "Core/Core/Base.h"
-#include "Core/Core/Renderer.h"
+#include "Core/Core/Renderer2D.h"
 #include "Core/Events/ApplicationEvent.h"
 #include "Core/Events/Event.h"
 #include "Core/Input/KeyCodes.h"
@@ -23,9 +23,10 @@ namespace FooGame
         {
             m_Window->PollEvents();
             {
-                Renderer::BeginDraw();
-                Renderer::DrawFrame();
-                Renderer::EndDraw();
+                Renderer2D::BeginDraw();
+                Renderer2D::DrawQuad({0.f, 0.5f}, {20.f, 20.f},
+                                     {1.0f, 0.0f, 1.0f, 1.0f});
+                Renderer2D::EndDraw();
             }
         }
     }
@@ -58,7 +59,7 @@ namespace FooGame
     }
     bool Game::OnWindowResized(WindowResizeEvent& event)
     {
-        Renderer::Resize();
+        Renderer2D::Resize();
         return true;
     }
 }  // namespace FooGame
