@@ -6,22 +6,24 @@
 namespace FooGame
 {
 
-    class Context
+    class API
     {
         public:
             void Init();
-            VkInstance GetInstance();
-            vkb::Device GetDevice();
-            void DrawNotIndexed(u32 vertexCount, u32 instanceCount,
-                                u32 vertexOffset);  // lol
+            void Draw(u32 vertexCount, u32 instanceCount,
+                      u32 vertexOffset);  // lol
             void DrawIndexed(u32 indexCount, u32 instanceCount,
                              u32 firstIndex = 0, u32 firstInstance = 0,
                              u32 vertexOffset = 0);  // lol
+            VkDevice GetDevice();
+            VkPhysicalDevice GetPhysicalDevice();
             void ResizeSwapchain();
-            void BeginDraw();
-            void EndDraw();
             void SetClearColor(VkClearValue clearVal);
-            void BindVertexBuffer(VkBuffer buffer);
+            void SetVertexBuffer(VkBuffer buffer);
             void BindIndexBuffer(VkBuffer buffer);
+            void WaitForNewImage();
+            void StartRecording();
+            void StopRecording();
+            void Submit();
     };
 }  // namespace FooGame

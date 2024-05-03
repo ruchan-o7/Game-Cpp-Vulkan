@@ -1,25 +1,33 @@
 #pragma once
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 namespace FooGame
 {
-    class Buffer
+    struct Buffer
     {
-        public:
-            Buffer(size_t size,
-                   const VkPhysicalDeviceMemoryProperties& memProps,
-                   VkBufferUsageFlags usage, VkMemoryPropertyFlags flags,
-                   void* data = 0);
-            ~Buffer();
-            [[nodiscard]] void* GetData();
-            [[nodiscard]] VkBuffer GetBuffer();
-            void SetData(void* data, size_t size);
-
-        private:
-            VkBuffer m_Buffer;
-            VkDeviceMemory m_Memory;
-            void* m_Data;
-            size_t m_Size;
-            bool isMapped = false;
+            VkBuffer buf;
+            VkDeviceMemory mem;
+            void* data;
+            size_t size;
     };
+    void CreateBuffer(Buffer& result, VkDevice device,
+                      const VkPhysicalDeviceMemoryProperties& memoryProperties,
+                      size_t size, VkBufferUsageFlags usage,
+                      VkMemoryPropertyFlags memoryFlags);
+
+    void CreateVertexBuffer(
+        Buffer& result, VkDevice device,
+        const VkPhysicalDeviceMemoryProperties& memoryProperties, size_t size,
+        VkMemoryPropertyFlags memoryFlags);
+    void CreateIndexBuffer(
+        Buffer& result, VkDevice device,
+        const VkPhysicalDeviceMemoryProperties& memoryProperties, size_t size,
+        VkMemoryPropertyFlags memoryFlags);
+
+    void UploadBuffer(VkDevice device, VkCommandPool commandPool,
+                      VkCommandBuffer commandBuffer, VkQueue queue,
+                      const Buffer& buffer, const Buffer& scratch,
+                      const void* data, size_t size);
+    void UpdateBufferData(Buffer& buffer, void* data, size_t size);
 }  // namespace FooGame

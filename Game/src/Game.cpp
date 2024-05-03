@@ -1,10 +1,12 @@
 #include "Game.h"
+#include <cmath>
 #include <iostream>
 #include "Core/Core/Base.h"
 #include "Core/Core/Renderer2D.h"
 #include "Core/Events/ApplicationEvent.h"
 #include "Core/Events/Event.h"
 #include "Core/Input/KeyCodes.h"
+#include "GLFW/glfw3.h"
 namespace FooGame
 {
     Game::Game()
@@ -19,13 +21,19 @@ namespace FooGame
 
     void Game::Run()
     {
+        Camera camera{};
+
         while (!m_Window->ShouldClose())
         {
             m_Window->PollEvents();
             {
-                Renderer2D::BeginDraw();
-                Renderer2D::DrawQuad({0.f, 0.5f}, {20.f, 20.f},
+                Renderer2D::ResetStats();
+                Renderer2D::BeginScene(camera);
+                Renderer2D::DrawQuad({0.f, 0.5f}, {1.f, 2.f},
                                      {1.0f, 0.0f, 1.0f, 1.0f});
+                float val  = sin(glfwGetTime());
+                auto color = glm::vec3{val, val, val};
+                Renderer2D::SetClearColor(color);
                 Renderer2D::EndDraw();
             }
         }

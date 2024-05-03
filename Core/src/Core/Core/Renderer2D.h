@@ -4,14 +4,26 @@
 #include <vulkan/vulkan.h>
 namespace FooGame
 {
+    class Camera
+    {
+        public:
+            Camera() = default;
+            Camera(const glm::mat4& proj) : m_Projection(proj) {}
+            ~Camera() = default;
+            const glm::mat4& GetProjection() const { return m_Projection; }
+
+        private:
+            glm::mat4 m_Projection = glm::mat4(1.0f);
+    };
     class Renderer2D
     {
         public:
             static void Init();
             static void Shutdown();
-            static void BeginDraw();
+            static void BeginScene(const Camera& camera);
             static void EndDraw();
             static void Flush();
+            static void SetClearColor(glm::vec3 color);
             static void DrawQuad(const glm::vec2& position,
                                  const glm::vec2& size, const glm::vec4& color);
             static void DrawQuad(const glm::vec3& position,
