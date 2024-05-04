@@ -13,9 +13,11 @@ set(CORE_SOURCES
 	"src/Core/File/FileHelper.cpp"
 	"src/Core/Input/Input.cpp"
 	"src/Core/Backend/VBackend.cpp"
-	"src/Core/Backend/Shader.cpp"
-	"src/Core/Backend/Buffer.cpp"
-	)
+	"src/Core/Graphics/Shader.cpp"
+	"src/Core/Graphics/Buffer.cpp"
+	"src/Core/Graphics/Buffer.cpp"
+	"src/Core/Graphics/Buffer.h"
+)
 
 add_library("${PROJECT_NAME}" "${CORE_SOURCES}")
 

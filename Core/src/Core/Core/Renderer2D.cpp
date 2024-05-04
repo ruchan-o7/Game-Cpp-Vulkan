@@ -1,9 +1,8 @@
 #include "Renderer2D.h"
 #include <vulkan/vulkan_core.h>
-#include <xerrc.h>
 #include "../Backend/VBackend.h"
 #include "../Core/Base.h"
-#include "../Backend/Buffer.h"
+#include "../Graphics/Buffer.h"
 #include "../Backend/Vertex.h"
 #include "GLFW/glfw3.h"
 #include <cstring>
@@ -18,8 +17,8 @@ namespace FooGame
             static const u32 MaxTextureSlots = 32;
 
             Buffer QuadVertexBuffer;
-            QuadVertex* QuadVertexBufferBase;
-            QuadVertex* QuadVertexBufferPtr = nullptr;
+            Vertex* QuadVertexBufferBase;
+            Vertex* QuadVertexBufferPtr = nullptr;
             glm::vec4 QuadVertexPositions[4];
 
             Buffer QuadIndexBuffer;
@@ -40,25 +39,19 @@ namespace FooGame
     {
         s_Context = new API;
         s_Context->Init();
-        VkPhysicalDeviceMemoryProperties props;
-        auto device = s_Context->GetPhysicalDevice();
-        vkGetPhysicalDeviceMemoryProperties(device, &props);
+        auto props                = s_Context->GetMemoryProperties();
+        auto quadVertexBufferSize = s_Data.MaxVertices * sizeof(Vertex);
 
-        auto quadVertexBufferSize = s_Data.MaxVertices * sizeof(QuadVertex);
+        s_Data.QuadVertexBuffer =
+            Buffer(sizeof(Renderer2DData::CameraData), props,
+                   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                       VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        s_Data.QuadVertexBuffer.Init();
 
-        CreateBuffer(s_Data.QuadVertexBuffer, s_Context->GetDevice(), props,
-                     sizeof(Renderer2DData::CameraData),
-                     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        // CreateBuffer(s_Data.QuadVertexBuffer, s_Context->GetDevice(), props,
-        //              quadVertexBufferSize,
-        //              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-        //              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        s_Context->SetVertexBuffer(s_Data.QuadVertexBuffer.GetBuffer());
 
-        s_Context->SetVertexBuffer(s_Data.QuadVertexBuffer.buf);
-
-        s_Data.QuadVertexBufferBase = new QuadVertex[s_Data.MaxVertices];
+        s_Data.QuadVertexBufferBase = new Vertex[s_Data.MaxVertices];
 
         u32* quadIndices = new u32[s_Data.MaxIndices];
         u32 offset       = 0;
@@ -73,28 +66,26 @@ namespace FooGame
             quadIndices[i + 5]  = offset + 5;
             offset             += 4;
         }
-        CreateBuffer(s_Data.QuadIndexBuffer, s_Context->GetDevice(), props,
-                     sizeof(u32) * s_Data.MaxIndices,
-                     VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-        // CreateIndexBuffer(s_Data.QuadIndexBuffer, s_Context->GetDevice(),
-        // props,
-        //                   sizeof(u32) * s_Data.MaxIndices,
-        //                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        s_Context->BindIndexBuffer(s_Data.QuadIndexBuffer.buf);
-        UpdateBufferData(s_Data.QuadIndexBuffer, quadIndices,
-                         sizeof(u32) * s_Data.MaxIndices);
+        s_Data.QuadIndexBuffer = Buffer(sizeof(u32) * s_Data.MaxIndices, props,
+                                        VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+        s_Data.QuadIndexBuffer.Init();
+
+        s_Context->BindIndexBuffer(s_Data.QuadIndexBuffer.GetBuffer());
+        s_Data.QuadIndexBuffer.SetData(quadIndices,
+                                       sizeof(u32) * s_Data.MaxIndices);
         delete[] quadIndices;
 
         s_Data.QuadVertexPositions[0] = {-0.5f, -0.5f, 0.0f, 1.0f};
         s_Data.QuadVertexPositions[1] = {0.5f, -0.5f, 0.0f, 1.0f};
         s_Data.QuadVertexPositions[2] = {0.5f, 0.5f, 0.0f, 1.0f};
         s_Data.QuadVertexPositions[3] = {-0.5f, 0.5f, 0.0f, 1.0f};
-        CreateBuffer(s_Data.CameraUniformBuffer, s_Context->GetDevice(), props,
-                     sizeof(Renderer2DData::CameraData),
-                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        s_Data.CameraUniformBuffer =
+            Buffer(sizeof(Renderer2DData::CameraData), props,
+                   VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                       VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        s_Data.CameraUniformBuffer.Init();
     }
 
     void Renderer2D::DrawQuad(const glm::mat4& transform,
@@ -152,9 +143,13 @@ namespace FooGame
         lastFrameTime      = currentTime;
 
         s_Data.CameraBuffer.ViewProjection = camera.GetProjection();
-        UpdateBufferData(s_Data.CameraUniformBuffer,
-                         &s_Data.CameraBuffer.ViewProjection,
-                         sizeof(Renderer2DData::CameraBuffer));
+        s_Data.CameraUniformBuffer.SetData(
+            &s_Data.CameraBuffer.ViewProjection,
+            sizeof(Renderer2DData::CameraBuffer));
+
+        // UpdateBufferData(s_Data.CameraUniformBuffer,
+        //                  &s_Data.CameraBuffer.ViewProjection,
+        //                  sizeof(Renderer2DData::CameraBuffer));
         StartBatch();
     }
 
@@ -180,8 +175,10 @@ namespace FooGame
             uint32_t dataSize =
                 (uint32_t)((uint8_t*)s_Data.QuadVertexBufferPtr -
                            (uint8_t*)s_Data.QuadVertexBufferBase);
-            UpdateBufferData(s_Data.QuadVertexBuffer,
-                             s_Data.QuadVertexBufferBase, dataSize);
+            s_Data.QuadVertexBuffer.SetData(s_Data.QuadVertexBufferBase,
+                                            dataSize);
+            // UpdateBufferData(s_Data.QuadVertexBuffer,
+            //                  s_Data.QuadVertexBufferBase, dataSize);
             // s_Context->Draw(s_Data.Stats.GetTotalVertexCount(),
             //                 s_Data.Stats.QuadCount, 0);
             s_Context->DrawIndexed(s_Data.Stats.QuadCount, 1, 0);

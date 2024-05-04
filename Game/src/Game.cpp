@@ -7,6 +7,7 @@
 #include "Core/Events/Event.h"
 #include "Core/Input/KeyCodes.h"
 #include "GLFW/glfw3.h"
+#include <algorithm>
 namespace FooGame
 {
     Game::Game()
@@ -31,8 +32,8 @@ namespace FooGame
                 Renderer2D::BeginScene(camera);
                 Renderer2D::DrawQuad({0.f, 0.5f}, {1.f, 2.f},
                                      {1.0f, 0.0f, 1.0f, 1.0f});
-                float val  = sin(glfwGetTime());
-                auto color = glm::vec3{val, val, val};
+                float val  = std::clamp(sin(glfwGetTime()), .2, 1.0);
+                auto color = glm::vec3{val * .2, val * .3, val * .5};
                 Renderer2D::SetClearColor(color);
                 Renderer2D::EndDraw();
             }

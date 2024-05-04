@@ -17,6 +17,7 @@ namespace FooGame
                              u32 vertexOffset = 0);  // lol
             VkDevice GetDevice();
             VkPhysicalDevice GetPhysicalDevice();
+            VkPhysicalDeviceMemoryProperties GetMemoryProperties();
             void ResizeSwapchain();
             void SetClearColor(VkClearValue clearVal);
             void SetVertexBuffer(VkBuffer buffer);

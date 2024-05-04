@@ -2,7 +2,7 @@
 #include <vulkan/vulkan_core.h>
 #include "GLFW/glfw3.h"
 #include "../Core/Window.h"
-#include "Shader.h"
+#include "../Graphics/Shader.h"
 #include "VulkanCheckResult.h"
 #include "../Backend/Vertex.h"
 #include <cstdint>
@@ -90,6 +90,14 @@ namespace FooGame
         }
         return 0;
     }
+    VkPhysicalDeviceMemoryProperties API::GetMemoryProperties()
+    {
+        VkPhysicalDeviceMemoryProperties props;
+        vkGetPhysicalDeviceMemoryProperties(init.device.physical_device,
+                                            &props);
+        return props;
+    }
+
     void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                       VkMemoryPropertyFlags memoryFlags, VkBuffer& buffer,
                       VkDeviceMemory& memory)
@@ -336,8 +344,8 @@ namespace FooGame
             VkPipelineShaderStageCreateInfo shader_stages[] = {vert_stage_info,
                                                                frag_stage_info};
 
-            auto attributeDescrps = QuadVertex::GetAttributeDescrp();
-            auto bindingDescr     = QuadVertex::GetBindingDescription();
+            auto attributeDescrps = Vertex::GetAttributeDescrp();
+            auto bindingDescr     = Vertex::GetBindingDescription();
             VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
             vertexInputInfo.sType =
                 VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;

@@ -12,3 +12,4 @@ imgui.ini
 *.vcxproj.filters
 *.sln
 Shaders/*.spv
+CMakeSettings.json
