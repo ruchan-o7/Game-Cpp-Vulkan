@@ -1,6 +1,6 @@
 #pragma once
-#include <vulkan/vulkan_core.h>
-#include "src/Core/Core/Base.h"
+#include <vulkan/vulkan.h>
+#include "../Core/Base.h"
 namespace FooGame
 {
     class Buffer
@@ -21,7 +21,7 @@ namespace FooGame
                 size_t s,
                 const VkPhysicalDeviceMemoryProperties& memoryProperties,
                 VkMemoryPropertyFlags memoryFlags, VkBufferUsageFlags usage);
-            VkBuffer GetBuffer() const { return m_Buffer; }
+            VkBuffer* GetBuffer() { return &m_Buffer; }
             void SetData(void* data, size_t size);
 
         private:

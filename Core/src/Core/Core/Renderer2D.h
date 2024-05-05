@@ -2,19 +2,9 @@
 #include "../Core/Base.h"
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
+#include "../Graphics/Camera.h"
 namespace FooGame
 {
-    class Camera
-    {
-        public:
-            Camera() = default;
-            Camera(const glm::mat4& proj) : m_Projection(proj) {}
-            ~Camera() = default;
-            const glm::mat4& GetProjection() const { return m_Projection; }
-
-        private:
-            glm::mat4 m_Projection = glm::mat4(1.0f);
-    };
     class Renderer2D
     {
         public:

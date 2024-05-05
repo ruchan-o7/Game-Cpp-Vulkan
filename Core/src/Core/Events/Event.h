@@ -1,5 +1,5 @@
 #pragma once
-#include <string>
+#include "pch.h"
 #include "../Core/Base.h"
 #include <sstream>
 namespace FooGame

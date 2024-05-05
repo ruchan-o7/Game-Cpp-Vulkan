@@ -1,9 +1,9 @@
 #pragma once
-#include <memory>
-#include <utility>
+#include "pch.h"
 
-#define u32 uint32_t
-#define i32 int32_t
+#define MAX_FRAMES_IN_FLIGHT 2
+#define u32                  uint32_t
+#define i32                  int32_t
 
 #define u16 uint16_t
 #define i16 int16_t
@@ -30,3 +30,5 @@ constexpr Unique<T> CreateUnique(Args&&... args)
 {
     return std::make_unique<T>(std::forward<Args>(args)...);
 }
+template <typename T>
+using List = std::vector<T>;

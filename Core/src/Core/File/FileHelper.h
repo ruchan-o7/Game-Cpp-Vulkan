@@ -1,7 +1,7 @@
 #pragma once
-#include <vector>
-#include <string>
+#include "../Core/Base.h"
+#include "pch.h"
 namespace FooGame
 {
-    std::vector<char> ReadFile(const std::string& file_path);
+    List<char> ReadFile(const std::string& file_path);
 }

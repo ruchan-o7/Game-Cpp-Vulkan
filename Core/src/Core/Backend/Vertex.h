@@ -1,6 +1,6 @@
 #pragma once
+#include "pch.h"
 #include <vulkan/vulkan.h>
-#include <array>
 #include <glm/glm.hpp>
 namespace FooGame
 {
@@ -20,10 +20,10 @@ namespace FooGame
 
                 return bindingDescription;
             }
-            static std::array<VkVertexInputAttributeDescription, 3>
+            static std::array<VkVertexInputAttributeDescription, 5>
             GetAttributeDescrp()
             {
-                std::array<VkVertexInputAttributeDescription, 3>
+                std::array<VkVertexInputAttributeDescription, 5>
                     attributeDescriptions{};
                 attributeDescriptions[0].binding  = 0;
                 attributeDescriptions[0].location = 0;
@@ -39,6 +39,17 @@ namespace FooGame
                 attributeDescriptions[2].location = 2;
                 attributeDescriptions[2].format   = VK_FORMAT_R32G32_SFLOAT;
                 attributeDescriptions[2].offset   = offsetof(Vertex, TexCoord);
+
+                attributeDescriptions[3].binding  = 0;
+                attributeDescriptions[3].location = 3;
+                attributeDescriptions[3].format   = VK_FORMAT_R32G32_SFLOAT;
+                attributeDescriptions[3].offset   = offsetof(Vertex, TexIndex);
+
+                attributeDescriptions[4].binding  = 0;
+                attributeDescriptions[4].location = 4;
+                attributeDescriptions[4].format   = VK_FORMAT_R32G32_SFLOAT;
+                attributeDescriptions[4].offset =
+                    offsetof(Vertex, TilingFactor);
                 return attributeDescriptions;
             }
     };

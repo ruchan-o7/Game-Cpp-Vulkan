@@ -1,7 +1,7 @@
 #pragma once
 #include "../Events/Event.h"
 #include "Base.h"
-#include <functional>
+#include "pch.h"
 struct GLFWwindow;
 namespace FooGame
 {

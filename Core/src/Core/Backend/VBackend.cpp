@@ -1,13 +1,13 @@
 #include "VBackend.h"
 #include <vulkan/vulkan_core.h>
+#include <cstring>
 #include "GLFW/glfw3.h"
 #include "../Core/Window.h"
 #include "../Graphics/Shader.h"
 #include "VulkanCheckResult.h"
 #include "../Backend/Vertex.h"
-#include <cstdint>
-#include <iostream>
-#define MAX_FRAMES_IN_FLIGHT 2
+#include "pch.h"
+#include "../Graphics/Buffer.h"
 
 #define VS_CODE
 #ifndef VS_CODE
@@ -38,9 +38,7 @@ namespace FooGame
             VkQueue graphics_queue;
             VkQueue present_queue;
 
-            std::vector<VkImage> swapchain_images;
-            std::vector<VkImageView> swapchain_image_views;
-            std::vector<VkFramebuffer> framebuffers;
+            List<VkFramebuffer> framebuffers;
 
             VkRenderPass render_pass;
             VkPipelineLayout pipeline_layout;
@@ -48,28 +46,32 @@ namespace FooGame
 
             VkDescriptorSetLayout descriptorSetLayout;
             VkDescriptorPool descriptorPool;
-            std::vector<VkDescriptorSet> descriptorSets;
+            List<VkDescriptorSet> descriptorSets;
 
             VkCommandPool command_pool;
-            std::vector<VkCommandBuffer> command_buffers;
+            List<VkCommandBuffer> command_buffers;
 
-            std::vector<VkSemaphore> available_semaphores;
-            std::vector<VkSemaphore> finished_semaphore;
-            std::vector<VkFence> in_flight_fences;
-            std::vector<VkFence> image_in_flight;
+            List<VkSemaphore> available_semaphores;
+            List<VkSemaphore> finished_semaphore;
+            List<VkFence> in_flight_fences;
+            List<VkFence> image_in_flight;
             size_t current_frame = 0;
 
-            VkBuffer vertexBuffer;
-            VkBuffer indexBuffer;
+            VkBuffer* vertexBuffer;
+            VkBuffer* indexBuffer;
 
-            std::vector<VkBuffer> uniformBuffers;
-            std::vector<VkDeviceMemory> uniformBuffersMems;
-            std::vector<void*> uniformBuffersMapped;
+            List<Buffer> uniformBuffers;
 
             VkClearValue clearValue = {{{0.2f, 0.3f, 0.4f, 1.0f}}};
             u32 imageIndex          = 0;
     };
 
+    struct CameraData
+    {
+            alignas(16) glm::mat4 Model;
+            alignas(16) glm::mat4 View;
+            alignas(16) glm::mat4 Projection;
+    };
     ApiComponents apiComps{};
     Init init{};
     static inline u32 findMemoryType(u32 filter,
@@ -89,6 +91,10 @@ namespace FooGame
             }
         }
         return 0;
+    }
+    u32 API::GetBackBufferIndex() const
+    {
+        return apiComps.current_frame;
     }
     VkPhysicalDeviceMemoryProperties API::GetMemoryProperties()
     {
@@ -143,15 +149,13 @@ namespace FooGame
     }
     void CreateFramebuffers()
     {
-        apiComps.swapchain_images = init.swapchain.get_images().value();
-        apiComps.swapchain_image_views =
-            init.swapchain.get_image_views().value();
+        auto imageViews = init.swapchain.get_image_views().value();
 
-        apiComps.framebuffers.resize(apiComps.swapchain_image_views.size());
+        apiComps.framebuffers.resize(imageViews.size());
 
-        for (size_t i = 0; i < apiComps.swapchain_image_views.size(); i++)
+        for (size_t i = 0; i < imageViews.size(); i++)
         {
-            VkImageView attachments[] = {apiComps.swapchain_image_views[i]};
+            VkImageView attachments[] = {imageViews[i]};
 
             VkFramebufferCreateInfo framebuffer_info = {};
             framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -389,7 +393,7 @@ namespace FooGame
             rasterizer.rasterizerDiscardEnable = VK_FALSE;
             rasterizer.polygonMode             = VK_POLYGON_MODE_FILL;
             rasterizer.lineWidth               = 1.0f;
-            rasterizer.cullMode                = VK_CULL_MODE_BACK_BIT;
+            rasterizer.cullMode                = VK_CULL_MODE_FRONT_AND_BACK;
             rasterizer.frontFace               = VK_FRONT_FACE_CLOCKWISE;
             rasterizer.depthBiasEnable         = VK_FALSE;
 
@@ -460,20 +464,23 @@ namespace FooGame
         CreateCommandpool();
         CreateCommandBuffers();
         {
-            auto size = sizeof(glm::mat4);
+            auto size = sizeof(CameraData);
             apiComps.uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-            apiComps.uniformBuffersMems.resize(MAX_FRAMES_IN_FLIGHT);
-            apiComps.uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
             VkPhysicalDeviceMemoryProperties memProps{};
             vkGetPhysicalDeviceMemoryProperties(init.device.physical_device,
                                                 &memProps);
             for (i32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
-                CreateBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                             apiComps.uniformBuffers[i],
-                             apiComps.uniformBuffersMems[i]);
+                apiComps.uniformBuffers[i] =
+                    Buffer(size, memProps, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                apiComps.uniformBuffers[i].Init();
+                // CreateBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                //              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                //                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                //              apiComps.uniformBuffers[i].GetBuffer(),
+                //              apiComps.uniformBuffersMems[i]).;
             }
         }
         {
@@ -489,8 +496,8 @@ namespace FooGame
                                            &apiComps.descriptorPool));
         }
         {
-            std::vector<VkDescriptorSetLayout> layouts(
-                MAX_FRAMES_IN_FLIGHT, apiComps.descriptorSetLayout);
+            List<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT,
+                                                apiComps.descriptorSetLayout);
             VkDescriptorSetAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             allocInfo.descriptorPool = apiComps.descriptorPool;
@@ -504,9 +511,9 @@ namespace FooGame
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
                 VkDescriptorBufferInfo bufferInfo{};
-                bufferInfo.buffer = apiComps.uniformBuffers[i];
+                bufferInfo.buffer = *apiComps.uniformBuffers[i].GetBuffer();
                 bufferInfo.offset = 0;
-                bufferInfo.range  = sizeof(glm::mat4);
+                bufferInfo.range  = sizeof(UniformBufferData);
 
                 VkWriteDescriptorSet descriptorWrite{};
                 descriptorWrite.sType  = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -556,6 +563,11 @@ namespace FooGame
                 }
             }
         }
+    }
+    void API::UpdateUniformBuffer(UniformBufferData& data)
+    {
+        auto buf = apiComps.uniformBuffers[GetBackBufferIndex()];
+        buf.SetData(&data, sizeof(UniformBufferData));
     }
     void API::WaitForNewImage()
     {
@@ -622,10 +634,10 @@ namespace FooGame
 
         init.disp.cmdSetScissor(commandBuffer, 0, 1, &scissor);
         assert(apiComps.vertexBuffer != VK_NULL_HANDLE);
-        VkBuffer vertexBuffers[] = {apiComps.vertexBuffer};
+        VkBuffer vertexBuffers[] = {*apiComps.vertexBuffer};
         VkDeviceSize offsets[]   = {0};
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-        vkCmdBindIndexBuffer(commandBuffer, apiComps.indexBuffer, 0,
+        vkCmdBindIndexBuffer(commandBuffer, *apiComps.indexBuffer, 0,
                              VK_INDEX_TYPE_UINT32);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 apiComps.pipeline_layout, 0, 1,
@@ -706,7 +718,8 @@ namespace FooGame
         {
             init.disp.destroyFramebuffer(framebuffer, nullptr);
         }
-        init.swapchain.destroy_image_views(apiComps.swapchain_image_views);
+        auto ivws = init.swapchain.get_image_views().value();
+        init.swapchain.destroy_image_views(ivws);
 
         (CreateSwapchain());
         (CreateFramebuffers());
@@ -737,8 +750,6 @@ namespace FooGame
     {
         auto currentFrame  = apiComps.current_frame;
         auto commandBuffer = apiComps.command_buffers[currentFrame];
-        vkCmdBindIndexBuffer(commandBuffer, apiComps.indexBuffer, vertexOffset,
-                             VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex,
                          vertexOffset, firstInstance);
     }
@@ -748,11 +759,11 @@ namespace FooGame
         auto commandBuffer = apiComps.command_buffers[currentFrame];
         vkCmdDraw(commandBuffer, vertexCount, instanceCount, vertexOffset, 0);
     }
-    void API::SetVertexBuffer(VkBuffer buffer)
+    void API::SetVertexBuffer(VkBuffer* buffer)
     {
         apiComps.vertexBuffer = buffer;
     }
-    void API::BindIndexBuffer(VkBuffer buffer)
+    void API::BindIndexBuffer(VkBuffer* buffer)
     {
         apiComps.indexBuffer = buffer;
     }
@@ -767,5 +778,9 @@ namespace FooGame
     VkPhysicalDevice API::GetPhysicalDevice()
     {
         return init.device.physical_device;
+    }
+    VkExtent2D API::GetSwapchainExtent()
+    {
+        return init.swapchain.extent;
     }
 }  // namespace FooGame

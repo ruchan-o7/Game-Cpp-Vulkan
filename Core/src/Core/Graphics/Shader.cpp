@@ -2,7 +2,7 @@
 #include <vulkan/vulkan_core.h>
 #include "../File/FileHelper.h"
 #include "../Core/Renderer2D.h"
-#include <iostream>
+#include "pch.h"
 namespace FooGame
 {
     Shader::Shader(std::string path) : m_Path(std::move(path))
@@ -31,5 +31,15 @@ namespace FooGame
     {
         auto device = Renderer2D::GetDevice();
         vkDestroyShaderModule(device, m_Module, nullptr);
+    }
+    VkPipelineShaderStageCreateInfo Shader::CreateInfo(
+        VkShaderStageFlagBits stage)
+    {
+        VkPipelineShaderStageCreateInfo stageInfo{};
+        stageInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        stageInfo.stage  = stage;
+        stageInfo.module = GetModule();
+        stageInfo.pName  = "main";
+        return stageInfo;
     }
 }  // namespace FooGame

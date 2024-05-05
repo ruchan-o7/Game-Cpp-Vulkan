@@ -1,8 +1,6 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include <unordered_map>
-#include <vector>
-#include <iostream>
+#include "pch.h"
 namespace FooGame
 {
 
@@ -151,4 +149,16 @@ namespace FooGame
         out << f;
         return out;
     }
+    static VKAPI_ATTR VkBool32 VKAPI_CALL
+    debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                  VkDebugUtilsMessageTypeFlagsEXT messageType,
+                  const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                  void* pUserData)
+    {
+        std::cerr << "[VULKAN] | " << pCallbackData->pMessage << std::endl;
+
+        return VK_FALSE;
+    }
+    void populateDebugMessengerCreateInfo(
+        VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 }  // namespace FooGame

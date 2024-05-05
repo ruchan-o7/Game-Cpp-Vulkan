@@ -1,9 +1,9 @@
 #include "FileHelper.h"
-#include <vector>
+#include "pch.h"
 #include <fstream>
 namespace FooGame
 {
-    std::vector<char> ReadFile(const std::string& file_path)
+    List<char> ReadFile(const std::string& file_path)
     {
         std::ifstream file(file_path, std::ios::ate | std::ios::binary);
 
@@ -14,7 +14,7 @@ namespace FooGame
         }
 
         size_t file_size = (size_t)file.tellg();
-        std::vector<char> buffer(file_size);
+        List<char> buffer(file_size);
 
         file.seekg(0);
         file.read(buffer.data(), static_cast<std::streamsize>(file_size));

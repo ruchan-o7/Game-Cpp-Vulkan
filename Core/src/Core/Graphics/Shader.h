@@ -1,6 +1,6 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include <string>
+#include "pch.h"
 namespace FooGame
 {
     class Shader
@@ -9,6 +9,8 @@ namespace FooGame
             explicit Shader(std::string path);
             ~Shader();
             VkShaderModule GetModule() const;
+            VkPipelineShaderStageCreateInfo CreateInfo(
+                VkShaderStageFlagBits stage);
 
         private:
             std::string m_Path;

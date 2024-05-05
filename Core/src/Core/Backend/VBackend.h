@@ -6,6 +6,12 @@
 namespace FooGame
 {
 
+    struct UniformBufferData
+    {
+            alignas(16) glm::mat4 Model;
+            alignas(16) glm::mat4 View;
+            alignas(16) glm::mat4 Projection;
+    };
     class API
     {
         public:
@@ -20,11 +26,16 @@ namespace FooGame
             VkPhysicalDeviceMemoryProperties GetMemoryProperties();
             void ResizeSwapchain();
             void SetClearColor(VkClearValue clearVal);
-            void SetVertexBuffer(VkBuffer buffer);
-            void BindIndexBuffer(VkBuffer buffer);
+
+            void SetVertexBuffer(VkBuffer* buffer);
+            void BindIndexBuffer(VkBuffer* buffer);
+
             void WaitForNewImage();
             void StartRecording();
             void StopRecording();
             void Submit();
+            u32 GetBackBufferIndex() const;
+            void UpdateUniformBuffer(UniformBufferData& data);
+            VkExtent2D GetSwapchainExtent();
     };
 }  // namespace FooGame

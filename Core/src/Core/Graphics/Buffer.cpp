@@ -1,6 +1,5 @@
 #include "Buffer.h"
-#include <vulkan/vulkan_core.h>
-#include <cstring>
+#include "pch.h"
 #include "../Backend/VulkanCheckResult.h"
 #include "../Core/Renderer2D.h"
 #include "glm/fwd.hpp"
@@ -49,6 +48,7 @@ namespace FooGame
         VkBufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
         createInfo.size               = m_Size;
         createInfo.usage              = m_Usage;
+        createInfo.sharingMode        = VK_SHARING_MODE_EXCLUSIVE;
 
         VK_CALL(vkCreateBuffer(device, &createInfo, 0, &m_Buffer));
 
