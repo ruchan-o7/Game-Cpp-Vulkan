@@ -23,7 +23,7 @@ namespace FooGame
     {
         public:
             Buffer(BufferCreateInfo info);
-            ~Buffer();
+            ~Buffer() = default;
             void Release(VkDevice device);
             void Allocate();
             void Bind();

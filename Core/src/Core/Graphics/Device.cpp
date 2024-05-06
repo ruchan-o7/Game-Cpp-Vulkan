@@ -7,15 +7,16 @@
 #include "Core/Core/Base.h"
 namespace FooGame
 {
-    Device::~Device()
-    {
-        vkDestroyDevice(m_Device, nullptr);
-    }
+
     VkPhysicalDeviceMemoryProperties Device::GetMemoryProperties()
     {
         VkPhysicalDeviceMemoryProperties memProperties;
         vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &memProperties);
         return memProperties;
+    }
+    void Device::WaitIdle()
+    {
+        vkDeviceWaitIdle(m_Device);
     }
     Device::Device(DeviceCreateInfo info)
     {

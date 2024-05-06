@@ -33,20 +33,12 @@ namespace FooGame
         while (!m_Window->ShouldClose())
         {
             m_Window->PollEvents();
-            {
-                // float val = std::clamp(sin(glfwGetTime()), .2, 1.0);
-                // camera.MoveTo(glm::vec3{val, 0.0f, 0.0f});
-                // Renderer2D::ResetStats();
-                // Renderer2D::BeginScene(camera);
-                // Renderer2D::DrawQuad({0.f, 0.5f}, {1.f, 2.f},
-                //                      {1.0f, 0.0f, 1.0f, 1.0f});
-                // auto color = glm::vec3{val * .2, val * .3, val * .5};
-                // Renderer2D::SetClearColor(color);
-                // Renderer2D::EndDraw();
-            }
         }
+        std::cout << "Render Engine Closing" << std::endl;
         m_Engine.Close();
+        std::cout << "Render Engine Closed !" << std::endl;
         m_RenderThread.join();
+        std::cout << "Application closing" << std::endl;
     }
 
     void Game::Shutdown()

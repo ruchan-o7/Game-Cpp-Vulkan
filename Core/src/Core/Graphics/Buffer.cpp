@@ -23,9 +23,7 @@ namespace FooGame
         assert(!"No compatible memory type found");
         return ~0u;
     }
-    Buffer::~Buffer()
-    {
-    }
+
     void Buffer::Release(VkDevice device)
     {
         (vkDestroyBuffer(device, m_Buffer, nullptr));

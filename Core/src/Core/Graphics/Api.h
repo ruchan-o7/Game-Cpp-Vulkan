@@ -31,6 +31,8 @@ namespace FooGame
             void CreateGraphicsPipeline();
             void CreateCommandPool();
             void CreateDescriptorPool();
+            void Shutdown();
+            void WaitIdle() { m_Device->WaitIdle(); }
             VkDescriptorPool GetDescriptorPool() const
             {
                 return m_DescriptorPool;

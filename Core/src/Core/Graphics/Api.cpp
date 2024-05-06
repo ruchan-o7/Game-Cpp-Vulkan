@@ -26,6 +26,17 @@ namespace FooGame
             return VK_ERROR_EXTENSION_NOT_PRESENT;
         }
     }
+    void DestroyDebugUtilsMessengerEXT(VkInstance instance,
+                                       VkDebugUtilsMessengerEXT debugMessenger,
+                                       const VkAllocationCallbacks* pAllocator)
+    {
+        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+            instance, "vkDestroyDebugUtilsMessengerEXT");
+        if (func != nullptr)
+        {
+            func(instance, debugMessenger, pAllocator);
+        }
+    }
 #define VERT_PATH \
     "C:\\Users\\jcead\\dev\\CppProjects\\game_1\\Shaders\\vert.spv"
 #define FRAG_PATH \
@@ -34,7 +45,7 @@ namespace FooGame
     const char* validationLayers[] = {"VK_LAYER_KHRONOS_validation"};
     Api::~Api()
     {
-        // TODO:
+        Shutdown();
     }
     void Api::Init(GLFWwindow* window)
     {
@@ -297,6 +308,25 @@ namespace FooGame
         VK_CALL(vkCreateGraphicsPipelines(m_Device->GetDevice(), VK_NULL_HANDLE,
                                           1, &pipelineInfo, nullptr,
                                           &m_GraphicsPipeline.pipeline));
+    }
+
+    void Api::Shutdown()
+    {
+        auto device = m_Device->GetDevice();
+        vkDestroyPipeline(device, m_GraphicsPipeline.pipeline, nullptr);
+        vkDestroyPipelineLayout(device, m_GraphicsPipeline.pipelineLayout,
+                                nullptr);
+        vkDestroyRenderPass(device, m_RenderPass, nullptr);
+        vkDestroyDescriptorPool(device, m_DescriptorPool, nullptr);
+        vkDestroyDescriptorSetLayout(device, m_DescriptorSetLayout, nullptr);
+        vkDestroyCommandPool(device, m_CommandPool, nullptr);
+        vkDestroyDevice(device, nullptr);
+
+#ifdef _DEBUG
+        DestroyDebugUtilsMessengerEXT(m_Instance, debugMessenger, nullptr);
+#endif
+        vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
+        vkDestroyInstance(m_Instance, nullptr);
     }
 
 }  // namespace FooGame

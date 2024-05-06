@@ -173,7 +173,8 @@ namespace FooGame
 
             Submit();
         }
-        vkDeviceWaitIdle(m_Api->GetDevice()->GetDevice());
+        m_Api->WaitIdle();
+        Shutdown();
     }
     double deltaTime_     = 0;
     double lastFrameTime_ = 0;
@@ -199,7 +200,19 @@ namespace FooGame
     }
     void Engine::Shutdown()
     {
-        m_VertexBuffer->Release(m_Api->GetDevice()->GetDevice());
+        auto device = m_Api->GetDevice()->GetDevice();
+        m_VertexBuffer->Release(device);
+        m_IndexBuffer->Release(device);
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            m_UniformBuffers[i]->Release(device);
+            m_InFlightFences[i].Destroy(device);
+            m_RenderFinishedSemaphores[i].Destroy(device);
+            m_ImageAvailableSemaphores[i].Destroy(device);
+        }
+
+        m_Swapchain->Destroy();
+
         if (m_Api)
         {
             delete m_Api;

@@ -19,10 +19,18 @@ namespace FooGame
     {
         vkResetFences(m_Device, 1, &m_Fence);
     }
+    void Fence::Destroy(VkDevice device)
+    {
+        vkDestroyFence(device, m_Fence, nullptr);
+    }
     Semaphore::Semaphore(VkDevice device) : m_Device(device)
     {
         VkSemaphoreCreateInfo c{};
         c.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
         VK_CALL(vkCreateSemaphore(m_Device, &c, nullptr, &m_Semaphore));
+    }
+    void Semaphore::Destroy(VkDevice device)
+    {
+        vkDestroySemaphore(device, m_Semaphore, nullptr);
     }
 }  // namespace FooGame

@@ -11,6 +11,7 @@ namespace FooGame
             void Wait(u64 timeOut = UINT64_MAX);
             VkFence Get() const { return m_Fence; }
             void Reset();
+            void Destroy(VkDevice device);
 
         private:
             VkFence m_Fence;
@@ -21,6 +22,7 @@ namespace FooGame
         public:
             Semaphore(VkDevice device);
             VkSemaphore Get() const { return m_Semaphore; }
+            void Destroy(VkDevice device);
 
         private:
             VkSemaphore m_Semaphore;

@@ -16,7 +16,7 @@ namespace FooGame
     {
         public:
             Device(DeviceCreateInfo info);
-            ~Device();
+            ~Device() = default;
 
         public:
             VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
@@ -31,6 +31,7 @@ namespace FooGame
             List<VkSurfaceFormatKHR> GetSurfaceFormats(VkSurfaceKHR surface);
             List<VkPresentModeKHR> GetSurfacePresentModes(VkSurfaceKHR surface);
             VkPhysicalDeviceMemoryProperties GetMemoryProperties();
+            void WaitIdle();
 
         private:
             VkDevice m_Device;
