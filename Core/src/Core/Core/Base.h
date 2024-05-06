@@ -1,5 +1,9 @@
 #pragma once
 #include "pch.h"
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #define MAX_FRAMES_IN_FLIGHT 3
 #define u32                  uint32_t

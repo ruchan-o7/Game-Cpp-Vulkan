@@ -1,6 +1,5 @@
 #pragma once
-#include <glm/glm.hpp>
-#include "glm/ext/matrix_transform.hpp"
+#include "../Core/Base.h"
 namespace FooGame
 {
 

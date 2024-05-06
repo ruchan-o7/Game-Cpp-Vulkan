@@ -1,10 +1,10 @@
 #include "Device.h"
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
+#include "pch.h"
 #include <xerrc.h>
-#include <cassert>
 #include <stdexcept>
 #include "../Backend/VulkanCheckResult.h"
-#include "Core/Core/Base.h"
+#include "../Core/Base.h"
 namespace FooGame
 {
 

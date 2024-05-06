@@ -1,7 +1,6 @@
 #include "Api.h"
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
-#include <vulkan/vulkan_core.h>
 #include "../Backend/VulkanCheckResult.h"
 #include "../Core/Base.h"
 #include "../Graphics/Shader.h"

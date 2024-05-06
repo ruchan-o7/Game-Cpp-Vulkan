@@ -3,12 +3,11 @@
 #include "../Core/Base.h"
 #include "../Graphics/Swapchain.h"
 #include "Device.h"
-#include <glm/glm.hpp>
 struct GLFWwindow;
 namespace FooGame
 {
 
-    struct UniformBufferData
+    struct UniformBufferObject
     {
             alignas(16) glm::mat4 Model;
             alignas(16) glm::mat4 View;

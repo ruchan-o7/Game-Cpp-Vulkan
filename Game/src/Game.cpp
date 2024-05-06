@@ -1,7 +1,6 @@
 #include "Game.h"
 #include <pch.h>
 #include "Core/Core/Base.h"
-#include "Core/Core/Renderer2D.h"
 #include "Core/Events/ApplicationEvent.h"
 #include "Core/Events/Event.h"
 #include "Core/Input/KeyCodes.h"

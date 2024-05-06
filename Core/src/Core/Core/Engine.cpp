@@ -1,16 +1,13 @@
 #include "Engine.h"
 #include <GLFW/glfw3.h>
 #define GLM_FORCE_RADIANS
-#include <vulkan/vulkan_core.h>
 #include "../Backend/VBackend.h"
 #include "../Backend/Vertex.h"
 #include "../Backend/VulkanCheckResult.h"
 #include "../Core/Base.h"
 #include "../Graphics/Buffer.h"
 #include "../Graphics/Semaphore.h"
-#include "glm/ext/matrix_clip_space.hpp"
-#include "glm/ext/matrix_transform.hpp"
-#include "glm/fwd.hpp"
+
 namespace FooGame
 {
     static const List<Vertex> vertices = {
@@ -76,6 +73,7 @@ namespace FooGame
             m_IndexBuffer =
                 CreateShared<Buffer>(std::move(iBufBuilder.Build()));
             m_IndexBuffer->Bind();
+            m_IndexBuffer->SetData(sizeof(indices), (void*)indices.data());
 
             m_UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
         }
@@ -83,7 +81,7 @@ namespace FooGame
         {
             BufferBuilder uBuffBuilder{device->GetDevice()};
             uBuffBuilder.SetUsage(BufferUsage::UNIFORM)
-                .SetInitialSize(sizeof(UniformBufferData))
+                .SetInitialSize(sizeof(UniformBufferObject))
                 .SetMemoryProperties(device->GetMemoryProperties())
                 .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
@@ -111,7 +109,7 @@ namespace FooGame
             VkDescriptorBufferInfo bufferInfo{};
             bufferInfo.buffer = *m_UniformBuffers[i]->GetBuffer();
             bufferInfo.offset = 0;
-            bufferInfo.range  = sizeof(UniformBufferData);
+            bufferInfo.range  = sizeof(UniformBufferObject);
 
             VkWriteDescriptorSet descriptorWrite{};
             descriptorWrite.sType      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -183,19 +181,24 @@ namespace FooGame
         double currentTime = glfwGetTime();
         deltaTime_         = currentTime - lastFrameTime_;
         lastFrameTime_     = currentTime;
-        UniformBufferData ubd{};
-        ubd.Model = glm::rotate(glm::mat4(1.0f),
-                                (float)deltaTime_ * glm::radians(90.0f),
-                                glm::vec3(0.0f, 0.0f, 0.0f));
+        UniformBufferObject ubd{};
 
-        ubd.View = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f),
-                               glm::vec3(0.0f, 0.0f, 0.0f),
-                               glm::vec3(0.0f, 0.0f, 1.0f));
-        ubd.Projection =
-            glm::perspective(glm::radians(45.0f),
-                             (float)m_Swapchain->GetExtent().width /
-                                 m_Swapchain->GetExtent().height,
-                             0.1f, 1000.0f);
+        // ubd.Model = glm::rotate(glm::mat4(1.0f),
+        //                         (float)deltaTime_ * glm::radians(90.0f),
+        //                         glm::vec3(0.0f, 0.0f, 1.0f));
+
+        // ubd.View = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f),
+        //                        glm::vec3(0.0f, 0.0f, 0.0f),
+        //                        glm::vec3(0.0f, 0.0f, 1.0f));
+        // ubd.Projection =
+        //     glm::perspective(glm::radians(45.0f),
+        //                      (float)m_Swapchain->GetExtent().width /
+        //                          m_Swapchain->GetExtent().height,
+        //                      0.1f, 1000.0f);
+        ubd.Model             = glm::mat4{1.0f};
+        ubd.View              = glm::mat4(1);
+        ubd.Projection        = glm::mat4(1);
+        ubd.Projection[1][1] *= -1;
         m_UniformBuffers[frameData.imageIndex]->SetData(sizeof(ubd), &ubd);
     }
     void Engine::Shutdown()
@@ -242,11 +245,11 @@ namespace FooGame
     }
     void Engine::Record()
     {
+        auto cb = m_CommandBuffers[frameData.imageIndex];
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-        VK_CALL(vkBeginCommandBuffer(m_CommandBuffers[frameData.imageIndex],
-                                     &beginInfo));
+        VK_CALL(vkBeginCommandBuffer(cb, &beginInfo));
 
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType      = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -256,50 +259,44 @@ namespace FooGame
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = m_Swapchain->GetExtent();
 
-        VkClearValue clearColor        = {{{0.2f, 0.3f, 0.1f, 1.0f}}};
+        VkClearValue clearColor = {
+            {0.2f, 0.3f, 0.1f, 1.0f}
+        };
         renderPassInfo.clearValueCount = 1;
         renderPassInfo.pClearValues    = &clearColor;
 
-        vkCmdBeginRenderPass(m_CommandBuffers[frameData.imageIndex],
-                             &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(cb, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         {
-            vkCmdBindPipeline(m_CommandBuffers[frameData.imageIndex],
-                              VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
                               m_Api->GetPipeline().pipeline);
-            VkViewport viewport{
-                0.0f,
-                0.0f,
-                static_cast<float>(m_Swapchain->GetExtent().width),
-                static_cast<float>(m_Swapchain->GetExtent().height),
-                0.0f,
-                1.0f};
-            vkCmdSetViewport(m_CommandBuffers[frameData.imageIndex], 0, 1,
-                             &viewport);
+            VkViewport viewport{};
+            viewport.x        = 0.0f;
+            viewport.y        = 0.0f;
+            viewport.width    = (float)m_Swapchain->GetExtent().width;
+            viewport.height   = (float)m_Swapchain->GetExtent().height;
+            viewport.minDepth = 0.0f;
+            viewport.maxDepth = 1.0f;
+            vkCmdSetViewport(cb, 0, 1, &viewport);
             VkRect2D scissor{
                 {0, 0},
                 m_Swapchain->GetExtent()
             };
-            vkCmdSetScissor(m_CommandBuffers[frameData.imageIndex], 0, 1,
-                            &scissor);
+            vkCmdSetScissor(cb, 0, 1, &scissor);
 
             VkBuffer vertexBuffers[] = {*m_VertexBuffer->GetBuffer()};
             VkDeviceSize offsets[]   = {0};
 
-            vkCmdBindVertexBuffers(m_CommandBuffers[frameData.imageIndex], 0, 1,
-                                   vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(m_CommandBuffers[frameData.imageIndex],
-                                 *m_IndexBuffer->GetBuffer(), 0,
+            vkCmdBindVertexBuffers(cb, 0, 1, vertexBuffers, offsets);
+            vkCmdBindIndexBuffer(cb, *m_IndexBuffer->GetBuffer(), 0,
                                  VK_INDEX_TYPE_UINT32);
-            vkCmdBindDescriptorSets(m_CommandBuffers[frameData.imageIndex],
-                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+            vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                     m_Api->GetPipeline().pipelineLayout, 0, 1,
                                     &m_DescriptorSets[frameData.imageIndex], 0,
                                     nullptr);
-            vkCmdDrawIndexed(m_CommandBuffers[frameData.imageIndex],
-                             indices.size(), 1, 0, 0, 0);
+            vkCmdDrawIndexed(cb, indices.size(), 1, 0, 0, 0);
         }
-        vkCmdEndRenderPass(m_CommandBuffers[frameData.imageIndex]);
-        VK_CALL(vkEndCommandBuffer(m_CommandBuffers[frameData.imageIndex]));
+        vkCmdEndRenderPass(cb);
+        VK_CALL(vkEndCommandBuffer(cb));
     }
     void Engine::ResetFences()
     {

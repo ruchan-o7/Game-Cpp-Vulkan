@@ -1,6 +1,5 @@
 #include "Buffer.h"
 #include <vulkan/vulkan_core.h>
-#include <cassert>
 #include "pch.h"
 #include "../Backend/VulkanCheckResult.h"
 namespace FooGame

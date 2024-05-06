@@ -1,5 +1,5 @@
 #include "Semaphore.h"
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
 #include "../Backend/VulkanCheckResult.h"
 
 namespace FooGame

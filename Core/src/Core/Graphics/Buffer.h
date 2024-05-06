@@ -1,6 +1,5 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
 #include "../Core/Base.h"
 #include "Core/Graphics/Device.h"
 namespace FooGame

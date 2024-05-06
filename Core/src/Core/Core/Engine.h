@@ -5,7 +5,7 @@
 #include "../Graphics/Api.h"
 #include "../Graphics/Buffer.h"
 #include "../Graphics/Semaphore.h"
-#include "Core/Graphics/Swapchain.h"
+#include "../Graphics/Swapchain.h"
 struct GLFWwindow;
 namespace FooGame
 {

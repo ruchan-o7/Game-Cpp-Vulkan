@@ -1,8 +1,7 @@
 #include "Swapchain.h"
-#include <vulkan/vulkan_core.h>
-#include <cstdint>
+#include <vulkan/vulkan.h>
 #include "../Backend/VulkanCheckResult.h"
-#include "Core/Core/Base.h"
+#include "../Core/Base.h"
 namespace FooGame
 {
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
