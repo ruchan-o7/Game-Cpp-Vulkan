@@ -1,12 +1,19 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include <vulkan/vulkan_core.h>
 #include "../Core/Base.h"
 #include "../Graphics/Swapchain.h"
 #include "Device.h"
+#include <glm/glm.hpp>
 struct GLFWwindow;
 namespace FooGame
 {
+
+    struct UniformBufferData
+    {
+            alignas(16) glm::mat4 Model;
+            alignas(16) glm::mat4 View;
+            alignas(16) glm::mat4 Projection;
+    };
     struct GraphicsPipeline
     {
             VkPipeline pipeline;

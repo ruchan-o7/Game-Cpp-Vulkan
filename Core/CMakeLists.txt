@@ -9,14 +9,12 @@ find_package(Vulkan REQUIRED)
 
 set(CORE_SOURCES
 	"src/pch.cpp"
-	"src/Core/Core/Renderer2D.cpp"
 	"src/Core/Core/Window.cpp"
 	"src/Core/Core/Engine.h"
 	"src/Core/Core/Engine.cpp"
 
 	"src/Core/File/FileHelper.cpp"
 	"src/Core/Input/Input.cpp"
-	"src/Core/Backend/VBackend.cpp"
 	"src/Core/Backend/VulkanCheckResult.cpp"
 
 	"src/Core/Graphics/Api.h"
@@ -40,18 +38,17 @@ set(CORE_SOURCES
 
 add_library("${PROJECT_NAME}" "${CORE_SOURCES}")
 
-
 target_include_directories("${PROJECT_NAME}" PRIVATE
 	"${Vulkan_INCLUDE_DIRS}"
 	"${GLFW_INCLUDE_DIR}"
 	"${GLM_INCLUDE_DIR}"
 	"${VK_BOOTSTRAP_INCLUDE_DIR}"
 	"src"
-	)
+)
 
 set_property(TARGET "${PROJECT_NAME}" PROPERTY FOLDER "Core")
 
 set_target_properties("${PROJECT_NAME}" PROPERTIES CXX_STANDARD 17)
-target_link_libraries("${PROJECT_NAME}" PUBLIC glfw glm "${Vulkan_LIBRARIES}" vk-bootstrap::vk-bootstrap)
+target_link_libraries("${PROJECT_NAME}" PUBLIC glfw glm "${Vulkan_LIBRARIES}")
 
 target_precompile_headers(Core PRIVATE "src/pch.h")

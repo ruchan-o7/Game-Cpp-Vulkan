@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vulkan/vulkan_core.h>
-#include "../Graphics/Api.h"
+#include <vulkan/vulkan.h>
 #include "../Core/Base.h"
+#include "../Graphics/Api.h"
 #include "../Graphics/Buffer.h"
 #include "../Graphics/Semaphore.h"
 #include "Core/Graphics/Swapchain.h"

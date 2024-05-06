@@ -7,6 +7,7 @@
 #include "Core/Input/KeyCodes.h"
 #include "glm/fwd.hpp"
 #include <thread>
+#include <Core/Graphics/Camera.h>
 namespace FooGame
 {
     Game::Game()
@@ -76,7 +77,6 @@ namespace FooGame
     }
     bool Game::OnWindowResized(WindowResizeEvent& event)
     {
-        Renderer2D::Resize();
         return true;
     }
 }  // namespace FooGame

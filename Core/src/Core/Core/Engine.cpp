@@ -14,10 +14,22 @@
 namespace FooGame
 {
     static const List<Vertex> vertices = {
-        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}, 0, 1},
-        { {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 1.0f}, 0, 1},
-        {  {0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, 0, 1},
-        { {-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, 0, 1}
+        {{-0.5f, -0.5f, 0.0f},
+         {1.0f, 0.0f, 0.0f, 1.0f},
+         {1.0f, 1.0f},
+         0.0f, 1.0f},
+        { {0.5f, -0.5f, 0.0f},
+         {0.0f, 1.0f, 0.0f, 1.0f},
+         {1.0f, 1.0f},
+         0.0f, 1.0f},
+        {  {0.5f, 0.5f, 0.0f},
+         {0.0f, 0.0f, 1.0f, 1.0f},
+         {1.0f, 1.0f},
+         0.0f, 1.0f},
+        { {-0.5f, 0.5f, 0.0f},
+         {1.0f, 1.0f, 1.0f, 1.0f},
+         {1.0f, 1.0f},
+         0.0f, 1.0f}
     };
     static const List<u32> indices = {0, 1, 2, 2, 3, 0};
     void Engine::Init(GLFWwindow* window)
@@ -319,17 +331,14 @@ namespace FooGame
         auto result = vkQueuePresentKHR(m_Api->GetDevice()->GetPresentQueue(),
                                         &presentInfo);
 
-        // if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR
-        // ||
-        //     framebufferResized)
-        // {
-        //     framebufferResized = false;
-        //     recreateSwapChain();
-        // }
-        // else if (result != VK_SUCCESS)
-        // {
-        //     throw std::runtime_error("failed to present swap chain image!");
-        // }
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+        {
+            RecreateSwapchain();
+        }
+        else if (result != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to present swap chain image!");
+        }
 
         frameData.imageIndex =
             (frameData.imageIndex + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -340,7 +349,10 @@ namespace FooGame
     }
     void Engine::RecreateSwapchain()
     {
-        // TODO :
+        int w, h;
+        glfwGetFramebufferSize(m_WindowHandle, &w, &h);
+        m_Swapchain->Recreate(
+            {static_cast<uint32_t>(w), static_cast<uint32_t>(h)});
     }
 
 }  // namespace FooGame

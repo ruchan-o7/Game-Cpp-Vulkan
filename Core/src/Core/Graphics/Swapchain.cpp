@@ -39,6 +39,7 @@ namespace FooGame
     }
     void Swapchain::Destroy()
     {
+        vkDeviceWaitIdle(m_SwapchainCreateInfo.device->GetDevice());
         for (auto fb : m_SwapchainFrameBuffers)
         {
             vkDestroyFramebuffer(m_SwapchainCreateInfo.device->GetDevice(), fb,
@@ -61,6 +62,7 @@ namespace FooGame
         Destroy();
         m_SwapchainCreateInfo.extent = extent;
         Init();
+        CreateFramebuffers();
     }
     void Swapchain::Init()
     {

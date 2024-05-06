@@ -77,7 +77,6 @@ namespace FooGame
                                     static_cast<unsigned int>(height)};
                 data.OnEventCallback(e);
             });
-        Renderer2D::Init();
     }
     void WindowsWindow::PollEvents()
     {
@@ -89,7 +88,6 @@ namespace FooGame
     }
     void WindowsWindow::Shutdown()
     {
-        Renderer2D::Shutdown();
         glfwDestroyWindow(m_WindowHandle);
         glfwTerminate();
     }
