@@ -1,9 +1,12 @@
 #pragma once
 #include "pch.h"
 
-#define MAX_FRAMES_IN_FLIGHT 2
+#define MAX_FRAMES_IN_FLIGHT 3
 #define u32                  uint32_t
 #define i32                  int32_t
+
+#define u64 uint64_t
+#define i64 int64_t
 
 #define u16 uint16_t
 #define i16 int16_t

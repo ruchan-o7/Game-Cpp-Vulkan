@@ -1,8 +1,10 @@
 #pragma once
 #include <Core/Core/Window.h>
 #include <Core/Events/Event.h>
+#include <thread>
 #include "Core/Events/ApplicationEvent.h"
 #include "Core/Events/KeyEvent.h"
+#include "Core/Core/Engine.h"
 namespace FooGame
 {
     class Game
@@ -14,6 +16,8 @@ namespace FooGame
 
         private:
             WindowsWindow* m_Window;
+            Engine m_Engine;
+            std::thread m_RenderThread;
 
         private:
             void Init();

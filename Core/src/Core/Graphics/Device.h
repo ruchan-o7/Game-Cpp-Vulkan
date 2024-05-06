@@ -6,7 +6,7 @@ namespace FooGame
 {
     struct DeviceCreateInfo
     {
-            VkInstance* pInstance;
+            VkInstance pInstance;
             List<const char*> deviceExtensions;
             u32 deviceExtensionCount;
             List<const char*> validationLayers;
@@ -15,11 +15,10 @@ namespace FooGame
     class Device
     {
         public:
-            Device() = default;
+            Device(DeviceCreateInfo info);
             ~Device();
 
         public:
-            void InitDevices(DeviceCreateInfo deviceCreateInfo);
             VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
             u32 GetGraphicsFamily() const { return m_GraphicQueueFamily; }
             VkQueue GetPresentQueue() const { return m_PresentQueue; }
@@ -31,6 +30,7 @@ namespace FooGame
             VkSurfaceCapabilitiesKHR GetSurfaceCaps(VkSurfaceKHR surface);
             List<VkSurfaceFormatKHR> GetSurfaceFormats(VkSurfaceKHR surface);
             List<VkPresentModeKHR> GetSurfacePresentModes(VkSurfaceKHR surface);
+            VkPhysicalDeviceMemoryProperties GetMemoryProperties();
 
         private:
             VkDevice m_Device;
@@ -47,7 +47,7 @@ namespace FooGame
     class DeviceCreateBuilder
     {
         public:
-            DeviceCreateBuilder()  = default;
+            DeviceCreateBuilder(VkInstance instance);
             ~DeviceCreateBuilder() = default;
             DeviceCreateBuilder& AddExtension(const char* extension);
             DeviceCreateBuilder& AddLayer(const char* layer);

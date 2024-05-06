@@ -1,6 +1,7 @@
 #include "VBackend.h"
 #include <vulkan/vulkan_core.h>
 #include <cstring>
+#include "Core/Core/Renderer2D.h"
 #include "GLFW/glfw3.h"
 #include "../Core/Window.h"
 #include "../Graphics/Shader.h"
@@ -329,8 +330,8 @@ namespace FooGame
         }
         // graphic pipeline
         {
-            Shader vert{VERT_PATH};
-            Shader frag{FRAG_PATH};
+            Shader vert{Renderer2D::GetDevice(), VERT_PATH};
+            Shader frag{Renderer2D::GetDevice(), FRAG_PATH};
             VkPipelineShaderStageCreateInfo vert_stage_info = {};
             vert_stage_info.sType =
                 VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -465,17 +466,18 @@ namespace FooGame
         CreateCommandBuffers();
         {
             auto size = sizeof(CameraData);
-            apiComps.uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+            // apiComps.uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
             VkPhysicalDeviceMemoryProperties memProps{};
             vkGetPhysicalDeviceMemoryProperties(init.device.physical_device,
                                                 &memProps);
             for (i32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
-                apiComps.uniformBuffers[i] =
-                    Buffer(size, memProps, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-                apiComps.uniformBuffers[i].Init();
+                // apiComps.uniformBuffers[i] =
+                //     Buffer(size, memProps,
+                //     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                //            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                //                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                // apiComps.uniformBuffers[i].Init();
                 // CreateBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 //              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                 //                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -567,7 +569,7 @@ namespace FooGame
     void API::UpdateUniformBuffer(UniformBufferData& data)
     {
         auto buf = apiComps.uniformBuffers[GetBackBufferIndex()];
-        buf.SetData(&data, sizeof(UniformBufferData));
+        // buf.SetData(&data, sizeof(UniformBufferData));
     }
     void API::WaitForNewImage()
     {

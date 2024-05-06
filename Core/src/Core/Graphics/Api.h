@@ -3,7 +3,6 @@
 #include <vulkan/vulkan_core.h>
 #include "../Core/Base.h"
 #include "../Graphics/Swapchain.h"
-#include "Core/Graphics/Buffer.h"
 #include "Device.h"
 struct GLFWwindow;
 namespace FooGame
@@ -19,25 +18,33 @@ namespace FooGame
             Api() = default;
             ~Api();
             void Init(GLFWwindow* window);
-            void CreateSwapchain();
-            void DestroySwapchain();
-            void CreateRenderpass();
+            VkSurfaceKHR GetSurface() const { return m_Surface; }
+            void CreateRenderpass(VkFormat colorAttachmentFormat);
             void SetupDesciptorLayout();
             void CreateGraphicsPipeline();
-            void CreateFramebuffers();
             void CreateCommandPool();
             void CreateDescriptorPool();
+            VkDescriptorPool GetDescriptorPool() const
+            {
+                return m_DescriptorPool;
+            }
+            Shared<Device> GetDevice() const { return m_Device; }
+            VkCommandPool GetCommandPool() const { return m_CommandPool; }
+            VkRenderPass* GetRenderpass() { return &m_RenderPass; }
+            GraphicsPipeline GetPipeline() const { return m_GraphicsPipeline; }
+            VkDescriptorSetLayout GetDescriptorSetLayout() const
+            {
+                return m_DescriptorSetLayout;
+            }
 
         private:
             VkInstance m_Instance;
             VkDebugUtilsMessengerEXT debugMessenger;
             Shared<Device> m_Device;
             VkSurfaceKHR m_Surface;
-            Swapchain m_Swapchain;
             VkRenderPass m_RenderPass;
             VkDescriptorSetLayout m_DescriptorSetLayout;
             GraphicsPipeline m_GraphicsPipeline;
-            List<VkFramebuffer> m_SwapchainFrameBuffers;
             VkCommandPool m_CommandPool;
             VkDescriptorPool m_DescriptorPool;  // do this on higher level
     };

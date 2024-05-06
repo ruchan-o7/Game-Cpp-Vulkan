@@ -11,6 +11,9 @@ set(CORE_SOURCES
 	"src/pch.cpp"
 	"src/Core/Core/Renderer2D.cpp"
 	"src/Core/Core/Window.cpp"
+	"src/Core/Core/Engine.h"
+	"src/Core/Core/Engine.cpp"
+
 	"src/Core/File/FileHelper.cpp"
 	"src/Core/Input/Input.cpp"
 	"src/Core/Backend/VBackend.cpp"
@@ -23,6 +26,7 @@ set(CORE_SOURCES
 	"src/Core/Graphics/Image.h"
 	"src/Core/Graphics/Semaphore.h"
 	"src/Core/Graphics/Shader.h"
+	"src/Core/Graphics/Swapchain.h"
 
 	"src/Core/Graphics/Api.cpp"
 	"src/Core/Graphics/Buffer.cpp"
@@ -31,6 +35,7 @@ set(CORE_SOURCES
 	"src/Core/Graphics/Image.cpp"
 	"src/Core/Graphics/Semaphore.cpp"
 	"src/Core/Graphics/Shader.cpp"
+	"src/Core/Graphics/Swapchain.cpp"
 )
 
 add_library("${PROJECT_NAME}" "${CORE_SOURCES}")

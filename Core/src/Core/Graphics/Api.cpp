@@ -6,48 +6,82 @@
 #include "../Core/Base.h"
 #include "../Graphics/Shader.h"
 #include "../Backend/Vertex.h"
-#include "Core/Backend/VBackend.h"
+#include "Core/Graphics/Swapchain.h"
 namespace FooGame
 {
+    VkResult CreateDebugUtilsMessengerEXT(
+        VkInstance instance,
+        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+        const VkAllocationCallbacks* pAllocator,
+        VkDebugUtilsMessengerEXT* pDebugMessenger)
+    {
+        auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+            instance, "vkCreateDebugUtilsMessengerEXT");
+        if (func != nullptr)
+        {
+            return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+        }
+        else
+        {
+            return VK_ERROR_EXTENSION_NOT_PRESENT;
+        }
+    }
 #define VERT_PATH \
     "C:\\Users\\jcead\\dev\\CppProjects\\game_1\\Shaders\\vert.spv"
 #define FRAG_PATH \
     "C:\\Users\\jcead\\dev\\CppProjects\\game_1\\Shaders\\frag.spv"
     const char* deviceExtensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
     const char* validationLayers[] = {"VK_LAYER_KHRONOS_validation"};
-
+    Api::~Api()
+    {
+        // TODO:
+    }
     void Api::Init(GLFWwindow* window)
     {
-        i32 w, h;
-        glfwGetFramebufferSize(window, &w, &h);
         {
             VkApplicationInfo appInfo{};
             appInfo.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-            appInfo.apiVersion         = VK_API_VERSION_1_3;
+            appInfo.apiVersion         = VK_API_VERSION_1_0;
             appInfo.pEngineName        = "FooGame Engine";
             appInfo.engineVersion      = VK_MAKE_VERSION(0, 0, 1);
             appInfo.pApplicationName   = "Foo Game";
-            appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+            appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
 
             VkInstanceCreateInfo createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
             createInfo.pApplicationInfo  = &appInfo;
-            createInfo.enabledLayerCount = 1;
+            createInfo.enabledLayerCount = 0;
+            createInfo.pNext             = nullptr;
 
             u32 extensionCount;
             const char** glfwExtensions;
             glfwExtensions = glfwGetRequiredInstanceExtensions(&extensionCount);
             std::vector<const char*> extensions(
                 glfwExtensions, glfwExtensions + extensionCount);
+            createInfo.enabledExtensionCount =
+                static_cast<u32>(extensions.size());
+
             VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 #ifdef _DEBUG
+
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             createInfo.enabledLayerCount   = ARRAY_COUNT(validationLayers);
             createInfo.ppEnabledLayerNames = validationLayers;
-            createInfo.pNext               = &debugCreateInfo;
-#else
-            createInfo.enabledLayerCount = 0;
-            createInfo.pNext             = nullptr;
+
+            debugCreateInfo.sType =
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+            debugCreateInfo.messageSeverity =
+                VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+            debugCreateInfo.messageType =
+                VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+            debugCreateInfo.pfnUserCallback = debugCallback;
+
+            createInfo.pNext =
+                (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 #endif
             createInfo.ppEnabledExtensionNames = extensions.data();
             createInfo.enabledExtensionCount =
@@ -55,14 +89,14 @@ namespace FooGame
             VK_CALL(vkCreateInstance(&createInfo, nullptr, &m_Instance));
 
 #ifdef _DEBUG
-            VK_CALL(vkCreateDebugUtilsMessengerEXT(m_Instance, &debugCreateInfo,
-                                                   nullptr, &debugMessenger));
+            VK_CALL(CreateDebugUtilsMessengerEXT(m_Instance, &debugCreateInfo,
+                                                 nullptr, &debugMessenger));
 #endif
             VK_CALL(glfwCreateWindowSurface(m_Instance, window, nullptr,
                                             &m_Surface));
         }
         {
-            DeviceCreateBuilder deviceBuilder{};
+            DeviceCreateBuilder deviceBuilder{m_Instance};
             deviceBuilder.AddLayer(*validationLayers);
             deviceBuilder.AddExtension(*deviceExtensions);
             m_Device = deviceBuilder.Build();
@@ -95,32 +129,10 @@ namespace FooGame
         VK_CALL(vkCreateDescriptorPool(m_Device->GetDevice(), &poolInfo,
                                        nullptr, &m_DescriptorPool));
     }
-    void Api::CreateFramebuffers()
-    {
-        auto ivSize = m_Swapchain.GetImageViewCount();
-        m_SwapchainFrameBuffers.resize(ivSize);
-
-        for (size_t i = 0; i < ivSize; i++)
-        {
-            VkImageView attachments[] = {m_Swapchain.GetImageView(i)};
-
-            VkFramebufferCreateInfo framebufferInfo{};
-            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            framebufferInfo.renderPass      = m_RenderPass;
-            framebufferInfo.attachmentCount = 1;
-            framebufferInfo.pAttachments    = attachments;
-            framebufferInfo.width           = m_Swapchain.GetExtent().width;
-            framebufferInfo.height          = m_Swapchain.GetExtent().height;
-            framebufferInfo.layers          = 1;
-
-            VK_CALL(vkCreateFramebuffer(m_Device->GetDevice(), &framebufferInfo,
-                                        nullptr, &m_SwapchainFrameBuffers[i]));
-        }
-    }
-    void Api::CreateRenderpass()
+    void Api::CreateRenderpass(VkFormat colorAttachmentFormat)
     {
         VkAttachmentDescription colorAttachment{};
-        colorAttachment.format         = m_Swapchain.GetImageFormat().format;
+        colorAttachment.format         = colorAttachmentFormat;
         colorAttachment.samples        = VK_SAMPLE_COUNT_1_BIT;
         colorAttachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
         colorAttachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
@@ -158,11 +170,6 @@ namespace FooGame
         VK_CALL(vkCreateRenderPass(m_Device->GetDevice(), &renderPassInfo,
                                    nullptr, &m_RenderPass));
     }
-    void Api::CreateSwapchain()
-    {
-        SwapchainBuilder scBuilder{m_Device.get(), &m_Surface};
-        m_Swapchain = std::move(scBuilder.Build());
-    }
 
     void Api::SetupDesciptorLayout()
     {
@@ -172,18 +179,18 @@ namespace FooGame
         uboLayoutBinding.descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         uboLayoutBinding.pImmutableSamplers = nullptr;
         uboLayoutBinding.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
-        VkDescriptorSetLayoutCreateInfo createInfo;
-        createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        createInfo.bindingCount = 1;
-        createInfo.pBindings    = &uboLayoutBinding;
-        VK_CALL(vkCreateDescriptorSetLayout(m_Device->GetDevice(), &createInfo,
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = 1;
+        layoutInfo.pBindings    = &uboLayoutBinding;
+        VK_CALL(vkCreateDescriptorSetLayout(m_Device->GetDevice(), &layoutInfo,
                                             nullptr, &m_DescriptorSetLayout));
     }
 
     void Api::CreateGraphicsPipeline()
     {
-        Shader vert{VERT_PATH};
-        Shader frag{FRAG_PATH};
+        Shader vert{m_Device->GetDevice(), VERT_PATH};
+        Shader frag{m_Device->GetDevice(), FRAG_PATH};
         auto vertShaderStageInfo = vert.CreateInfo(VK_SHADER_STAGE_VERTEX_BIT);
 
         auto fragShaderStageInfo =
@@ -290,10 +297,6 @@ namespace FooGame
         VK_CALL(vkCreateGraphicsPipelines(m_Device->GetDevice(), VK_NULL_HANDLE,
                                           1, &pipelineInfo, nullptr,
                                           &m_GraphicsPipeline.pipeline));
-    }
-    void Api::DestroySwapchain()
-    {
-        m_Swapchain.Destroy();
     }
 
 }  // namespace FooGame

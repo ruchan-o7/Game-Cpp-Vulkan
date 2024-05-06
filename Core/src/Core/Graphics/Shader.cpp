@@ -5,10 +5,10 @@
 #include "pch.h"
 namespace FooGame
 {
-    Shader::Shader(std::string path) : m_Path(std::move(path))
+    Shader::Shader(VkDevice device, std::string path)
+        : m_Device(device), m_Path(std::move(path))
     {
-        auto device = Renderer2D::GetDevice();
-        auto code   = ReadFile(m_Path);
+        auto code = ReadFile(m_Path);
 
         VkShaderModuleCreateInfo create_info = {};
         create_info.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -17,7 +17,7 @@ namespace FooGame
 
         VkShaderModule shaderModule;
 
-        if (vkCreateShaderModule(device, &create_info, nullptr, &m_Module) !=
+        if (vkCreateShaderModule(m_Device, &create_info, nullptr, &m_Module) !=
             VK_SUCCESS)
         {
             std::cerr << "Failed to load shader module of " << m_Path << '\n';
@@ -29,8 +29,7 @@ namespace FooGame
     }
     Shader::~Shader()
     {
-        auto device = Renderer2D::GetDevice();
-        vkDestroyShaderModule(device, m_Module, nullptr);
+        vkDestroyShaderModule(m_Device, m_Module, nullptr);
     }
     VkPipelineShaderStageCreateInfo Shader::CreateInfo(
         VkShaderStageFlagBits stage)
