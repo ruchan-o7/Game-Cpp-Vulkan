@@ -161,6 +161,7 @@ namespace FooGame
 
             Submit();
         }
+        vkDeviceWaitIdle(m_Api->GetDevice()->GetDevice());
     }
     double deltaTime_     = 0;
     double lastFrameTime_ = 0;
@@ -259,6 +260,8 @@ namespace FooGame
             VkBuffer vertexBuffers[] = {*m_VertexBuffer->GetBuffer()};
             VkDeviceSize offsets[]   = {0};
 
+            vkCmdBindVertexBuffers(m_CommandBuffers[frameData.imageIndex], 0, 1,
+                                   vertexBuffers, offsets);
             vkCmdBindIndexBuffer(m_CommandBuffers[frameData.imageIndex],
                                  *m_IndexBuffer->GetBuffer(), 0,
                                  VK_INDEX_TYPE_UINT32);
