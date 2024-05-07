@@ -1,13 +1,12 @@
 #include "Engine.h"
 #include <GLFW/glfw3.h>
-#include <cmath>
 #include "../Backend/Vertex.h"
 #include "../Backend/VulkanCheckResult.h"
 #include "../Core/Base.h"
 #include "../Graphics/Buffer.h"
 #include "../Graphics/Semaphore.h"
 #include "../Graphics/Image.h"
-#include "vulkan/vulkan_core.h"
+#include "Core/Core/Window.h"
 
 namespace FooGame
 {
@@ -38,6 +37,22 @@ namespace FooGame
         beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         vkBeginCommandBuffer(commandBuffer, &beginInfo);
         return commandBuffer;
+    }
+
+    bool Engine::OnWindowResized(WindowResizeEvent& event)
+    {
+        m_FramebufferResized = true;
+        frameData.fbWidth    = event.GetWidth();
+        frameData.fbHeight   = event.GetHeight();
+        if (event.GetWidth() == 0 || event.GetHeight() == 0)
+        {
+            PauseRender();
+        }
+        else
+        {
+            ContinueRender();
+        }
+        return true;
     }
     void Engine::EndSingleTimeCommands(VkCommandBuffer& commandBuffer)
     {
@@ -76,7 +91,7 @@ namespace FooGame
         glfwGetFramebufferSize(m_WindowHandle, &w, &h);
         auto device  = m_Api->GetDevice();
         auto surface = m_Api->GetSurface();
-        SwapchainBuilder scBuilder{*device, surface};
+        SwapchainBuilder scBuilder{device, surface};
         m_Swapchain =
             scBuilder
                 .SetExtent({static_cast<uint32_t>(w), static_cast<uint32_t>(h)})
@@ -207,31 +222,40 @@ namespace FooGame
     }
     Engine::~Engine()
     {
+        Close();
+        // Shutdown();
+    }
+    void Engine::Close()
+    {
+        m_ShouldClose = true;
+        m_Api->WaitIdle();
         Shutdown();
     }
     void Engine::RunLoop()
     {
-        while (!ShouldClose())
+        // while (!ShouldClose())
+        // {
+        // if (!ShouldContinue())
+        // {
+        //     continue;
+        // }
+        WaitFences();
+        u32 imageIndex;
+        if (!AcquireNextImage(imageIndex))
         {
-            WaitFences();
-            u32 imageIndex;
-            if (!AcquireNextImage(imageIndex))
-            {
-                continue;
-            }
-            UpdateUniforms();
-
-            ResetFences();
-
-            ResetCommandBuffers();
-
-            Record(imageIndex);
-
-            Submit(imageIndex);
+            return;
         }
-        m_Api->WaitIdle();
-        Shutdown();
+        UpdateUniforms();
+
+        ResetFences();
+
+        ResetCommandBuffers();
+
+        Record(imageIndex);
+
+        Submit(imageIndex);
     }
+
     double deltaTime_     = 0;
     double lastFrameTime_ = 0;
     void Engine::UpdateUniforms()
@@ -267,7 +291,9 @@ namespace FooGame
     {
         auto device = m_Api->GetDevice()->GetDevice();
         m_VertexBuffer->Release();
+        m_VertexBuffer.reset();
         m_IndexBuffer->Release();
+        m_IndexBuffer.reset();
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
             m_UniformBuffers[i]->Release();
@@ -403,8 +429,10 @@ namespace FooGame
         auto result = vkQueuePresentKHR(m_Api->GetDevice()->GetPresentQueue(),
                                         &presentInfo);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
+            m_FramebufferResized)
         {
+            m_FramebufferResized = false;
             RecreateSwapchain();
         }
         else if (result != VK_SUCCESS)
@@ -421,16 +449,19 @@ namespace FooGame
     }
     void Engine::RecreateSwapchain()
     {
-        int w, h;
-        glfwGetFramebufferSize(m_WindowHandle, &w, &h);
-        while (w == 0 || h == 0)
+        if (frameData.fbWidth == 0 || frameData.fbHeight == 0)
         {
-            glfwGetFramebufferSize(m_WindowHandle, &w, &h);
-            glfwWaitEvents();
+            PauseRender();
+            // return;
         }
+        else
+        {
+            ContinueRender();
+        }
+
         m_Api->WaitIdle();
-        m_Swapchain->Recreate(
-            {static_cast<uint32_t>(w), static_cast<uint32_t>(h)});
+        m_Swapchain->Recreate({static_cast<uint32_t>(frameData.fbWidth),
+                               static_cast<uint32_t>(frameData.fbHeight)});
     }
 
 }  // namespace FooGame

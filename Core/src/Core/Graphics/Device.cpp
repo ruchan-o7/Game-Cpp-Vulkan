@@ -175,8 +175,7 @@ namespace FooGame
 
     Shared<Device> DeviceCreateBuilder::Build()
     {
-        auto device = CreateShared<Device>(ci);
-        return device;
+        return CreateShared<Device>(ci);
     }
     DeviceCreateBuilder::DeviceCreateBuilder(VkInstance instance)
     {

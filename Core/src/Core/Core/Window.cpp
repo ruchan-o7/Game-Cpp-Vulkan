@@ -17,6 +17,13 @@ namespace FooGame
         s_Instance = this;
         Init();
     }
+
+    Vector2 WindowsWindow::GetWindowSize()
+    {
+        i32 w, h;
+        glfwGetFramebufferSize(m_WindowHandle, &w, &h);
+        return {w, h};
+    }
     void WindowsWindow::Init()
     {
         if (!glfwInit())

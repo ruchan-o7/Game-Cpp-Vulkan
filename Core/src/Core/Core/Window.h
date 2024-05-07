@@ -1,6 +1,7 @@
 #pragma once
 #include "../Events/Event.h"
 #include "Base.h"
+#include "GLFW/glfw3.h"
 #include "pch.h"
 struct GLFWwindow;
 namespace FooGame
@@ -10,6 +11,10 @@ namespace FooGame
     {
             u32 width  = 1600;
             u32 height = 900;
+    };
+    struct Vector2
+    {
+            i32 x = 0, y = 0;
     };
     class WindowsWindow
     {
@@ -30,6 +35,8 @@ namespace FooGame
             EventCallback OnEventCallback;
             void PollEvents();
             bool ShouldClose();
+            Vector2 GetWindowSize();
+            inline void WaitEvent() { glfwWaitEvents(); }
 
         private:
             void Init();

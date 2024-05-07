@@ -6,6 +6,7 @@
 #include "../Graphics/Buffer.h"
 #include "../Graphics/Semaphore.h"
 #include "../Graphics/Swapchain.h"
+#include "Core/Events/ApplicationEvent.h"
 #include "vulkan/vulkan_core.h"
 struct GLFWwindow;
 namespace FooGame
@@ -14,9 +15,13 @@ namespace FooGame
     {
             // u32 imageIndex   = 0;
             u32 currentFrame = 0;
+            i32 fbWidth      = 0;
+            i32 fbHeight     = 0;
     };
     class Engine
     {
+            using EventCallback = std::function<void(Event&)>;
+
         public:
             Engine() = default;
             ~Engine();
@@ -25,11 +30,15 @@ namespace FooGame
             void Init(GLFWwindow* window);
             void Shutdown();
             void RunLoop();
-            void Close() { m_ShouldClose = true; }
+            void Close();
             void Submit(u32 imageIndex);
             VkCommandBuffer BeginSingleTimeCommands();
             void EndSingleTimeCommands(VkCommandBuffer& commandBuffer);
             Device& GetDevice() const;
+            void PauseRender() { m_ShouldContinue = false; }
+            void ContinueRender() { m_ShouldContinue = true; }
+
+            bool OnWindowResized(WindowResizeEvent& event);
 
         private:
             bool m_ShouldClose;
@@ -47,10 +56,13 @@ namespace FooGame
             FrameData frameData;
             Image m_Image;
             VkSampler m_TextureSampler;
+            bool m_FramebufferResized = false;
+            bool m_ShouldContinue     = true;
 
         private:
             static Engine* s_Instance;
             bool ShouldClose() const { return m_ShouldClose; }
+            bool ShouldContinue() const { return m_ShouldContinue; }
             void WaitFences();
             void ResetFences();
             void ResetCommandBuffers();

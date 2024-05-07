@@ -9,7 +9,7 @@ namespace FooGame
 
     struct SwapchainCreateInfo
     {
-            Device* device;
+            Shared<Device> device;
             VkSurfaceKHR surface;
             VkExtent2D extent;
             VkPresentModeKHR presentMode;
@@ -67,7 +67,7 @@ namespace FooGame
     class SwapchainBuilder
     {
         public:
-            SwapchainBuilder(Device& device, VkSurfaceKHR& surface);
+            SwapchainBuilder(Shared<Device> device, VkSurfaceKHR& surface);
             ~SwapchainBuilder() = default;
 
             SwapchainBuilder& SetExtent(VkExtent2D extent);
