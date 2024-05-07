@@ -1,5 +1,6 @@
 #include "Engine.h"
 #include <GLFW/glfw3.h>
+#include <cmath>
 #include "../Backend/Vertex.h"
 #include "../Backend/VulkanCheckResult.h"
 #include "../Core/Base.h"
@@ -254,7 +255,9 @@ namespace FooGame
         //                      0.1f, 1000.0f);
         float aspect = (float)m_Swapchain->GetExtent().width /
                        (float)m_Swapchain->GetExtent().height;
-        ubd.Model             = glm::mat4{1.0f};
+        ubd.Model = glm::rotate(
+            glm::mat4(1.0f), (float)currentTime * glm::radians(90.0f),
+            glm::vec3(0.0f, 0.0f, 1.0f));  // glm::mat4{sin(currentTime)};
         ubd.View              = glm::mat4(1.0f);
         ubd.Projection        = glm::mat4(1.0f);
         ubd.Projection[1][1] *= -1;
