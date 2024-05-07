@@ -1,11 +1,9 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include "../Core/Base.h"
-#include "Core/Graphics/Device.h"
-#include "Core/Graphics/Image.h"
-#include "vulkan/vulkan_core.h"
+#include "../Backend/Vertex.h"
 namespace FooGame
 {
+    struct Image;
     enum class BufferUsage
     {
         VERTEX,
@@ -13,11 +11,12 @@ namespace FooGame
         UNIFORM,
         TRANSFER_SRC,
         TRANSFER_DST,
+        TRANSFER_DST_VERTEX,
+        TRANSFER_DST_INDEX,
     };
     struct BufferCreateInfo
     {
             size_t size;
-            VkPhysicalDeviceMemoryProperties memoryProperties;
             VkMemoryPropertyFlags memoryFlags;
             BufferUsage usage;
     };
@@ -44,7 +43,6 @@ namespace FooGame
             VkDeviceMemory m_Memory;
             void* m_Data;
             size_t m_Size;
-            VkPhysicalDeviceMemoryProperties m_MemoryProperties;
             VkMemoryPropertyFlags m_MemoryFlags;
             VkBufferUsageFlags m_Usage;
     };
@@ -54,8 +52,6 @@ namespace FooGame
             BufferBuilder()  = default;
             ~BufferBuilder() = default;
             BufferBuilder& SetInitialSize(size_t size);
-            BufferBuilder& SetMemoryProperties(
-                VkPhysicalDeviceMemoryProperties memoryProperties);
             BufferBuilder& SetMemoryFlags(VkMemoryPropertyFlags memFlags);
             BufferBuilder& SetUsage(BufferUsage usage);
             Buffer Build();
@@ -64,4 +60,7 @@ namespace FooGame
             VkDevice m_Device;
             BufferCreateInfo createInfo;
     };
+    Buffer CreateVertexBuffer(const List<Vertex> vertices);
+    Buffer CreateIndexBuffer(const List<u32> indices);
+    static VkBufferUsageFlags ParseBufferUsage(BufferUsage usage);
 }  // namespace FooGame

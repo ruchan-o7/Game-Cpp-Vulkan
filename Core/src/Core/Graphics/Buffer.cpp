@@ -49,7 +49,7 @@ namespace FooGame
         auto dev                = device.GetDevice();
         auto memoryRequirements = device.GetMemoryRequirements(m_Buffer);
         u32 memoryTypeIndex =
-            SelectMemoryType(m_MemoryProperties,
+            SelectMemoryType(Engine::Get()->GetDevice().GetMemoryProperties(),
                              memoryRequirements.memoryTypeBits, m_MemoryFlags);
         assert(memoryTypeIndex != ~0u);
         VkMemoryAllocateInfo allocateInfo = {
@@ -94,40 +94,9 @@ namespace FooGame
         }
     }
     Buffer::Buffer(BufferCreateInfo info)
-        : m_Size(info.size),
-          m_MemoryProperties(info.memoryProperties),
-          m_MemoryFlags(info.memoryFlags)
+        : m_Size(info.size), m_MemoryFlags(info.memoryFlags)
     {
-        VkBufferUsageFlags usage{};
-        switch (info.usage)
-        {
-            case FooGame::BufferUsage::VERTEX:
-            {
-                usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            }
-            break;
-            case FooGame::BufferUsage::UNIFORM:
-            {
-                usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-            }
-            break;
-            case FooGame::BufferUsage::INDEX:
-            {
-                usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-            }
-            break;
-            case FooGame::BufferUsage::TRANSFER_SRC:
-            {
-                usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-            }
-            break;
-            case FooGame::BufferUsage::TRANSFER_DST:
-            {
-                usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            }
-            break;
-        }
-        m_Usage = usage;
+        m_Usage = ParseBufferUsage(info.usage);
         Create();
     }
     void Buffer::CopyTo(Buffer& target, VkDeviceSize size)
@@ -140,13 +109,12 @@ namespace FooGame
     }
     Buffer::Buffer(Buffer&& other)
     {
-        this->m_Data             = other.m_Data;
-        this->m_Memory           = other.m_Memory;
-        this->m_Size             = other.m_Size;
-        this->m_MemoryProperties = other.m_MemoryProperties;
-        this->m_MemoryFlags      = other.m_MemoryFlags;
-        this->m_Usage            = other.m_Usage;
-        this->m_Buffer           = other.m_Buffer;
+        this->m_Data        = other.m_Data;
+        this->m_Memory      = other.m_Memory;
+        this->m_Size        = other.m_Size;
+        this->m_MemoryFlags = other.m_MemoryFlags;
+        this->m_Usage       = other.m_Usage;
+        this->m_Buffer      = other.m_Buffer;
     }
 
     void Buffer::CopyToImage(Image& image)
@@ -169,13 +137,6 @@ namespace FooGame
         createInfo.size = size;
         return *this;
     }
-    BufferBuilder& BufferBuilder::SetMemoryProperties(
-        VkPhysicalDeviceMemoryProperties memoryProperties)
-    {
-        createInfo.memoryProperties = memoryProperties;
-
-        return *this;
-    }
     BufferBuilder& BufferBuilder::SetMemoryFlags(VkMemoryPropertyFlags memFlags)
     {
         createInfo.memoryFlags = memFlags;
@@ -190,5 +151,110 @@ namespace FooGame
     {
         Buffer buffer{createInfo};
         return std::move(buffer);
+    }
+
+    Buffer CreateIndexBuffer(const List<u32> indices)
+    {
+        size_t bufferSize = sizeof(indices[0]) * indices.size();
+
+        auto stagingBuffer =
+            BufferBuilder()
+                .SetUsage(BufferUsage::TRANSFER_SRC)
+                .SetInitialSize(bufferSize)
+                .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+                .Build();
+        stagingBuffer.Allocate();
+        stagingBuffer.Bind();
+        stagingBuffer.SetData(bufferSize, (void*)indices.data());
+
+        auto indexBuffer =
+            BufferBuilder()
+                .SetUsage(BufferUsage::TRANSFER_DST_INDEX)
+                .SetInitialSize(bufferSize)
+                .SetMemoryFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+                .Build();
+        indexBuffer.Allocate();
+        indexBuffer.Bind();
+
+        stagingBuffer.CopyTo(indexBuffer, bufferSize);
+        stagingBuffer.Release();
+        return std::move(indexBuffer);
+    }
+
+    Buffer CreateVertexBuffer(const List<Vertex> vertices)
+    {
+        size_t bufferSize = sizeof(vertices[0]) * vertices.size();
+
+        auto stagingBuffer =
+            BufferBuilder()
+                .SetUsage(BufferUsage::TRANSFER_SRC)
+                .SetInitialSize(bufferSize)
+                .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+                .Build();
+        stagingBuffer.Allocate();
+        stagingBuffer.Bind();
+        stagingBuffer.SetData(bufferSize, (void*)vertices.data());
+
+        auto vertexBuffer =
+            BufferBuilder()
+                .SetUsage(BufferUsage::TRANSFER_DST_VERTEX)
+                .SetInitialSize(bufferSize)
+                .SetMemoryFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+                .Build();
+        vertexBuffer.Allocate();
+        vertexBuffer.Bind();
+        stagingBuffer.CopyTo(vertexBuffer, bufferSize);
+        stagingBuffer.Release();
+        return std::move(vertexBuffer);
+    }
+
+    VkBufferUsageFlags ParseBufferUsage(BufferUsage usage)
+    {
+        VkBufferUsageFlags usageFlag{};
+        switch (usage)
+        {
+            case FooGame::BufferUsage::VERTEX:
+            {
+                usageFlag = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            }
+            break;
+            case FooGame::BufferUsage::UNIFORM:
+            {
+                usageFlag = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+            }
+            break;
+            case FooGame::BufferUsage::INDEX:
+            {
+                usageFlag = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+            }
+            break;
+            case FooGame::BufferUsage::TRANSFER_SRC:
+            {
+                usageFlag = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            }
+            break;
+            case FooGame::BufferUsage::TRANSFER_DST:
+            {
+                usageFlag = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            }
+            break;
+
+            case FooGame::BufferUsage::TRANSFER_DST_VERTEX:
+            {
+                usageFlag = VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            }
+            break;
+
+            case FooGame::BufferUsage::TRANSFER_DST_INDEX:
+            {
+                usageFlag = VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                            VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+            }
+            break;
+        }
+        return usageFlag;
     }
 }  // namespace FooGame

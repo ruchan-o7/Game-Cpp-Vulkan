@@ -6,6 +6,7 @@
 #include "../Graphics/Buffer.h"
 #include "../Graphics/Semaphore.h"
 #include "../Graphics/Image.h"
+#include "vulkan/vulkan_core.h"
 
 namespace FooGame
 {
@@ -54,42 +55,18 @@ namespace FooGame
                              m_Api->GetCommandPool(), 1, &commandBuffer);
     }
     static const List<Vertex> vertices = {
-        { {-0.5f, -0.5f, 0.0f},
-         {1.0f, 0.0f, 0.0f, 1.0f},
-         {0.0f, 0.0f},
-         1.0f, 1.0f},
-        {  {0.5f, -0.5f, 0.0f},
-         {0.0f, 1.0f, 0.0f, 1.0f},
-         {1.0f, 0.0f},
-         1.0f, 1.0f},
-        {   {0.5f, 0.5f, 0.0f},
-         {0.0f, 0.0f, 1.0f, 1.0f},
-         {1.0f, 1.0f},
-         1.0f, 1.0f},
-        {  {-0.5f, 0.5f, 0.0f},
-         {1.0f, 1.0f, 1.0f, 1.0f},
-         {0.0f, 1.0f},
-         1.0f, 1.0f},
+        { {-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+        {  {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+        {   {0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+        {  {-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
 
-        {{-0.5f, -0.5f, -0.5f},
-         {1.0f, 0.0f, 0.0f, 1.0f},
-         {0.0f, 0.0f},
-         1.0f, 1.0f},
-        { {0.5f, -0.5f, -0.5f},
-         {0.0f, 1.0f, 0.0f, 1.0f},
-         {1.0f, 0.0f},
-         1.0f, 1.0f},
-        {  {0.5f, 0.5f, -0.5f},
-         {0.0f, 0.0f, 1.0f, 1.0f},
-         {1.0f, 1.0f},
-         1.0f, 1.0f},
-        { {-0.5f, 0.5f, -0.5f},
-         {1.0f, 1.0f, 1.0f, 1.0f},
-         {0.0f, 1.0f},
-         1.0f, 1.0f}
+        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+        { {0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+        {  {0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+        { {-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
     };
 
-    const List<u16> indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
+    const List<u32> indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
     void Engine::Init(GLFWwindow* window)
     {
         m_WindowHandle = window;
@@ -134,37 +111,15 @@ namespace FooGame
         }
 
         {
-            BufferBuilder vBufBuilder{};
-            vBufBuilder.SetUsage(BufferUsage::VERTEX)
-                .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-                .SetMemoryProperties(device->GetMemoryProperties())
-                .SetInitialSize(sizeof(Vertex) * 1000);
-            m_VertexBuffer = CreateShared<Buffer>(vBufBuilder.Build());
-            m_VertexBuffer->Allocate();
-            m_VertexBuffer->SetData(sizeof(Vertex) * vertices.size(),
-                                    (void*)vertices.data());
-            m_VertexBuffer->Bind();
-
-            BufferBuilder iBufBuilder{};
-            iBufBuilder.SetUsage(BufferUsage::INDEX)
-                .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-                .SetMemoryProperties(device->GetMemoryProperties())
-                .SetInitialSize(sizeof(Vertex) * 1000);
-            m_IndexBuffer = CreateShared<Buffer>(iBufBuilder.Build());
-            m_IndexBuffer->Allocate();
-            m_IndexBuffer->Bind();
-            m_IndexBuffer->SetData(sizeof(indices), (void*)indices.data());
-
-            m_UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+            m_VertexBuffer = CreateShared<Buffer>(CreateVertexBuffer(vertices));
+            m_IndexBuffer  = CreateShared<Buffer>(CreateIndexBuffer(indices));
         }
+        m_UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
         for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
             BufferBuilder uBuffBuilder{};
             uBuffBuilder.SetUsage(BufferUsage::UNIFORM)
                 .SetInitialSize(sizeof(UniformBufferObject))
-                .SetMemoryProperties(device->GetMemoryProperties())
                 .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
             m_UniformBuffers[i] = CreateShared<Buffer>(uBuffBuilder.Build());
@@ -317,7 +272,9 @@ namespace FooGame
             m_RenderFinishedSemaphores[i].Destroy(device);
             m_ImageAvailableSemaphores[i].Destroy(device);
         }
-
+        DestroyImage(m_Image);
+        vkDestroySampler(m_Api->GetDevice()->GetDevice(), m_TextureSampler,
+                         nullptr);
         m_Swapchain->Destroy();
 
         if (m_Api)
