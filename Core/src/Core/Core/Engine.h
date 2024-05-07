@@ -12,7 +12,7 @@ namespace FooGame
 {
     struct FrameData
     {
-            u32 imageIndex   = 0;
+            // u32 imageIndex   = 0;
             u32 currentFrame = 0;
     };
     class Engine
@@ -26,7 +26,7 @@ namespace FooGame
             void Shutdown();
             void RunLoop();
             void Close() { m_ShouldClose = true; }
-            void Submit();
+            void Submit(u32 imageIndex);
             VkCommandBuffer BeginSingleTimeCommands();
             void EndSingleTimeCommands(VkCommandBuffer& commandBuffer);
             Device& GetDevice() const;
@@ -55,8 +55,8 @@ namespace FooGame
             void ResetFences();
             void ResetCommandBuffers();
             void RecreateSwapchain();
-            bool AcquireNextImage();
+            bool AcquireNextImage(u32& imageIndex);
             void UpdateUniforms();
-            void Record();
+            void Record(const u32& imageIndex);
     };
 }  // namespace FooGame

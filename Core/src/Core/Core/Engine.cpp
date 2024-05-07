@@ -258,7 +258,8 @@ namespace FooGame
         while (!ShouldClose())
         {
             WaitFences();
-            if (!AcquireNextImage())
+            u32 imageIndex;
+            if (!AcquireNextImage(imageIndex))
             {
                 continue;
             }
@@ -268,9 +269,9 @@ namespace FooGame
 
             ResetCommandBuffers();
 
-            Record();
+            Record(imageIndex);
 
-            Submit();
+            Submit(imageIndex);
         }
         m_Api->WaitIdle();
         Shutdown();
@@ -324,12 +325,11 @@ namespace FooGame
             delete m_Api;
         }
     }
-    bool Engine::AcquireNextImage()
+    bool Engine::AcquireNextImage(u32& imageIndex)
     {
         auto err = m_Swapchain->AcquireNextImage(
             m_Api->GetDevice()->GetDevice(),
-            m_ImageAvailableSemaphores[frameData.imageIndex],
-            &frameData.imageIndex);
+            m_ImageAvailableSemaphores[frameData.currentFrame], &imageIndex);
 
         if (err == VK_ERROR_OUT_OF_DATE_KHR)
         {
@@ -346,7 +346,7 @@ namespace FooGame
     {
         vkResetCommandBuffer(m_CommandBuffers[frameData.currentFrame], 0);
     }
-    void Engine::Record()
+    void Engine::Record(const u32& imageIndex)
     {
         auto cb = m_CommandBuffers[frameData.currentFrame];
         VkCommandBufferBeginInfo beginInfo{};
@@ -355,10 +355,9 @@ namespace FooGame
         VK_CALL(vkBeginCommandBuffer(cb, &beginInfo));
 
         VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType      = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = *m_Api->GetRenderpass();
-        renderPassInfo.framebuffer =
-            m_Swapchain->GetFrameBuffer(frameData.imageIndex);
+        renderPassInfo.sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass  = *m_Api->GetRenderpass();
+        renderPassInfo.framebuffer = m_Swapchain->GetFrameBuffer(imageIndex);
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = m_Swapchain->GetExtent();
 
@@ -405,7 +404,7 @@ namespace FooGame
     {
         m_InFlightFences[frameData.currentFrame].Reset();
     }
-    void Engine::Submit()
+    void Engine::Submit(u32 imageIndex)
     {
         VkSemaphore waitSemaphores[] = {
             m_ImageAvailableSemaphores[frameData.currentFrame].Get()};
@@ -439,7 +438,7 @@ namespace FooGame
         presentInfo.swapchainCount  = 1;
         presentInfo.pSwapchains     = swapChains;
 
-        presentInfo.pImageIndices = &frameData.imageIndex;
+        presentInfo.pImageIndices = &imageIndex;
 
         auto result = vkQueuePresentKHR(m_Api->GetDevice()->GetPresentQueue(),
                                         &presentInfo);
@@ -458,7 +457,7 @@ namespace FooGame
     }
     void Engine::WaitFences()
     {
-        m_InFlightFences[frameData.imageIndex].Wait();
+        m_InFlightFences[frameData.currentFrame].Wait();
     }
     void Engine::RecreateSwapchain()
     {
