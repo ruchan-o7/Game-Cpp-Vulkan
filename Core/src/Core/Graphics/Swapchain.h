@@ -1,10 +1,12 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include "../Graphics/Semaphore.h"
+#include "../Graphics/Image.h"
 #include "Device.h"
 struct GLFWwindow;
 namespace FooGame
 {
+
     struct SwapchainCreateInfo
     {
             Device* device;
@@ -18,6 +20,8 @@ namespace FooGame
     {
         public:
             Swapchain(SwapchainCreateInfo info);
+            Swapchain(const Swapchain& swapchain) = delete;
+            Swapchain(Swapchain&& other)          = delete;
             ~Swapchain();
             void Init();
             void Destroy();
@@ -32,17 +36,18 @@ namespace FooGame
             VkFormat GetImageFormat() const { return m_ImageFormat; };
             u32 GetImageViewCount() const
             {
-                return m_SwapchainImagesViews.size();
+                return m_SwapchainImageViews.size();
             };
-            VkImageView GetImageView(u32 index) const
+            inline VkImageView GetImageView(u32 index) const
             {
-                return m_SwapchainImagesViews[index];
+                return m_SwapchainImageViews[index];
             }
             VkExtent2D GetExtent() const { return m_Extent; }
             void Recreate(VkExtent2D extent);
             VkFramebuffer GetFrameBuffer(u32 imageIndex);
             void CreateFramebuffers();
             void SetRenderpass(VkRenderPass* renderPass);
+            void CreateDepthResources();
 
         private:
             VkSwapchainKHR m_Swapchain;
@@ -52,9 +57,12 @@ namespace FooGame
             VkFormat m_ImageFormat;
             u32 m_ImageCount;
             List<VkImage> m_SwapchainImages;
-            List<VkImageView> m_SwapchainImagesViews;
+            List<VkImageView> m_SwapchainImageViews;
             List<VkFramebuffer> m_SwapchainFrameBuffers;
-            SwapchainCreateInfo m_SwapchainCreateInfo;
+            SwapchainCreateInfo m_Info;
+            Image m_DepthImage;
+
+        private:
     };
     class SwapchainBuilder
     {

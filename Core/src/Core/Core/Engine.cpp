@@ -1,39 +1,99 @@
 #include "Engine.h"
 #include <GLFW/glfw3.h>
-#define GLM_FORCE_RADIANS
-#include "../Backend/VBackend.h"
 #include "../Backend/Vertex.h"
 #include "../Backend/VulkanCheckResult.h"
 #include "../Core/Base.h"
 #include "../Graphics/Buffer.h"
 #include "../Graphics/Semaphore.h"
+#include "../Graphics/Image.h"
 
 namespace FooGame
 {
+    Engine* Engine::s_Instance = nullptr;
+    Engine* Engine::Create(GLFWwindow* window)
+    {
+        s_Instance = new Engine{};
+        s_Instance->Init(window);
+        return s_Instance;
+    }
+    Device& Engine::GetDevice() const
+    {
+        return *m_Api->GetDevice();
+    }
+    VkCommandBuffer Engine::BeginSingleTimeCommands()
+    {
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.level       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandPool = m_Api->GetCommandPool();
+        allocInfo.commandBufferCount = 1;
+
+        VkCommandBuffer commandBuffer{};
+        vkAllocateCommandBuffers(m_Api->GetDevice()->GetDevice(), &allocInfo,
+                                 &commandBuffer);
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        vkBeginCommandBuffer(commandBuffer, &beginInfo);
+        return commandBuffer;
+    }
+    void Engine::EndSingleTimeCommands(VkCommandBuffer& commandBuffer)
+    {
+        vkEndCommandBuffer(commandBuffer);
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers    = &commandBuffer;
+
+        vkQueueSubmit(m_Api->GetDevice()->GetGraphicsQueue(), 1, &submitInfo,
+                      VK_NULL_HANDLE);
+        vkQueueWaitIdle(m_Api->GetDevice()->GetGraphicsQueue());
+
+        vkFreeCommandBuffers(m_Api->GetDevice()->GetDevice(),
+                             m_Api->GetCommandPool(), 1, &commandBuffer);
+    }
     static const List<Vertex> vertices = {
-        {{-0.5f, -0.5f, 0.0f},
+        { {-0.5f, -0.5f, 0.0f},
          {1.0f, 0.0f, 0.0f, 1.0f},
-         {1.0f, 1.0f},
-         0.0f, 1.0f},
-        { {0.5f, -0.5f, 0.0f},
+         {0.0f, 0.0f},
+         1.0f, 1.0f},
+        {  {0.5f, -0.5f, 0.0f},
          {0.0f, 1.0f, 0.0f, 1.0f},
-         {1.0f, 1.0f},
-         0.0f, 1.0f},
-        {  {0.5f, 0.5f, 0.0f},
+         {1.0f, 0.0f},
+         1.0f, 1.0f},
+        {   {0.5f, 0.5f, 0.0f},
          {0.0f, 0.0f, 1.0f, 1.0f},
          {1.0f, 1.0f},
-         0.0f, 1.0f},
-        { {-0.5f, 0.5f, 0.0f},
+         1.0f, 1.0f},
+        {  {-0.5f, 0.5f, 0.0f},
          {1.0f, 1.0f, 1.0f, 1.0f},
+         {0.0f, 1.0f},
+         1.0f, 1.0f},
+
+        {{-0.5f, -0.5f, -0.5f},
+         {1.0f, 0.0f, 0.0f, 1.0f},
+         {0.0f, 0.0f},
+         1.0f, 1.0f},
+        { {0.5f, -0.5f, -0.5f},
+         {0.0f, 1.0f, 0.0f, 1.0f},
+         {1.0f, 0.0f},
+         1.0f, 1.0f},
+        {  {0.5f, 0.5f, -0.5f},
+         {0.0f, 0.0f, 1.0f, 1.0f},
          {1.0f, 1.0f},
-         0.0f, 1.0f}
+         1.0f, 1.0f},
+        { {-0.5f, 0.5f, -0.5f},
+         {1.0f, 1.0f, 1.0f, 1.0f},
+         {0.0f, 1.0f},
+         1.0f, 1.0f}
     };
-    static const List<u32> indices = {0, 1, 2, 2, 3, 0};
+
+    const List<u16> indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
     void Engine::Init(GLFWwindow* window)
     {
         m_WindowHandle = window;
-        m_Api          = new Api;
-        m_Api->Init(m_WindowHandle);
+        m_Api          = Api::Create(window);
         int w, h;
         glfwGetFramebufferSize(m_WindowHandle, &w, &h);
         auto device  = m_Api->GetDevice();
@@ -46,32 +106,54 @@ namespace FooGame
 
         m_Api->CreateRenderpass(m_Swapchain->GetImageFormat());
         m_Swapchain->SetRenderpass(m_Api->GetRenderpass());
-        m_Swapchain->CreateFramebuffers();
-        m_Api->SetupDesciptorLayout();
+        m_Api->SetupDesciptorSetLayout();
         m_Api->CreateGraphicsPipeline();
         m_Api->CreateCommandPool();
+        m_Swapchain->CreateFramebuffers();
+        LoadTexture(m_Image, "../../../textures/texture.jpg");
+        // texture sampler
+        {
+            auto props = device->GetPhysicalDeviceProperties();
+            VkSamplerCreateInfo samplerInfo{};
+            samplerInfo.sType        = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+            samplerInfo.magFilter    = VK_FILTER_LINEAR;
+            samplerInfo.minFilter    = VK_FILTER_LINEAR;
+            samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            samplerInfo.anisotropyEnable = VK_TRUE;
+            samplerInfo.maxAnisotropy    = props.limits.maxSamplerAnisotropy;
+            samplerInfo.borderColor      = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+            samplerInfo.unnormalizedCoordinates = VK_FALSE;
+            samplerInfo.compareEnable           = VK_FALSE;
+            samplerInfo.compareOp               = VK_COMPARE_OP_ALWAYS;
+            samplerInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+
+            VK_CALL(vkCreateSampler(device->GetDevice(), &samplerInfo, nullptr,
+                                    &m_TextureSampler));
+        }
 
         {
-            BufferBuilder vBufBuilder{device->GetDevice()};
+            BufferBuilder vBufBuilder{};
             vBufBuilder.SetUsage(BufferUsage::VERTEX)
                 .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
                 .SetMemoryProperties(device->GetMemoryProperties())
                 .SetInitialSize(sizeof(Vertex) * 1000);
-            m_VertexBuffer =
-                CreateShared<Buffer>(std::move(vBufBuilder.Build()));
+            m_VertexBuffer = CreateShared<Buffer>(vBufBuilder.Build());
+            m_VertexBuffer->Allocate();
             m_VertexBuffer->SetData(sizeof(Vertex) * vertices.size(),
                                     (void*)vertices.data());
             m_VertexBuffer->Bind();
 
-            BufferBuilder iBufBuilder{device->GetDevice()};
+            BufferBuilder iBufBuilder{};
             iBufBuilder.SetUsage(BufferUsage::INDEX)
                 .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
                 .SetMemoryProperties(device->GetMemoryProperties())
                 .SetInitialSize(sizeof(Vertex) * 1000);
-            m_IndexBuffer =
-                CreateShared<Buffer>(std::move(iBufBuilder.Build()));
+            m_IndexBuffer = CreateShared<Buffer>(iBufBuilder.Build());
+            m_IndexBuffer->Allocate();
             m_IndexBuffer->Bind();
             m_IndexBuffer->SetData(sizeof(indices), (void*)indices.data());
 
@@ -79,17 +161,18 @@ namespace FooGame
         }
         for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
-            BufferBuilder uBuffBuilder{device->GetDevice()};
+            BufferBuilder uBuffBuilder{};
             uBuffBuilder.SetUsage(BufferUsage::UNIFORM)
                 .SetInitialSize(sizeof(UniformBufferObject))
                 .SetMemoryProperties(device->GetMemoryProperties())
                 .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
             m_UniformBuffers[i] = CreateShared<Buffer>(uBuffBuilder.Build());
+            m_UniformBuffers[i]->Allocate();
             m_UniformBuffers[i]->Bind();
         }
-
         m_Api->CreateDescriptorPool();
+        // descriptor sets
         {
             List<VkDescriptorSetLayout> layouts(
                 MAX_FRAMES_IN_FLIGHT, m_Api->GetDescriptorSetLayout());
@@ -110,19 +193,35 @@ namespace FooGame
             bufferInfo.buffer = *m_UniformBuffers[i]->GetBuffer();
             bufferInfo.offset = 0;
             bufferInfo.range  = sizeof(UniformBufferObject);
+            VkDescriptorImageInfo imageInfo{};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView   = m_Image.ImageView;
+            imageInfo.sampler     = m_TextureSampler;
 
-            VkWriteDescriptorSet descriptorWrite{};
-            descriptorWrite.sType      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrite.dstSet     = m_DescriptorSets[i];
-            descriptorWrite.dstBinding = 0;
-            descriptorWrite.dstArrayElement = 0;
-            descriptorWrite.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrite.descriptorCount = 1;
-            descriptorWrite.pBufferInfo     = &bufferInfo;
+            VkWriteDescriptorSet descriptorWrites[2] = {};
+            descriptorWrites[0].sType  = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[0].dstSet = m_DescriptorSets[i];
+            descriptorWrites[0].dstBinding      = 0;
+            descriptorWrites[0].dstArrayElement = 0;
+            descriptorWrites[0].descriptorType =
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[0].descriptorCount = 1;
+            descriptorWrites[0].pBufferInfo     = &bufferInfo;
 
-            vkUpdateDescriptorSets(device->GetDevice(), 1, &descriptorWrite, 0,
-                                   nullptr);
+            descriptorWrites[1].sType  = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[1].dstSet = m_DescriptorSets[i];
+            descriptorWrites[1].dstBinding      = 1;
+            descriptorWrites[1].dstArrayElement = 0;
+            descriptorWrites[1].descriptorType =
+                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[1].descriptorCount = 1;
+            descriptorWrites[1].pImageInfo      = &imageInfo;
+
+            vkUpdateDescriptorSets(device->GetDevice(),
+                                   ARRAY_COUNT(descriptorWrites),
+                                   descriptorWrites, 0, nullptr);
         }
+
         {
             m_CommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
             VkCommandBufferAllocateInfo allocInfo{};
@@ -133,6 +232,8 @@ namespace FooGame
             VK_CALL(vkAllocateCommandBuffers(device->GetDevice(), &allocInfo,
                                              m_CommandBuffers.data()));
         }
+        // Syncs TODO: Remove or change move and copy constructors of sync
+        // objects
         {
             m_ImageAvailableSemaphores.clear();
             m_RenderFinishedSemaphores.clear();
@@ -195,20 +296,22 @@ namespace FooGame
         //                      (float)m_Swapchain->GetExtent().width /
         //                          m_Swapchain->GetExtent().height,
         //                      0.1f, 1000.0f);
+        float aspect = (float)m_Swapchain->GetExtent().width /
+                       (float)m_Swapchain->GetExtent().height;
         ubd.Model             = glm::mat4{1.0f};
-        ubd.View              = glm::mat4(1);
-        ubd.Projection        = glm::mat4(1);
+        ubd.View              = glm::mat4(1.0f);
+        ubd.Projection        = glm::mat4(1.0f);
         ubd.Projection[1][1] *= -1;
-        m_UniformBuffers[frameData.imageIndex]->SetData(sizeof(ubd), &ubd);
+        m_UniformBuffers[frameData.currentFrame]->SetData(sizeof(ubd), &ubd);
     }
     void Engine::Shutdown()
     {
         auto device = m_Api->GetDevice()->GetDevice();
-        m_VertexBuffer->Release(device);
-        m_IndexBuffer->Release(device);
+        m_VertexBuffer->Release();
+        m_IndexBuffer->Release();
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
-            m_UniformBuffers[i]->Release(device);
+            m_UniformBuffers[i]->Release();
             m_InFlightFences[i].Destroy(device);
             m_RenderFinishedSemaphores[i].Destroy(device);
             m_ImageAvailableSemaphores[i].Destroy(device);
@@ -241,11 +344,11 @@ namespace FooGame
     }
     void Engine::ResetCommandBuffers()
     {
-        vkResetCommandBuffer(m_CommandBuffers[frameData.imageIndex], 0);
+        vkResetCommandBuffer(m_CommandBuffers[frameData.currentFrame], 0);
     }
     void Engine::Record()
     {
-        auto cb = m_CommandBuffers[frameData.imageIndex];
+        auto cb = m_CommandBuffers[frameData.currentFrame];
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -259,11 +362,11 @@ namespace FooGame
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = m_Swapchain->GetExtent();
 
-        VkClearValue clearColor = {
-            {0.2f, 0.3f, 0.1f, 1.0f}
-        };
-        renderPassInfo.clearValueCount = 1;
-        renderPassInfo.pClearValues    = &clearColor;
+        VkClearValue clearColor[2]     = {};
+        clearColor[0]                  = {0.2f, 0.3f, 0.1f, 1.0f};
+        clearColor[1]                  = {1.0f, 0};
+        renderPassInfo.clearValueCount = ARRAY_COUNT(clearColor);
+        renderPassInfo.pClearValues    = clearColor;
 
         vkCmdBeginRenderPass(cb, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         {
@@ -291,8 +394,8 @@ namespace FooGame
                                  VK_INDEX_TYPE_UINT32);
             vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                     m_Api->GetPipeline().pipelineLayout, 0, 1,
-                                    &m_DescriptorSets[frameData.imageIndex], 0,
-                                    nullptr);
+                                    &m_DescriptorSets[frameData.currentFrame],
+                                    0, nullptr);
             vkCmdDrawIndexed(cb, indices.size(), 1, 0, 0, 0);
         }
         vkCmdEndRenderPass(cb);
@@ -300,12 +403,12 @@ namespace FooGame
     }
     void Engine::ResetFences()
     {
-        m_InFlightFences[frameData.imageIndex].Reset();
+        m_InFlightFences[frameData.currentFrame].Reset();
     }
     void Engine::Submit()
     {
         VkSemaphore waitSemaphores[] = {
-            m_ImageAvailableSemaphores[frameData.imageIndex].Get()};
+            m_ImageAvailableSemaphores[frameData.currentFrame].Get()};
         VkPipelineStageFlags waitStages[] = {
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         VkSubmitInfo submitInfo{};
@@ -315,16 +418,16 @@ namespace FooGame
         submitInfo.pWaitDstStageMask  = waitStages;
 
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers    = &m_CommandBuffers[frameData.imageIndex];
+        submitInfo.pCommandBuffers = &m_CommandBuffers[frameData.currentFrame];
 
         VkSemaphore signalSemaphores[] = {
-            m_RenderFinishedSemaphores[frameData.imageIndex].Get()};
+            m_RenderFinishedSemaphores[frameData.currentFrame].Get()};
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores    = signalSemaphores;
 
         VK_CALL(vkQueueSubmit(m_Api->GetDevice()->GetGraphicsQueue(), 1,
                               &submitInfo,
-                              m_InFlightFences[frameData.imageIndex].Get()));
+                              m_InFlightFences[frameData.currentFrame].Get()));
 
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -350,8 +453,8 @@ namespace FooGame
             throw std::runtime_error("failed to present swap chain image!");
         }
 
-        frameData.imageIndex =
-            (frameData.imageIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+        frameData.currentFrame =
+            (frameData.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
     void Engine::WaitFences()
     {
@@ -361,6 +464,12 @@ namespace FooGame
     {
         int w, h;
         glfwGetFramebufferSize(m_WindowHandle, &w, &h);
+        while (w == 0 || h == 0)
+        {
+            glfwGetFramebufferSize(m_WindowHandle, &w, &h);
+            glfwWaitEvents();
+        }
+        m_Api->WaitIdle();
         m_Swapchain->Recreate(
             {static_cast<uint32_t>(w), static_cast<uint32_t>(h)});
     }

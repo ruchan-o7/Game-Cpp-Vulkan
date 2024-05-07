@@ -3,6 +3,7 @@
 #include "../Core/Base.h"
 #include "../Graphics/Swapchain.h"
 #include "Device.h"
+#include "GLFW/glfw3.h"
 struct GLFWwindow;
 namespace FooGame
 {
@@ -23,10 +24,12 @@ namespace FooGame
         public:
             Api() = default;
             ~Api();
+            static Api* Create(GLFWwindow* window);
+            static Api* Get();
             void Init(GLFWwindow* window);
             VkSurfaceKHR GetSurface() const { return m_Surface; }
             void CreateRenderpass(VkFormat colorAttachmentFormat);
-            void SetupDesciptorLayout();
+            void SetupDesciptorSetLayout();
             void CreateGraphicsPipeline();
             void CreateCommandPool();
             void CreateDescriptorPool();
@@ -46,6 +49,7 @@ namespace FooGame
             }
 
         private:
+            static Api* s_Instance;
             VkInstance m_Instance;
             VkDebugUtilsMessengerEXT debugMessenger;
             Shared<Device> m_Device;

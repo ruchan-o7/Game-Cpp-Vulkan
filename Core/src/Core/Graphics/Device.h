@@ -1,6 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include "../Core/Base.h"
+#include "vulkan/vulkan_core.h"
 namespace FooGame
 {
     struct DeviceCreateInfo
@@ -26,10 +27,17 @@ namespace FooGame
                 return m_PhysicalDevice;
             }
             VkDevice GetDevice() const { return m_Device; }
+            VkPhysicalDeviceProperties GetPhysicalDeviceProperties();
             VkSurfaceCapabilitiesKHR GetSurfaceCaps(VkSurfaceKHR surface);
             List<VkSurfaceFormatKHR> GetSurfaceFormats(VkSurfaceKHR surface);
             List<VkPresentModeKHR> GetSurfacePresentModes(VkSurfaceKHR surface);
             VkPhysicalDeviceMemoryProperties GetMemoryProperties();
+            VkMemoryRequirements GetMemoryRequirements(VkImage& image);
+            VkMemoryRequirements GetMemoryRequirements(VkBuffer& buffer);
+            void AllocateMemory(VkMemoryAllocateInfo& allocInfo,
+                                VkDeviceMemory& memory);
+
+            u32 FindMemoryType(u32 filter, VkMemoryPropertyFlags properties);
             void WaitIdle();
 
         private:

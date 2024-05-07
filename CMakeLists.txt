@@ -8,9 +8,6 @@ project(Game
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-add_subdirectory(Core)
-
-add_subdirectory(Game)
 
 option(GLFW_BUILD_EXAMPLES OFF)
 option(GLFW_BUILD_TESTS OFF)
@@ -27,3 +24,7 @@ set_property(TARGET "glm" PROPERTY FOLDER "Dependencies")
 
 set(GLFW_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/glfw/include")
 set(GLM_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/glm/include")
+set(STB_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/stbi")
+add_subdirectory(Core)
+
+add_subdirectory(Game)

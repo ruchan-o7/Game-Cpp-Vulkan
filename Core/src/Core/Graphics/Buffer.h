@@ -2,6 +2,8 @@
 #include <vulkan/vulkan.h>
 #include "../Core/Base.h"
 #include "Core/Graphics/Device.h"
+#include "Core/Graphics/Image.h"
+#include "vulkan/vulkan_core.h"
 namespace FooGame
 {
     enum class BufferUsage
@@ -9,10 +11,11 @@ namespace FooGame
         VERTEX,
         INDEX,
         UNIFORM,
+        TRANSFER_SRC,
+        TRANSFER_DST,
     };
     struct BufferCreateInfo
     {
-            VkDevice device;
             size_t size;
             VkPhysicalDeviceMemoryProperties memoryProperties;
             VkMemoryPropertyFlags memoryFlags;
@@ -22,12 +25,16 @@ namespace FooGame
     {
         public:
             Buffer(BufferCreateInfo info);
+            Buffer(const Buffer& other) = delete;
+            Buffer(Buffer&& other);
             ~Buffer() = default;
-            void Release(VkDevice device);
+            void Release();
             void Allocate();
             void Bind();
             void SetData(size_t size, void* data);
             VkBuffer* GetBuffer() { return &m_Buffer; }
+            void CopyTo(Buffer& target, VkDeviceSize size);
+            void CopyToImage(Image& image);
 
         private:
             void Create();
@@ -40,12 +47,11 @@ namespace FooGame
             VkPhysicalDeviceMemoryProperties m_MemoryProperties;
             VkMemoryPropertyFlags m_MemoryFlags;
             VkBufferUsageFlags m_Usage;
-            VkDevice m_Device;
     };
     class BufferBuilder
     {
         public:
-            BufferBuilder(VkDevice device);
+            BufferBuilder()  = default;
             ~BufferBuilder() = default;
             BufferBuilder& SetInitialSize(size_t size);
             BufferBuilder& SetMemoryProperties(

@@ -34,6 +34,7 @@ set(CORE_SOURCES
 	"src/Core/Graphics/Semaphore.cpp"
 	"src/Core/Graphics/Shader.cpp"
 	"src/Core/Graphics/Swapchain.cpp"
+	"src/Core/Graphics/stb_image.cpp"
 )
 
 add_library("${PROJECT_NAME}" "${CORE_SOURCES}")
@@ -43,6 +44,7 @@ target_include_directories("${PROJECT_NAME}" PRIVATE
 	"${GLFW_INCLUDE_DIR}"
 	"${GLM_INCLUDE_DIR}"
 	"${VK_BOOTSTRAP_INCLUDE_DIR}"
+	"${STB_INCLUDE_DIR}"
 	"src"
 )
 

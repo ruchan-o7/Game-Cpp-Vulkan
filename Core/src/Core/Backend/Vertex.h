@@ -1,5 +1,6 @@
 #pragma once
-#include "pch.h"
+#include "../Core/Base.h"
+#include "vulkan/vulkan_core.h"
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 namespace FooGame

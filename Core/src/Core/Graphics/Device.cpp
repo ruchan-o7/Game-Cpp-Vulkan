@@ -2,9 +2,9 @@
 #include <vulkan/vulkan.h>
 #include "pch.h"
 #include <xerrc.h>
-#include <stdexcept>
 #include "../Backend/VulkanCheckResult.h"
 #include "../Core/Base.h"
+#include "vulkan/vulkan_core.h"
 namespace FooGame
 {
 
@@ -13,6 +13,51 @@ namespace FooGame
         VkPhysicalDeviceMemoryProperties memProperties;
         vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &memProperties);
         return memProperties;
+    }
+    VkMemoryRequirements Device::GetMemoryRequirements(VkImage& image)
+    {
+        VkMemoryRequirements memRequirements;
+        vkGetImageMemoryRequirements(m_Device, image, &memRequirements);
+        return memRequirements;
+    }
+
+    VkMemoryRequirements Device::GetMemoryRequirements(VkBuffer& buffer)
+    {
+        VkMemoryRequirements memRequirements;
+        vkGetBufferMemoryRequirements(m_Device, buffer, &memRequirements);
+        return memRequirements;
+    }
+    VkPhysicalDeviceProperties Device::GetPhysicalDeviceProperties()
+    {
+        static VkPhysicalDeviceProperties properties{};
+        if (properties.deviceID == 0)
+        {
+            vkGetPhysicalDeviceProperties(m_PhysicalDevice, &properties);
+        }
+        return properties;
+    }
+
+    void Device::AllocateMemory(VkMemoryAllocateInfo& allocInfo,
+                                VkDeviceMemory& memory)
+    {
+        VK_CALL(vkAllocateMemory(m_Device, &allocInfo, nullptr, &memory));
+    }
+
+    u32 Device::FindMemoryType(u32 filter, VkMemoryPropertyFlags properties)
+    {
+        VkPhysicalDeviceMemoryProperties memProperties;
+        vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &memProperties);
+
+        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+        {
+            if ((filter & (1 << i)) &&
+                (memProperties.memoryTypes[i].propertyFlags & properties) ==
+                    properties)
+            {
+                return i;
+            }
+        }
+        return 0;
     }
     void Device::WaitIdle()
     {
@@ -65,6 +110,7 @@ namespace FooGame
             queueCreateInfo.pQueuePriorities = &priorities;
 
             VkPhysicalDeviceFeatures deviceFeatures{};
+            deviceFeatures.samplerAnisotropy = VK_TRUE;
 
             VkDeviceCreateInfo createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

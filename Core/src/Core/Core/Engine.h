@@ -6,23 +6,30 @@
 #include "../Graphics/Buffer.h"
 #include "../Graphics/Semaphore.h"
 #include "../Graphics/Swapchain.h"
+#include "vulkan/vulkan_core.h"
 struct GLFWwindow;
 namespace FooGame
 {
     struct FrameData
     {
-            u32 imageIndex = 0;
+            u32 imageIndex   = 0;
+            u32 currentFrame = 0;
     };
     class Engine
     {
         public:
             Engine() = default;
             ~Engine();
+            static Engine* Create(GLFWwindow* window);
+            static Engine* Get() { return s_Instance; }
             void Init(GLFWwindow* window);
             void Shutdown();
             void RunLoop();
             void Close() { m_ShouldClose = true; }
             void Submit();
+            VkCommandBuffer BeginSingleTimeCommands();
+            void EndSingleTimeCommands(VkCommandBuffer& commandBuffer);
+            Device& GetDevice() const;
 
         private:
             bool m_ShouldClose;
@@ -38,8 +45,11 @@ namespace FooGame
             List<Semaphore> m_ImageAvailableSemaphores;
             List<Semaphore> m_RenderFinishedSemaphores;
             FrameData frameData;
+            Image m_Image;
+            VkSampler m_TextureSampler;
 
         private:
+            static Engine* s_Instance;
             bool ShouldClose() const { return m_ShouldClose; }
             void WaitFences();
             void ResetFences();

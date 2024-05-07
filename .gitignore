@@ -6,6 +6,7 @@ build/*
 .cache/*
 .idea/
 .vscode/
+
 # Files
 imgui.ini
 *.vcxproj

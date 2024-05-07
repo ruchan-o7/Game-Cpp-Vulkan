@@ -1,5 +1,6 @@
 #include "Buffer.h"
 #include <vulkan/vulkan_core.h>
+#include "../Core/Engine.h"
 #include "pch.h"
 #include "../Backend/VulkanCheckResult.h"
 namespace FooGame
@@ -23,27 +24,31 @@ namespace FooGame
         return ~0u;
     }
 
-    void Buffer::Release(VkDevice device)
+    void Buffer::Release()
     {
+        auto device = Engine::Get()->GetDevice().GetDevice();
         (vkDestroyBuffer(device, m_Buffer, nullptr));
         (vkFreeMemory(device, m_Memory, nullptr));
     }
     void Buffer::Create()
     {
+        auto device                   = Engine::Get()->GetDevice().GetDevice();
         VkBufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
         createInfo.size               = m_Size;
         createInfo.usage              = m_Usage;
         createInfo.sharingMode        = VK_SHARING_MODE_EXCLUSIVE;
 
-        VK_CALL(vkCreateBuffer(m_Device, &createInfo, 0, &m_Buffer));
+        VK_CALL(vkCreateBuffer(device, &createInfo, 0, &m_Buffer));
         void* data;
-        Allocate();
+        // Allocate();
     }
     void Buffer::Allocate()
     {
-        VkMemoryRequirements memoryRequirements;
-        vkGetBufferMemoryRequirements(m_Device, m_Buffer, &memoryRequirements);
-        uint32_t memoryTypeIndex =
+        assert(m_Size != 0 && "Buffer size must be larger than 0");
+        auto device             = Engine::Get()->GetDevice();
+        auto dev                = device.GetDevice();
+        auto memoryRequirements = device.GetMemoryRequirements(m_Buffer);
+        u32 memoryTypeIndex =
             SelectMemoryType(m_MemoryProperties,
                              memoryRequirements.memoryTypeBits, m_MemoryFlags);
         assert(memoryTypeIndex != ~0u);
@@ -61,34 +66,37 @@ namespace FooGame
             flagInfo.deviceMask = 1;
         }
 
-        VK_CALL(vkAllocateMemory(m_Device, &allocateInfo, 0, &m_Memory));
+        VK_CALL(
+            vkAllocateMemory(device.GetDevice(), &allocateInfo, 0, &m_Memory));
         if (m_MemoryFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
         {
-            VK_CALL(vkMapMemory(m_Device, m_Memory, 0, m_Size, 0, &m_Data));
+            VK_CALL(vkMapMemory(device.GetDevice(), m_Memory, 0, m_Size, 0,
+                                &m_Data));
         }
     }
     void Buffer::Bind()
     {
-        VK_CALL(vkBindBufferMemory(m_Device, m_Buffer, m_Memory, 0));
+        auto device = Engine::Get()->GetDevice().GetDevice();
+        VK_CALL(vkBindBufferMemory(device, m_Buffer, m_Memory, 0));
     }
     void Buffer::SetData(size_t size, void* data)
     {
+        auto device = Engine::Get()->GetDevice().GetDevice();
         if (m_MemoryFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
         {
             std::memcpy(m_Data, data, size);
         }
         else
         {
-            vkMapMemory(m_Device, m_Memory, 0, size, 0, &m_Data);
+            vkMapMemory(device, m_Memory, 0, size, 0, &m_Data);
             std::memcpy(m_Data, data, size);
-            vkUnmapMemory(m_Device, m_Memory);
+            vkUnmapMemory(device, m_Memory);
         }
     }
     Buffer::Buffer(BufferCreateInfo info)
         : m_Size(info.size),
           m_MemoryProperties(info.memoryProperties),
-          m_MemoryFlags(info.memoryFlags),
-          m_Device(info.device)
+          m_MemoryFlags(info.memoryFlags)
     {
         VkBufferUsageFlags usage{};
         switch (info.usage)
@@ -108,14 +116,52 @@ namespace FooGame
                 usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
             }
             break;
+            case FooGame::BufferUsage::TRANSFER_SRC:
+            {
+                usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            }
+            break;
+            case FooGame::BufferUsage::TRANSFER_DST:
+            {
+                usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            }
+            break;
         }
         m_Usage = usage;
         Create();
     }
-    BufferBuilder::BufferBuilder(VkDevice device)
-        : m_Device(device), createInfo({})
+    void Buffer::CopyTo(Buffer& target, VkDeviceSize size)
     {
-        createInfo.device = device;
+        auto cmd = Engine::Get()->BeginSingleTimeCommands();
+        VkBufferCopy copyRegion{};
+        copyRegion.size = size;
+        vkCmdCopyBuffer(cmd, m_Buffer, *target.GetBuffer(), 1, &copyRegion);
+        Engine::Get()->EndSingleTimeCommands(cmd);
+    }
+    Buffer::Buffer(Buffer&& other)
+    {
+        this->m_Data             = other.m_Data;
+        this->m_Memory           = other.m_Memory;
+        this->m_Size             = other.m_Size;
+        this->m_MemoryProperties = other.m_MemoryProperties;
+        this->m_MemoryFlags      = other.m_MemoryFlags;
+        this->m_Usage            = other.m_Usage;
+        this->m_Buffer           = other.m_Buffer;
+    }
+
+    void Buffer::CopyToImage(Image& image)
+
+    {
+        auto cmd = Engine::Get()->BeginSingleTimeCommands();
+        VkBufferImageCopy region{};
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.imageSubresource.mipLevel   = 0;
+        region.imageSubresource.layerCount = 1;
+        region.imageExtent                 = {image.width, image.height, 1};
+        vkCmdCopyBufferToImage(cmd, m_Buffer, image.Image,
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+                               &region);
+        Engine::Get()->EndSingleTimeCommands(cmd);
     }
 
     BufferBuilder& BufferBuilder::SetInitialSize(size_t size)
@@ -143,6 +189,6 @@ namespace FooGame
     Buffer BufferBuilder::Build()
     {
         Buffer buffer{createInfo};
-        return buffer;
+        return std::move(buffer);
     }
 }  // namespace FooGame

@@ -1,6 +1,7 @@
 #include "Game.h"
 #include <pch.h>
 #include "Core/Core/Base.h"
+#include "Core/Core/Engine.h"
 #include "Core/Events/ApplicationEvent.h"
 #include "Core/Events/Event.h"
 #include "Core/Input/KeyCodes.h"
@@ -26,15 +27,15 @@ namespace FooGame
         m_RenderThread = std::thread(
             [&]()
             {
-                m_Engine.Init(m_Window->GetWindowHandle());
-                m_Engine.RunLoop();
+                m_Engine = Engine::Create(m_Window->GetWindowHandle());
+                m_Engine->RunLoop();
             });
         while (!m_Window->ShouldClose())
         {
             m_Window->PollEvents();
         }
         std::cout << "Render Engine Closing" << std::endl;
-        m_Engine.Close();
+        m_Engine->Close();
         std::cout << "Render Engine Closed !" << std::endl;
         m_RenderThread.join();
         std::cout << "Application closing" << std::endl;

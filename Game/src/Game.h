@@ -16,7 +16,7 @@ namespace FooGame
 
         private:
             WindowsWindow* m_Window;
-            Engine m_Engine;
+            Engine* m_Engine;
             std::thread m_RenderThread;
 
         private:

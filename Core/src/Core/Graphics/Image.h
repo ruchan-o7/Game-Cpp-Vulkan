@@ -1,23 +1,28 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include "../Graphics/Device.h"
+#include "../Core/Base.h"
 namespace FooGame
 {
-    class Image
+    struct Image
     {
-        public:
-            Image() = default;
-
-        private:
-            VkImage m_Image;
+            VkImage Image;
+            VkImageView ImageView;
+            VkDeviceMemory ImageMemory;
+            u32 width, height;
     };
-    class ImageView
-    {
-        public:
-            ImageView(Device* device, VkImage image, VkFormat format);
+    void CreateImageView(Image& image, VkFormat format,
+                         VkImageAspectFlags aspectFlags);
 
-        private:
-            VkImage m_Image;
-            VkImageView m_ImageView;
-    };
+    void CreateImageView(VkImage& image, VkImageView& imageView,
+                         VkFormat format, VkImageAspectFlags aspectFlags);
+    void CreateImage(Image& image, VkExtent2D extent, VkFormat format,
+                     VkImageTiling tiling, VkImageUsageFlags usage,
+                     VkMemoryPropertyFlags properties);
+    void DestroyImage(Image& image);
+    void DestroyImage(VkImage& image);
+    void DestroyImage(VkImage& image, VkDeviceMemory& imageMem);
+    void LoadTexture(Image& image, const std::string& path);
+    void TransitionImageLayout(Image& image, VkFormat format,
+                               VkImageLayout oldLayout,
+                               VkImageLayout newLayout);
 }  // namespace FooGame
