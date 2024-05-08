@@ -24,6 +24,10 @@ namespace FooGame
         glfwGetFramebufferSize(m_WindowHandle, &w, &h);
         return {w, h};
     }
+    void WindowsWindow::SetWindowTitle(const char* title)
+    {
+        glfwSetWindowTitle(m_WindowHandle, title);
+    }
     void WindowsWindow::Init()
     {
         if (!glfwInit())

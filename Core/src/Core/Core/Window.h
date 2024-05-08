@@ -34,6 +34,7 @@ namespace FooGame
             }
             EventCallback OnEventCallback;
             void PollEvents();
+            void SetWindowTitle(const char* title);
             bool ShouldClose();
             Vector2 GetWindowSize();
             inline void WaitEvent() { glfwWaitEvents(); }

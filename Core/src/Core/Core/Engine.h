@@ -7,6 +7,7 @@
 #include "../Graphics/Semaphore.h"
 #include "../Graphics/Swapchain.h"
 #include "Core/Events/ApplicationEvent.h"
+#include "Core/Graphics/Camera.h"
 #include "vulkan/vulkan_core.h"
 struct GLFWwindow;
 namespace FooGame
@@ -39,7 +40,7 @@ namespace FooGame
             void Init(GLFWwindow* window);
             void Start();
             void End();
-            void BeginScene(/*Camera*/);
+            void BeginScene(const Camera& camera);
             void EndScene();
             void Flush();
             void Shutdown();
@@ -92,7 +93,7 @@ namespace FooGame
             void ResetCommandBuffers();
             void RecreateSwapchain();
             bool AcquireNextImage(u32& imageIndex);
-            void UpdateUniforms();
+            void UpdateUniforms(const Camera& camera);
             // void Record();
             void NextBatch();
             void StartBatch();
