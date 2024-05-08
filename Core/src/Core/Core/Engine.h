@@ -13,10 +13,19 @@ namespace FooGame
 {
     struct FrameData
     {
-            // u32 imageIndex   = 0;
-            u32 currentFrame = 0;
-            i32 fbWidth      = 0;
-            i32 fbHeight     = 0;
+            u32 imageIndex               = 0;
+            u32 currentFrame             = 0;
+            i32 fbWidth                  = 0;
+            i32 fbHeight                 = 0;
+            static const u32 MaxQuads    = 20000;
+            static const u32 MaxVertices = MaxQuads * 4;
+            static const u32 MaxIndices  = MaxQuads * 6;
+            Vertex* QuadVertexBufferBase = nullptr;
+            Vertex* QuadVertexBufferPtr  = nullptr;
+            glm::vec4 QuadVertexPositions[4];
+            u32 QuadIndexCount = 0;
+            u32 QuadCount      = 0;
+            u32 DrawCall       = 0;
     };
     class Engine
     {
@@ -28,19 +37,30 @@ namespace FooGame
             static Engine* Create(GLFWwindow* window);
             static Engine* Get() { return s_Instance; }
             void Init(GLFWwindow* window);
+            void Start();
+            void End();
+            void BeginScene(/*Camera*/);
+            void EndScene();
+            void Flush();
             void Shutdown();
-            void RunLoop();
             void Close();
-            void Submit(u32 imageIndex);
             VkCommandBuffer BeginSingleTimeCommands();
             void EndSingleTimeCommands(VkCommandBuffer& commandBuffer);
             Device& GetDevice() const;
-            void PauseRender() { m_ShouldContinue = false; }
-            void ContinueRender() { m_ShouldContinue = true; }
 
             bool OnWindowResized(WindowResizeEvent& event);
 
+        public:
+            // Primitives
+            void DrawQuad(const glm::vec2& position, const glm::vec2& size,
+                          const glm::vec4& color);
+            void DrawQuad(const glm::vec3& position, const glm::vec2& size,
+                          const glm::vec4& color);
+
+            void DrawQuad(const glm::mat4& transform, const glm::vec4& color);
+
         private:
+            void Submit();
             bool m_ShouldClose;
             GLFWwindow* m_WindowHandle;
             Api* m_Api;
@@ -57,18 +77,19 @@ namespace FooGame
             Image m_Image;
             VkSampler m_TextureSampler;
             bool m_FramebufferResized = false;
-            bool m_ShouldContinue     = true;
 
         private:
             static Engine* s_Instance;
             bool ShouldClose() const { return m_ShouldClose; }
-            bool ShouldContinue() const { return m_ShouldContinue; }
             void WaitFences();
             void ResetFences();
             void ResetCommandBuffers();
             void RecreateSwapchain();
             bool AcquireNextImage(u32& imageIndex);
             void UpdateUniforms();
-            void Record(const u32& imageIndex);
+            // void Record();
+            void NextBatch();
+            void StartBatch();
+            void BeginDrawing();
     };
 }  // namespace FooGame

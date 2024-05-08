@@ -1,12 +1,12 @@
 #include "Engine.h"
 #include <GLFW/glfw3.h>
+#include <cstdint>
 #include "../Backend/Vertex.h"
 #include "../Backend/VulkanCheckResult.h"
 #include "../Core/Base.h"
 #include "../Graphics/Buffer.h"
 #include "../Graphics/Semaphore.h"
 #include "../Graphics/Image.h"
-#include "Core/Core/Window.h"
 
 namespace FooGame
 {
@@ -44,14 +44,6 @@ namespace FooGame
         m_FramebufferResized = true;
         frameData.fbWidth    = event.GetWidth();
         frameData.fbHeight   = event.GetHeight();
-        if (event.GetWidth() == 0 || event.GetHeight() == 0)
-        {
-            PauseRender();
-        }
-        else
-        {
-            ContinueRender();
-        }
         return true;
     }
     void Engine::EndSingleTimeCommands(VkCommandBuffer& commandBuffer)
@@ -70,19 +62,6 @@ namespace FooGame
         vkFreeCommandBuffers(m_Api->GetDevice()->GetDevice(),
                              m_Api->GetCommandPool(), 1, &commandBuffer);
     }
-    static const List<Vertex> vertices = {
-        { {-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-        {  {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-        {   {0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-        {  {-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-        { {0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-        {  {0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-        { {-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
-    };
-
-    const List<u32> indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
     void Engine::Init(GLFWwindow* window)
     {
         m_WindowHandle = window;
@@ -127,8 +106,37 @@ namespace FooGame
         }
 
         {
-            m_VertexBuffer = CreateShared<Buffer>(CreateVertexBuffer(vertices));
-            m_IndexBuffer  = CreateShared<Buffer>(CreateIndexBuffer(indices));
+            auto builder =
+                BufferBuilder()
+                    .SetUsage(BufferUsage::VERTEX)
+                    .SetInitialSize(sizeof(Vertex) * frameData.MaxVertices)
+                    .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            m_VertexBuffer = CreateShared<Buffer>(builder.Build());
+            m_VertexBuffer->Allocate();
+            m_VertexBuffer->Bind();
+            frameData.QuadVertexBufferBase = new Vertex[frameData.MaxVertices];
+            u32 offset                     = 0;
+            List<u32> quadIndices(frameData.MaxIndices);
+            for (u32 i = 0; i < FrameData::MaxIndices; i += 6)
+            {
+                quadIndices[i + 0] = offset + 0;
+                quadIndices[i + 1] = offset + 1;
+                quadIndices[i + 2] = offset + 2;
+
+                quadIndices[i + 3]  = offset + 2;
+                quadIndices[i + 4]  = offset + 3;
+                quadIndices[i + 5]  = offset + 0;
+                offset             += 4;
+            }
+            // delete[] quadIndices;
+            m_IndexBuffer =
+                CreateShared<Buffer>(CreateIndexBuffer(quadIndices));
+            quadIndices.clear();
+            frameData.QuadVertexPositions[0] = {-0.5f, -0.5f, 0.0f, 1.0f};
+            frameData.QuadVertexPositions[1] = {0.5f, -0.5f, 0.0f, 1.0f};
+            frameData.QuadVertexPositions[2] = {0.5f, 0.5f, 0.0f, 1.0f};
+            frameData.QuadVertexPositions[3] = {-0.5f, 0.5f, 0.0f, 1.0f};
         }
         m_UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
         for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -203,8 +211,9 @@ namespace FooGame
             VK_CALL(vkAllocateCommandBuffers(device->GetDevice(), &allocInfo,
                                              m_CommandBuffers.data()));
         }
-        // Syncs TODO: Remove or change move and copy constructors of sync
-        // objects
+        // Syncs
+        // TODO: Remove or change move and copy constructors of sync
+        //  objects
         {
             m_ImageAvailableSemaphores.clear();
             m_RenderFinishedSemaphores.clear();
@@ -223,41 +232,48 @@ namespace FooGame
     Engine::~Engine()
     {
         Close();
-        // Shutdown();
     }
     void Engine::Close()
     {
         m_ShouldClose = true;
+        delete[] frameData.QuadVertexBufferBase;
         m_Api->WaitIdle();
         Shutdown();
     }
-    void Engine::RunLoop()
+    void Engine::Start()
     {
-        // while (!ShouldClose())
-        // {
-        // if (!ShouldContinue())
-        // {
-        //     continue;
-        // }
+        frameData.DrawCall = 0;
         WaitFences();
         u32 imageIndex;
         if (!AcquireNextImage(imageIndex))
         {
+            frameData.imageIndex = imageIndex;
             return;
         }
-        UpdateUniforms();
-
+        frameData.imageIndex = imageIndex;
         ResetFences();
-
         ResetCommandBuffers();
-
-        Record(imageIndex);
-
-        Submit(imageIndex);
+        BeginDrawing();
+    }
+    void Engine::End()
+    {
+        Submit();
     }
 
     double deltaTime_     = 0;
     double lastFrameTime_ = 0;
+    void Engine::BeginScene()
+    {
+        // TODO: Get camera projection
+        // TODO: Start batch
+        UpdateUniforms();  // For now
+        StartBatch();
+    }
+    void Engine::StartBatch()
+    {
+        frameData.QuadIndexCount      = 0;
+        frameData.QuadVertexBufferPtr = frameData.QuadVertexBufferBase;
+    }
     void Engine::UpdateUniforms()
     {
         double currentTime = glfwGetTime();
@@ -265,27 +281,30 @@ namespace FooGame
         lastFrameTime_     = currentTime;
         UniformBufferObject ubd{};
 
-        // ubd.Model = glm::rotate(glm::mat4(1.0f),
-        //                         (float)deltaTime_ * glm::radians(90.0f),
-        //                         glm::vec3(0.0f, 0.0f, 1.0f));
-
-        // ubd.View = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f),
-        //                        glm::vec3(0.0f, 0.0f, 0.0f),
-        //                        glm::vec3(0.0f, 0.0f, 1.0f));
-        // ubd.Projection =
-        //     glm::perspective(glm::radians(45.0f),
-        //                      (float)m_Swapchain->GetExtent().width /
-        //                          m_Swapchain->GetExtent().height,
-        //                      0.1f, 1000.0f);
         float aspect = (float)m_Swapchain->GetExtent().width /
                        (float)m_Swapchain->GetExtent().height;
-        ubd.Model = glm::rotate(
-            glm::mat4(1.0f), (float)currentTime * glm::radians(90.0f),
-            glm::vec3(0.0f, 0.0f, 1.0f));  // glm::mat4{sin(currentTime)};
-        ubd.View              = glm::mat4(1.0f);
-        ubd.Projection        = glm::mat4(1.0f);
-        ubd.Projection[1][1] *= -1;
+
+        ubd.Model      = glm::mat4(1.0f);
+        ubd.View       = glm::mat4(1.0f);
+        ubd.Projection = glm::mat4(1.0f);
+        ubd.Projection = glm::inverse(ubd.Projection);
         m_UniformBuffers[frameData.currentFrame]->SetData(sizeof(ubd), &ubd);
+    }
+    void Engine::EndScene()
+    {
+        Flush();
+    }
+    void Engine::Flush()
+    {
+        auto cb = m_CommandBuffers[frameData.currentFrame];
+        if (frameData.QuadIndexCount)
+        {
+            u32 dataSize = (u32)((uint8_t*)frameData.QuadVertexBufferPtr -
+                                 (uint8_t*)frameData.QuadVertexBufferBase);
+            m_VertexBuffer->SetData(dataSize, frameData.QuadVertexBufferBase);
+            vkCmdDrawIndexed(cb, frameData.QuadIndexCount, 2, 0, 0, 0);
+            frameData.DrawCall++;
+        }
     }
     void Engine::Shutdown()
     {
@@ -332,7 +351,49 @@ namespace FooGame
     {
         vkResetCommandBuffer(m_CommandBuffers[frameData.currentFrame], 0);
     }
-    void Engine::Record(const u32& imageIndex)
+
+    void Engine::DrawQuad(const glm::vec2& position, const glm::vec2& size,
+                          const glm::vec4& color)
+    {
+        DrawQuad({position.x, position.y, 0.0f}, size, color);
+    }
+
+    void Engine::DrawQuad(const glm::vec3& position, const glm::vec2& size,
+                          const glm::vec4& color)
+    {
+        glm::mat4 transform =
+            glm::translate(glm::mat4(1.0f), position) *
+            glm::scale(glm::mat4(1.0f), {size.x, size.y, 1.0f});
+
+        DrawQuad(transform, color);
+    }
+
+    void Engine::DrawQuad(const glm::mat4& transform, const glm::vec4& color)
+    {
+        constexpr size_t quadVertexCount    = 4;
+        constexpr glm::vec2 textureCoords[] = {
+            {0.0f, 0.0f},
+            {1.0f, 0.0f},
+            {1.0f, 1.0f},
+            {0.0f, 1.0f}
+        };
+        if (frameData.QuadIndexCount >= FrameData::MaxIndices)
+        {
+            NextBatch();
+        }
+
+        for (size_t i = 0; i < quadVertexCount; i++)
+        {
+            frameData.QuadVertexBufferPtr->Position =
+                transform * frameData.QuadVertexPositions[i];
+            frameData.QuadVertexBufferPtr->Color = glm::vec3{1.0f, 1.0f, 1.0f};
+            frameData.QuadVertexBufferPtr->TexCoord = textureCoords[i];
+            frameData.QuadVertexBufferPtr++;
+        }
+        frameData.QuadIndexCount += 6;
+        frameData.QuadCount++;
+    }
+    void Engine::BeginDrawing()
     {
         auto cb = m_CommandBuffers[frameData.currentFrame];
         VkCommandBufferBeginInfo beginInfo{};
@@ -341,9 +402,10 @@ namespace FooGame
         VK_CALL(vkBeginCommandBuffer(cb, &beginInfo));
 
         VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass  = *m_Api->GetRenderpass();
-        renderPassInfo.framebuffer = m_Swapchain->GetFrameBuffer(imageIndex);
+        renderPassInfo.sType      = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = *m_Api->GetRenderpass();
+        renderPassInfo.framebuffer =
+            m_Swapchain->GetFrameBuffer(frameData.imageIndex);
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = m_Swapchain->GetExtent();
 
@@ -381,17 +443,77 @@ namespace FooGame
                                     m_Api->GetPipeline().pipelineLayout, 0, 1,
                                     &m_DescriptorSets[frameData.currentFrame],
                                     0, nullptr);
-            vkCmdDrawIndexed(cb, indices.size(), 1, 0, 0, 0);
         }
-        vkCmdEndRenderPass(cb);
-        VK_CALL(vkEndCommandBuffer(cb));
+    }
+    // void Engine::Record()
+    // {
+    //     auto cb = m_CommandBuffers[frameData.currentFrame];
+    //     VkCommandBufferBeginInfo beginInfo{};
+    //     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    //
+    //     VK_CALL(vkBeginCommandBuffer(cb, &beginInfo));
+    //
+    //     VkRenderPassBeginInfo renderPassInfo{};
+    //     renderPassInfo.sType      = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    //     renderPassInfo.renderPass = *m_Api->GetRenderpass();
+    //     renderPassInfo.framebuffer =
+    //         m_Swapchain->GetFrameBuffer(frameData.imageIndex);
+    //     renderPassInfo.renderArea.offset = {0, 0};
+    //     renderPassInfo.renderArea.extent = m_Swapchain->GetExtent();
+    //
+    //     VkClearValue clearColor[2]     = {};
+    //     clearColor[0]                  = {0.2f, 0.3f, 0.1f, 1.0f};
+    //     clearColor[1]                  = {1.0f, 0};
+    //     renderPassInfo.clearValueCount = ARRAY_COUNT(clearColor);
+    //     renderPassInfo.pClearValues    = clearColor;
+    //
+    //     vkCmdBeginRenderPass(cb, &renderPassInfo,
+    //     VK_SUBPASS_CONTENTS_INLINE);
+    //     {
+    //         vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
+    //                           m_Api->GetPipeline().pipeline);
+    //         VkViewport viewport{};
+    //         viewport.x        = 0.0f;
+    //         viewport.y        = 0.0f;
+    //         viewport.width    = (float)m_Swapchain->GetExtent().width;
+    //         viewport.height   = (float)m_Swapchain->GetExtent().height;
+    //         viewport.minDepth = 0.0f;
+    //         viewport.maxDepth = 1.0f;
+    //         vkCmdSetViewport(cb, 0, 1, &viewport);
+    //         VkRect2D scissor{
+    //             {0, 0},
+    //             m_Swapchain->GetExtent()
+    //         };
+    //         vkCmdSetScissor(cb, 0, 1, &scissor);
+    //
+    //         VkBuffer vertexBuffers[] = {*m_VertexBuffer->GetBuffer()};
+    //         VkDeviceSize offsets[]   = {0};
+    //
+    //         vkCmdBindVertexBuffers(cb, 0, 1, vertexBuffers, offsets);
+    //         vkCmdBindIndexBuffer(cb, *m_IndexBuffer->GetBuffer(), 0,
+    //                              VK_INDEX_TYPE_UINT32);
+    //         vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
+    //                                 m_Api->GetPipeline().pipelineLayout, 0,
+    //                                 1,
+    //                                 &m_DescriptorSets[frameData.currentFrame],
+    //                                 0, nullptr);
+    //     }
+    // }
+    void Engine::NextBatch()
+    {
+        Flush();
+        StartBatch();
     }
     void Engine::ResetFences()
     {
         m_InFlightFences[frameData.currentFrame].Reset();
     }
-    void Engine::Submit(u32 imageIndex)
+    void Engine::Submit()
     {
+        auto cb = m_CommandBuffers[frameData.currentFrame];
+        vkCmdEndRenderPass(cb);
+        VK_CALL(vkEndCommandBuffer(cb));
+
         VkSemaphore waitSemaphores[] = {
             m_ImageAvailableSemaphores[frameData.currentFrame].Get()};
         VkPipelineStageFlags waitStages[] = {
@@ -424,7 +546,7 @@ namespace FooGame
         presentInfo.swapchainCount  = 1;
         presentInfo.pSwapchains     = swapChains;
 
-        presentInfo.pImageIndices = &imageIndex;
+        presentInfo.pImageIndices = &(frameData.imageIndex);
 
         auto result = vkQueuePresentKHR(m_Api->GetDevice()->GetPresentQueue(),
                                         &presentInfo);
@@ -449,16 +571,6 @@ namespace FooGame
     }
     void Engine::RecreateSwapchain()
     {
-        if (frameData.fbWidth == 0 || frameData.fbHeight == 0)
-        {
-            PauseRender();
-            // return;
-        }
-        else
-        {
-            ContinueRender();
-        }
-
         m_Api->WaitIdle();
         m_Swapchain->Recreate({static_cast<uint32_t>(frameData.fbWidth),
                                static_cast<uint32_t>(frameData.fbHeight)});

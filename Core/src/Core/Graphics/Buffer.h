@@ -61,6 +61,6 @@ namespace FooGame
             BufferCreateInfo createInfo;
     };
     Buffer CreateVertexBuffer(const List<Vertex> vertices);
-    Buffer CreateIndexBuffer(const List<u32> indices);
+    Buffer CreateIndexBuffer(const List<u32>& indices);
     static VkBufferUsageFlags ParseBufferUsage(BufferUsage usage);
 }  // namespace FooGame

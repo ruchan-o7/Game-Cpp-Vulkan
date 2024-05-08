@@ -153,7 +153,7 @@ namespace FooGame
         return std::move(buffer);
     }
 
-    Buffer CreateIndexBuffer(const List<u32> indices)
+    Buffer CreateIndexBuffer(const List<u32>& indices)
     {
         size_t bufferSize = sizeof(indices[0]) * indices.size();
 
