@@ -7,6 +7,7 @@
 #include "../Graphics/Buffer.h"
 #include "../Graphics/Semaphore.h"
 #include "../Graphics/Image.h"
+#include "../Core/PerspectiveCamera.h"
 
 namespace FooGame
 {
@@ -262,7 +263,7 @@ namespace FooGame
 
     double deltaTime_     = 0;
     double lastFrameTime_ = 0;
-    void Engine::BeginScene(const Camera& camera)
+    void Engine::BeginScene(const PerspectiveCamera& camera)
     {
         // TODO: Get camera projection
         // TODO: Start batch
@@ -274,7 +275,7 @@ namespace FooGame
         frameData.QuadIndexCount      = 0;
         frameData.QuadVertexBufferPtr = frameData.QuadVertexBufferBase;
     }
-    void Engine::UpdateUniforms(const Camera& camera)
+    void Engine::UpdateUniforms(const PerspectiveCamera& camera)
     {
         double currentTime = glfwGetTime();
         deltaTime_         = currentTime - lastFrameTime_;
@@ -285,9 +286,9 @@ namespace FooGame
                        (float)m_Swapchain->GetExtent().height;
 
         ubd.Model      = glm::mat4(1.0f);
-        ubd.View       = glm::mat4(1.0f);
-        ubd.Projection = camera.GetProjection();  // glm::mat4(1.0f);
-        ubd.Projection = glm::inverse(ubd.Projection);
+        ubd.View       = camera.GetView();
+        ubd.Projection = camera.GetProjection();
+
         m_UniformBuffers[frameData.currentFrame]->SetData(sizeof(ubd), &ubd);
     }
     void Engine::EndScene()

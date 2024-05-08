@@ -2,6 +2,7 @@
 #include <pch.h>
 #include "Core/Core/Base.h"
 #include "Core/Core/Engine.h"
+#include "Core/Core/PerspectiveCamera.h"
 #include "Core/Events/ApplicationEvent.h"
 #include "Core/Events/Event.h"
 #include "Core/Input/KeyCodes.h"
@@ -25,9 +26,8 @@ namespace FooGame
     double lastFrameTime__ = 0;
     void Game::Run()
     {
-        Camera camera{};
-
         m_Engine = Engine::Create(m_Window->GetWindowHandle());
+        m_Camera.RecalculateViewMatrix();
         while (!m_Window->ShouldClose())
         {
             m_Window->PollEvents();
@@ -36,7 +36,7 @@ namespace FooGame
             deltaTime__        = currentTime - lastFrameTime__;
             lastFrameTime__    = currentTime;
             m_Engine->Start();
-            m_Engine->BeginScene(camera);
+            m_Engine->BeginScene(m_Camera);
             static float rotation  = 0.0f;
             rotation              += deltaTime__ + 2.f;
             for (u32 i = 0; i < m_BenchmarkAmount; i++)
@@ -107,10 +107,56 @@ namespace FooGame
                 m_BenchmarkAmount * m_BenchmarkAmount * 4);
             m_Window->SetWindowTitle(title);
         }
+
+        if (key.GetKeyCode() == KeyCode::A)
+        {
+            m_Camera.GoLeft();
+        }
+
+        if (key.GetKeyCode() == KeyCode::D)
+        {
+            m_Camera.GoRight();
+        }
+        if (key.GetKeyCode() == KeyCode::W)
+        {
+            m_Camera.GoForward();
+        }
+
+        if (key.GetKeyCode() == KeyCode::S)
+        {
+            m_Camera.GoBackward();
+        }
+        if (key.GetKeyCode() == KeyCode::Q)
+        {
+            m_Camera.TurnRight();
+        }
+        if (key.GetKeyCode() == KeyCode::E)
+        {
+            m_Camera.TurnLeft();
+        }
+        if (key.GetKeyCode() == KeyCode::Space)
+        {
+            m_Camera.GoUp();
+        }
+        if (key.GetKeyCode() == KeyCode::LeftControl)
+        {
+            m_Camera.GoDown();
+        }
+        if (key.GetKeyCode() == KeyCode::RightShift)
+        {
+            m_Camera.m_Zoom += 10.0f;
+        }
+        if (key.GetKeyCode() == KeyCode::LeftShift)
+        {
+            m_Camera.m_Zoom -= 10.0f;
+        }
+
+        m_Camera.RecalculateViewMatrix();
         return false;
     }
     bool Game::OnWindowResized(WindowResizeEvent& event)
     {
+        m_Camera.SetAspect((float)event.GetWidth() / (float)event.GetHeight());
         return m_Engine->OnWindowResized(event);
     }
 }  // namespace FooGame

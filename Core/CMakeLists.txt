@@ -12,6 +12,7 @@ set(CORE_SOURCES
 	"src/Core/Core/Window.cpp"
 	"src/Core/Core/Engine.h"
 	"src/Core/Core/Engine.cpp"
+	"src/Core/Core/PerspectiveCamera.cpp"
 
 	"src/Core/File/FileHelper.cpp"
 	"src/Core/Input/Input.cpp"

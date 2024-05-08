@@ -4,6 +4,7 @@
 #include <Core/Events/ApplicationEvent.h>
 #include <Core/Events/KeyEvent.h>
 #include <Core/Core/Engine.h>
+#include "Core/Core/PerspectiveCamera.h"
 namespace FooGame
 {
     class Game
@@ -17,6 +18,7 @@ namespace FooGame
             WindowsWindow* m_Window;
             Engine* m_Engine;
             u32 m_BenchmarkAmount = 100;
+            PerspectiveCamera m_Camera;
 
         private:
             void Init();
