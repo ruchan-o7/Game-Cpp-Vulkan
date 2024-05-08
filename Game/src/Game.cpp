@@ -22,6 +22,8 @@ namespace FooGame
         m_Window->SetOnEventFunction(BIND_EVENT_FN(Game::OnEvent));
     }
 
+    double deltaTime__     = 0;
+    double lastFrameTime__ = 0;
     void Game::Run()
     {
         Camera camera{glm::mat4(1.0f)};
@@ -36,15 +38,23 @@ namespace FooGame
         {
             m_Window->PollEvents();
 
+            double currentTime = glfwGetTime();
+            deltaTime__        = currentTime - lastFrameTime__;
+            lastFrameTime__    = currentTime;
             m_Engine->Start();
             m_Engine->BeginScene();
+            static float rotation  = 0.0f;
+            rotation              += deltaTime__ + 2.f;
             for (u32 i = 0; i < m_BenchmarkAmount; i++)
             {
                 for (u32 j = 0; j < m_BenchmarkAmount; j++)
                 {
-                    glm::vec2 pos{(i * 0.01f) - 0.5f, (j * 0.01f) - 0.5f};
-                    m_Engine->DrawQuad(pos, {0.01f, 0.01f},
-                                       {1.0f, 1.0f, 1.0f, 1.0f});
+                    glm::vec4 color = {1.0f, 1.0f, 1.0f, 1.0f};
+                    glm::vec2 size{0.1f, 0.1f};
+                    static float offset = 1.0f;
+                    glm::vec2 pos{(i * 0.1f) - offset, (j * 0.1f) - offset};
+                    // m_Engine->DrawQuad(pos, {0.01f, 0.01f}, color);
+                    m_Engine->DrawRotatedQuad(pos, size, rotation, color);
                 }
             }
             m_Engine->EndScene();
