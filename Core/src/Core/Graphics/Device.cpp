@@ -1,7 +1,6 @@
 #include "Device.h"
 #include <vulkan/vulkan.h>
 #include "pch.h"
-#include <xerrc.h>
 #include "../Backend/VulkanCheckResult.h"
 #include "../Core/Base.h"
 #include "vulkan/vulkan_core.h"

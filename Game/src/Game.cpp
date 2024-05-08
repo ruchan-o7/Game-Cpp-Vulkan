@@ -7,9 +7,7 @@
 #include "Core/Input/KeyCodes.h"
 #include "GLFW/glfw3.h"
 #include "glm/fwd.hpp"
-#include <cmath>
 #include <Core/Graphics/Camera.h>
-#include <vcruntime_new_debug.h>
 namespace FooGame
 {
     Game::Game()

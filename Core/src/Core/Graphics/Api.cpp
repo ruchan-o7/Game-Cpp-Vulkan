@@ -9,6 +9,10 @@
 #include "vulkan/vulkan_core.h"
 namespace FooGame
 {
+
+#define VERT_PATH "../../../Shaders/vert.spv"
+#define FRAG_PATH "../../../Shaders/frag.spv"
+
     Api* Api::s_Instance = nullptr;
     Api* Api::Create(GLFWwindow* window)
     {
@@ -44,10 +48,6 @@ namespace FooGame
             func(instance, debugMessenger, pAllocator);
         }
     }
-#define VERT_PATH \
-    "C:\\Users\\jcead\\dev\\CppProjects\\game_1\\Shaders\\vert.spv"
-#define FRAG_PATH \
-    "C:\\Users\\jcead\\dev\\CppProjects\\game_1\\Shaders\\frag.spv"
     const char* deviceExtensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
     const char* validationLayers[] = {"VK_LAYER_KHRONOS_validation"};
     Api::~Api()
