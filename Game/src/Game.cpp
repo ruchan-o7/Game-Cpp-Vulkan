@@ -38,10 +38,15 @@ namespace FooGame
 
             m_Engine->Start();
             m_Engine->BeginScene();
-            m_Engine->DrawQuad({sin((float)glfwGetTime()), 1.0f}, {1.0f, 1.0f},
-                               {1.0f, 1.0f, 1.0f, 1.0f});
-            m_Engine->DrawQuad({cos((float)glfwGetTime()), 1.0f}, {1.0f, 1.0f},
-                               {1.0f, 1.0f, 1.0f, 1.0f});
+            for (u32 i = 0; i < m_BenchmarkAmount; i++)
+            {
+                for (u32 j = 0; j < m_BenchmarkAmount; j++)
+                {
+                    glm::vec2 pos{(i * 0.01f) - 0.5f, (j * 0.01f) - 0.5f};
+                    m_Engine->DrawQuad(pos, {0.01f, 0.01f},
+                                       {1.0f, 1.0f, 1.0f, 1.0f});
+                }
+            }
             m_Engine->EndScene();
             m_Engine->End();
         }
@@ -74,6 +79,14 @@ namespace FooGame
             std::cout << "Closing..." << std::endl;
             m_Window->Close();
             return true;
+        }
+        if (key.GetKeyCode() == KeyCode::Up)
+        {
+            m_BenchmarkAmount++;
+        }
+        if (key.GetKeyCode() == KeyCode::Down)
+        {
+            m_BenchmarkAmount--;
         }
         return false;
     }

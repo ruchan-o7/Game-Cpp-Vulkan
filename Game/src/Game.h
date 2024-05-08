@@ -4,7 +4,6 @@
 #include <Core/Events/ApplicationEvent.h>
 #include <Core/Events/KeyEvent.h>
 #include <Core/Core/Engine.h>
-#include <thread>
 namespace FooGame
 {
     class Game
@@ -17,7 +16,7 @@ namespace FooGame
         private:
             WindowsWindow* m_Window;
             Engine* m_Engine;
-            std::thread m_RenderThread;
+            u32 m_BenchmarkAmount = 100;
 
         private:
             void Init();
