@@ -16,6 +16,12 @@ namespace FooGame
     {
             i32 x = 0, y = 0;
     };
+    template <typename T, typename K>
+    struct Tuple
+    {
+            T first;
+            K second;
+    };
     class WindowsWindow
     {
             using EventCallback = std::function<void(Event&)>;
@@ -37,6 +43,8 @@ namespace FooGame
             void SetWindowTitle(const char* title);
             bool ShouldClose();
             Vector2 GetWindowSize();
+            void SetCursorCenter();
+            Tuple<int, int> GetCursorPos();
             inline void WaitEvent() { glfwWaitEvents(); }
 
         private:

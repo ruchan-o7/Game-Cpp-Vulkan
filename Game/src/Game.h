@@ -5,6 +5,7 @@
 #include <Core/Events/KeyEvent.h>
 #include <Core/Core/Engine.h>
 #include "Core/Core/PerspectiveCamera.h"
+#include "Core/Events/MouseMovedEvent.h"
 namespace FooGame
 {
     class Game
@@ -19,6 +20,7 @@ namespace FooGame
             Engine* m_Engine;
             u32 m_BenchmarkAmount = 100;
             PerspectiveCamera m_Camera;
+            bool m_SecondMouse = false;
 
         private:
             void Init();
@@ -26,6 +28,11 @@ namespace FooGame
             void OnEvent(Event& e);
             bool OnKeyEvent(KeyPressedEvent& key);
             bool OnWindowResized(WindowResizeEvent& event);
+
+            bool OnMouseMoved(MouseMovedEvent& event);
+            bool OnMouseScroll(MouseScrolledEvent& event);
+            bool OnMousePressed(MouseButtonPressedEvent& event);
+            bool OnMouseRelease(MouseButtonReleasedEvent& event);
     };
 
 }  // namespace FooGame

@@ -5,11 +5,10 @@
 #include "Core/Core/PerspectiveCamera.h"
 #include "Core/Events/ApplicationEvent.h"
 #include "Core/Events/Event.h"
+#include "Core/Events/MouseMovedEvent.h"
 #include "Core/Input/KeyCodes.h"
 #include "GLFW/glfw3.h"
-#include "glm/fwd.hpp"
 #include <Core/Graphics/Camera.h>
-#include <cstdio>
 namespace FooGame
 {
     Game::Game()
@@ -74,6 +73,13 @@ namespace FooGame
         dispatcher.Dispatch<KeyPressedEvent>(BIND_EVENT_FN(Game::OnKeyEvent));
         dispatcher.Dispatch<WindowResizeEvent>(
             BIND_EVENT_FN(Game::OnWindowResized));
+        dispatcher.Dispatch<MouseMovedEvent>(BIND_EVENT_FN(Game::OnMouseMoved));
+        dispatcher.Dispatch<MouseScrolledEvent>(
+            BIND_EVENT_FN(Game::OnMouseScroll));
+        dispatcher.Dispatch<MouseButtonPressedEvent>(
+            BIND_EVENT_FN(Game::OnMousePressed));
+        dispatcher.Dispatch<MouseButtonReleasedEvent>(
+            BIND_EVENT_FN(Game::OnMouseRelease));
     }
 
     bool Game::OnKeyEvent(KeyPressedEvent& key)
@@ -87,25 +93,23 @@ namespace FooGame
         if (key.GetKeyCode() == KeyCode::Up)
         {
             m_BenchmarkAmount++;
-            char title[255];
-            sprintf(
-                title,
+            String title{std::move(StrFormat(
                 "Benchmark amount %i, total Quad: %i, total Vertex amount: %i",
                 m_BenchmarkAmount, m_BenchmarkAmount * m_BenchmarkAmount,
-                m_BenchmarkAmount * m_BenchmarkAmount * 4);
-            m_Window->SetWindowTitle(title);
+                m_BenchmarkAmount * m_BenchmarkAmount * 4))};
+            m_Window->SetWindowTitle(title.c_str());
+            title.clear();
         }
         if (key.GetKeyCode() == KeyCode::Down)
         {
             m_BenchmarkAmount--;
 
-            char title[255];
-            sprintf(
-                title,
+            String title{std::move(StrFormat(
                 "Benchmark amount %i, total Quad: %i, total Vertex amount: %i",
                 m_BenchmarkAmount, m_BenchmarkAmount * m_BenchmarkAmount,
-                m_BenchmarkAmount * m_BenchmarkAmount * 4);
-            m_Window->SetWindowTitle(title);
+                m_BenchmarkAmount * m_BenchmarkAmount * 4))};
+            m_Window->SetWindowTitle(title.c_str());
+            title.clear();
         }
 
         if (key.GetKeyCode() == KeyCode::A)
@@ -126,14 +130,6 @@ namespace FooGame
         {
             m_Camera.GoBackward();
         }
-        if (key.GetKeyCode() == KeyCode::Q)
-        {
-            m_Camera.TurnRight();
-        }
-        if (key.GetKeyCode() == KeyCode::E)
-        {
-            m_Camera.TurnLeft();
-        }
         if (key.GetKeyCode() == KeyCode::Space)
         {
             m_Camera.GoUp();
@@ -141,14 +137,6 @@ namespace FooGame
         if (key.GetKeyCode() == KeyCode::LeftControl)
         {
             m_Camera.GoDown();
-        }
-        if (key.GetKeyCode() == KeyCode::RightShift)
-        {
-            m_Camera.m_Zoom += 10.0f;
-        }
-        if (key.GetKeyCode() == KeyCode::LeftShift)
-        {
-            m_Camera.m_Zoom -= 10.0f;
         }
 
         m_Camera.RecalculateViewMatrix();
@@ -158,5 +146,47 @@ namespace FooGame
     {
         m_Camera.SetAspect((float)event.GetWidth() / (float)event.GetHeight());
         return m_Engine->OnWindowResized(event);
+    }
+    bool Game::OnMouseMoved(MouseMovedEvent& event)
+    {
+        if (m_SecondMouse)
+        {
+            auto newPos = m_Window->GetCursorPos();
+            m_Window->SetCursorCenter();
+            auto centerPos = m_Window->GetCursorPos();
+            int xOffset    = centerPos.first - newPos.first;
+            int yOffset    = centerPos.second - newPos.second;
+
+            float sens  = 0.1f;
+            xOffset    *= sens;
+            yOffset    *= sens;
+            m_Camera.Look({xOffset, yOffset});
+            m_Camera.RecalculateViewMatrix();
+        }
+
+        return true;
+    }
+    bool Game::OnMouseScroll(MouseScrolledEvent& event)
+    {
+        m_Camera.Zoom(event.GetYOffset() * -1.f);
+        m_Camera.RecalculateViewMatrix();
+        return true;
+    }
+    bool Game::OnMousePressed(MouseButtonPressedEvent& event)
+    {
+        if (event.GetMouseButton() == Mouse::Button1)
+        {
+            m_Window->SetCursorCenter();
+            m_SecondMouse = true;
+        }
+        return true;
+    }
+    bool Game::OnMouseRelease(MouseButtonReleasedEvent& event)
+    {
+        if (event.GetMouseButton() == Mouse::Button1)
+        {
+            m_SecondMouse = false;
+        }
+        return true;
     }
 }  // namespace FooGame

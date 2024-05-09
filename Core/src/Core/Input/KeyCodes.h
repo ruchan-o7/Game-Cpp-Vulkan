@@ -4,7 +4,7 @@
 namespace FooGame
 {
 
-    typedef enum class KeyCode : uint16_t
+    typedef enum class KeyCode : u16
     {
         // From glfw3.h
         Space      = 32,
@@ -154,7 +154,7 @@ namespace FooGame
         Locked = 2
     };
 
-    typedef enum class MouseButton : uint16_t
+    typedef enum class MouseButton : u16
     {
         Button0 = 0,
         Button1 = 1,

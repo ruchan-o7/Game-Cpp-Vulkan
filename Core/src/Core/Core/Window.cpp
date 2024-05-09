@@ -3,6 +3,7 @@
 #include "../Events/KeyEvent.h"
 #include "../Events/ApplicationEvent.h"
 #include "../Input/KeyCodes.h"
+#include "../Events/MouseMovedEvent.h"
 #include "pch.h"
 namespace FooGame
 {
@@ -83,8 +84,54 @@ namespace FooGame
             {
                 WindowsWindow& data =
                     *(WindowsWindow*)glfwGetWindowUserPointer(window);
+                data.m_Specification.width  = width;
+                data.m_Specification.height = height;
                 WindowResizeEvent e{static_cast<unsigned int>(width),
                                     static_cast<unsigned int>(height)};
+                data.OnEventCallback(e);
+            });
+        glfwSetMouseButtonCallback(
+            m_WindowHandle,
+            [](GLFWwindow* window, int button, int action, int mods)
+            {
+                WindowsWindow& data =
+                    *(WindowsWindow*)glfwGetWindowUserPointer(window);
+                switch (action)
+                {
+                    case GLFW_PRESS:
+                    {
+                        MouseButtonPressedEvent e{
+                            static_cast<MouseCode>(button)};
+                        data.OnEventCallback(e);
+                        break;
+                    }
+                    case GLFW_RELEASE:
+                    {
+                        MouseButtonReleasedEvent e{
+                            static_cast<MouseCode>(button)};
+                        data.OnEventCallback(e);
+                        break;
+                    }
+                }
+            });
+        glfwSetCursorPosCallback(
+            m_WindowHandle,
+            [](GLFWwindow* window, double xPos, double yPos)
+            {
+                WindowsWindow& data =
+                    *(WindowsWindow*)glfwGetWindowUserPointer(window);
+                MouseMovedEvent e{static_cast<float>(xPos),
+                                  static_cast<float>(yPos)};
+                data.OnEventCallback(e);
+            });
+        glfwSetScrollCallback(
+            m_WindowHandle,
+            [](GLFWwindow* window, double xOffset, double yOffset)
+            {
+                WindowsWindow& data =
+                    *(WindowsWindow*)glfwGetWindowUserPointer(window);
+                MouseScrolledEvent e{static_cast<float>(xOffset),
+                                     static_cast<float>(yOffset)};
                 data.OnEventCallback(e);
             });
     }
@@ -95,6 +142,17 @@ namespace FooGame
     bool WindowsWindow::ShouldClose()
     {
         return glfwWindowShouldClose(m_WindowHandle);
+    }
+    Tuple<int, int> WindowsWindow::GetCursorPos()
+    {
+        double x, y;
+        glfwGetCursorPos(m_WindowHandle, &x, &y);
+        return {static_cast<int>(x), static_cast<int>(y)};
+    }
+    void WindowsWindow::SetCursorCenter()
+    {
+        glfwSetCursorPos(m_WindowHandle, m_Specification.width / 2,
+                         m_Specification.height / 2);
     }
     void WindowsWindow::Shutdown()
     {
