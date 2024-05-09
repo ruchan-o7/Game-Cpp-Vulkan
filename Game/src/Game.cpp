@@ -42,6 +42,10 @@ namespace FooGame
             ImGui::Begin("Benchmark");
             ImGui::SliderInt("Amount", &m_BenchmarkAmount, 10, 1000);
             ImGui::End();
+            if (ImGui::Button("Test", {200, 200}))
+            {
+                std::cout << "Clicked" << std::endl;
+            }
             for (u32 i = 0; i < m_BenchmarkAmount; i++)
             {
                 for (u32 j = 0; j < m_BenchmarkAmount; j++)
@@ -151,6 +155,8 @@ namespace FooGame
     }
     bool Game::OnMouseMoved(MouseMovedEvent& event)
     {
+        ImGuiIO& io = ImGui::GetIO();
+        io.AddMousePosEvent(event.GetX(), event.GetY());
         if (m_SecondMouse)
         {
             auto newPos = m_Window->GetCursorPos();
@@ -170,12 +176,16 @@ namespace FooGame
     }
     bool Game::OnMouseScroll(MouseScrolledEvent& event)
     {
+        ImGuiIO& io = ImGui::GetIO();
+        io.AddMouseWheelEvent(event.GetXOffset(), event.GetYOffset());
         m_Camera.Zoom(event.GetYOffset() * -1.f);
         m_Camera.RecalculateViewMatrix();
         return true;
     }
     bool Game::OnMousePressed(MouseButtonPressedEvent& event)
     {
+        ImGuiIO& io = ImGui::GetIO();
+        io.AddMouseButtonEvent(event.GetMouseButton(), true);
         if (event.GetMouseButton() == Mouse::Button1)
         {
             m_Window->SetCursorCenter();
@@ -185,6 +195,8 @@ namespace FooGame
     }
     bool Game::OnMouseRelease(MouseButtonReleasedEvent& event)
     {
+        ImGuiIO& io = ImGui::GetIO();
+        io.AddMouseButtonEvent(event.GetMouseButton(), false);
         if (event.GetMouseButton() == Mouse::Button1)
         {
             m_SecondMouse = false;

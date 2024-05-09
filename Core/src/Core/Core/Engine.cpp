@@ -16,6 +16,19 @@
 
 namespace FooGame
 {
+    static void check_vk_result(VkResult err)
+    {
+        if (err == 0)
+        {
+            return;
+        }
+        fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
+        if (err < 0)
+        {
+            abort();
+        }
+    }
+    ImGui_ImplVulkanH_Window g_MainWindowData;
     static VkDescriptorPool g_ImguiPool = nullptr;
     Engine* Engine::s_Instance          = nullptr;
     Engine* Engine::Create(GLFWwindow* window)
@@ -247,7 +260,6 @@ namespace FooGame
     }
     void Engine::Start()
     {
-        ImGui::UpdateInputEvents(true);
         frameData.DrawCall = 0;
         WaitFences();
         u32 imageIndex;
@@ -555,6 +567,13 @@ namespace FooGame
     }
     void Engine::RecreateSwapchain()
     {
+        // ImGui_ImplVulkan_SetMinImageCount(m_Swapchain->GetImageViewCount());
+        // ImGui_ImplVulkanH_CreateOrResizeWindow(
+        //     m_Api->GetInstance(), m_Api->GetDevice()->GetPhysicalDevice(),
+        //     m_Api->GetDevice()->GetDevice(), &g_MainWindowData,
+        //     m_Api->GetDevice()->GetGraphicsFamily(), nullptr,
+        //     frameData.fbWidth, frameData.fbHeight,
+        //     m_Swapchain->GetImageViewCount());
         m_Api->WaitIdle();
         m_Swapchain->Recreate({static_cast<uint32_t>(frameData.fbWidth),
                                static_cast<uint32_t>(frameData.fbHeight)});
@@ -585,13 +604,17 @@ namespace FooGame
 
         VK_CALL(vkCreateDescriptorPool(device->GetDevice(), &pool_info, nullptr,
                                        &g_ImguiPool));
-
+        //
+        // int w, h;
+        // glfwGetFramebufferSize(m_WindowHandle, &w, &h);
+        // g_MainWindowData.Width  = w;
+        // g_MainWindowData.Height = h;
+        //
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
-
-        (void)io;
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+        io.ConfigFlags |=
+            ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
         ImGui::StyleColorsDark();
 
         ImGui_ImplGlfw_InitForVulkan(m_WindowHandle, false);
@@ -605,11 +628,13 @@ namespace FooGame
         init_info.DescriptorPool            = g_ImguiPool;
         init_info.RenderPass                = *m_Api->GetRenderpass();
         init_info.Subpass                   = 0;
-        init_info.MinImageCount             = m_Swapchain->GetImageViewCount();
-        init_info.ImageCount                = m_Swapchain->GetImageViewCount();
+        init_info.MinImageCount             = 2;
+        init_info.ImageCount                = 2;
+        init_info.CheckVkResultFn           = check_vk_result;
         init_info.MSAASamples               = VK_SAMPLE_COUNT_1_BIT;
 
         ImGui_ImplVulkan_Init(&init_info);
+        ImGui_ImplVulkan_CreateFontsTexture();
     }
 
 }  // namespace FooGame

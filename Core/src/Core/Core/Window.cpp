@@ -55,7 +55,6 @@ namespace FooGame
             {
                 WindowsWindow& data =
                     *(WindowsWindow*)glfwGetWindowUserPointer(window);
-
                 switch (action)
                 {
                     case GLFW_PRESS:
