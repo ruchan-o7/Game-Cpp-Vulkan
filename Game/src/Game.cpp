@@ -8,6 +8,7 @@
 #include "Core/Events/MouseMovedEvent.h"
 #include "Core/Input/KeyCodes.h"
 #include "GLFW/glfw3.h"
+#include "imgui.h"
 #include <Core/Graphics/Camera.h>
 namespace FooGame
 {
@@ -38,6 +39,9 @@ namespace FooGame
             m_Engine->BeginScene(m_Camera);
             static float rotation  = 0.0f;
             rotation              += deltaTime__ + 2.f;
+            ImGui::Begin("Benchmark");
+            ImGui::SliderInt("Amount", &m_BenchmarkAmount, 10, 1000);
+            ImGui::End();
             for (u32 i = 0; i < m_BenchmarkAmount; i++)
             {
                 for (u32 j = 0; j < m_BenchmarkAmount; j++)
@@ -53,14 +57,12 @@ namespace FooGame
             m_Engine->EndScene();
             m_Engine->End();
         }
-        std::cout << "Render Engine Closing" << std::endl;
-        std::cout << "Application closing" << std::endl;
+        m_Engine->Close();
     }
 
     void Game::Shutdown()
     {
         delete m_Engine;
-        std::cout << "Render Engine Closed !" << std::endl;
         delete m_Window;
     }
     Game::~Game()

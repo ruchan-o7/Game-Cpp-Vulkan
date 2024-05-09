@@ -180,8 +180,7 @@ namespace FooGame
                                      imageIndex);
     }
 
-    SwapchainBuilder::SwapchainBuilder(Shared<Device> device,
-                                       VkSurfaceKHR& surface)
+    SwapchainBuilder::SwapchainBuilder(Device* device, VkSurfaceKHR& surface)
     {
         createInfo.device      = device;
         createInfo.surface     = surface;

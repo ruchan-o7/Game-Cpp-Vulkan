@@ -21,10 +21,12 @@ add_subdirectory(external/glm)
 set_property(TARGET "glfw" PROPERTY FOLDER "Dependencies")
 set_property(TARGET "glm" PROPERTY FOLDER "Dependencies")
 
+set(EXTERNAL_DIR "${CMAKE_SOURCE_DIR}/external")
 
-set(GLFW_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/glfw/include")
-set(GLM_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/glm/include")
-set(STB_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/stbi")
+set(GLFW_INCLUDE_DIR "${EXTERNAL_DIR}/glfw/include")
+set(GLM_INCLUDE_DIR "${EXTERNAL_DIR}/glm/include")
+set(STB_INCLUDE_DIR "${EXTERNAL_DIR}/stbi")
+set(IMGUI_SRC_DIR "${EXTERNAL_DIR}/imgui")
 add_subdirectory(Core)
 
 add_subdirectory(Game)

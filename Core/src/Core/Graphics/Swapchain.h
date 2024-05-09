@@ -9,7 +9,7 @@ namespace FooGame
 
     struct SwapchainCreateInfo
     {
-            Shared<Device> device;
+            Device* device;
             VkSurfaceKHR surface;
             VkExtent2D extent;
             VkPresentModeKHR presentMode;
@@ -29,11 +29,11 @@ namespace FooGame
             VkResult AcquireNextImage(VkDevice device, Semaphore& semaphore,
                                       u32* imageIndex);
 
+            VkFormat GetImageFormat() const { return m_ImageFormat; };
             VkSurfaceFormatKHR GetSurfaceImageFormat() const
             {
                 return m_SurfaceFormat;
             };
-            VkFormat GetImageFormat() const { return m_ImageFormat; };
             u32 GetImageViewCount() const
             {
                 return m_SwapchainImageViews.size();
@@ -42,6 +42,7 @@ namespace FooGame
             {
                 return m_SwapchainImageViews[index];
             }
+            VkPresentModeKHR GetPresentMode() const { return m_PresentMode; }
             VkExtent2D GetExtent() const { return m_Extent; }
             void Recreate(VkExtent2D extent);
             VkFramebuffer GetFrameBuffer(u32 imageIndex);
@@ -67,7 +68,7 @@ namespace FooGame
     class SwapchainBuilder
     {
         public:
-            SwapchainBuilder(Shared<Device> device, VkSurfaceKHR& surface);
+            SwapchainBuilder(Device* device, VkSurfaceKHR& surface);
             ~SwapchainBuilder() = default;
 
             SwapchainBuilder& SetExtent(VkExtent2D extent);

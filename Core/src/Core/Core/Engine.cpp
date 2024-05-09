@@ -8,10 +8,16 @@
 #include "../Graphics/Semaphore.h"
 #include "../Graphics/Image.h"
 #include "../Core/PerspectiveCamera.h"
+#include "vulkan/vulkan_core.h"
+#include <imgui.h>
+#include <imgui_internal.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
 
 namespace FooGame
 {
-    Engine* Engine::s_Instance = nullptr;
+    static VkDescriptorPool g_ImguiPool = nullptr;
+    Engine* Engine::s_Instance          = nullptr;
     Engine* Engine::Create(GLFWwindow* window)
     {
         s_Instance = new Engine{};
@@ -106,6 +112,7 @@ namespace FooGame
                                     &m_TextureSampler));
         }
 
+        // buffers
         {
             auto builder =
                 BufferBuilder()
@@ -212,9 +219,6 @@ namespace FooGame
             VK_CALL(vkAllocateCommandBuffers(device->GetDevice(), &allocInfo,
                                              m_CommandBuffers.data()));
         }
-        // Syncs
-        // TODO: Remove or change move and copy constructors of sync
-        //  objects
         {
             m_ImageAvailableSemaphores.clear();
             m_RenderFinishedSemaphores.clear();
@@ -229,20 +233,21 @@ namespace FooGame
                 m_InFlightFences.emplace_back(Fence{device->GetDevice()});
             }
         }
+        InitImgui();
     }
     Engine::~Engine()
     {
-        Close();
-    }
-    void Engine::Close()
-    {
-        m_ShouldClose = true;
         delete[] frameData.QuadVertexBufferBase;
         m_Api->WaitIdle();
         Shutdown();
     }
+    void Engine::Close()
+    {
+        m_ShouldClose = true;
+    }
     void Engine::Start()
     {
+        ImGui::UpdateInputEvents(true);
         frameData.DrawCall = 0;
         WaitFences();
         u32 imageIndex;
@@ -252,12 +257,22 @@ namespace FooGame
             return;
         }
         frameData.imageIndex = imageIndex;
+
         ResetFences();
         ResetCommandBuffers();
         BeginDrawing();
+        {
+            ImGui_ImplVulkan_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+            ImGui::ShowDemoWindow();
+        }
     }
     void Engine::End()
     {
+        ImGui::Render();
+        ImGui_ImplVulkan_RenderDrawData(
+            ImGui::GetDrawData(), m_CommandBuffers[frameData.currentFrame]);
         Submit();
     }
 
@@ -265,9 +280,7 @@ namespace FooGame
     double lastFrameTime_ = 0;
     void Engine::BeginScene(const PerspectiveCamera& camera)
     {
-        // TODO: Get camera projection
-        // TODO: Start batch
-        UpdateUniforms(camera);  // For now
+        UpdateUniforms(camera);
         StartBatch();
     }
     void Engine::StartBatch()
@@ -309,6 +322,11 @@ namespace FooGame
     }
     void Engine::Shutdown()
     {
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+        vkDestroyDescriptorPool(m_Api->GetDevice()->GetDevice(), g_ImguiPool,
+                                nullptr);
         auto device = m_Api->GetDevice()->GetDevice();
         m_VertexBuffer->Release();
         m_VertexBuffer.reset();
@@ -465,60 +483,6 @@ namespace FooGame
                                     0, nullptr);
         }
     }
-    // void Engine::Record()
-    // {
-    //     auto cb = m_CommandBuffers[frameData.currentFrame];
-    //     VkCommandBufferBeginInfo beginInfo{};
-    //     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    //
-    //     VK_CALL(vkBeginCommandBuffer(cb, &beginInfo));
-    //
-    //     VkRenderPassBeginInfo renderPassInfo{};
-    //     renderPassInfo.sType      = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    //     renderPassInfo.renderPass = *m_Api->GetRenderpass();
-    //     renderPassInfo.framebuffer =
-    //         m_Swapchain->GetFrameBuffer(frameData.imageIndex);
-    //     renderPassInfo.renderArea.offset = {0, 0};
-    //     renderPassInfo.renderArea.extent = m_Swapchain->GetExtent();
-    //
-    //     VkClearValue clearColor[2]     = {};
-    //     clearColor[0]                  = {0.2f, 0.3f, 0.1f, 1.0f};
-    //     clearColor[1]                  = {1.0f, 0};
-    //     renderPassInfo.clearValueCount = ARRAY_COUNT(clearColor);
-    //     renderPassInfo.pClearValues    = clearColor;
-    //
-    //     vkCmdBeginRenderPass(cb, &renderPassInfo,
-    //     VK_SUBPASS_CONTENTS_INLINE);
-    //     {
-    //         vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
-    //                           m_Api->GetPipeline().pipeline);
-    //         VkViewport viewport{};
-    //         viewport.x        = 0.0f;
-    //         viewport.y        = 0.0f;
-    //         viewport.width    = (float)m_Swapchain->GetExtent().width;
-    //         viewport.height   = (float)m_Swapchain->GetExtent().height;
-    //         viewport.minDepth = 0.0f;
-    //         viewport.maxDepth = 1.0f;
-    //         vkCmdSetViewport(cb, 0, 1, &viewport);
-    //         VkRect2D scissor{
-    //             {0, 0},
-    //             m_Swapchain->GetExtent()
-    //         };
-    //         vkCmdSetScissor(cb, 0, 1, &scissor);
-    //
-    //         VkBuffer vertexBuffers[] = {*m_VertexBuffer->GetBuffer()};
-    //         VkDeviceSize offsets[]   = {0};
-    //
-    //         vkCmdBindVertexBuffers(cb, 0, 1, vertexBuffers, offsets);
-    //         vkCmdBindIndexBuffer(cb, *m_IndexBuffer->GetBuffer(), 0,
-    //                              VK_INDEX_TYPE_UINT32);
-    //         vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
-    //                                 m_Api->GetPipeline().pipelineLayout, 0,
-    //                                 1,
-    //                                 &m_DescriptorSets[frameData.currentFrame],
-    //                                 0, nullptr);
-    //     }
-    // }
     void Engine::NextBatch()
     {
         Flush();
@@ -594,6 +558,58 @@ namespace FooGame
         m_Api->WaitIdle();
         m_Swapchain->Recreate({static_cast<uint32_t>(frameData.fbWidth),
                                static_cast<uint32_t>(frameData.fbHeight)});
+    }
+    void Engine::InitImgui()
+    {
+        auto device                       = m_Api->GetDevice();
+        VkDescriptorPoolSize pool_sizes[] = {
+            {               VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+            {         VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
+            {         VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
+            {  VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
+            {  VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
+            {        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
+            {        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
+            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
+            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
+            {      VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}
+        };
+
+        VkDescriptorPoolCreateInfo pool_info = {};
+        pool_info.sType   = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        pool_info.flags   = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        pool_info.maxSets = 1000;
+        pool_info.poolSizeCount = ARRAY_COUNT(pool_sizes);
+        pool_info.pPoolSizes    = pool_sizes;
+
+        VK_CALL(vkCreateDescriptorPool(device->GetDevice(), &pool_info, nullptr,
+                                       &g_ImguiPool));
+
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO();
+
+        (void)io;
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+        ImGui::StyleColorsDark();
+
+        ImGui_ImplGlfw_InitForVulkan(m_WindowHandle, false);
+
+        ImGui_ImplVulkan_InitInfo init_info = {};
+        init_info.Instance                  = m_Api->GetInstance();
+        init_info.PhysicalDevice            = device->GetPhysicalDevice();
+        init_info.Device                    = device->GetDevice();
+        init_info.Queue                     = device->GetGraphicsQueue();
+        init_info.QueueFamily               = device->GetGraphicsFamily();
+        init_info.DescriptorPool            = g_ImguiPool;
+        init_info.RenderPass                = *m_Api->GetRenderpass();
+        init_info.Subpass                   = 0;
+        init_info.MinImageCount             = m_Swapchain->GetImageViewCount();
+        init_info.ImageCount                = m_Swapchain->GetImageViewCount();
+        init_info.MSAASamples               = VK_SAMPLE_COUNT_1_BIT;
+
+        ImGui_ImplVulkan_Init(&init_info);
     }
 
 }  // namespace FooGame

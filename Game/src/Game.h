@@ -18,7 +18,7 @@ namespace FooGame
         private:
             WindowsWindow* m_Window;
             Engine* m_Engine;
-            u32 m_BenchmarkAmount = 100;
+            i32 m_BenchmarkAmount = 100;
             PerspectiveCamera m_Camera;
             bool m_SecondMouse = false;
 

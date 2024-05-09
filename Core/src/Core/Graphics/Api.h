@@ -27,7 +27,6 @@ namespace FooGame
             static Api* Create(GLFWwindow* window);
             static Api* Get();
             void Init(GLFWwindow* window);
-            VkSurfaceKHR GetSurface() const { return m_Surface; }
             void CreateRenderpass(VkFormat colorAttachmentFormat);
             void SetupDesciptorSetLayout();
             void CreateGraphicsPipeline();
@@ -39,10 +38,12 @@ namespace FooGame
             {
                 return m_DescriptorPool;
             }
-            Shared<Device> GetDevice() const { return m_Device; }
+            VkSurfaceKHR GetSurface() const { return m_Surface; }
+            Device* GetDevice() const { return m_Device.get(); }
             VkCommandPool GetCommandPool() const { return m_CommandPool; }
             VkRenderPass* GetRenderpass() { return &m_RenderPass; }
             GraphicsPipeline GetPipeline() const { return m_GraphicsPipeline; }
+            VkInstance GetInstance() const { return m_Instance; }
             VkDescriptorSetLayout GetDescriptorSetLayout() const
             {
                 return m_DescriptorSetLayout;

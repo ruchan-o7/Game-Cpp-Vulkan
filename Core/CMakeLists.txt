@@ -37,8 +37,24 @@ set(CORE_SOURCES
 	"src/Core/Graphics/Swapchain.cpp"
 	"src/Core/Graphics/stb_image.cpp"
 )
+set(IMGUI_SRCS
+	"${IMGUI_SRC_DIR}/imgui.cpp"
+	"${IMGUI_SRC_DIR}/imgui_demo.cpp"
+	"${IMGUI_SRC_DIR}/imgui_draw.cpp"
+	"${IMGUI_SRC_DIR}/imgui_tables.cpp"
+	"${IMGUI_SRC_DIR}/imgui_widgets.cpp"
+	"${IMGUI_SRC_DIR}/imgui.h"
+	"${IMGUI_SRC_DIR}/imgui_internal.h"
+	"${IMGUI_SRC_DIR}/imstb_textedit.h"
+	"${IMGUI_SRC_DIR}/imstb_truetype.h"
+	"${IMGUI_SRC_DIR}/backends/imgui_impl_glfw.h"
+	"${IMGUI_SRC_DIR}/backends/imgui_impl_glfw.cpp"
+	"${IMGUI_SRC_DIR}/backends/imgui_impl_vulkan.h"
+	"${IMGUI_SRC_DIR}/backends/imgui_impl_vulkan.cpp"
+)
+list(APPEND "${CORE_SOURCES}" "${IMGUI_SRCS}")
 
-add_library("${PROJECT_NAME}" "${CORE_SOURCES}")
+add_library("${PROJECT_NAME}" "${CORE_SOURCES}""${IMGUI_SRCS}")
 
 target_include_directories("${PROJECT_NAME}" PRIVATE
 	"${Vulkan_INCLUDE_DIRS}"
@@ -46,6 +62,7 @@ target_include_directories("${PROJECT_NAME}" PRIVATE
 	"${GLM_INCLUDE_DIR}"
 	"${VK_BOOTSTRAP_INCLUDE_DIR}"
 	"${STB_INCLUDE_DIR}"
+	"${IMGUI_SRC_DIR}"
 	"src"
 )
 

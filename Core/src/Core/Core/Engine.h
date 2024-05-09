@@ -99,5 +99,6 @@ namespace FooGame
             void NextBatch();
             void StartBatch();
             void BeginDrawing();
+            void InitImgui();
     };
 }  // namespace FooGame
