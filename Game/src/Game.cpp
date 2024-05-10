@@ -42,7 +42,9 @@ namespace FooGame
     {
         Engine::Init(*m_Window);
         m_Camera.RecalculateViewMatrix();
-        m_OrthoCamera.MoveTo({2.0f, 2.0f, 2.0f});
+
+        OrthographicCamera m_OrthoCamera{-1.0f, 1.0f, -1.0f, 1.0f};
+        // m_OrthoCamera.MoveTo({2.0f, 2.0f, 2.0f});
 
         while (!m_Window->ShouldClose())
         {
@@ -60,7 +62,7 @@ namespace FooGame
                     {
                         Renderer2D::BeginDrawing();
                         {
-                            Renderer2D::BeginScene(m_Camera);
+                            Renderer2D::BeginScene(m_OrthoCamera);
                             DrawQuads(m_BenchmarkAmount);
                             Renderer2D::EndScene();
                         }
@@ -76,6 +78,16 @@ namespace FooGame
                                            posisitons.z};
                         ImGui::SliderFloat3("Camera pos", pos, -10.0f, 10.0f);
                         m_Camera.SetPosition({pos[0], pos[1], pos[2]});
+                        float values[4] = {
+                            m_OrthoCamera.m_Left,
+                            m_OrthoCamera.m_Right,
+                            m_OrthoCamera.m_Bottom,
+                            m_OrthoCamera.m_Top,
+                        };
+                        ImGui::SliderFloat4("Camera val", values, -10.0f,
+                                            10.0f);
+                        m_OrthoCamera.SetProj(values[0], values[1], values[2],
+                                              values[3]);
                         ImGui::End();
                     }
                 }
@@ -121,13 +133,11 @@ namespace FooGame
         if (key.GetKeyCode() == KeyCode::A)
         {
             m_Camera.GoLeft();
-            m_OrthoCamera.GoLeft();
         }
 
         if (key.GetKeyCode() == KeyCode::D)
         {
             m_Camera.GoRight();
-            m_OrthoCamera.GoRight();
         }
         if (key.GetKeyCode() == KeyCode::W)
         {
@@ -141,12 +151,10 @@ namespace FooGame
         if (key.GetKeyCode() == KeyCode::Space)
         {
             m_Camera.GoUp();
-            m_OrthoCamera.GoUp();
         }
         if (key.GetKeyCode() == KeyCode::LeftControl)
         {
             m_Camera.GoDown();
-            m_OrthoCamera.GoDown();
         }
 
         m_Camera.RecalculateViewMatrix();

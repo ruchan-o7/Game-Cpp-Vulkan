@@ -337,7 +337,7 @@ namespace FooGame
         UniformBufferObject ubd{};
 
         ubd.Model      = glm::mat4(1.0f);
-        ubd.View       = camera.GetView();        // glm::mat4(1.0f);
+        ubd.View       = glm::mat4(1.0f);
         ubd.Projection = camera.GetProjection();  // glm::mat4(1.0f);
         s_Data.resources.UniformBuffers[Engine::GetCurrentFrame()]->SetData(
             sizeof(ubd), &ubd);

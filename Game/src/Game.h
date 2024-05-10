@@ -20,7 +20,6 @@ namespace FooGame
             WindowsWindow* m_Window;
             i32 m_BenchmarkAmount = 100;
             PerspectiveCamera m_Camera;
-            OrthographicCamera m_OrthoCamera;
             bool m_SecondMouse = false;
 
         private:
