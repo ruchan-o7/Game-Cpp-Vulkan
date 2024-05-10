@@ -45,7 +45,7 @@ namespace FooGame
             glm::mat4 m_Projection = glm::mat4(1.0f);
             glm::mat4 m_ViewProj   = glm::mat4(1.0f);
 
-            glm::vec3 m_Position;
-            float m_Rotation = 0.0f;
+            glm::vec3 m_Position = {0.0f, 0.0f, 0.0f};
+            float m_Rotation     = 0.0f;
     };
 }  // namespace FooGame

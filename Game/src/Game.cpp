@@ -78,6 +78,13 @@ namespace FooGame
                                            posisitons.z};
                         ImGui::SliderFloat3("Camera pos", pos, -10.0f, 10.0f);
                         m_Camera.SetPosition({pos[0], pos[1], pos[2]});
+
+                        auto posisitonsO = m_OrthoCamera.GetPosition();
+                        float posO[3]    = {posisitonsO.x, posisitonsO.y,
+                                            posisitonsO.z};
+                        ImGui::SliderFloat3("Camera pos Ortho", posO, -10.0f,
+                                            10.0f);
+                        m_OrthoCamera.SetPosition({posO[0], posO[1], posO[2]});
                         float values[4] = {
                             m_OrthoCamera.m_Left,
                             m_OrthoCamera.m_Right,
