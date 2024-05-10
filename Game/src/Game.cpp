@@ -94,7 +94,6 @@ namespace FooGame
             }
             Engine::EndDrawing();
         }
-        Engine::Shutdown();
     }
 
     void Game::Shutdown()

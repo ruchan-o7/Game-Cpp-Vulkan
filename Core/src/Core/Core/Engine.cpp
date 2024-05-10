@@ -153,7 +153,6 @@ namespace FooGame
     }
     Engine::~Engine()
     {
-        Api::WaitIdle();
         Shutdown();
     }
     void Engine::BeginDrawing()
@@ -192,13 +191,22 @@ namespace FooGame
     double lastFrameTime_ = 0;
     void Engine::Shutdown()
     {
+        auto device = Api::GetDevice()->GetDevice();
+        Api::WaitIdle();
+        delete comps.swapchain;
+        for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            comps.imageAvailableSemaphores[i].Destroy(device);
+            comps.renderFinishedSemaphores[i].Destroy(device);
+            comps.inFlightFences[i].Destroy(device);
+        }
+        Renderer2D::Shutdown();
+
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
         vkDestroyDescriptorPool(Api::GetDevice()->GetDevice(), g_ImguiPool,
                                 nullptr);
-        auto device = Api::GetDevice()->GetDevice();
-        delete comps.swapchain;
         Api::Shutdown();
     }
     bool Engine::AcquireNextImage(u32& imageIndex)

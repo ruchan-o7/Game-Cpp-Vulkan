@@ -482,6 +482,23 @@ namespace FooGame
     }
     void Renderer2D::Shutdown()
     {
+        auto device = Api::GetDevice()->GetDevice();
+        vkDestroyDescriptorSetLayout(device, s_Data.api.DescriptorSetLayout,
+                                     nullptr);
+        s_Data.resources.IndexBuffer->Release();
+        delete s_Data.resources.IndexBuffer;
+        s_Data.resources.VertexBuffer->Release();
+        delete s_Data.resources.VertexBuffer;
+        for (auto& ub : s_Data.resources.UniformBuffers)
+        {
+            ub->Release();
+        }
+        s_Data.resources.UniformBuffers.clear();
+        vkDestroyPipelineLayout(device, s_Data.api.Pipeline.pipelineLayout,
+                                nullptr);
+        vkDestroyPipeline(device, s_Data.api.Pipeline.pipeline, nullptr);
+        vkDestroySampler(device, s_Data.api.TextureSampler, nullptr);
+        DestroyImage(s_Data.api.image);
         delete[] s_Data.frameData.QuadVertexBufferBase;
         // TODO: clear created resources
     }
