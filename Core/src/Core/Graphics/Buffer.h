@@ -60,7 +60,8 @@ namespace FooGame
             VkDevice m_Device;
             BufferCreateInfo createInfo;
     };
-    Buffer CreateVertexBuffer(const List<Vertex> vertices);
-    Buffer CreateIndexBuffer(const List<u32>& indices);
+    Buffer* CreateDynamicBuffer(size_t size, BufferUsage usage);
+    Buffer* CreateVertexBuffer(const List<Vertex> vertices);
+    Buffer* CreateIndexBuffer(const List<u32>& indices);
     static VkBufferUsageFlags ParseBufferUsage(BufferUsage usage);
 }  // namespace FooGame

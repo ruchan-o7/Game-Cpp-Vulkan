@@ -9,12 +9,10 @@ namespace FooGame
 
     struct SwapchainCreateInfo
     {
-            Device* device;
-            VkSurfaceKHR surface;
             VkExtent2D extent;
             VkPresentModeKHR presentMode;
             VkSwapchainKHR oldSwapchain;
-            VkRenderPass* renderPass;
+            VkRenderPass renderPass;
     };
     class Swapchain
     {
@@ -47,7 +45,7 @@ namespace FooGame
             void Recreate(VkExtent2D extent);
             VkFramebuffer GetFrameBuffer(u32 imageIndex);
             void CreateFramebuffers();
-            void SetRenderpass(VkRenderPass* renderPass);
+            void SetRenderpass();
             void CreateDepthResources();
 
         private:
@@ -68,17 +66,16 @@ namespace FooGame
     class SwapchainBuilder
     {
         public:
-            SwapchainBuilder(Device* device, VkSurfaceKHR& surface);
+            SwapchainBuilder();
             ~SwapchainBuilder() = default;
 
             SwapchainBuilder& SetExtent(VkExtent2D extent);
             SwapchainBuilder& SetOldSwapchain(
                 VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE);
-            SwapchainBuilder& SetSurface(VkSurfaceKHR surface);
             SwapchainBuilder& SetSurfaceFormat(
                 VkSurfaceFormatKHR surfaceFormat);
             SwapchainBuilder& SetPresentMode(VkPresentModeKHR presentMode);
-            Shared<Swapchain> Build();
+            Swapchain* Build();
 
         private:
             SwapchainCreateInfo createInfo{};

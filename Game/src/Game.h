@@ -4,6 +4,7 @@
 #include <Core/Events/ApplicationEvent.h>
 #include <Core/Events/KeyEvent.h>
 #include <Core/Core/Engine.h>
+#include "Core/Core/OrthographicCamera.h"
 #include "Core/Core/PerspectiveCamera.h"
 #include "Core/Events/MouseMovedEvent.h"
 namespace FooGame
@@ -17,9 +18,9 @@ namespace FooGame
 
         private:
             WindowsWindow* m_Window;
-            Engine* m_Engine;
             i32 m_BenchmarkAmount = 100;
             PerspectiveCamera m_Camera;
+            OrthographicCamera m_OrthoCamera;
             bool m_SecondMouse = false;
 
         private:

@@ -1,13 +1,13 @@
 #include "Engine.h"
 #include <GLFW/glfw3.h>
 #include <cstdint>
-#include "../Backend/Vertex.h"
 #include "../Backend/VulkanCheckResult.h"
 #include "../Core/Base.h"
-#include "../Graphics/Buffer.h"
 #include "../Graphics/Semaphore.h"
-#include "../Graphics/Image.h"
-#include "../Core/PerspectiveCamera.h"
+#include "../Core/Window.h"
+#include "../Graphics/Api.h"
+#include "../Graphics/Renderer2D.h"
+#include "../Graphics/Swapchain.h"
 #include "vulkan/vulkan_core.h"
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -16,6 +16,36 @@
 
 namespace FooGame
 {
+
+    struct FrameData
+    {
+            u32 imageIndex   = 0;
+            u32 currentFrame = 0;
+            i32 fbWidth      = 0;
+            i32 fbHeight     = 0;
+    };
+    struct EngineComponents
+    {
+            GLFWwindow* windowHandle;
+            Swapchain* swapchain;
+            // List<VkDescriptorSet> m_DescriptorSets;
+            List<VkCommandBuffer> commandBuffers;
+            List<Fence> inFlightFences;
+            List<Semaphore> imageAvailableSemaphores;
+            List<Semaphore> renderFinishedSemaphores;
+            bool framebufferResized = false;
+    };
+    FrameData frameData{};
+    EngineComponents comps{};
+
+    u32 Engine::GetCurrentFrame()
+    {
+        return frameData.currentFrame;
+    }
+    u32 Engine::GetImageIndex()
+    {
+        return frameData.imageIndex;
+    }
     static void check_vk_result(VkResult err)
     {
         if (err == 0)
@@ -28,29 +58,23 @@ namespace FooGame
             abort();
         }
     }
+
+    VkFormat Engine::GetSwapchainImageFormat()
+    {
+        return comps.swapchain->GetImageFormat();
+    }
     ImGui_ImplVulkanH_Window g_MainWindowData;
     static VkDescriptorPool g_ImguiPool = nullptr;
-    Engine* Engine::s_Instance          = nullptr;
-    Engine* Engine::Create(GLFWwindow* window)
-    {
-        s_Instance = new Engine{};
-        s_Instance->Init(window);
-        return s_Instance;
-    }
-    Device& Engine::GetDevice() const
-    {
-        return *m_Api->GetDevice();
-    }
     VkCommandBuffer Engine::BeginSingleTimeCommands()
     {
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.level       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = m_Api->GetCommandPool();
+        allocInfo.commandPool = Api::GetCommandPool();
         allocInfo.commandBufferCount = 1;
 
         VkCommandBuffer commandBuffer{};
-        vkAllocateCommandBuffers(m_Api->GetDevice()->GetDevice(), &allocInfo,
+        vkAllocateCommandBuffers(Api::GetDevice()->GetDevice(), &allocInfo,
                                  &commandBuffer);
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -61,9 +85,9 @@ namespace FooGame
 
     bool Engine::OnWindowResized(WindowResizeEvent& event)
     {
-        m_FramebufferResized = true;
-        frameData.fbWidth    = event.GetWidth();
-        frameData.fbHeight   = event.GetHeight();
+        comps.framebufferResized = true;
+        frameData.fbWidth        = event.GetWidth();
+        frameData.fbHeight       = event.GetHeight();
         return true;
     }
     void Engine::EndSingleTimeCommands(VkCommandBuffer& commandBuffer)
@@ -75,193 +99,67 @@ namespace FooGame
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers    = &commandBuffer;
 
-        vkQueueSubmit(m_Api->GetDevice()->GetGraphicsQueue(), 1, &submitInfo,
+        vkQueueSubmit(Api::GetDevice()->GetGraphicsQueue(), 1, &submitInfo,
                       VK_NULL_HANDLE);
-        vkQueueWaitIdle(m_Api->GetDevice()->GetGraphicsQueue());
+        vkQueueWaitIdle(Api::GetDevice()->GetGraphicsQueue());
 
-        vkFreeCommandBuffers(m_Api->GetDevice()->GetDevice(),
-                             m_Api->GetCommandPool(), 1, &commandBuffer);
+        vkFreeCommandBuffers(Api::GetDevice()->GetDevice(),
+                             Api::GetCommandPool(), 1, &commandBuffer);
     }
-    void Engine::Init(GLFWwindow* window)
+    void Engine::Init(WindowsWindow& window)
     {
-        m_WindowHandle = window;
-        m_Api          = Api::Create(window);
+        comps.windowHandle = window.GetWindowHandle();
+        Api::Init(&window);
+        auto device = Api::GetDevice()->GetDevice();
         int w, h;
-        glfwGetFramebufferSize(m_WindowHandle, &w, &h);
-        auto device  = m_Api->GetDevice();
-        auto surface = m_Api->GetSurface();
-        SwapchainBuilder scBuilder{device, surface};
-        m_Swapchain =
-            scBuilder
+        glfwGetFramebufferSize(comps.windowHandle, &w, &h);
+        comps.swapchain =
+            SwapchainBuilder()
                 .SetExtent({static_cast<uint32_t>(w), static_cast<uint32_t>(h)})
                 .Build();
 
-        m_Api->CreateRenderpass(m_Swapchain->GetImageFormat());
-        m_Swapchain->SetRenderpass(m_Api->GetRenderpass());
-        m_Api->SetupDesciptorSetLayout();
-        m_Api->CreateGraphicsPipeline();
-        m_Api->CreateCommandPool();
-        m_Swapchain->CreateFramebuffers();
-        LoadTexture(m_Image, "../../../textures/texture.jpg");
-        // texture sampler
+        Api::CreateRenderpass(GetSwapchainImageFormat());
+        comps.swapchain->SetRenderpass();
+
+        Api::CreateCommandPool();
+        comps.swapchain->CreateFramebuffers();
+
+        Api::CreateDescriptorPool();
         {
-            auto props = device->GetPhysicalDeviceProperties();
-            VkSamplerCreateInfo samplerInfo{};
-            samplerInfo.sType        = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-            samplerInfo.magFilter    = VK_FILTER_LINEAR;
-            samplerInfo.minFilter    = VK_FILTER_LINEAR;
-            samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-            samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-            samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-            samplerInfo.anisotropyEnable = VK_TRUE;
-            samplerInfo.maxAnisotropy    = props.limits.maxSamplerAnisotropy;
-            samplerInfo.borderColor      = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-            samplerInfo.unnormalizedCoordinates = VK_FALSE;
-            samplerInfo.compareEnable           = VK_FALSE;
-            samplerInfo.compareOp               = VK_COMPARE_OP_ALWAYS;
-            samplerInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-
-            VK_CALL(vkCreateSampler(device->GetDevice(), &samplerInfo, nullptr,
-                                    &m_TextureSampler));
-        }
-
-        // buffers
-        {
-            auto builder =
-                BufferBuilder()
-                    .SetUsage(BufferUsage::VERTEX)
-                    .SetInitialSize(sizeof(Vertex) * frameData.MaxVertices)
-                    .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            m_VertexBuffer = CreateShared<Buffer>(builder.Build());
-            m_VertexBuffer->Allocate();
-            m_VertexBuffer->Bind();
-            frameData.QuadVertexBufferBase = new Vertex[frameData.MaxVertices];
-            u32 offset                     = 0;
-            List<u32> quadIndices(frameData.MaxIndices);
-            for (u32 i = 0; i < FrameData::MaxIndices; i += 6)
-            {
-                quadIndices[i + 0] = offset + 0;
-                quadIndices[i + 1] = offset + 1;
-                quadIndices[i + 2] = offset + 2;
-
-                quadIndices[i + 3]  = offset + 2;
-                quadIndices[i + 4]  = offset + 3;
-                quadIndices[i + 5]  = offset + 0;
-                offset             += 4;
-            }
-            // delete[] quadIndices;
-            m_IndexBuffer =
-                CreateShared<Buffer>(CreateIndexBuffer(quadIndices));
-            quadIndices.clear();
-            frameData.QuadVertexPositions[0] = {-0.5f, -0.5f, 0.0f, 1.0f};
-            frameData.QuadVertexPositions[1] = {0.5f, -0.5f, 0.0f, 1.0f};
-            frameData.QuadVertexPositions[2] = {0.5f, 0.5f, 0.0f, 1.0f};
-            frameData.QuadVertexPositions[3] = {-0.5f, 0.5f, 0.0f, 1.0f};
-        }
-        m_UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-        for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            BufferBuilder uBuffBuilder{};
-            uBuffBuilder.SetUsage(BufferUsage::UNIFORM)
-                .SetInitialSize(sizeof(UniformBufferObject))
-                .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-            m_UniformBuffers[i] = CreateShared<Buffer>(uBuffBuilder.Build());
-            m_UniformBuffers[i]->Allocate();
-            m_UniformBuffers[i]->Bind();
-        }
-        m_Api->CreateDescriptorPool();
-        // descriptor sets
-        {
-            List<VkDescriptorSetLayout> layouts(
-                MAX_FRAMES_IN_FLIGHT, m_Api->GetDescriptorSetLayout());
-            VkDescriptorSetAllocateInfo allocInfo{};
-            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            allocInfo.descriptorPool     = m_Api->GetDescriptorPool();
-            allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
-            allocInfo.pSetLayouts        = layouts.data();
-
-            m_DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-            VK_CALL(vkAllocateDescriptorSets(device->GetDevice(), &allocInfo,
-                                             m_DescriptorSets.data()));
-        }
-
-        for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = *m_UniformBuffers[i]->GetBuffer();
-            bufferInfo.offset = 0;
-            bufferInfo.range  = sizeof(UniformBufferObject);
-            VkDescriptorImageInfo imageInfo{};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView   = m_Image.ImageView;
-            imageInfo.sampler     = m_TextureSampler;
-
-            VkWriteDescriptorSet descriptorWrites[2] = {};
-            descriptorWrites[0].sType  = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[0].dstSet = m_DescriptorSets[i];
-            descriptorWrites[0].dstBinding      = 0;
-            descriptorWrites[0].dstArrayElement = 0;
-            descriptorWrites[0].descriptorType =
-                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptorWrites[0].descriptorCount = 1;
-            descriptorWrites[0].pBufferInfo     = &bufferInfo;
-
-            descriptorWrites[1].sType  = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[1].dstSet = m_DescriptorSets[i];
-            descriptorWrites[1].dstBinding      = 1;
-            descriptorWrites[1].dstArrayElement = 0;
-            descriptorWrites[1].descriptorType =
-                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[1].descriptorCount = 1;
-            descriptorWrites[1].pImageInfo      = &imageInfo;
-
-            vkUpdateDescriptorSets(device->GetDevice(),
-                                   ARRAY_COUNT(descriptorWrites),
-                                   descriptorWrites, 0, nullptr);
-        }
-
-        {
-            m_CommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+            comps.commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
             VkCommandBufferAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-            allocInfo.commandPool        = m_Api->GetCommandPool();
+            allocInfo.commandPool        = Api::GetCommandPool();
             allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-            allocInfo.commandBufferCount = (u32)m_CommandBuffers.size();
-            VK_CALL(vkAllocateCommandBuffers(device->GetDevice(), &allocInfo,
-                                             m_CommandBuffers.data()));
+            allocInfo.commandBufferCount = (u32)comps.commandBuffers.size();
+            VK_CALL(vkAllocateCommandBuffers(device, &allocInfo,
+                                             comps.commandBuffers.data()));
         }
         {
-            m_ImageAvailableSemaphores.clear();
-            m_RenderFinishedSemaphores.clear();
-            m_InFlightFences.clear();
+            comps.imageAvailableSemaphores.clear();
+            comps.renderFinishedSemaphores.clear();
+            comps.inFlightFences.clear();
 
             for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
-                m_ImageAvailableSemaphores.emplace_back(
-                    Semaphore{device->GetDevice()});
-                m_RenderFinishedSemaphores.emplace_back(
-                    Semaphore{device->GetDevice()});
-                m_InFlightFences.emplace_back(Fence{device->GetDevice()});
+                comps.imageAvailableSemaphores.emplace_back(Semaphore{device});
+                comps.renderFinishedSemaphores.emplace_back(Semaphore{device});
+                comps.inFlightFences.emplace_back(Fence{device});
             }
         }
+        Renderer2D::Init();
+        // Renderer3D::Init();
         InitImgui();
     }
     Engine::~Engine()
     {
-        delete[] frameData.QuadVertexBufferBase;
-        m_Api->WaitIdle();
+        Api::WaitIdle();
         Shutdown();
     }
-    void Engine::Close()
+    void Engine::BeginDrawing()
     {
-        m_ShouldClose = true;
-    }
-    void Engine::Start()
-    {
-        frameData.DrawCall = 0;
-        WaitFences();
+        // frameData.DrawCall = 0;
+        WaitFence(comps.inFlightFences[frameData.currentFrame]);
         u32 imageIndex;
         if (!AcquireNextImage(imageIndex))
         {
@@ -269,103 +167,46 @@ namespace FooGame
             return;
         }
         frameData.imageIndex = imageIndex;
-
-        ResetFences();
-        ResetCommandBuffers();
-        BeginDrawing();
+        comps.inFlightFences[frameData.currentFrame].Reset();
+        ResetCommandBuffer(comps.commandBuffers[frameData.currentFrame]);
+        BeginDrawing_();
         {
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
-            ImGui::ShowDemoWindow();
         }
     }
-    void Engine::End()
+    VkExtent2D Engine::GetSwapchainExtent()
+    {
+        return comps.swapchain->GetExtent();
+    }
+    void Engine::EndDrawing()
     {
         ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(
-            ImGui::GetDrawData(), m_CommandBuffers[frameData.currentFrame]);
+            ImGui::GetDrawData(), comps.commandBuffers[frameData.currentFrame]);
         Submit();
     }
 
     double deltaTime_     = 0;
     double lastFrameTime_ = 0;
-    void Engine::BeginScene(const PerspectiveCamera& camera)
-    {
-        UpdateUniforms(camera);
-        StartBatch();
-    }
-    void Engine::StartBatch()
-    {
-        frameData.QuadIndexCount      = 0;
-        frameData.QuadVertexBufferPtr = frameData.QuadVertexBufferBase;
-    }
-    void Engine::UpdateUniforms(const PerspectiveCamera& camera)
-    {
-        double currentTime = glfwGetTime();
-        deltaTime_         = currentTime - lastFrameTime_;
-        lastFrameTime_     = currentTime;
-        UniformBufferObject ubd{};
-
-        float aspect = (float)m_Swapchain->GetExtent().width /
-                       (float)m_Swapchain->GetExtent().height;
-
-        ubd.Model      = glm::mat4(1.0f);
-        ubd.View       = camera.GetView();
-        ubd.Projection = camera.GetProjection();
-
-        m_UniformBuffers[frameData.currentFrame]->SetData(sizeof(ubd), &ubd);
-    }
-    void Engine::EndScene()
-    {
-        Flush();
-    }
-    void Engine::Flush()
-    {
-        auto cb = m_CommandBuffers[frameData.currentFrame];
-        if (frameData.QuadIndexCount)
-        {
-            u32 dataSize = (u32)((uint8_t*)frameData.QuadVertexBufferPtr -
-                                 (uint8_t*)frameData.QuadVertexBufferBase);
-            m_VertexBuffer->SetData(dataSize, frameData.QuadVertexBufferBase);
-            vkCmdDrawIndexed(cb, frameData.QuadIndexCount, 2, 0, 0, 0);
-            frameData.DrawCall++;
-        }
-    }
     void Engine::Shutdown()
     {
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
-        vkDestroyDescriptorPool(m_Api->GetDevice()->GetDevice(), g_ImguiPool,
+        vkDestroyDescriptorPool(Api::GetDevice()->GetDevice(), g_ImguiPool,
                                 nullptr);
-        auto device = m_Api->GetDevice()->GetDevice();
-        m_VertexBuffer->Release();
-        m_VertexBuffer.reset();
-        m_IndexBuffer->Release();
-        m_IndexBuffer.reset();
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            m_UniformBuffers[i]->Release();
-            m_InFlightFences[i].Destroy(device);
-            m_RenderFinishedSemaphores[i].Destroy(device);
-            m_ImageAvailableSemaphores[i].Destroy(device);
-        }
-        DestroyImage(m_Image);
-        vkDestroySampler(m_Api->GetDevice()->GetDevice(), m_TextureSampler,
-                         nullptr);
-        m_Swapchain->Destroy();
-
-        if (m_Api)
-        {
-            delete m_Api;
-        }
+        auto device = Api::GetDevice()->GetDevice();
+        delete comps.swapchain;
+        Api::Shutdown();
     }
     bool Engine::AcquireNextImage(u32& imageIndex)
     {
-        auto err = m_Swapchain->AcquireNextImage(
-            m_Api->GetDevice()->GetDevice(),
-            m_ImageAvailableSemaphores[frameData.currentFrame], &imageIndex);
+        auto err = comps.swapchain->AcquireNextImage(
+            Api::GetDevice()->GetDevice(),
+            comps.imageAvailableSemaphores[frameData.currentFrame],
+            &imageIndex);
 
         if (err == VK_ERROR_OUT_OF_DATE_KHR)
         {
@@ -376,88 +217,29 @@ namespace FooGame
         {
             std::cerr << "Something happened to swapchain" << std::endl;
         }
+
         return true;
     }
-    void Engine::ResetCommandBuffers()
+    void Engine::ResetCommandBuffer(VkCommandBuffer& buf,
+                                    VkCommandBufferResetFlags flags)
     {
-        vkResetCommandBuffer(m_CommandBuffers[frameData.currentFrame], 0);
+        vkResetCommandBuffer(buf, flags);
+    }
+    VkFramebuffer Engine::GetFramebuffer()
+    {
+        return comps.swapchain->GetFrameBuffer(frameData.imageIndex);
     }
 
-    void Engine::DrawQuad(const glm::vec2& position, const glm::vec2& size,
-                          const glm::vec4& color)
+    void Engine::BeginRenderpass()
     {
-        DrawQuad({position.x, position.y, 0.0f}, size, color);
-    }
-
-    void Engine::DrawQuad(const glm::vec3& position, const glm::vec2& size,
-                          const glm::vec4& color)
-    {
-        glm::mat4 transform =
-            glm::translate(glm::mat4(1.0f), position) *
-            glm::scale(glm::mat4(1.0f), {size.x, size.y, 1.0f});
-
-        DrawQuad(transform, color);
-    }
-
-    void Engine::DrawQuad(const glm::mat4& transform, const glm::vec4& color)
-    {
-        constexpr size_t quadVertexCount    = 4;
-        constexpr glm::vec2 textureCoords[] = {
-            {0.0f, 0.0f},
-            {1.0f, 0.0f},
-            {1.0f, 1.0f},
-            {0.0f, 1.0f}
-        };
-        if (frameData.QuadIndexCount >= FrameData::MaxIndices)
-        {
-            NextBatch();
-        }
-
-        for (size_t i = 0; i < quadVertexCount; i++)
-        {
-            frameData.QuadVertexBufferPtr->Position =
-                transform * frameData.QuadVertexPositions[i];
-            frameData.QuadVertexBufferPtr->Color = glm::vec3{1.0f, 1.0f, 1.0f};
-            frameData.QuadVertexBufferPtr->TexCoord = textureCoords[i];
-            frameData.QuadVertexBufferPtr++;
-        }
-        frameData.QuadIndexCount += 6;
-        frameData.QuadCount++;
-    }
-
-    void Engine::DrawRotatedQuad(const glm::vec2& position,
-                                 const glm::vec2& size, float rotation,
-                                 const glm::vec4& color)
-    {
-        DrawRotatedQuad({position.x, position.y, 0.0f}, size, rotation, color);
-    }
-    void Engine::DrawRotatedQuad(const glm::vec3& position,
-                                 const glm::vec2& size, float rotation,
-                                 const glm::vec4& color)
-    {
-        glm::mat4 transform =
-            glm::translate(glm::mat4(1.0f), position) *
-            glm::rotate(glm::mat4(1.0f), glm::radians(rotation),
-                        {0.0f, 0.0f, 1.0f}) *
-            glm::scale(glm::mat4(1.0f), {size.x, size.y, 1.0f});
-
-        DrawQuad(transform, color);
-    }
-    void Engine::BeginDrawing()
-    {
-        auto cb = m_CommandBuffers[frameData.currentFrame];
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-        VK_CALL(vkBeginCommandBuffer(cb, &beginInfo));
-
+        auto cb = comps.commandBuffers[frameData.currentFrame];
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType      = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass = *m_Api->GetRenderpass();
+        renderPassInfo.renderPass = Api::GetRenderpass();
         renderPassInfo.framebuffer =
-            m_Swapchain->GetFrameBuffer(frameData.imageIndex);
+            comps.swapchain->GetFrameBuffer(frameData.imageIndex);
         renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = m_Swapchain->GetExtent();
+        renderPassInfo.renderArea.extent = comps.swapchain->GetExtent();
 
         VkClearValue clearColor[2]     = {};
         clearColor[0]                  = {0.2f, 0.3f, 0.1f, 1.0f};
@@ -466,52 +248,28 @@ namespace FooGame
         renderPassInfo.pClearValues    = clearColor;
 
         vkCmdBeginRenderPass(cb, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        {
-            vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                              m_Api->GetPipeline().pipeline);
-            VkViewport viewport{};
-            viewport.x        = 0.0f;
-            viewport.y        = 0.0f;
-            viewport.width    = (float)m_Swapchain->GetExtent().width;
-            viewport.height   = (float)m_Swapchain->GetExtent().height;
-            viewport.minDepth = 0.0f;
-            viewport.maxDepth = 1.0f;
-            vkCmdSetViewport(cb, 0, 1, &viewport);
-            VkRect2D scissor{
-                {0, 0},
-                m_Swapchain->GetExtent()
-            };
-            vkCmdSetScissor(cb, 0, 1, &scissor);
-
-            VkBuffer vertexBuffers[] = {*m_VertexBuffer->GetBuffer()};
-            VkDeviceSize offsets[]   = {0};
-
-            vkCmdBindVertexBuffers(cb, 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(cb, *m_IndexBuffer->GetBuffer(), 0,
-                                 VK_INDEX_TYPE_UINT32);
-            vkCmdBindDescriptorSets(cb, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                    m_Api->GetPipeline().pipelineLayout, 0, 1,
-                                    &m_DescriptorSets[frameData.currentFrame],
-                                    0, nullptr);
-        }
     }
-    void Engine::NextBatch()
+    void Engine::BeginDrawing_()
     {
-        Flush();
-        StartBatch();
+        auto cb = comps.commandBuffers[frameData.currentFrame];
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+        VK_CALL(vkBeginCommandBuffer(cb, &beginInfo));
+        BeginRenderpass();
     }
-    void Engine::ResetFences()
+    VkCommandBuffer Engine::GetCurrentCommandbuffer()
     {
-        m_InFlightFences[frameData.currentFrame].Reset();
+        return comps.commandBuffers[frameData.currentFrame];
     }
     void Engine::Submit()
     {
-        auto cb = m_CommandBuffers[frameData.currentFrame];
+        auto cb = comps.commandBuffers[frameData.currentFrame];
         vkCmdEndRenderPass(cb);
         VK_CALL(vkEndCommandBuffer(cb));
 
         VkSemaphore waitSemaphores[] = {
-            m_ImageAvailableSemaphores[frameData.currentFrame].Get()};
+            comps.imageAvailableSemaphores[frameData.currentFrame].Get()};
         VkPipelineStageFlags waitStages[] = {
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         VkSubmitInfo submitInfo{};
@@ -521,16 +279,17 @@ namespace FooGame
         submitInfo.pWaitDstStageMask  = waitStages;
 
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &m_CommandBuffers[frameData.currentFrame];
+        submitInfo.pCommandBuffers =
+            &comps.commandBuffers[frameData.currentFrame];
 
         VkSemaphore signalSemaphores[] = {
-            m_RenderFinishedSemaphores[frameData.currentFrame].Get()};
+            comps.renderFinishedSemaphores[frameData.currentFrame].Get()};
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores    = signalSemaphores;
 
-        VK_CALL(vkQueueSubmit(m_Api->GetDevice()->GetGraphicsQueue(), 1,
-                              &submitInfo,
-                              m_InFlightFences[frameData.currentFrame].Get()));
+        VK_CALL(
+            vkQueueSubmit(Api::GetDevice()->GetGraphicsQueue(), 1, &submitInfo,
+                          comps.inFlightFences[frameData.currentFrame].Get()));
 
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -538,19 +297,19 @@ namespace FooGame
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores    = signalSemaphores;
 
-        VkSwapchainKHR swapChains[] = {*m_Swapchain->Get()};
+        VkSwapchainKHR swapChains[] = {*comps.swapchain->Get()};
         presentInfo.swapchainCount  = 1;
         presentInfo.pSwapchains     = swapChains;
 
         presentInfo.pImageIndices = &(frameData.imageIndex);
 
-        auto result = vkQueuePresentKHR(m_Api->GetDevice()->GetPresentQueue(),
+        auto result = vkQueuePresentKHR(Api::GetDevice()->GetPresentQueue(),
                                         &presentInfo);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
-            m_FramebufferResized)
+            comps.framebufferResized)
         {
-            m_FramebufferResized = false;
+            comps.framebufferResized = false;
             RecreateSwapchain();
         }
         else if (result != VK_SUCCESS)
@@ -561,26 +320,19 @@ namespace FooGame
         frameData.currentFrame =
             (frameData.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
-    void Engine::WaitFences()
+    void Engine::WaitFence(Fence& fence)
     {
-        m_InFlightFences[frameData.currentFrame].Wait();
+        fence.Wait();
     }
     void Engine::RecreateSwapchain()
     {
-        // ImGui_ImplVulkan_SetMinImageCount(m_Swapchain->GetImageViewCount());
-        // ImGui_ImplVulkanH_CreateOrResizeWindow(
-        //     m_Api->GetInstance(), m_Api->GetDevice()->GetPhysicalDevice(),
-        //     m_Api->GetDevice()->GetDevice(), &g_MainWindowData,
-        //     m_Api->GetDevice()->GetGraphicsFamily(), nullptr,
-        //     frameData.fbWidth, frameData.fbHeight,
-        //     m_Swapchain->GetImageViewCount());
-        m_Api->WaitIdle();
-        m_Swapchain->Recreate({static_cast<uint32_t>(frameData.fbWidth),
-                               static_cast<uint32_t>(frameData.fbHeight)});
+        Api::WaitIdle();
+        comps.swapchain->Recreate({static_cast<uint32_t>(frameData.fbWidth),
+                                   static_cast<uint32_t>(frameData.fbHeight)});
     }
     void Engine::InitImgui()
     {
-        auto device                       = m_Api->GetDevice();
+        auto device                       = Api::GetDevice();
         VkDescriptorPoolSize pool_sizes[] = {
             {               VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
             {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
@@ -604,12 +356,6 @@ namespace FooGame
 
         VK_CALL(vkCreateDescriptorPool(device->GetDevice(), &pool_info, nullptr,
                                        &g_ImguiPool));
-        //
-        // int w, h;
-        // glfwGetFramebufferSize(m_WindowHandle, &w, &h);
-        // g_MainWindowData.Width  = w;
-        // g_MainWindowData.Height = h;
-        //
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
@@ -617,16 +363,16 @@ namespace FooGame
             ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
         ImGui::StyleColorsDark();
 
-        ImGui_ImplGlfw_InitForVulkan(m_WindowHandle, false);
+        ImGui_ImplGlfw_InitForVulkan(comps.windowHandle, false);
 
         ImGui_ImplVulkan_InitInfo init_info = {};
-        init_info.Instance                  = m_Api->GetInstance();
+        init_info.Instance                  = Api::GetInstance();
         init_info.PhysicalDevice            = device->GetPhysicalDevice();
         init_info.Device                    = device->GetDevice();
         init_info.Queue                     = device->GetGraphicsQueue();
         init_info.QueueFamily               = device->GetGraphicsFamily();
         init_info.DescriptorPool            = g_ImguiPool;
-        init_info.RenderPass                = *m_Api->GetRenderpass();
+        init_info.RenderPass                = Api::GetRenderpass();
         init_info.Subpass                   = 0;
         init_info.MinImageCount             = 2;
         init_info.ImageCount                = 2;

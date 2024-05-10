@@ -3,6 +3,7 @@
 #include "Core/Graphics/Buffer.h"
 #include "stb_image.h"
 #include "../Core/Engine.h"
+#include "../Graphics/Api.h"
 #include "vulkan/vulkan_core.h"
 namespace FooGame
 {
@@ -11,8 +12,8 @@ namespace FooGame
                      VkImageTiling tiling, VkImageUsageFlags usage,
                      VkMemoryPropertyFlags properties)
     {
-        auto device = Engine::Get()->GetDevice();
-        auto dev    = device.GetDevice();
+        auto device = Api::GetDevice();
+        auto dev    = device->GetDevice();
         VkImageCreateInfo imageInfo{};
         imageInfo.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageInfo.imageType     = VK_IMAGE_TYPE_2D;
@@ -29,14 +30,14 @@ namespace FooGame
         imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
         VK_CALL(vkCreateImage(dev, &imageInfo, nullptr, &image.Image));
 
-        auto memRequirements = device.GetMemoryRequirements(image.Image);
+        auto memRequirements = device->GetMemoryRequirements(image.Image);
         VkMemoryAllocateInfo allocInfo{};
         allocInfo.sType          = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex =
-            device.FindMemoryType(memRequirements.memoryTypeBits, properties);
+            device->FindMemoryType(memRequirements.memoryTypeBits, properties);
 
-        device.AllocateMemory(allocInfo, image.ImageMemory);
+        device->AllocateMemory(allocInfo, image.ImageMemory);
 
         vkBindImageMemory(dev, image.Image, image.ImageMemory, 0);
     }
@@ -44,7 +45,7 @@ namespace FooGame
     void CreateImageView(VkImage& image, VkImageView& imageView,
                          VkFormat format, VkImageAspectFlags aspectFlags)
     {
-        auto device = Engine::Get()->GetDevice().GetDevice();
+        auto device = Api::GetDevice()->GetDevice();
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image    = image;
@@ -61,7 +62,7 @@ namespace FooGame
     void CreateImageView(Image& image, VkFormat format,
                          VkImageAspectFlags aspectFlags)
     {
-        auto device = Engine::Get()->GetDevice().GetDevice();
+        auto device = Api::GetDevice()->GetDevice();
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image    = image.Image;
@@ -78,19 +79,19 @@ namespace FooGame
     }
     void DestroyImage(VkImage& image)
     {
-        auto device = Engine::Get()->GetDevice().GetDevice();
+        auto device = Api::GetDevice()->GetDevice();
         vkDestroyImage(device, image, nullptr);
     }
     void DestroyImage(VkImage& image, VkDeviceMemory& imageMem)
     {
-        auto device = Engine::Get()->GetDevice().GetDevice();
+        auto device = Api::GetDevice()->GetDevice();
 
         vkDestroyImage(device, image, nullptr);
         vkFreeMemory(device, imageMem, nullptr);
     }
     void DestroyImage(Image& image)
     {
-        auto device = Engine::Get()->GetDevice().GetDevice();
+        auto device = Api::GetDevice()->GetDevice();
         vkDestroyImageView(device, image.ImageView, nullptr);
         vkDestroyImage(device, image.Image, nullptr);
         vkFreeMemory(device, image.ImageMemory, nullptr);
@@ -98,7 +99,7 @@ namespace FooGame
 
     void LoadTexture(Image& image, const std::string& path)
     {
-        Device device = Engine::Get()->GetDevice();
+        Device* device = Api::GetDevice();
         i32 texWidth, texHeight, texChannels;
         stbi_uc* pixels        = stbi_load(path.c_str(), &texWidth, &texHeight,
 
@@ -148,7 +149,7 @@ namespace FooGame
     void TransitionImageLayout(Image& image, VkFormat format,
                                VkImageLayout oldLayout, VkImageLayout newLayout)
     {
-        auto cmd = Engine::Get()->BeginSingleTimeCommands();
+        auto cmd = Engine::BeginSingleTimeCommands();
         VkImageMemoryBarrier barrier{};
         barrier.sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         barrier.oldLayout           = oldLayout;
@@ -191,6 +192,6 @@ namespace FooGame
         vkCmdPipelineBarrier(cmd, sourceStage, destinationStage, 0, 0, nullptr,
                              0, nullptr, 1, &barrier);
 
-        Engine::Get()->EndSingleTimeCommands(cmd);
+        Engine::EndSingleTimeCommands(cmd);
     }
 }  // namespace FooGame

@@ -10,6 +10,8 @@ find_package(Vulkan REQUIRED)
 set(CORE_SOURCES
 	"src/pch.cpp"
 	"src/Core/Core/Window.cpp"
+	"src/Core/Core/OrthographicCamera.cpp"
+	"src/Core/Core/OrthographicCamera.h"
 	"src/Core/Core/Engine.h"
 	"src/Core/Core/Engine.cpp"
 	"src/Core/Core/PerspectiveCamera.cpp"
@@ -26,6 +28,7 @@ set(CORE_SOURCES
 	"src/Core/Graphics/Semaphore.h"
 	"src/Core/Graphics/Shader.h"
 	"src/Core/Graphics/Swapchain.h"
+	"src/Core/Graphics/Renderer2D.h"
 
 	"src/Core/Graphics/Api.cpp"
 	"src/Core/Graphics/Buffer.cpp"
@@ -36,6 +39,7 @@ set(CORE_SOURCES
 	"src/Core/Graphics/Shader.cpp"
 	"src/Core/Graphics/Swapchain.cpp"
 	"src/Core/Graphics/stb_image.cpp"
+	"src/Core/Graphics/Renderer2D.cpp"
 )
 set(IMGUI_SRCS
 	"${IMGUI_SRC_DIR}/imgui.cpp"

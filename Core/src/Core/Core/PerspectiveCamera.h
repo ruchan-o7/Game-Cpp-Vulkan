@@ -13,6 +13,7 @@ namespace FooGame
             const glm::mat4 GetProjection() const { return m_Projection; }
             const glm::mat4& GetView() const { return m_View; }
             const glm::mat4 GetModel() const;
+            void SetPosition(glm::vec3 newPos);
             void SetAspect(float aspect);
             void RecalculateViewMatrix();
             void GoForward();

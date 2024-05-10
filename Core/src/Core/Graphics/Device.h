@@ -6,17 +6,14 @@ namespace FooGame
 {
     struct DeviceCreateInfo
     {
-            VkInstance pInstance;
             List<const char*> deviceExtensions;
-            u32 deviceExtensionCount;
             List<const char*> validationLayers;
-            u32 validationLayersCount;
     };
     class Device
     {
         public:
-            Device(DeviceCreateInfo info);
-            ~Device() = default;
+            static Device* CreateDevice(const List<const char*>& layers,
+                                        const List<const char*>& extensions);
 
         public:
             VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
@@ -41,6 +38,8 @@ namespace FooGame
             void WaitIdle();
 
         private:
+            Device(DeviceCreateInfo info);
+            ~Device() = default;
             VkDevice m_Device;
             VkPhysicalDevice m_PhysicalDevice;
             VkQueue m_PresentQueue;
@@ -51,17 +50,5 @@ namespace FooGame
             u32 m_QueueFamilyCount    = -1;
             u32 m_GraphicQueueFamily  = -1;
             u32 m_PresentQueueFamily  = -1;
-    };
-    class DeviceCreateBuilder
-    {
-        public:
-            DeviceCreateBuilder(VkInstance instance);
-            ~DeviceCreateBuilder() = default;
-            DeviceCreateBuilder& AddExtension(const char* extension);
-            DeviceCreateBuilder& AddLayer(const char* layer);
-            [[nodiscard]] Shared<Device> Build();
-
-        private:
-            DeviceCreateInfo ci;
     };
 }  // namespace FooGame

@@ -1,9 +1,8 @@
 #pragma once
 #include "../Events/Event.h"
 #include "Base.h"
-#include "GLFW/glfw3.h"
+#include <GLFW/glfw3.h>
 #include "pch.h"
-struct GLFWwindow;
 namespace FooGame
 {
 
@@ -41,9 +40,10 @@ namespace FooGame
             EventCallback OnEventCallback;
             void PollEvents();
             void SetWindowTitle(const char* title);
-            bool ShouldClose();
-            Vector2 GetWindowSize();
             void SetCursorCenter();
+            bool ShouldClose();
+            double GetTime();
+            Vector2 GetWindowSize();
             Tuple<int, int> GetCursorPos();
             inline void WaitEvent() { glfwWaitEvents(); }
 

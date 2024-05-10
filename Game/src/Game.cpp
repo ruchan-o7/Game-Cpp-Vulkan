@@ -2,12 +2,13 @@
 #include <pch.h>
 #include "Core/Core/Base.h"
 #include "Core/Core/Engine.h"
+#include "Core/Core/OrthographicCamera.h"
 #include "Core/Core/PerspectiveCamera.h"
 #include "Core/Events/ApplicationEvent.h"
 #include "Core/Events/Event.h"
 #include "Core/Events/MouseMovedEvent.h"
+#include "Core/Graphics/Renderer2D.h"
 #include "Core/Input/KeyCodes.h"
-#include "GLFW/glfw3.h"
 #include "imgui.h"
 #include <Core/Graphics/Camera.h>
 namespace FooGame
@@ -21,52 +22,72 @@ namespace FooGame
         m_Window = new WindowsWindow();
         m_Window->SetOnEventFunction(BIND_EVENT_FN(Game::OnEvent));
     }
-
+    static void DrawQuads(int amount)
+    {
+        for (u32 i = 0; i < amount; i++)
+        {
+            for (u32 j = 0; j < amount; j++)
+            {
+                glm::vec4 color = {1.0f, 1.0f, 1.0f, 1.0f};
+                glm::vec2 size{0.1f, 0.1f};
+                static float offset = 1.0f;
+                glm::vec2 pos{(i * 0.1f) - offset, (j * 0.1f) - offset};
+                Renderer2D::DrawQuad(pos, size, color);
+            }
+        }
+    }
     double deltaTime__     = 0;
     double lastFrameTime__ = 0;
     void Game::Run()
     {
-        m_Engine = Engine::Create(m_Window->GetWindowHandle());
+        Engine::Init(*m_Window);
         m_Camera.RecalculateViewMatrix();
+        m_OrthoCamera.MoveTo({2.0f, 2.0f, 2.0f});
+
         while (!m_Window->ShouldClose())
         {
             m_Window->PollEvents();
+            Engine::BeginDrawing();
 
-            double currentTime = glfwGetTime();
-            deltaTime__        = currentTime - lastFrameTime__;
-            lastFrameTime__    = currentTime;
-            m_Engine->Start();
-            m_Engine->BeginScene(m_Camera);
-            static float rotation  = 0.0f;
-            rotation              += deltaTime__ + 2.f;
-            ImGui::Begin("Benchmark");
-            ImGui::SliderInt("Amount", &m_BenchmarkAmount, 10, 1000);
-            ImGui::End();
-            if (ImGui::Button("Test", {200, 200}))
+            double currentTime = m_Window->GetTime();
             {
-                std::cout << "Clicked" << std::endl;
-            }
-            for (u32 i = 0; i < m_BenchmarkAmount; i++)
-            {
-                for (u32 j = 0; j < m_BenchmarkAmount; j++)
+                deltaTime__     = currentTime - lastFrameTime__;
+                lastFrameTime__ = currentTime;
+                // Engine::BeginScene(m_Camera);
+                static float rotation  = 0.0f;
+                rotation              += deltaTime__ + 2.f;
                 {
-                    glm::vec4 color = {1.0f, 1.0f, 1.0f, 1.0f};
-                    glm::vec2 size{0.1f, 0.1f};
-                    static float offset = 1.0f;
-                    glm::vec2 pos{(i * 0.1f) - offset, (j * 0.1f) - offset};
-                    m_Engine->DrawQuad(pos, size, color);
-                    // m_Engine->DrawRotatedQuad(pos, size, rotation, color);
+                    {
+                        Renderer2D::BeginDrawing();
+                        {
+                            Renderer2D::BeginScene(m_Camera);
+                            DrawQuads(m_BenchmarkAmount);
+                            Renderer2D::EndScene();
+                        }
+                        Renderer2D::EndDrawing();
+                    }
+
+                    {
+                        ImGui::Begin("Benchmark");
+                        ImGui::SliderInt("Amount", &m_BenchmarkAmount, 10,
+                                         1000);
+                        auto posisitons = m_Camera.GetPosition();
+                        float pos[3]    = {posisitons.x, posisitons.y,
+                                           posisitons.z};
+                        ImGui::SliderFloat3("Camera pos", pos, -10.0f, 10.0f);
+                        m_Camera.SetPosition({pos[0], pos[1], pos[2]});
+                        ImGui::End();
+                    }
                 }
             }
-            m_Engine->EndScene();
-            m_Engine->End();
+            Engine::EndDrawing();
         }
-        m_Engine->Close();
+        Engine::Shutdown();
     }
 
     void Game::Shutdown()
     {
-        delete m_Engine;
+        Engine::Shutdown();
         delete m_Window;
     }
     Game::~Game()
@@ -96,36 +117,17 @@ namespace FooGame
             m_Window->Close();
             return true;
         }
-        if (key.GetKeyCode() == KeyCode::Up)
-        {
-            m_BenchmarkAmount++;
-            String title{std::move(StrFormat(
-                "Benchmark amount %i, total Quad: %i, total Vertex amount: %i",
-                m_BenchmarkAmount, m_BenchmarkAmount * m_BenchmarkAmount,
-                m_BenchmarkAmount * m_BenchmarkAmount * 4))};
-            m_Window->SetWindowTitle(title.c_str());
-            title.clear();
-        }
-        if (key.GetKeyCode() == KeyCode::Down)
-        {
-            m_BenchmarkAmount--;
-
-            String title{std::move(StrFormat(
-                "Benchmark amount %i, total Quad: %i, total Vertex amount: %i",
-                m_BenchmarkAmount, m_BenchmarkAmount * m_BenchmarkAmount,
-                m_BenchmarkAmount * m_BenchmarkAmount * 4))};
-            m_Window->SetWindowTitle(title.c_str());
-            title.clear();
-        }
 
         if (key.GetKeyCode() == KeyCode::A)
         {
             m_Camera.GoLeft();
+            m_OrthoCamera.GoLeft();
         }
 
         if (key.GetKeyCode() == KeyCode::D)
         {
             m_Camera.GoRight();
+            m_OrthoCamera.GoRight();
         }
         if (key.GetKeyCode() == KeyCode::W)
         {
@@ -139,10 +141,12 @@ namespace FooGame
         if (key.GetKeyCode() == KeyCode::Space)
         {
             m_Camera.GoUp();
+            m_OrthoCamera.GoUp();
         }
         if (key.GetKeyCode() == KeyCode::LeftControl)
         {
             m_Camera.GoDown();
+            m_OrthoCamera.GoDown();
         }
 
         m_Camera.RecalculateViewMatrix();
@@ -151,7 +155,7 @@ namespace FooGame
     bool Game::OnWindowResized(WindowResizeEvent& event)
     {
         m_Camera.SetAspect((float)event.GetWidth() / (float)event.GetHeight());
-        return m_Engine->OnWindowResized(event);
+        return Engine::OnWindowResized(event);
     }
     bool Game::OnMouseMoved(MouseMovedEvent& event)
     {

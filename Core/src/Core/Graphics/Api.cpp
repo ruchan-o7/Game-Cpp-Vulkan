@@ -6,20 +6,94 @@
 #include "../Core/Base.h"
 #include "../Graphics/Shader.h"
 #include "../Backend/Vertex.h"
+#include "Core/Core/Window.h"
+#include "Core/Graphics/Device.h"
 #include "vulkan/vulkan_core.h"
 namespace FooGame
 {
 
 #define VERT_PATH "../../../Shaders/vert.spv"
 #define FRAG_PATH "../../../Shaders/frag.spv"
-
-    Api* Api::s_Instance = nullptr;
-    Api* Api::Create(GLFWwindow* window)
+    struct ApiData
     {
-        s_Instance = new Api;
-        s_Instance->Init(window);
-        return s_Instance;
+            VkInstance instance;
+            VkDebugUtilsMessengerEXT debugMessenger;
+            Device* device;
+            VkSurfaceKHR surface;
+            VkRenderPass renderPass;
+            VkDescriptorSetLayout descriptorSeLayout;
+            GraphicsPipeline graphicsPipeline;
+            VkCommandPool commandPool;
+            VkDescriptorPool descriptorPool;  // do this on higher level
+    };
+    ApiData s_Api{};
+    static inline VkDevice GetVkDevice()
+    {
+        return s_Api.device->GetDevice();
     }
+    Device* Api::GetDevice()
+    {
+        return s_Api.device;
+    }
+    void Api::DestoryBuffer(VkBuffer& buffer)
+    {
+        vkDestroyBuffer(GetVkDevice(), buffer, nullptr);
+    }
+    void Api::FreeMemory(VkDeviceMemory& mem)
+    {
+        vkFreeMemory(GetVkDevice(), mem, nullptr);
+    }
+    void Api::CreateBuffer(const VkBufferCreateInfo& info, VkBuffer& buffer)
+    {
+        VK_CALL(vkCreateBuffer(GetVkDevice(), &info, 0, &buffer));
+    }
+    void Api::AllocateMemory(const VkMemoryAllocateInfo& info,
+                             VkDeviceMemory& mem)
+    {
+        VK_CALL(vkAllocateMemory(GetVkDevice(), &info, 0, &mem));
+    }
+    void Api::BindBufferMemory(VkBuffer& buffer, VkDeviceMemory& mem,
+                               VkDeviceSize deviceSize)
+    {
+        VK_CALL(vkBindBufferMemory(GetVkDevice(), buffer, mem, deviceSize));
+    }
+    void Api::UnMapMemory(VkDeviceMemory& mem)
+    {
+        vkUnmapMemory(GetVkDevice(), mem);
+    }
+
+    void Api::CmdCopyBuffer(VkCommandBuffer& cmd, VkBuffer& source,
+                            VkBuffer& target, u32 regionCount,
+                            VkBufferCopy& region)
+    {
+        vkCmdCopyBuffer(cmd, source, target, regionCount, &region);
+    }
+    VkCommandPool Api::GetCommandPool()
+    {
+        return s_Api.commandPool;
+    }
+    VkRenderPass Api::GetRenderpass()
+    {
+        return s_Api.renderPass;
+    }
+    VkInstance Api::GetInstance()
+    {
+        return s_Api.instance;
+    }
+
+    void Api::WaitIdle()
+    {
+        vkDeviceWaitIdle(GetVkDevice());
+    }
+    VkDescriptorPool Api::GetDescriptorPool()
+    {
+        return s_Api.descriptorPool;
+    }
+    VkSurfaceKHR Api::GetSurface()
+    {
+        return s_Api.surface;
+    }
+    static GraphicsPipeline GetPipeline();
     VkResult CreateDebugUtilsMessengerEXT(
         VkInstance instance,
         const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
@@ -48,13 +122,13 @@ namespace FooGame
             func(instance, debugMessenger, pAllocator);
         }
     }
-    const char* deviceExtensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    const char* validationLayers[] = {"VK_LAYER_KHRONOS_validation"};
+    List<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    List<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
     Api::~Api()
     {
         Shutdown();
     }
-    void Api::Init(GLFWwindow* window)
+    void Api::Init(WindowsWindow* window)
     {
         {
             VkApplicationInfo appInfo{};
@@ -83,8 +157,8 @@ namespace FooGame
 #ifdef _DEBUG
 
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-            createInfo.enabledLayerCount   = ARRAY_COUNT(validationLayers);
-            createInfo.ppEnabledLayerNames = validationLayers;
+            createInfo.enabledLayerCount   = validationLayers.size();
+            createInfo.ppEnabledLayerNames = validationLayers.data();
 
             debugCreateInfo.sType =
                 VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -104,20 +178,20 @@ namespace FooGame
             createInfo.ppEnabledExtensionNames = extensions.data();
             createInfo.enabledExtensionCount =
                 static_cast<u32>(extensions.size());
-            VK_CALL(vkCreateInstance(&createInfo, nullptr, &m_Instance));
+            VK_CALL(vkCreateInstance(&createInfo, nullptr, &s_Api.instance));
 
 #ifdef _DEBUG
-            VK_CALL(CreateDebugUtilsMessengerEXT(m_Instance, &debugCreateInfo,
-                                                 nullptr, &debugMessenger));
+            VK_CALL(CreateDebugUtilsMessengerEXT(s_Api.instance,
+                                                 &debugCreateInfo, nullptr,
+                                                 &s_Api.debugMessenger));
 #endif
-            VK_CALL(glfwCreateWindowSurface(m_Instance, window, nullptr,
-                                            &m_Surface));
+            VK_CALL(glfwCreateWindowSurface(s_Api.instance,
+                                            window->GetWindowHandle(), nullptr,
+                                            &s_Api.surface));
         }
         {
-            DeviceCreateBuilder deviceBuilder{m_Instance};
-            deviceBuilder.AddLayer(*validationLayers);
-            deviceBuilder.AddExtension(*deviceExtensions);
-            m_Device = deviceBuilder.Build();
+            s_Api.device =
+                Device::CreateDevice(deviceExtensions, validationLayers);
         }
     }
 
@@ -126,10 +200,10 @@ namespace FooGame
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        poolInfo.queueFamilyIndex = m_Device->GetGraphicsFamily();
+        poolInfo.queueFamilyIndex = s_Api.device->GetGraphicsFamily();
 
-        VK_CALL(vkCreateCommandPool(m_Device->GetDevice(), &poolInfo, nullptr,
-                                    &m_CommandPool));
+        VK_CALL(vkCreateCommandPool(s_Api.device->GetDevice(), &poolInfo,
+                                    nullptr, &s_Api.commandPool));
     }
 
     void Api::CreateDescriptorPool()
@@ -146,8 +220,8 @@ namespace FooGame
         poolInfo.poolSizeCount = ARRAY_COUNT(poolSizes);
         poolInfo.pPoolSizes    = poolSizes;
         poolInfo.maxSets       = MAX_FRAMES_IN_FLIGHT;
-        VK_CALL(vkCreateDescriptorPool(m_Device->GetDevice(), &poolInfo,
-                                       nullptr, &m_DescriptorPool));
+        VK_CALL(vkCreateDescriptorPool(s_Api.device->GetDevice(), &poolInfo,
+                                       nullptr, &s_Api.descriptorPool));
     }
     void Api::CreateRenderpass(VkFormat colorAttachmentFormat)
     {
@@ -212,8 +286,8 @@ namespace FooGame
         renderPassInfo.dependencyCount = 1;
         renderPassInfo.pDependencies   = &dependency;
 
-        VK_CALL(vkCreateRenderPass(m_Device->GetDevice(), &renderPassInfo,
-                                   nullptr, &m_RenderPass));
+        VK_CALL(vkCreateRenderPass(s_Api.device->GetDevice(), &renderPassInfo,
+                                   nullptr, &s_Api.renderPass));
     }
 
     void Api::SetupDesciptorSetLayout()
@@ -240,14 +314,15 @@ namespace FooGame
         layoutInfo.bindingCount = ARRAY_COUNT(bindings);
         layoutInfo.pBindings    = bindings;
 
-        VK_CALL(vkCreateDescriptorSetLayout(m_Device->GetDevice(), &layoutInfo,
-                                            nullptr, &m_DescriptorSetLayout));
+        VK_CALL(vkCreateDescriptorSetLayout(s_Api.device->GetDevice(),
+                                            &layoutInfo, nullptr,
+                                            &s_Api.descriptorSeLayout));
     }
 
     void Api::CreateGraphicsPipeline()
     {
-        Shader vert{m_Device->GetDevice(), VERT_PATH};
-        Shader frag{m_Device->GetDevice(), FRAG_PATH};
+        Shader vert{s_Api.device->GetDevice(), VERT_PATH};
+        Shader frag{s_Api.device->GetDevice(), FRAG_PATH};
         auto vertShaderStageInfo = vert.CreateInfo(VK_SHADER_STAGE_VERTEX_BIT);
 
         auto fragShaderStageInfo =
@@ -338,11 +413,11 @@ namespace FooGame
         pipelineLayoutInfo.sType =
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts    = &m_DescriptorSetLayout;
+        pipelineLayoutInfo.pSetLayouts    = &s_Api.descriptorSeLayout;
 
-        VK_CALL(vkCreatePipelineLayout(m_Device->GetDevice(),
+        VK_CALL(vkCreatePipelineLayout(s_Api.device->GetDevice(),
                                        &pipelineLayoutInfo, nullptr,
-                                       &m_GraphicsPipeline.pipelineLayout));
+                                       &s_Api.graphicsPipeline.pipelineLayout));
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount          = 2;
@@ -355,33 +430,55 @@ namespace FooGame
         pipelineInfo.pDepthStencilState  = &depthStencil;
         pipelineInfo.pColorBlendState    = &colorBlending;
         pipelineInfo.pDynamicState       = &dynamicState;
-        pipelineInfo.layout              = m_GraphicsPipeline.pipelineLayout;
-        pipelineInfo.renderPass          = m_RenderPass;
-        pipelineInfo.subpass             = 0;
-        pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
+        pipelineInfo.layout             = s_Api.graphicsPipeline.pipelineLayout;
+        pipelineInfo.renderPass         = s_Api.renderPass;
+        pipelineInfo.subpass            = 0;
+        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-        VK_CALL(vkCreateGraphicsPipelines(m_Device->GetDevice(), VK_NULL_HANDLE,
-                                          1, &pipelineInfo, nullptr,
-                                          &m_GraphicsPipeline.pipeline));
+        VK_CALL(vkCreateGraphicsPipelines(
+            s_Api.device->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo,
+            nullptr, &s_Api.graphicsPipeline.pipeline));
+    }
+    GraphicsPipeline Api::GetPipeline()
+    {
+        return s_Api.graphicsPipeline;
+    }
+    void Api::SetViewportAndScissors(VkCommandBuffer cmd, float w, float h)
+    {
+        VkViewport viewport{};
+        viewport.x        = 0.0f;
+        viewport.y        = 0.0f;
+        viewport.width    = w;
+        viewport.height   = h;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(cmd, 0, 1, &viewport);
+        VkRect2D scissor{
+            {                               0,0                                            },
+            {static_cast<u32>(viewport.width),
+             static_cast<u32>(viewport.height)}
+        };
+        vkCmdSetScissor(cmd, 0, 1, &scissor);
     }
 
     void Api::Shutdown()
     {
-        auto device = m_Device->GetDevice();
-        vkDestroyPipeline(device, m_GraphicsPipeline.pipeline, nullptr);
-        vkDestroyPipelineLayout(device, m_GraphicsPipeline.pipelineLayout,
+        auto device = GetVkDevice();
+        vkDestroyPipeline(device, s_Api.graphicsPipeline.pipeline, nullptr);
+        vkDestroyPipelineLayout(device, s_Api.graphicsPipeline.pipelineLayout,
                                 nullptr);
-        vkDestroyRenderPass(device, m_RenderPass, nullptr);
-        vkDestroyDescriptorPool(device, m_DescriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(device, m_DescriptorSetLayout, nullptr);
-        vkDestroyCommandPool(device, m_CommandPool, nullptr);
+        vkDestroyRenderPass(device, s_Api.renderPass, nullptr);
+        vkDestroyDescriptorPool(device, s_Api.descriptorPool, nullptr);
+        vkDestroyDescriptorSetLayout(device, s_Api.descriptorSeLayout, nullptr);
+        vkDestroyCommandPool(device, s_Api.commandPool, nullptr);
         vkDestroyDevice(device, nullptr);
 
 #ifdef _DEBUG
-        DestroyDebugUtilsMessengerEXT(m_Instance, debugMessenger, nullptr);
+        DestroyDebugUtilsMessengerEXT(s_Api.instance, s_Api.debugMessenger,
+                                      nullptr);
 #endif
-        vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
-        vkDestroyInstance(m_Instance, nullptr);
+        vkDestroySurfaceKHR(s_Api.instance, s_Api.surface, nullptr);
+        vkDestroyInstance(s_Api.instance, nullptr);
     }
 
 }  // namespace FooGame

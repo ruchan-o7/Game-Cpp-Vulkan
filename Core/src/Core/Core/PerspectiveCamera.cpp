@@ -48,6 +48,11 @@ namespace FooGame
                            glm::vec3{0.0f, 0.0f, 1.0f});
     }
 
+    void PerspectiveCamera::SetPosition(glm::vec3 newPos)
+    {
+        m_Position = newPos;
+        RecalculateViewMatrix();
+    }
     void PerspectiveCamera::GoForward()
     {
         m_Position += glm::vec3{0.0f, 1.0f, 0.0f} * m_Direction;

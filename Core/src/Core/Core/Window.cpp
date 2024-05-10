@@ -19,6 +19,10 @@ namespace FooGame
         Init();
     }
 
+    double WindowsWindow::GetTime()
+    {
+        return glfwGetTime();
+    }
     Vector2 WindowsWindow::GetWindowSize()
     {
         i32 w, h;

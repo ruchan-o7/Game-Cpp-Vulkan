@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.h>
 #include <algorithm>
 #include "../Backend/VulkanCheckResult.h"
+#include "../Graphics/Api.h"
 #include "../Core/Base.h"
 #include "Core/Graphics/Image.h"
 #include "vulkan/vulkan_core.h"
@@ -43,16 +44,17 @@ namespace FooGame
     }
     void Swapchain::Destroy()
     {
+        auto device = Api::GetDevice()->GetDevice();
         DestroyImage(m_DepthImage);
         for (auto& fb : m_SwapchainFrameBuffers)
         {
-            vkDestroyFramebuffer(m_Info.device->GetDevice(), fb, nullptr);
+            vkDestroyFramebuffer(device, fb, nullptr);
         }
         for (auto& iV : m_SwapchainImageViews)
         {
-            vkDestroyImageView(m_Info.device->GetDevice(), iV, nullptr);
+            vkDestroyImageView(device, iV, nullptr);
         }
-        vkDestroySwapchainKHR(m_Info.device->GetDevice(), m_Swapchain, nullptr);
+        vkDestroySwapchainKHR(device, m_Swapchain, nullptr);
     }
     Swapchain::~Swapchain()
     {
@@ -86,15 +88,17 @@ namespace FooGame
     }
     void Swapchain::Init()
     {
+        auto device   = Api::GetDevice();
+        auto vkdevice = device->GetDevice();
         VkSwapchainCreateInfoKHR swapchainCreate{};
-        auto caps               = m_Info.device->GetSurfaceCaps(m_Info.surface);
+        auto caps               = device->GetSurfaceCaps(Api::GetSurface());
         swapchainCreate.sType   = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        swapchainCreate.surface = m_Info.surface;
+        swapchainCreate.surface = Api::GetSurface();
 
         swapchainCreate.minImageCount =
             caps.minImageCount + 1;  // TODO: this can be trouble
         m_ImageFormat = chooseSwapSurfaceFormat(
-                            m_Info.device->GetSurfaceFormats(m_Info.surface))
+                            device->GetSurfaceFormats(Api::GetSurface()))
                             .format;
 
         swapchainCreate.imageFormat = m_ImageFormat;
@@ -115,16 +119,15 @@ namespace FooGame
         swapchainCreate.clipped          = VK_TRUE;
         swapchainCreate.oldSwapchain     = m_Info.oldSwapchain;
 
-        VK_CALL(vkCreateSwapchainKHR(m_Info.device->GetDevice(),
-                                     &swapchainCreate, nullptr, &m_Swapchain));
+        VK_CALL(vkCreateSwapchainKHR(vkdevice, &swapchainCreate, nullptr,
+                                     &m_Swapchain));
 
-        vkGetSwapchainImagesKHR(m_Info.device->GetDevice(), m_Swapchain,
-                                &m_ImageCount, nullptr);
+        vkGetSwapchainImagesKHR(vkdevice, m_Swapchain, &m_ImageCount, nullptr);
 
         m_SwapchainImages.resize(m_ImageCount);
 
-        vkGetSwapchainImagesKHR(m_Info.device->GetDevice(), m_Swapchain,
-                                &m_ImageCount, m_SwapchainImages.data());
+        vkGetSwapchainImagesKHR(vkdevice, m_Swapchain, &m_ImageCount,
+                                m_SwapchainImages.data());
 
         m_SwapchainImageViews.resize(m_SwapchainImages.size());
         for (u32 i = 0; i < m_SwapchainImages.size(); i++)
@@ -146,7 +149,8 @@ namespace FooGame
     }
     void Swapchain::CreateFramebuffers()
     {
-        u32 ivSize = m_SwapchainImageViews.size();
+        auto device = Api::GetDevice()->GetDevice();
+        u32 ivSize  = m_SwapchainImageViews.size();
         m_SwapchainFrameBuffers.resize(ivSize);
 
         for (size_t i = 0; i < ivSize; i++)
@@ -156,15 +160,14 @@ namespace FooGame
 
             VkFramebufferCreateInfo framebufferInfo{};
             framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            framebufferInfo.renderPass      = *m_Info.renderPass;
+            framebufferInfo.renderPass      = m_Info.renderPass;
             framebufferInfo.attachmentCount = ARRAY_COUNT(attachments);
             framebufferInfo.pAttachments    = attachments;
             framebufferInfo.width           = m_Extent.width;
             framebufferInfo.height          = m_Extent.height;
             framebufferInfo.layers          = 1;
 
-            VK_CALL(vkCreateFramebuffer(m_Info.device->GetDevice(),
-                                        &framebufferInfo, nullptr,
+            VK_CALL(vkCreateFramebuffer(device, &framebufferInfo, nullptr,
                                         &m_SwapchainFrameBuffers[i]));
         }
     }
@@ -180,10 +183,8 @@ namespace FooGame
                                      imageIndex);
     }
 
-    SwapchainBuilder::SwapchainBuilder(Device* device, VkSurfaceKHR& surface)
+    SwapchainBuilder::SwapchainBuilder()
     {
-        createInfo.device      = device;
-        createInfo.surface     = surface;
         createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
     }
 
@@ -198,14 +199,9 @@ namespace FooGame
         createInfo.extent = extent;
         return *this;
     }
-    void Swapchain::SetRenderpass(VkRenderPass* renderPass)
+    void Swapchain::SetRenderpass()
     {
-        m_Info.renderPass = renderPass;
-    }
-    SwapchainBuilder& SwapchainBuilder::SetSurface(VkSurfaceKHR surface)
-    {
-        createInfo.surface = surface;
-        return *this;
+        m_Info.renderPass = Api::GetRenderpass();
     }
     SwapchainBuilder& SwapchainBuilder::SetPresentMode(
         VkPresentModeKHR presentMode)
@@ -214,8 +210,8 @@ namespace FooGame
         return *this;
     }
 
-    Shared<Swapchain> SwapchainBuilder::Build()
+    Swapchain* SwapchainBuilder::Build()
     {
-        return CreateShared<Swapchain>(createInfo);
+        return new Swapchain(createInfo);
     }
 }  // namespace FooGame

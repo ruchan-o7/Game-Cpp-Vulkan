@@ -1,6 +1,7 @@
 #include "Device.h"
 #include <vulkan/vulkan.h>
 #include "pch.h"
+#include "../Graphics/Api.h"
 #include "../Backend/VulkanCheckResult.h"
 #include "../Core/Base.h"
 #include "vulkan/vulkan_core.h"
@@ -66,10 +67,10 @@ namespace FooGame
     {
         {
             VkPhysicalDevice devices[16] = {};
-            vkEnumeratePhysicalDevices(info.pInstance, &m_PhysicalDeviceCount,
-                                       nullptr);
-            vkEnumeratePhysicalDevices(info.pInstance, &m_PhysicalDeviceCount,
-                                       devices);
+            vkEnumeratePhysicalDevices(Api::GetInstance(),
+                                       &m_PhysicalDeviceCount, nullptr);
+            vkEnumeratePhysicalDevices(Api::GetInstance(),
+                                       &m_PhysicalDeviceCount, devices);
 
             assert(m_PhysicalDeviceCount =
                        !0 && "Could not find physical device lol");
@@ -113,13 +114,15 @@ namespace FooGame
 
             VkDeviceCreateInfo createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-            createInfo.queueCreateInfoCount    = 1;
-            createInfo.pQueueCreateInfos       = &queueCreateInfo;
-            createInfo.pEnabledFeatures        = &deviceFeatures;
-            createInfo.enabledExtensionCount   = info.deviceExtensionCount;
+            createInfo.queueCreateInfoCount = 1;
+            createInfo.pQueueCreateInfos    = &queueCreateInfo;
+            createInfo.pEnabledFeatures     = &deviceFeatures;
+            createInfo.enabledExtensionCount =
+                static_cast<u32>(info.deviceExtensions.size());
             createInfo.ppEnabledExtensionNames = info.deviceExtensions.data();
-            createInfo.enabledLayerCount       = info.validationLayersCount;
-            createInfo.ppEnabledLayerNames     = info.validationLayers.data();
+            createInfo.enabledLayerCount =
+                static_cast<u32>(info.validationLayers.size());
+            createInfo.ppEnabledLayerNames = info.validationLayers.data();
             VK_CALL(vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr,
                                    &m_Device));
             vkGetDeviceQueue(m_Device, m_GraphicQueueFamily, 0,
@@ -158,29 +161,10 @@ namespace FooGame
             m_PhysicalDevice, surface, &count, modes.data()));
         return modes;
     }
-    DeviceCreateBuilder& DeviceCreateBuilder::AddExtension(
-        const char* extension)
+    Device* Device::CreateDevice(const List<const char*>& layers,
+                                 const List<const char*>& extensions)
     {
-        ci.deviceExtensions.push_back(extension);
-        ci.deviceExtensionCount++;
-        return *this;
-    }
-    DeviceCreateBuilder& DeviceCreateBuilder::AddLayer(const char* layer)
-    {
-        ci.validationLayers.push_back(layer);
-        ci.validationLayersCount++;
-        return *this;
-    }
-
-    Shared<Device> DeviceCreateBuilder::Build()
-    {
-        return CreateShared<Device>(ci);
-    }
-    DeviceCreateBuilder::DeviceCreateBuilder(VkInstance instance)
-    {
-        ci.pInstance             = instance;
-        ci.deviceExtensionCount  = 0;
-        ci.validationLayersCount = 0;
+        return new Device({layers, extensions});
     }
 
 }  // namespace FooGame

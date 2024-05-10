@@ -1,19 +1,11 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include "../Core/Base.h"
-#include "../Graphics/Swapchain.h"
+#include "../Core/Window.h"
 #include "Device.h"
-#include "GLFW/glfw3.h"
-struct GLFWwindow;
+#include "vulkan/vulkan_core.h"
 namespace FooGame
 {
-
-    struct UniformBufferObject
-    {
-            alignas(16) glm::mat4 Model;
-            alignas(16) glm::mat4 View;
-            alignas(16) glm::mat4 Projection;
-    };
     struct GraphicsPipeline
     {
             VkPipeline pipeline;
@@ -22,44 +14,41 @@ namespace FooGame
     class Api
     {
         public:
-            Api() = default;
+            static void Init(WindowsWindow* window);
+            static void CreateRenderpass(VkFormat colorAttachmentFormat);
+            static void SetupDesciptorSetLayout();
+            static void CreateGraphicsPipeline();
+            static void CreateCommandPool();
+            static void CreateDescriptorPool();
+            static void Shutdown();
+            static void WaitIdle();
+            static VkDescriptorPool GetDescriptorPool();
+            static VkSurfaceKHR GetSurface();
+            static Device* GetDevice();
+            static VkCommandPool GetCommandPool();
+            static VkRenderPass GetRenderpass();
+            static GraphicsPipeline GetPipeline();
+            static VkInstance GetInstance();
+            static VkDescriptorSetLayout GetDescriptorSetLayout();
+
+            static void DestoryBuffer(VkBuffer& buffer);
+            static void FreeMemory(VkDeviceMemory& mem);
+            static void AllocateMemory(const VkMemoryAllocateInfo& info,
+                                       VkDeviceMemory& mem);
+            static void BindBufferMemory(VkBuffer& buffer, VkDeviceMemory& mem,
+                                         VkDeviceSize deviceSize = 0);
+            static void UnMapMemory(VkDeviceMemory& mem);
+            static void CmdCopyBuffer(VkCommandBuffer& cmd, VkBuffer& source,
+                                      VkBuffer& target, u32 regionCount,
+                                      VkBufferCopy& region);
+            static void CreateBuffer(const VkBufferCreateInfo& info,
+                                     VkBuffer& buffer);
+            static void SetViewportAndScissors(VkCommandBuffer cmd, float w,
+                                               float h);
             ~Api();
-            static Api* Create(GLFWwindow* window);
-            static Api* Get();
-            void Init(GLFWwindow* window);
-            void CreateRenderpass(VkFormat colorAttachmentFormat);
-            void SetupDesciptorSetLayout();
-            void CreateGraphicsPipeline();
-            void CreateCommandPool();
-            void CreateDescriptorPool();
-            void Shutdown();
-            void WaitIdle() { m_Device->WaitIdle(); }
-            VkDescriptorPool GetDescriptorPool() const
-            {
-                return m_DescriptorPool;
-            }
-            VkSurfaceKHR GetSurface() const { return m_Surface; }
-            Device* GetDevice() const { return m_Device.get(); }
-            VkCommandPool GetCommandPool() const { return m_CommandPool; }
-            VkRenderPass* GetRenderpass() { return &m_RenderPass; }
-            GraphicsPipeline GetPipeline() const { return m_GraphicsPipeline; }
-            VkInstance GetInstance() const { return m_Instance; }
-            VkDescriptorSetLayout GetDescriptorSetLayout() const
-            {
-                return m_DescriptorSetLayout;
-            }
 
         private:
-            static Api* s_Instance;
-            VkInstance m_Instance;
-            VkDebugUtilsMessengerEXT debugMessenger;
-            Shared<Device> m_Device;
-            VkSurfaceKHR m_Surface;
-            VkRenderPass m_RenderPass;
-            VkDescriptorSetLayout m_DescriptorSetLayout;
-            GraphicsPipeline m_GraphicsPipeline;
-            VkCommandPool m_CommandPool;
-            VkDescriptorPool m_DescriptorPool;  // do this on higher level
+            Api() = default;
     };
 
 }  // namespace FooGame
