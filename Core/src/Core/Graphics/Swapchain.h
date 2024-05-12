@@ -59,7 +59,7 @@ namespace FooGame
             List<VkImageView> m_SwapchainImageViews;
             List<VkFramebuffer> m_SwapchainFrameBuffers;
             SwapchainCreateInfo m_Info;
-            Image m_DepthImage;
+            Texture2D m_DepthImage;
 
         private:
     };

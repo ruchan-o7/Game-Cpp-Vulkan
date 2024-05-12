@@ -3,7 +3,7 @@
 #include "../Backend/Vertex.h"
 namespace FooGame
 {
-    struct Image;
+    struct Texture2D;
     enum class BufferUsage
     {
         VERTEX,
@@ -33,7 +33,7 @@ namespace FooGame
             void SetData(size_t size, void* data);
             VkBuffer* GetBuffer() { return &m_Buffer; }
             void CopyTo(Buffer& target, VkDeviceSize size);
-            void CopyToImage(Image& image);
+            void CopyToImage(Texture2D& image);
 
         private:
             void Create();

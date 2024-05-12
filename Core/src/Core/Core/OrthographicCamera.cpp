@@ -26,7 +26,6 @@ namespace FooGame
     {
         m_Projection = glm::ortho(left, right, bottom, top);
         m_ViewProj   = m_Projection * m_View;
-        // RecalculateViewMatrix();
     }
     void OrthographicCamera::SetProj(float left, float right, float bottom,
                                      float top)

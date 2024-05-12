@@ -3,26 +3,27 @@
 #include "../Core/Base.h"
 namespace FooGame
 {
-    struct Image
+    struct Texture2D
     {
             VkImage Image;
             VkImageView ImageView;
             VkDeviceMemory ImageMemory;
             u32 width, height;
     };
-    void CreateImageView(Image& image, VkFormat format,
+    void CreateImageView(Texture2D& texture, VkFormat format,
                          VkImageAspectFlags aspectFlags);
 
-    void CreateImageView(VkImage& image, VkImageView& imageView,
+    void CreateImageView(VkImage& texture, VkImageView& imageView,
                          VkFormat format, VkImageAspectFlags aspectFlags);
-    void CreateImage(Image& image, VkExtent2D extent, VkFormat format,
+    void CreateImage(Texture2D& texture, VkExtent2D extent, VkFormat format,
                      VkImageTiling tiling, VkImageUsageFlags usage,
                      VkMemoryPropertyFlags properties);
-    void DestroyImage(Image& image);
-    void DestroyImage(VkImage& image);
-    void DestroyImage(VkImage& image, VkDeviceMemory& imageMem);
-    void LoadTexture(Image& image, const std::string& path);
-    void TransitionImageLayout(Image& image, VkFormat format,
+    void DestroyImage(Texture2D& texture);
+    void DestroyImage(VkImage& texture);
+    void DestroyImage(VkImage& texture, VkDeviceMemory& imageMem);
+    void LoadTexture(Texture2D& texture, const std::string& path);
+    Shared<Texture2D> LoadTexture(const std::string& path);
+    void TransitionImageLayout(Texture2D& texture, VkFormat format,
                                VkImageLayout oldLayout,
                                VkImageLayout newLayout);
 }  // namespace FooGame

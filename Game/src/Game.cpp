@@ -4,6 +4,7 @@
 #include "Core/Core/Engine.h"
 #include "Core/Core/OrthographicCamera.h"
 #include "Core/Core/PerspectiveCamera.h"
+#include "Core/Core/Window.h"
 #include "Core/Events/ApplicationEvent.h"
 #include "Core/Events/Event.h"
 #include "Core/Events/MouseMovedEvent.h"
@@ -21,8 +22,10 @@ namespace FooGame
     {
         m_Window = new WindowsWindow();
         m_Window->SetOnEventFunction(BIND_EVENT_FN(Game::OnEvent));
+        m_Tex = CreateShared<Texture2D>();
     }
-    static void DrawQuads(int amount)
+    static void DrawQuads(int amount, const Shared<Texture2D> texture,
+                          float tiling, glm::vec4 tint)
     {
         for (u32 i = 0; i < amount; i++)
         {
@@ -32,7 +35,7 @@ namespace FooGame
                 glm::vec2 size{0.1f, 0.1f};
                 static float offset = 1.0f;
                 glm::vec2 pos{(i * 0.1f) - offset, (j * 0.1f) - offset};
-                Renderer2D::DrawQuad(pos, size, color);
+                Renderer2D::DrawQuad(pos, size, texture, tiling, tint);
             }
         }
     }
@@ -63,7 +66,8 @@ namespace FooGame
                         Renderer2D::BeginDrawing();
                         {
                             Renderer2D::BeginScene(m_OrthoCamera);
-                            DrawQuads(m_BenchmarkAmount);
+                            DrawQuads(m_BenchmarkAmount, m_Tex, m_Tilin,
+                                      m_Tint);
                             Renderer2D::EndScene();
                         }
                         Renderer2D::EndDrawing();
@@ -95,6 +99,14 @@ namespace FooGame
                                             10.0f);
                         m_OrthoCamera.SetProj(values[0], values[1], values[2],
                                               values[3]);
+                        ImGui::SliderFloat("Tiling", &m_Tilin, 0.0f, 3.0f);
+                        float tint[4] = {m_Tint.x, m_Tint.y, m_Tint.z,
+                                         m_Tint.w};
+                        ImGui::ColorEdit4("Tint", tint);
+                        m_Tint.x = tint[0];
+                        m_Tint.y = tint[1];
+                        m_Tint.z = tint[2];
+                        m_Tint.w = tint[3];
                         ImGui::End();
                     }
                 }

@@ -114,7 +114,7 @@ namespace FooGame
         this->m_Buffer      = other.m_Buffer;
     }
 
-    void Buffer::CopyToImage(Image& image)
+    void Buffer::CopyToImage(Texture2D& image)
 
     {
         auto cmd = Engine::BeginSingleTimeCommands();

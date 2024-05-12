@@ -7,6 +7,7 @@
 #include "Core/Core/OrthographicCamera.h"
 #include "Core/Core/PerspectiveCamera.h"
 #include "Core/Events/MouseMovedEvent.h"
+#include "Core/Graphics/Renderer2D.h"
 namespace FooGame
 {
     class Game
@@ -21,6 +22,9 @@ namespace FooGame
             i32 m_BenchmarkAmount = 100;
             PerspectiveCamera m_Camera;
             bool m_SecondMouse = false;
+            Shared<Texture2D> m_Tex;
+            float m_Tilin    = 1.0f;
+            glm::vec4 m_Tint = {1.0f, 1.0f, 1.0f, 1.0f};
 
         private:
             void Init();

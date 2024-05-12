@@ -1,5 +1,6 @@
 #include "Image.h"
 #include "../Backend/VulkanCheckResult.h"
+#include "Core/Core/Base.h"
 #include "Core/Graphics/Buffer.h"
 #include "stb_image.h"
 #include "../Core/Engine.h"
@@ -8,7 +9,7 @@
 namespace FooGame
 {
 
-    void CreateImage(Image& image, VkExtent2D extent, VkFormat format,
+    void CreateImage(Texture2D& image, VkExtent2D extent, VkFormat format,
                      VkImageTiling tiling, VkImageUsageFlags usage,
                      VkMemoryPropertyFlags properties)
     {
@@ -59,7 +60,7 @@ namespace FooGame
 
         VK_CALL(vkCreateImageView(device, &viewInfo, nullptr, &imageView));
     }
-    void CreateImageView(Image& image, VkFormat format,
+    void CreateImageView(Texture2D& image, VkFormat format,
                          VkImageAspectFlags aspectFlags)
     {
         auto device = Api::GetDevice()->GetDevice();
@@ -89,7 +90,7 @@ namespace FooGame
         vkDestroyImage(device, image, nullptr);
         vkFreeMemory(device, imageMem, nullptr);
     }
-    void DestroyImage(Image& image)
+    void DestroyImage(Texture2D& image)
     {
         auto device = Api::GetDevice()->GetDevice();
         vkDestroyImageView(device, image.ImageView, nullptr);
@@ -97,7 +98,7 @@ namespace FooGame
         vkFreeMemory(device, image.ImageMemory, nullptr);
     }
 
-    void LoadTexture(Image& image, const std::string& path)
+    void LoadTexture(Texture2D& image, const std::string& path)
     {
         Device* device = Api::GetDevice();
         i32 texWidth, texHeight, texChannels;
@@ -145,8 +146,14 @@ namespace FooGame
                         VK_IMAGE_ASPECT_COLOR_BIT);
         stagingBuffer.Release();
     }
+    Shared<Texture2D> LoadTexture(const std::string& path)
+    {
+        Texture2D image{};
+        LoadTexture(image, path);
+        return CreateShared<Texture2D>(image);
+    }
 
-    void TransitionImageLayout(Image& image, VkFormat format,
+    void TransitionImageLayout(Texture2D& image, VkFormat format,
                                VkImageLayout oldLayout, VkImageLayout newLayout)
     {
         auto cmd = Engine::BeginSingleTimeCommands();

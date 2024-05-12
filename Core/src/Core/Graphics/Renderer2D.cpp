@@ -2,7 +2,6 @@
 #include "../Core/Base.h"
 #include "../Core/Engine.h"
 #include "../Graphics/Buffer.h"
-#include "../Backend/Vertex.h"
 #include "../Backend/VulkanCheckResult.h"
 #include "../Graphics/Api.h"
 #include "../Graphics/Shader.h"
@@ -15,12 +14,64 @@ namespace FooGame
 
     struct UniformBufferObject
     {
-            alignas(16) glm::mat4 Model;
-            alignas(16) glm::mat4 View;
-            alignas(16) glm::mat4 Projection;
+            alignas(16) glm::mat4 ViewProjection;
     };
-#define VERT_PATH "../../../Shaders/vert.spv"
-#define FRAG_PATH "../../../Shaders/frag.spv"
+
+    struct QuadVertex
+    {
+            glm::vec3 Position;
+            glm::vec4 Color;
+            glm::vec2 TexCoord;
+            float TexIndex;
+            float TilingFactor;
+            static VkVertexInputBindingDescription GetBindingDescription()
+            {
+                VkVertexInputBindingDescription bindingDescription{};
+                bindingDescription.binding   = 0;
+                bindingDescription.stride    = sizeof(QuadVertex);
+                bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+                return bindingDescription;
+            }
+            static std::array<VkVertexInputAttributeDescription, 5>
+            GetAttributeDescrp()
+            {
+                std::array<VkVertexInputAttributeDescription, 5>
+                    attributeDescriptions{};
+                attributeDescriptions[0].binding  = 0;
+                attributeDescriptions[0].location = 0;
+                attributeDescriptions[0].format   = VK_FORMAT_R32G32B32_SFLOAT;
+                attributeDescriptions[0].offset =
+                    offsetof(QuadVertex, Position);
+
+                attributeDescriptions[1].binding  = 0;
+                attributeDescriptions[1].location = 1;
+                attributeDescriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+                attributeDescriptions[1].offset = offsetof(QuadVertex, Color);
+
+                attributeDescriptions[2].binding  = 0;
+                attributeDescriptions[2].location = 2;
+                attributeDescriptions[2].format   = VK_FORMAT_R32G32_SFLOAT;
+                attributeDescriptions[2].offset =
+                    offsetof(QuadVertex, TexCoord);
+
+                attributeDescriptions[3].binding  = 0;
+                attributeDescriptions[3].location = 3;
+                attributeDescriptions[3].format   = VK_FORMAT_R32_SFLOAT;
+                attributeDescriptions[3].offset =
+                    offsetof(QuadVertex, TexIndex);
+
+                attributeDescriptions[4].binding  = 0;
+                attributeDescriptions[4].location = 4;
+                attributeDescriptions[4].format   = VK_FORMAT_R32_SFLOAT;
+                attributeDescriptions[4].offset =
+                    offsetof(QuadVertex, TilingFactor);
+                return attributeDescriptions;
+            }
+    };
+// #define TEXTURE_SAMPLER_ARRAY_COUNT 32
+#define VERT_PATH "../../../Shaders/QuadShaderVert.spv"
+#define FRAG_PATH "../../../Shaders/QuadShaderFrag.spv"
     struct Renderer2DData
     {
             static const u32 MaxQuads    = 20000;
@@ -35,12 +86,18 @@ namespace FooGame
             Resources resources;
             struct FrameData
             {
-                    Vertex* QuadVertexBufferBase = nullptr;
-                    Vertex* QuadVertexBufferPtr  = nullptr;
+                    QuadVertex* QuadVertexBufferBase = nullptr;
+                    QuadVertex* QuadVertexBufferPtr  = nullptr;
                     glm::vec4 QuadVertexPositions[4];
+                    Shared<Texture2D> DefaultTexture;
                     u32 QuadIndexCount = 0;
                     u32 QuadCount      = 0;
                     u32 DrawCall       = 0;
+
+                    // std::array<Shared<Texture2D>,
+                    // TEXTURE_SAMPLER_ARRAY_COUNT>
+                    //     TextureSlots;
+                    // u32 TextureSlotIndex = 1;  // 0 is default
             };
             FrameData frameData;
             Renderer2D::Statistics Stats;
@@ -50,7 +107,7 @@ namespace FooGame
                     VkDescriptorSetLayout DescriptorSetLayout;
                     VkSampler TextureSampler;
                     List<VkDescriptorSet> DescriptorSets;
-                    Image image;
+                    // Texture2D image;
             };
             Api api{};
     };
@@ -85,11 +142,11 @@ namespace FooGame
             s_Data.frameData.QuadVertexPositions[1] = {0.5f, -0.5f, 0.0f, 1.0f};
             s_Data.frameData.QuadVertexPositions[2] = {0.5f, 0.5f, 0.0f, 1.0f};
             s_Data.frameData.QuadVertexPositions[3] = {-0.5f, 0.5f, 0.0f, 1.0f};
-            s_Data.resources.VertexBuffer =
-                CreateDynamicBuffer(sizeof(Vertex) * Renderer2DData::MaxIndices,
-                                    BufferUsage::VERTEX);
+            s_Data.resources.VertexBuffer           = CreateDynamicBuffer(
+                sizeof(QuadVertex) * Renderer2DData::MaxIndices,
+                BufferUsage::VERTEX);
             s_Data.frameData.QuadVertexBufferBase =
-                new Vertex[s_Data.MaxVertices];
+                new QuadVertex[s_Data.MaxVertices];
 
             s_Data.resources.UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
             for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -163,8 +220,14 @@ namespace FooGame
 
                 VK_CALL(vkCreateSampler(device->GetDevice(), &samplerInfo,
                                         nullptr, &s_Data.api.TextureSampler));
-                LoadTexture(s_Data.api.image, "../../../textures/texture.jpg");
+
+                s_Data.frameData.DefaultTexture =
+                    LoadTexture("../../../textures/texture.jpg");
+
+                // s_Data.frameData.TextureSlots[0] =
+                //     s_Data.frameData.DefaultTexture;
             }
+
             for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
                 VkDescriptorBufferInfo bufferInfo{};
@@ -174,10 +237,12 @@ namespace FooGame
                 bufferInfo.range  = sizeof(UniformBufferObject);
 
                 VkDescriptorImageInfo imageInfo{};
+
                 imageInfo.imageLayout =
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo.imageView = s_Data.api.image.ImageView;
-                imageInfo.sampler   = s_Data.api.TextureSampler;
+                imageInfo.imageView =
+                    s_Data.frameData.DefaultTexture->ImageView;
+                imageInfo.sampler = s_Data.api.TextureSampler;
 
                 VkWriteDescriptorSet descriptorWrites[2] = {};
                 descriptorWrites[0].sType =
@@ -198,7 +263,8 @@ namespace FooGame
                 descriptorWrites[1].descriptorType =
                     VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 descriptorWrites[1].descriptorCount = 1;
-                descriptorWrites[1].pImageInfo      = &imageInfo;
+                // TEXTURE_SAMPLER_ARRAY_COUNT;
+                descriptorWrites[1].pImageInfo = &imageInfo;
 
                 vkUpdateDescriptorSets(device->GetDevice(),
                                        ARRAY_COUNT(descriptorWrites),
@@ -223,8 +289,8 @@ namespace FooGame
             vertexInputInfo.sType =
                 VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-            auto bindingDescription    = Vertex::GetBindingDescription();
-            auto attributeDescriptions = Vertex::GetAttributeDescrp();
+            auto bindingDescription    = QuadVertex::GetBindingDescription();
+            auto attributeDescriptions = QuadVertex::GetAttributeDescrp();
 
             vertexInputInfo.vertexBindingDescriptionCount = 1;
             vertexInputInfo.vertexAttributeDescriptionCount =
@@ -336,9 +402,9 @@ namespace FooGame
     {
         UniformBufferObject ubd{};
 
-        ubd.Model      = glm::mat4(1.0f);
-        ubd.View       = camera.GetView();        /* glm::mat4(1.0f); */
-        ubd.Projection = camera.GetProjection();  // glm::mat4(1.0f);
+        // ubd.Model      = glm::mat4(1.0f);
+        // ubd.View       = camera.GetView();        /* glm::mat4(1.0f); */
+        ubd.ViewProjection = camera.GetProjection() * camera.GetView();
         s_Data.resources.UniformBuffers[Engine::GetCurrentFrame()]->SetData(
             sizeof(ubd), &ubd);
         StartBatch();
@@ -346,10 +412,14 @@ namespace FooGame
     void Renderer2D::BeginScene(const OrthographicCamera& camera)
     {
         UniformBufferObject ubd{};
+        ubd.ViewProjection = camera.GetView() * camera.GetProjection();
 
-        ubd.Model      = glm::mat4(1.0f);
-        ubd.View       = camera.GetView();        // glm::mat4(1.0f);
-        ubd.Projection = camera.GetProjection();  // glm::mat4(1.0f);
+        // ubd.Model      = glm::mat4(1.0f);
+        // ubd.View       = glm::mat4(1.0f);         // glm::mat4(1.0f);
+        // ubd.Projection = camera.GetProjection();  // glm::mat4(1.0f);
+        // ubd.Projection = camera.GetViewProj();    // glm::mat4(1.0f);
+        // s_Data.resources.UniformBuffers[Engine::GetCurrentFrame()]->SetData(
+        //     sizeof(ubd), &ubd);
         s_Data.resources.UniformBuffers[Engine::GetCurrentFrame()]->SetData(
             sizeof(ubd), &ubd);
         StartBatch();
@@ -395,12 +465,89 @@ namespace FooGame
             s_Data.frameData.QuadVertexBufferPtr->Position =
                 transform * s_Data.frameData.QuadVertexPositions[i];
             s_Data.frameData.QuadVertexBufferPtr->Color =
-                glm::vec3{1.0f, 1.0f, 1.0f};
+                glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
             s_Data.frameData.QuadVertexBufferPtr->TexCoord = textureCoords[i];
+            s_Data.frameData.QuadVertexBufferPtr->TilingFactor = 0.5f;
             s_Data.frameData.QuadVertexBufferPtr++;
         }
         s_Data.frameData.QuadIndexCount += 6;
         s_Data.frameData.QuadCount++;
+    }
+
+    void Renderer2D::DrawQuad(const glm::vec2& position, const glm::vec2& size,
+                              const Shared<Texture2D>& texture,
+                              float tilingFactor, const glm::vec4& tintColor)
+    {
+        DrawQuad({position.x, position.y, 0.0f}, size, texture, tilingFactor,
+                 tintColor);
+    }
+    void Renderer2D::DrawQuad(const glm::vec3& position, const glm::vec2& size,
+                              const Shared<Texture2D>& texture,
+                              float tilingFactor, const glm::vec4& tintColor)
+    {
+        glm::mat4 transform =
+            glm::translate(glm::mat4(1.0f), position) *
+            glm::scale(glm::mat4(1.0f), {size.x, size.y, 1.0f});
+
+        DrawQuad(transform, texture, tilingFactor, tintColor);
+    }
+    void Renderer2D::DrawQuad(const glm::mat4& transform,
+                              const Shared<Texture2D>& texture,
+                              float tilingFactor, const glm::vec4& tintColor)
+    {
+        constexpr size_t quadVertexCount    = 4;
+        constexpr glm::vec2 textureCoords[] = {
+            {0.0f, 0.0f},
+            {1.0f, 0.0f},
+            {1.0f, 1.0f},
+            {0.0f, 1.0f}
+        };
+
+        if (s_Data.frameData.QuadIndexCount >= Renderer2DData::MaxIndices)
+        {
+            NextBatch();
+        }
+
+        float textureIndex = 0.0f;
+        // for (uint32_t i = 1; i < s_Data.frameData.TextureSlotIndex; i++)
+        // {
+        //     if (s_Data.frameData.TextureSlots[i]->Image == texture->Image)
+        //     {
+        //         textureIndex = (float)i;
+        //         break;
+        //     }
+        // }
+        //
+        // if (textureIndex == 0.0f)
+        // {
+        //     if (s_Data.frameData.TextureSlotIndex >=
+        //         TEXTURE_SAMPLER_ARRAY_COUNT)
+        //     {
+        //         NextBatch();
+        //     }
+        //
+        //     textureIndex = (float)s_Data.frameData.TextureSlotIndex;
+        //     s_Data.frameData.TextureSlots[s_Data.frameData.TextureSlotIndex]
+        //     =
+        //         texture;
+        //     s_Data.frameData.TextureSlotIndex++;
+        // }
+
+        for (size_t i = 0; i < quadVertexCount; i++)
+        {
+            s_Data.frameData.QuadVertexBufferPtr->Position =
+                transform * s_Data.frameData.QuadVertexPositions[i];
+            s_Data.frameData.QuadVertexBufferPtr->Color    = tintColor;
+            s_Data.frameData.QuadVertexBufferPtr->TexCoord = textureCoords[i];
+            s_Data.frameData.QuadVertexBufferPtr->TexIndex = textureIndex;
+            s_Data.frameData.QuadVertexBufferPtr->TilingFactor = tilingFactor;
+            // s_Data.frameData.QuadVertexBufferPtr->EntityID     = entityID;
+            s_Data.frameData.QuadVertexBufferPtr++;
+        }
+
+        s_Data.frameData.QuadIndexCount += 6;
+
+        s_Data.Stats.QuadCount++;
     }
     void Renderer2D::NextBatch()
     {
@@ -498,7 +645,7 @@ namespace FooGame
                                 nullptr);
         vkDestroyPipeline(device, s_Data.api.Pipeline.pipeline, nullptr);
         vkDestroySampler(device, s_Data.api.TextureSampler, nullptr);
-        DestroyImage(s_Data.api.image);
+        // DestroyImage(&s_Data.frameData.DefaultTexture.get());
         delete[] s_Data.frameData.QuadVertexBufferBase;
         // TODO: clear created resources
     }
