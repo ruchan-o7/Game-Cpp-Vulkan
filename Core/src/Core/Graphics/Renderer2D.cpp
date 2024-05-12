@@ -6,7 +6,6 @@
 #include "../Graphics/Api.h"
 #include "../Graphics/Shader.h"
 #include "../Core/OrthographicCamera.h"
-#include "../Graphics/Image.h"
 #include "Core/Core/PerspectiveCamera.h"
 #include "vulkan/vulkan_core.h"
 namespace FooGame

@@ -1,7 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include "../Graphics/Semaphore.h"
-#include "../Graphics/Image.h"
+#include "../Graphics/Texture2D.h"
 #include "Device.h"
 struct GLFWwindow;
 namespace FooGame

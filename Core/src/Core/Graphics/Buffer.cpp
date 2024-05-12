@@ -1,8 +1,7 @@
 #include "Buffer.h"
-#include <vulkan/vulkan_core.h>
 #include "../Core/Engine.h"
 #include "../Graphics/Api.h"
-#include "Core/Graphics/Image.h"
+#include "Core/Graphics/Texture2D.h"
 #include "pch.h"
 #include "../Backend/VulkanCheckResult.h"
 namespace FooGame

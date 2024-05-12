@@ -1,4 +1,4 @@
-#include "Image.h"
+#include "Texture2D.h"
 #include "../Backend/VulkanCheckResult.h"
 #include "Core/Core/Base.h"
 #include "Core/Graphics/Buffer.h"

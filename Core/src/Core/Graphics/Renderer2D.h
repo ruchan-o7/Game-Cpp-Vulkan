@@ -1,6 +1,6 @@
 #pragma once
 #include "../Core/Base.h"
-#include "Core/Graphics/Image.h"
+#include "Core/Graphics/Texture2D.h"
 #include <vulkan/vulkan.h>
 namespace FooGame
 {
