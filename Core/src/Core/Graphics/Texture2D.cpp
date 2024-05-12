@@ -5,7 +5,6 @@
 #include "stb_image.h"
 #include "../Core/Engine.h"
 #include "../Graphics/Api.h"
-#include "vulkan/vulkan_core.h"
 namespace FooGame
 {
 
@@ -90,12 +89,12 @@ namespace FooGame
         vkDestroyImage(device, image, nullptr);
         vkFreeMemory(device, imageMem, nullptr);
     }
-    void DestroyImage(Texture2D& image)
+    void DestroyImage(Texture2D* image)
     {
         auto device = Api::GetDevice()->GetDevice();
-        vkDestroyImageView(device, image.ImageView, nullptr);
-        vkDestroyImage(device, image.Image, nullptr);
-        vkFreeMemory(device, image.ImageMemory, nullptr);
+        vkDestroyImageView(device, image->ImageView, nullptr);
+        vkDestroyImage(device, image->Image, nullptr);
+        vkFreeMemory(device, image->ImageMemory, nullptr);
     }
 
     void LoadTexture(Texture2D& image, const std::string& path)
@@ -134,12 +133,12 @@ namespace FooGame
             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-        TransitionImageLayout(image, VK_FORMAT_R8G8B8A8_SRGB,
+        TransitionImageLayout(&image, VK_FORMAT_R8G8B8A8_SRGB,
                               VK_IMAGE_LAYOUT_UNDEFINED,
                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         stagingBuffer.CopyToImage(image);
 
-        TransitionImageLayout(image, VK_FORMAT_R8G8B8A8_SRGB,
+        TransitionImageLayout(&image, VK_FORMAT_R8G8B8A8_SRGB,
                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         CreateImageView(image, VK_FORMAT_R8G8B8A8_SRGB,
@@ -153,7 +152,7 @@ namespace FooGame
         return CreateShared<Texture2D>(image);
     }
 
-    void TransitionImageLayout(Texture2D& image, VkFormat format,
+    void TransitionImageLayout(Texture2D* image, VkFormat format,
                                VkImageLayout oldLayout, VkImageLayout newLayout)
     {
         auto cmd = Engine::BeginSingleTimeCommands();
@@ -163,7 +162,7 @@ namespace FooGame
         barrier.newLayout           = newLayout;
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image               = image.Image;
+        barrier.image               = image->Image;
         barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
         barrier.subresourceRange.baseMipLevel   = 0;
         barrier.subresourceRange.levelCount     = 1;

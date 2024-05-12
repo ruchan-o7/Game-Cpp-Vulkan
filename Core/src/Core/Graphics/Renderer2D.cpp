@@ -7,6 +7,7 @@
 #include "../Graphics/Shader.h"
 #include "../Core/OrthographicCamera.h"
 #include "Core/Core/PerspectiveCamera.h"
+#include "Core/Graphics/Texture2D.h"
 #include "vulkan/vulkan_core.h"
 namespace FooGame
 {
@@ -222,7 +223,6 @@ namespace FooGame
 
                 s_Data.frameData.DefaultTexture =
                     LoadTexture("../../../textures/texture.jpg");
-
                 // s_Data.frameData.TextureSlots[0] =
                 //     s_Data.frameData.DefaultTexture;
             }
@@ -644,7 +644,7 @@ namespace FooGame
                                 nullptr);
         vkDestroyPipeline(device, s_Data.api.Pipeline.pipeline, nullptr);
         vkDestroySampler(device, s_Data.api.TextureSampler, nullptr);
-        // DestroyImage(&s_Data.frameData.DefaultTexture.get());
+        DestroyImage(s_Data.frameData.DefaultTexture.get());
         delete[] s_Data.frameData.QuadVertexBufferBase;
         // TODO: clear created resources
     }

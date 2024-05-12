@@ -43,7 +43,7 @@ namespace FooGame
     void Swapchain::Destroy()
     {
         auto device = Api::GetDevice()->GetDevice();
-        DestroyImage(m_DepthImage);
+        DestroyImage(&m_DepthImage);
         for (auto& fb : m_SwapchainFrameBuffers)
         {
             vkDestroyFramebuffer(device, fb, nullptr);

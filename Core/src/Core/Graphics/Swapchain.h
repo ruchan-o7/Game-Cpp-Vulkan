@@ -2,7 +2,6 @@
 #include <vulkan/vulkan.h>
 #include "../Graphics/Semaphore.h"
 #include "../Graphics/Texture2D.h"
-#include "Device.h"
 struct GLFWwindow;
 namespace FooGame
 {
@@ -18,6 +17,7 @@ namespace FooGame
     {
         public:
             Swapchain(SwapchainCreateInfo info);
+
             Swapchain(const Swapchain& swapchain) = delete;
             Swapchain(Swapchain&& other)          = delete;
             ~Swapchain();
