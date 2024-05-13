@@ -176,8 +176,6 @@ namespace FooGame
 
         auto stagingBuffer =
             CreateDynamicBuffer(bufferSize, BufferUsage::TRANSFER_SRC);
-        stagingBuffer->Allocate();
-        stagingBuffer->Bind();
         stagingBuffer->SetData(bufferSize, (void*)vertices.data());
 
         auto vertexBuffer =

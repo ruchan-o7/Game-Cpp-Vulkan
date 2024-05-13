@@ -1,6 +1,7 @@
 #version 450
-layout(binding = 0) uniform UniformBufferObject {
-	mat4 ViewProjection;
+layout(set = 0,binding = 0) uniform UniformBufferObject {
+	mat4 Projection;
+	mat4 View;
 } ubo;
 
 layout(location = 0 ) in vec3 inPosition;
@@ -16,7 +17,7 @@ layout(location = 3) out float outTilingFactor;
 
 void main()
 {
-	gl_Position = ubo.ViewProjection * vec4(inPosition,1.0);
+	gl_Position = ubo.Projection * ubo.View * vec4(inPosition,1.0);
 	outColor = inColor;
 	outTexCoord = inTexCoord;
 	outTexIndex = inTexIndex;

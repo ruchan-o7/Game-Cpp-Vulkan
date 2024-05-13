@@ -27,6 +27,7 @@ set(GLFW_INCLUDE_DIR "${EXTERNAL_DIR}/glfw/include")
 set(GLM_INCLUDE_DIR "${EXTERNAL_DIR}/glm/include")
 set(STB_INCLUDE_DIR "${EXTERNAL_DIR}/stbi")
 set(IMGUI_SRC_DIR "${EXTERNAL_DIR}/imgui")
+set(TINY_OBJ_LOADER_INCLUDE_DIR "${EXTERNAL_DIR}/tiny_obj_loader")
 add_subdirectory(Core)
 
 add_subdirectory(Game)

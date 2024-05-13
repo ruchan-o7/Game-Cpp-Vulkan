@@ -3,13 +3,17 @@
 #include "../Core/Base.h"
 #include "../Core/Window.h"
 #include "Device.h"
-#include "vulkan/vulkan_core.h"
+#include "Pipeline.h"
+
 namespace FooGame
 {
-    struct GraphicsPipeline
+
+    struct UniformBufferObject
     {
-            VkPipeline pipeline;
-            VkPipelineLayout pipelineLayout;
+            alignas(16) glm::mat4 View;
+            alignas(16) glm::mat4 Projection;
+            alignas(16) glm::mat4 Reserved0;
+            alignas(16) glm::mat4 Reserved1;
     };
     class Api
     {
@@ -17,17 +21,13 @@ namespace FooGame
             static void Init(WindowsWindow* window);
             static void CreateRenderpass(VkFormat colorAttachmentFormat);
             static void SetupDesciptorSetLayout();
-            static void CreateGraphicsPipeline();
             static void CreateCommandPool();
-            static void CreateDescriptorPool();
             static void Shutdown();
             static void WaitIdle();
-            static VkDescriptorPool GetDescriptorPool();
             static VkSurfaceKHR GetSurface();
             static Device* GetDevice();
             static VkCommandPool GetCommandPool();
             static VkRenderPass GetRenderpass();
-            static GraphicsPipeline GetPipeline();
             static VkInstance GetInstance();
             static VkDescriptorSetLayout GetDescriptorSetLayout();
 

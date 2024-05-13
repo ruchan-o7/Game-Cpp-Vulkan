@@ -6,9 +6,6 @@ namespace FooGame
 {
     class OrthographicCamera;
     class PerspectiveCamera;
-    // struct Texture2D {
-    //         int id;
-    // };
     class Renderer2D
     {
         public:

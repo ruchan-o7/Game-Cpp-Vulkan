@@ -1,0 +1,43 @@
+#pragma once
+#include <vulkan/vulkan.h>
+#include "../Core/Base.h"
+#include "Shader.h"
+namespace FooGame
+{
+
+    struct GraphicsPipeline
+    {
+            VkPipeline pipeline;
+            VkPipelineLayout pipelineLayout;
+    };
+    struct Pipeline
+    {
+            VkPipeline pipeline;
+            VkPipelineLayout pipelineLayout;
+    };
+    enum class CullMode
+    {
+        FRONT = BIT(0),
+        BACK  = BIT(1),
+        BOTH  = BIT(2)
+    };
+    enum class MultiSampling
+    {
+        LEVEL_1,
+        LEVEL_2,
+        LEVEL_4,
+        LEVEL_8,
+    };
+    struct PipelineInfo
+    {
+            List<Shader*> Shaders;
+            List<VkVertexInputBindingDescription> VertexBindings;
+            List<VkVertexInputAttributeDescription> VertexAttributeDescriptons;
+            CullMode CullMode;
+            float LineWidth = 1.0f;
+            MultiSampling MultiSampling;
+            VkDescriptorSetLayout DescriptorSetLayout;
+    };
+    Pipeline CreateGraphicsPipeline(PipelineInfo info);
+
+}  // namespace FooGame
