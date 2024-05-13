@@ -7,15 +7,11 @@
 #include "../Graphics/Shader.h"
 #include "../Core/OrthographicCamera.h"
 #include "Core/Core/PerspectiveCamera.h"
+#include "Core/Graphics/Pipeline.h"
 #include "Core/Graphics/Texture2D.h"
 #include "vulkan/vulkan_core.h"
 namespace FooGame
 {
-
-    struct UniformBufferObject
-    {
-            alignas(16) glm::mat4 ViewProjection;
-    };
 
     struct QuadVertex
     {
@@ -32,6 +28,42 @@ namespace FooGame
                 bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
                 return bindingDescription;
+            }
+            static List<VkVertexInputAttributeDescription>
+            GetAttributeDescriptionList()
+            {
+                List<VkVertexInputAttributeDescription> attributeDescriptions{};
+                attributeDescriptions.resize(5);
+
+                attributeDescriptions[0].binding  = 0;
+                attributeDescriptions[0].location = 0;
+                attributeDescriptions[0].format   = VK_FORMAT_R32G32B32_SFLOAT;
+                attributeDescriptions[0].offset =
+                    offsetof(QuadVertex, Position);
+
+                attributeDescriptions[1].binding  = 0;
+                attributeDescriptions[1].location = 1;
+                attributeDescriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+                attributeDescriptions[1].offset = offsetof(QuadVertex, Color);
+
+                attributeDescriptions[2].binding  = 0;
+                attributeDescriptions[2].location = 2;
+                attributeDescriptions[2].format   = VK_FORMAT_R32G32_SFLOAT;
+                attributeDescriptions[2].offset =
+                    offsetof(QuadVertex, TexCoord);
+
+                attributeDescriptions[3].binding  = 0;
+                attributeDescriptions[3].location = 3;
+                attributeDescriptions[3].format   = VK_FORMAT_R32_SFLOAT;
+                attributeDescriptions[3].offset =
+                    offsetof(QuadVertex, TexIndex);
+
+                attributeDescriptions[4].binding  = 0;
+                attributeDescriptions[4].location = 4;
+                attributeDescriptions[4].format   = VK_FORMAT_R32_SFLOAT;
+                attributeDescriptions[4].offset =
+                    offsetof(QuadVertex, TilingFactor);
+                return attributeDescriptions;
             }
             static std::array<VkVertexInputAttributeDescription, 5>
             GetAttributeDescrp()
@@ -69,7 +101,6 @@ namespace FooGame
                 return attributeDescriptions;
             }
     };
-// #define TEXTURE_SAMPLER_ARRAY_COUNT 32
 #define VERT_PATH "../../../Shaders/QuadShaderVert.spv"
 #define FRAG_PATH "../../../Shaders/QuadShaderFrag.spv"
     struct Renderer2DData
@@ -81,7 +112,6 @@ namespace FooGame
             {
                     Buffer* VertexBuffer = nullptr;
                     Buffer* IndexBuffer  = nullptr;
-                    List<Buffer*> UniformBuffers;
             };
             Resources resources;
             struct FrameData
@@ -93,21 +123,13 @@ namespace FooGame
                     u32 QuadIndexCount = 0;
                     u32 QuadCount      = 0;
                     u32 DrawCall       = 0;
-
-                    // std::array<Shared<Texture2D>,
-                    // TEXTURE_SAMPLER_ARRAY_COUNT>
-                    //     TextureSlots;
-                    // u32 TextureSlotIndex = 1;  // 0 is default
             };
             FrameData frameData;
             Renderer2D::Statistics Stats;
             struct Api
             {
-                    GraphicsPipeline Pipeline;
-                    VkDescriptorSetLayout DescriptorSetLayout;
+                    Pipeline Pipeline;
                     VkSampler TextureSampler;
-                    List<VkDescriptorSet> DescriptorSets;
-                    // Texture2D image;
             };
             Api api{};
     };
@@ -147,280 +169,43 @@ namespace FooGame
                 BufferUsage::VERTEX);
             s_Data.frameData.QuadVertexBufferBase =
                 new QuadVertex[s_Data.MaxVertices];
-
-            s_Data.resources.UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-            for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-            {
-                BufferBuilder uBuffBuilder{};
-                uBuffBuilder.SetUsage(BufferUsage::UNIFORM)
-                    .SetInitialSize(sizeof(UniformBufferObject))
-                    .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-                s_Data.resources.UniformBuffers[i] = CreateDynamicBuffer(
-                    sizeof(UniformBufferObject), BufferUsage::UNIFORM);
-            }
-        }
-        //  Create layouts & descriptors for shaders
-        {
-            VkDescriptorSetLayoutBinding uboLayoutBinding{};
-            uboLayoutBinding.binding         = 0;
-            uboLayoutBinding.descriptorCount = 1;
-            uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            uboLayoutBinding.pImmutableSamplers = nullptr;
-            uboLayoutBinding.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
-
-            VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-            samplerLayoutBinding.binding         = 1;
-            samplerLayoutBinding.descriptorCount = 1;
-            samplerLayoutBinding.descriptorType =
-                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            samplerLayoutBinding.pImmutableSamplers = nullptr;
-            samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-            VkDescriptorSetLayoutBinding bindings[2] = {uboLayoutBinding,
-                                                        samplerLayoutBinding};
-            VkDescriptorSetLayoutCreateInfo layoutInfo{};
-            layoutInfo.sType =
-                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            layoutInfo.bindingCount = ARRAY_COUNT(bindings);
-            layoutInfo.pBindings    = bindings;
-
-            VK_CALL(vkCreateDescriptorSetLayout(
-                device->GetDevice(), &layoutInfo, nullptr,
-                &s_Data.api.DescriptorSetLayout));
-            List<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT,
-                                                s_Data.api.DescriptorSetLayout);
-            VkDescriptorSetAllocateInfo allocInfo{};
-            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            allocInfo.descriptorPool     = Api::GetDescriptorPool();
-            allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
-            allocInfo.pSetLayouts        = layouts.data();
-
-            s_Data.api.DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-            VK_CALL(vkAllocateDescriptorSets(device->GetDevice(), &allocInfo,
-                                             s_Data.api.DescriptorSets.data()));
-
-            // texture sampler
-            {
-                auto props = device->GetPhysicalDeviceProperties();
-                VkSamplerCreateInfo samplerInfo{};
-                samplerInfo.sType     = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-                samplerInfo.magFilter = VK_FILTER_LINEAR;
-                samplerInfo.minFilter = VK_FILTER_LINEAR;
-                samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-                samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-                samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-                samplerInfo.anisotropyEnable = VK_TRUE;
-                samplerInfo.maxAnisotropy = props.limits.maxSamplerAnisotropy;
-                samplerInfo.borderColor   = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-                samplerInfo.unnormalizedCoordinates = VK_FALSE;
-                samplerInfo.compareEnable           = VK_FALSE;
-                samplerInfo.compareOp               = VK_COMPARE_OP_ALWAYS;
-                samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-
-                VK_CALL(vkCreateSampler(device->GetDevice(), &samplerInfo,
-                                        nullptr, &s_Data.api.TextureSampler));
-
-                s_Data.frameData.DefaultTexture =
-                    LoadTexture("../../../textures/texture.jpg");
-                // s_Data.frameData.TextureSlots[0] =
-                //     s_Data.frameData.DefaultTexture;
-            }
-
-            for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-            {
-                VkDescriptorBufferInfo bufferInfo{};
-                bufferInfo.buffer =
-                    *s_Data.resources.UniformBuffers[i]->GetBuffer();
-                bufferInfo.offset = 0;
-                bufferInfo.range  = sizeof(UniformBufferObject);
-
-                VkDescriptorImageInfo imageInfo{};
-
-                imageInfo.imageLayout =
-                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfo.imageView =
-                    s_Data.frameData.DefaultTexture->ImageView;
-                imageInfo.sampler = s_Data.api.TextureSampler;
-
-                VkWriteDescriptorSet descriptorWrites[2] = {};
-                descriptorWrites[0].sType =
-                    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[0].dstSet     = s_Data.api.DescriptorSets[i];
-                descriptorWrites[0].dstBinding = 0;
-                descriptorWrites[0].dstArrayElement = 0;
-                descriptorWrites[0].descriptorType =
-                    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                descriptorWrites[0].descriptorCount = 1;
-                descriptorWrites[0].pBufferInfo     = &bufferInfo;
-
-                descriptorWrites[1].sType =
-                    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[1].dstSet     = s_Data.api.DescriptorSets[i];
-                descriptorWrites[1].dstBinding = 1;
-                descriptorWrites[1].dstArrayElement = 0;
-                descriptorWrites[1].descriptorType =
-                    VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                descriptorWrites[1].descriptorCount = 1;
-                // TEXTURE_SAMPLER_ARRAY_COUNT;
-                descriptorWrites[1].pImageInfo = &imageInfo;
-
-                vkUpdateDescriptorSets(device->GetDevice(),
-                                       ARRAY_COUNT(descriptorWrites),
-                                       descriptorWrites, 0, nullptr);
-            }
         }
 
         // Create graphics pipeline
         {
-            Shader vert{device->GetDevice(), VERT_PATH};
-            Shader frag{device->GetDevice(), FRAG_PATH};
-            auto vertShaderStageInfo =
-                vert.CreateInfo(VK_SHADER_STAGE_VERTEX_BIT);
+            Shader vert{VERT_PATH, ShaderStage::VERTEX};
+            Shader frag{FRAG_PATH, ShaderStage::FRAGMENT};
+            PipelineInfo info{};
+            info.Shaders = {&vert, &frag};
 
-            auto fragShaderStageInfo =
-                frag.CreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT);
-
-            VkPipelineShaderStageCreateInfo shaderStages[] = {
-                vertShaderStageInfo, fragShaderStageInfo};
-
-            VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-            vertexInputInfo.sType =
-                VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-
-            auto bindingDescription    = QuadVertex::GetBindingDescription();
-            auto attributeDescriptions = QuadVertex::GetAttributeDescrp();
-
-            vertexInputInfo.vertexBindingDescriptionCount = 1;
-            vertexInputInfo.vertexAttributeDescriptionCount =
-                static_cast<uint32_t>(attributeDescriptions.size());
-            vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-            vertexInputInfo.pVertexAttributeDescriptions =
-                attributeDescriptions.data();
-
-            VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-            inputAssembly.sType =
-                VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-            inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-            inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-            VkPipelineViewportStateCreateInfo viewportState{};
-            viewportState.sType =
-                VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-            viewportState.viewportCount = 1;
-            viewportState.scissorCount  = 1;
-
-            VkPipelineRasterizationStateCreateInfo rasterizer{};
-            rasterizer.sType =
-                VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-            rasterizer.depthClampEnable        = VK_FALSE;
-            rasterizer.rasterizerDiscardEnable = VK_FALSE;
-            rasterizer.polygonMode             = VK_POLYGON_MODE_FILL;
-            rasterizer.lineWidth               = 1.0f;
-            rasterizer.cullMode                = VK_CULL_MODE_BACK_BIT;
-            rasterizer.frontFace       = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-            rasterizer.depthBiasEnable = VK_FALSE;
-
-            VkPipelineMultisampleStateCreateInfo multisampling{};
-            multisampling.sType =
-                VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-            multisampling.sampleShadingEnable  = VK_FALSE;
-            multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-            VkPipelineDepthStencilStateCreateInfo depthStencil{};
-            depthStencil.sType =
-                VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-            depthStencil.depthTestEnable       = VK_TRUE;
-            depthStencil.depthWriteEnable      = VK_TRUE;
-            depthStencil.depthCompareOp        = VK_COMPARE_OP_LESS;
-            depthStencil.depthBoundsTestEnable = VK_FALSE;
-            depthStencil.stencilTestEnable     = VK_FALSE;
-
-            VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-            colorBlendAttachment.colorWriteMask =
-                VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-                VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-            colorBlendAttachment.blendEnable = VK_FALSE;
-
-            VkPipelineColorBlendStateCreateInfo colorBlending{};
-            colorBlending.sType =
-                VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-            colorBlending.logicOpEnable     = VK_FALSE;
-            colorBlending.logicOp           = VK_LOGIC_OP_COPY;
-            colorBlending.attachmentCount   = 1;
-            colorBlending.pAttachments      = &colorBlendAttachment;
-            colorBlending.blendConstants[0] = 0.0f;
-            colorBlending.blendConstants[1] = 0.0f;
-            colorBlending.blendConstants[2] = 0.0f;
-            colorBlending.blendConstants[3] = 0.0f;
-
-            VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT,
-                                              VK_DYNAMIC_STATE_SCISSOR};
-            VkPipelineDynamicStateCreateInfo dynamicState{};
-            dynamicState.sType =
-                VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-            dynamicState.dynamicStateCount = ARRAY_COUNT(dynamicStates);
-            dynamicState.pDynamicStates    = dynamicStates;
-
-            VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-            pipelineLayoutInfo.sType =
-                VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-            pipelineLayoutInfo.setLayoutCount = 1;
-            pipelineLayoutInfo.pSetLayouts    = &s_Data.api.DescriptorSetLayout;
-
-            VK_CALL(vkCreatePipelineLayout(
-                device->GetDevice(), &pipelineLayoutInfo, nullptr,
-                &s_Data.api.Pipeline.pipelineLayout));
-            VkGraphicsPipelineCreateInfo pipelineInfo{};
-            pipelineInfo.sType =
-                VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-            pipelineInfo.stageCount          = 2;
-            pipelineInfo.pStages             = shaderStages;
-            pipelineInfo.pVertexInputState   = &vertexInputInfo;
-            pipelineInfo.pInputAssemblyState = &inputAssembly;
-            pipelineInfo.pViewportState      = &viewportState;
-            pipelineInfo.pRasterizationState = &rasterizer;
-            pipelineInfo.pMultisampleState   = &multisampling;
-            pipelineInfo.pDepthStencilState  = &depthStencil;
-            pipelineInfo.pColorBlendState    = &colorBlending;
-            pipelineInfo.pDynamicState       = &dynamicState;
-            pipelineInfo.layout     = s_Data.api.Pipeline.pipelineLayout;
-            pipelineInfo.renderPass = Api::GetRenderpass();
-            pipelineInfo.subpass    = 0;
-            pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-
-            VK_CALL(vkCreateGraphicsPipelines(
-                device->GetDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
-                &s_Data.api.Pipeline.pipeline));
+            info.VertexAttributeDescriptons =
+                QuadVertex::GetAttributeDescriptionList();
+            info.VertexBindings      = {QuadVertex::GetBindingDescription()};
+            info.LineWidth           = 2.0f;
+            info.CullMode            = CullMode::BACK;
+            info.MultiSampling       = MultiSampling::LEVEL_1;
+            info.DescriptorSetLayout = *Engine::GetDescriptorSetLayout();
+            s_Data.api.Pipeline      = CreateGraphicsPipeline(info);
         }
 
         g_IsInitialized = true;
-    }
+    }  // namespace FooGame
 
     void Renderer2D::BeginScene(const PerspectiveCamera& camera)
     {
         UniformBufferObject ubd{};
 
-        // ubd.Model      = glm::mat4(1.0f);
-        // ubd.View       = camera.GetView();        /* glm::mat4(1.0f); */
-        ubd.ViewProjection = camera.GetProjection() * camera.GetView();
-        s_Data.resources.UniformBuffers[Engine::GetCurrentFrame()]->SetData(
-            sizeof(ubd), &ubd);
+        ubd.View       = camera.GetView();
+        ubd.Projection = camera.GetProjection();
+        Engine::UpdateUniformData(ubd);
         StartBatch();
     }
     void Renderer2D::BeginScene(const OrthographicCamera& camera)
     {
         UniformBufferObject ubd{};
-        ubd.ViewProjection = camera.GetView() * camera.GetProjection();
-
-        // ubd.Model      = glm::mat4(1.0f);
-        // ubd.View       = glm::mat4(1.0f);         // glm::mat4(1.0f);
-        // ubd.Projection = camera.GetProjection();  // glm::mat4(1.0f);
-        // ubd.Projection = camera.GetViewProj();    // glm::mat4(1.0f);
-        // s_Data.resources.UniformBuffers[Engine::GetCurrentFrame()]->SetData(
-        //     sizeof(ubd), &ubd);
-        s_Data.resources.UniformBuffers[Engine::GetCurrentFrame()]->SetData(
-            sizeof(ubd), &ubd);
+        ubd.View       = camera.GetView();
+        ubd.Projection = camera.GetProjection();
+        Engine::UpdateUniformData(ubd);
         StartBatch();
     }
 
@@ -596,11 +381,7 @@ namespace FooGame
         vkCmdBindIndexBuffer(cmd, *s_Data.resources.IndexBuffer->GetBuffer(), 0,
                              VK_INDEX_TYPE_UINT32);
         // bind descriptorsets
-
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                s_Data.api.Pipeline.pipelineLayout, 0, 1,
-                                &s_Data.api.DescriptorSets[currentFrame], 0,
-                                nullptr);
+        Engine::BindDescriptorSets(cmd, s_Data.api.Pipeline);
         if (s_Data.frameData.QuadIndexCount)
         {
             u32 dataSize =
@@ -629,17 +410,10 @@ namespace FooGame
     void Renderer2D::Shutdown()
     {
         auto device = Api::GetDevice()->GetDevice();
-        vkDestroyDescriptorSetLayout(device, s_Data.api.DescriptorSetLayout,
-                                     nullptr);
         s_Data.resources.IndexBuffer->Release();
         delete s_Data.resources.IndexBuffer;
         s_Data.resources.VertexBuffer->Release();
         delete s_Data.resources.VertexBuffer;
-        for (auto& ub : s_Data.resources.UniformBuffers)
-        {
-            ub->Release();
-        }
-        s_Data.resources.UniformBuffers.clear();
         vkDestroyPipelineLayout(device, s_Data.api.Pipeline.pipelineLayout,
                                 nullptr);
         vkDestroyPipeline(device, s_Data.api.Pipeline.pipeline, nullptr);

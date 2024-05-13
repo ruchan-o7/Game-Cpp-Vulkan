@@ -1,11 +1,11 @@
 #include "Shader.h"
 #include <vulkan/vulkan.h>
 #include "../File/FileHelper.h"
-#include "pch.h"
+#include "Api.h"
 namespace FooGame
 {
-    Shader::Shader(VkDevice device, std::string path)
-        : m_Device(device), m_Path(std::move(path))
+    Shader::Shader(const std::string& path, ShaderStage stage)
+        : m_Stage(stage), m_Path(path)
     {
         auto code = ReadFile(m_Path);
 
@@ -16,8 +16,8 @@ namespace FooGame
 
         VkShaderModule shaderModule;
 
-        if (vkCreateShaderModule(m_Device, &create_info, nullptr, &m_Module) !=
-            VK_SUCCESS)
+        if (vkCreateShaderModule(Api::GetDevice()->GetDevice(), &create_info,
+                                 nullptr, &m_Module) != VK_SUCCESS)
         {
             std::cerr << "Failed to load shader module of " << m_Path << '\n';
         }
@@ -28,14 +28,23 @@ namespace FooGame
     }
     Shader::~Shader()
     {
-        vkDestroyShaderModule(m_Device, m_Module, nullptr);
+        vkDestroyShaderModule(Api::GetDevice()->GetDevice(), m_Module, nullptr);
     }
-    VkPipelineShaderStageCreateInfo Shader::CreateInfo(
-        VkShaderStageFlagBits stage)
+    VkShaderStageFlagBits Shader::GetType()
+    {
+        switch (m_Stage)
+        {
+            case FooGame::ShaderStage::VERTEX:
+                return VK_SHADER_STAGE_VERTEX_BIT;
+            case FooGame::ShaderStage::FRAGMENT:
+                return VK_SHADER_STAGE_FRAGMENT_BIT;
+        }
+    }
+    VkPipelineShaderStageCreateInfo Shader::CreateInfo()
     {
         VkPipelineShaderStageCreateInfo stageInfo{};
         stageInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        stageInfo.stage  = stage;
+        stageInfo.stage  = GetType();
         stageInfo.module = GetModule();
         stageInfo.pName  = "main";
         return stageInfo;

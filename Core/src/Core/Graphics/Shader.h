@@ -1,19 +1,24 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include "pch.h"
 namespace FooGame
 {
+    enum class ShaderStage
+    {
+        VERTEX,
+        FRAGMENT,
+    };
     class Shader
     {
         public:
-            explicit Shader(VkDevice device, std::string path);
+            Shader(const std::string& path, ShaderStage stage);
             ~Shader();
             VkShaderModule GetModule() const;
-            VkPipelineShaderStageCreateInfo CreateInfo(
-                VkShaderStageFlagBits stage);
+            ShaderStage GetShaderStage() const { return m_Stage; };
+            VkShaderStageFlagBits GetType();
+            VkPipelineShaderStageCreateInfo CreateInfo();
 
         private:
-            VkDevice m_Device;
+            ShaderStage m_Stage;
             std::string m_Path;
             VkShaderModule m_Module;
     };
