@@ -1,6 +1,5 @@
 #pragma once
 #include "Base.h"
-#include "Core/Core/Window.h"
 
 namespace FooGame
 {
@@ -34,7 +33,7 @@ namespace FooGame
             void GoRight();
             void GoUp();
             void GoDown();
-            void Look(Tuple<int, int> offset);
+            void Look(double offsetX, double offsetY);
             float m_Left, m_Right, m_Bottom, m_Top;
 
         private:

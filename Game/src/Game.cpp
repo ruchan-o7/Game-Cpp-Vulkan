@@ -66,8 +66,10 @@ namespace FooGame
                         Renderer2D::BeginDrawing();
                         {
                             Renderer2D::BeginScene(m_OrthoCamera);
-                            DrawQuads(m_BenchmarkAmount, m_Tex, m_Tilin,
-                                      m_Tint);
+                            // DrawQuads(m_BenchmarkAmount, m_Tex, m_Tilin,
+                            //           m_Tint);
+                            Renderer2D::DrawQuad({0.0f, 0.0f}, {1.0f, 1.0f},
+                                                 m_Tex, m_Tilin, m_Tint);
                             Renderer2D::EndScene();
                         }
                         Renderer2D::EndDrawing();
@@ -99,7 +101,7 @@ namespace FooGame
                                             10.0f);
                         m_OrthoCamera.SetProj(values[0], values[1], values[2],
                                               values[3]);
-                        ImGui::SliderFloat("Tiling", &m_Tilin, 0.0f, 3.0f);
+                        ImGui::SliderFloat("Tiling", &m_Tilin, 0.0f, 30.0f);
                         float tint[4] = {m_Tint.x, m_Tint.y, m_Tint.z,
                                          m_Tint.w};
                         ImGui::ColorEdit4("Tint", tint);
@@ -189,16 +191,18 @@ namespace FooGame
         io.AddMousePosEvent(event.GetX(), event.GetY());
         if (m_SecondMouse)
         {
-            auto newPos = m_Window->GetCursorPos();
+            double offsetX = m_Window->GetCursorPosX();
+            double offsetY = m_Window->GetCursorPosY();
             m_Window->SetCursorCenter();
-            auto centerPos = m_Window->GetCursorPos();
-            int xOffset    = centerPos.first - newPos.first;
-            int yOffset    = centerPos.second - newPos.second;
+            auto centerPosX = m_Window->GetCursorPosX();
+            auto centerPosY = m_Window->GetCursorPosY();
+            int xOffset     = centerPosX - offsetX;
+            int yOffset     = centerPosY - offsetY;
 
             float sens  = 0.1f;
             xOffset    *= sens;
             yOffset    *= sens;
-            m_Camera.Look({xOffset, yOffset});
+            m_Camera.Look(xOffset, yOffset);
             m_Camera.RecalculateViewMatrix();
         }
 

@@ -51,17 +51,7 @@ namespace FooGame
     {
         m_Position -= glm::vec3(0.0f, 0.0f, 0.2f);
     }
-    void OrthographicCamera::Look(Tuple<int, int> offset)
+    void OrthographicCamera::Look(double offsetX, double offsetY)
     {
-        // m_Yaw   += offset.second;
-        // m_Pitch += offset.first;
-        // if (m_Pitch > 89.0f)
-        // {
-        //     m_Pitch = 89.0f;
-        // }
-        // if (m_Pitch < -89.0f)
-        // {
-        //     m_Pitch = -89.0f;
-        // }
     }
 }  // namespace FooGame

@@ -1,7 +1,5 @@
 #pragma once
 #include "Base.h"
-#include "Core/Core/Window.h"
-#include "glm/fwd.hpp"
 
 namespace FooGame
 {
@@ -22,7 +20,7 @@ namespace FooGame
             void GoRight();
             void GoUp();
             void GoDown();
-            void Look(Tuple<int, int> offset);
+            void Look(double offsetX, double offsetY);
             void Zoom(float amount = 10);
             float m_Zoom = 90.0f;
 

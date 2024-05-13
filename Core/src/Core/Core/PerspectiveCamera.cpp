@@ -1,7 +1,5 @@
 
 #include "PerspectiveCamera.h"
-#include "../Core/Base.h"
-#include "glm/geometric.hpp"
 namespace FooGame
 {
 
@@ -77,10 +75,10 @@ namespace FooGame
     {
         m_Position -= glm::vec3(0.0f, 0.0f, 0.2f);
     }
-    void PerspectiveCamera::Look(Tuple<int, int> offset)
+    void PerspectiveCamera::Look(double offsetX, double offsetY)
     {
-        m_Yaw   += offset.second;
-        m_Pitch += offset.first;
+        m_Yaw   += offsetX;
+        m_Pitch += offsetY;
         if (m_Pitch > 89.0f)
         {
             m_Pitch = 89.0f;
