@@ -9,6 +9,7 @@
 #include "Core/Events/Event.h"
 #include "Core/Events/MouseMovedEvent.h"
 #include "Core/Graphics/Renderer2D.h"
+#include "Core/Graphics/Renderer3D.h"
 #include "Core/Input/KeyCodes.h"
 #include "imgui.h"
 #include <Core/Graphics/Camera.h>
@@ -39,8 +40,6 @@ namespace FooGame
             }
         }
     }
-    double deltaTime__     = 0;
-    double lastFrameTime__ = 0;
     void Game::Run()
     {
         Engine::Init(*m_Window);
@@ -49,6 +48,7 @@ namespace FooGame
         OrthographicCamera m_OrthoCamera{-1.0f, 1.0f, -1.0f, 1.0f};
         // m_OrthoCamera.MoveTo({2.0f, 2.0f, 2.0f});
 
+        m_Camera.RecalculateViewMatrix();
         while (!m_Window->ShouldClose())
         {
             m_Window->PollEvents();
@@ -56,61 +56,59 @@ namespace FooGame
 
             double currentTime = m_Window->GetTime();
             {
-                deltaTime__     = currentTime - lastFrameTime__;
-                lastFrameTime__ = currentTime;
-                // Engine::BeginScene(m_Camera);
-                static float rotation  = 0.0f;
-                rotation              += deltaTime__ + 2.f;
                 {
+                    Renderer2D::BeginDrawing();
                     {
-                        Renderer2D::BeginDrawing();
-                        {
-                            Renderer2D::BeginScene(m_OrthoCamera);
-                            // DrawQuads(m_BenchmarkAmount, m_Tex, m_Tilin,
-                            //           m_Tint);
-                            Renderer2D::DrawQuad({0.0f, 0.0f}, {1.0f, 1.0f},
-                                                 m_Tex, m_Tilin, m_Tint);
-                            Renderer2D::EndScene();
-                        }
-                        Renderer2D::EndDrawing();
+                        Renderer2D::BeginScene(m_OrthoCamera);
+                        // DrawQuads(m_BenchmarkAmount, m_Tex, m_Tilin,
+                        //           m_Tint);
+                        Renderer2D::DrawQuad({0.0f, 0.0f}, {1.0f, 1.0f}, m_Tex,
+                                             m_Tilin, m_Tint);
+                        Renderer2D::EndScene();
                     }
-
+                    Renderer2D::EndDrawing();
+                }
+                {
+                    Renderer3D::BeginDraw();
                     {
-                        ImGui::Begin("Benchmark");
-                        ImGui::SliderInt("Amount", &m_BenchmarkAmount, 10,
-                                         1000);
-                        auto posisitons = m_Camera.GetPosition();
-                        float pos[3]    = {posisitons.x, posisitons.y,
-                                           posisitons.z};
-                        ImGui::SliderFloat3("Camera pos", pos, -10.0f, 10.0f);
-                        m_Camera.SetPosition({pos[0], pos[1], pos[2]});
-
-                        auto posisitonsO = m_OrthoCamera.GetPosition();
-                        float posO[3]    = {posisitonsO.x, posisitonsO.y,
-                                            posisitonsO.z};
-                        ImGui::SliderFloat3("Camera pos Ortho", posO, -10.0f,
-                                            10.0f);
-                        m_OrthoCamera.SetPosition({posO[0], posO[1], posO[2]});
-                        float values[4] = {
-                            m_OrthoCamera.m_Left,
-                            m_OrthoCamera.m_Right,
-                            m_OrthoCamera.m_Bottom,
-                            m_OrthoCamera.m_Top,
-                        };
-                        ImGui::SliderFloat4("Camera val", values, -10.0f,
-                                            10.0f);
-                        m_OrthoCamera.SetProj(values[0], values[1], values[2],
-                                              values[3]);
-                        ImGui::SliderFloat("Tiling", &m_Tilin, 0.0f, 30.0f);
-                        float tint[4] = {m_Tint.x, m_Tint.y, m_Tint.z,
-                                         m_Tint.w};
-                        ImGui::ColorEdit4("Tint", tint);
-                        m_Tint.x = tint[0];
-                        m_Tint.y = tint[1];
-                        m_Tint.z = tint[2];
-                        m_Tint.w = tint[3];
-                        ImGui::End();
+                        Renderer3D::BeginScene(m_Camera);
+                        Renderer3D::DrawModel();
+                        Renderer3D::EndScene();
                     }
+                    Renderer2D::EndDrawing();
+                }
+
+                {
+                    ImGui::Begin("Benchmark");
+                    ImGui::SliderInt("Amount", &m_BenchmarkAmount, 10, 1000);
+                    auto posisitons = m_Camera.GetPosition();
+                    float pos[3] = {posisitons.x, posisitons.y, posisitons.z};
+                    ImGui::SliderFloat3("Camera pos", pos, -10.0f, 10.0f);
+                    m_Camera.SetPosition({pos[0], pos[1], pos[2]});
+
+                    auto posisitonsO = m_OrthoCamera.GetPosition();
+                    float posO[3]    = {posisitonsO.x, posisitonsO.y,
+                                        posisitonsO.z};
+                    ImGui::SliderFloat3("Camera pos Ortho", posO, -10.0f,
+                                        10.0f);
+                    m_OrthoCamera.SetPosition({posO[0], posO[1], posO[2]});
+                    float values[4] = {
+                        m_OrthoCamera.m_Left,
+                        m_OrthoCamera.m_Right,
+                        m_OrthoCamera.m_Bottom,
+                        m_OrthoCamera.m_Top,
+                    };
+                    ImGui::SliderFloat4("Camera val", values, -10.0f, 10.0f);
+                    m_OrthoCamera.SetProj(values[0], values[1], values[2],
+                                          values[3]);
+                    ImGui::SliderFloat("Tiling", &m_Tilin, 0.0f, 30.0f);
+                    float tint[4] = {m_Tint.x, m_Tint.y, m_Tint.z, m_Tint.w};
+                    ImGui::ColorEdit4("Tint", tint);
+                    m_Tint.x = tint[0];
+                    m_Tint.y = tint[1];
+                    m_Tint.z = tint[2];
+                    m_Tint.w = tint[3];
+                    ImGui::End();
                 }
             }
             Engine::EndDrawing();

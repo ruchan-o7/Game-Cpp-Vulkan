@@ -37,6 +37,8 @@ namespace FooGame
             float LineWidth = 1.0f;
             MultiSampling MultiSampling;
             VkDescriptorSetLayout DescriptorSetLayout;
+            u32 pushConstantSize  = 0;
+            u32 pushConstantCount = 0;
     };
     Pipeline CreateGraphicsPipeline(PipelineInfo info);
 

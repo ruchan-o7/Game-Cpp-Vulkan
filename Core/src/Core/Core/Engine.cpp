@@ -35,11 +35,6 @@ namespace FooGame
             List<Semaphore> renderFinishedSemaphores;
             bool framebufferResized = false;
 
-            struct Resources
-            {
-                    List<Buffer*> UniformBuffers;
-            };
-            Resources resources;
             struct Descriptor
             {
                     VkDescriptorSetLayout descriptorSetLayout;
@@ -143,7 +138,7 @@ namespace FooGame
         comps.swapchain->CreateFramebuffers();
 
         {
-            comps.resources.UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+            comps.descriptor.UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
             for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
                 BufferBuilder uBuffBuilder{};
@@ -151,7 +146,7 @@ namespace FooGame
                     .SetInitialSize(sizeof(UniformBufferObject))
                     .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-                comps.resources.UniformBuffers[i] = CreateDynamicBuffer(
+                comps.descriptor.UniformBuffers[i] = CreateDynamicBuffer(
                     sizeof(UniformBufferObject), BufferUsage::UNIFORM);
             }
         }
@@ -168,24 +163,6 @@ namespace FooGame
             poolInfo.maxSets       = MAX_FRAMES_IN_FLIGHT;
             VK_CALL(vkCreateDescriptorPool(device, &poolInfo, nullptr,
                                            &comps.descriptor.descriptorPool));
-
-            VkDescriptorSetLayoutBinding uboLayoutBinding{};
-            uboLayoutBinding.binding         = 0;
-            uboLayoutBinding.descriptorCount = 1;
-            uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            uboLayoutBinding.pImmutableSamplers = nullptr;
-            uboLayoutBinding.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
-
-            VkDescriptorSetLayoutBinding bindings[1] = {uboLayoutBinding};
-            VkDescriptorSetLayoutCreateInfo layoutInfo{};
-            layoutInfo.sType =
-                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            layoutInfo.bindingCount = ARRAY_COUNT(bindings);
-            layoutInfo.pBindings    = bindings;
-
-            VK_CALL(vkCreateDescriptorSetLayout(
-                device, &layoutInfo, nullptr,
-                &comps.descriptor.descriptorSetLayout));
         }
         {
             VkDescriptorSetLayoutBinding uboLayoutBinding{};
@@ -342,32 +319,6 @@ namespace FooGame
 
     double deltaTime_     = 0;
     double lastFrameTime_ = 0;
-    void Engine::Shutdown()
-    {
-        auto device = Api::GetDevice()->GetDevice();
-        Api::WaitIdle();
-
-        for (auto& ub : comps.resources.UniformBuffers)
-        {
-            ub->Release();
-        }
-        comps.resources.UniformBuffers.clear();
-        delete comps.swapchain;
-        for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            comps.imageAvailableSemaphores[i].Destroy(device);
-            comps.renderFinishedSemaphores[i].Destroy(device);
-            comps.inFlightFences[i].Destroy(device);
-        }
-        Renderer2D::Shutdown();
-
-        ImGui_ImplVulkan_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
-        ImGui::DestroyContext();
-        vkDestroyDescriptorPool(Api::GetDevice()->GetDevice(), g_ImguiPool,
-                                nullptr);
-        Api::Shutdown();
-    }
     bool Engine::AcquireNextImage(u32& imageIndex)
     {
         auto err = comps.swapchain->AcquireNextImage(
@@ -555,4 +506,35 @@ namespace FooGame
         ImGui_ImplVulkan_CreateFontsTexture();
     }
 
+    void Engine::Shutdown()
+    {
+        auto device = Api::GetDevice()->GetDevice();
+        Api::WaitIdle();
+
+        for (auto& ub : comps.descriptor.UniformBuffers)
+        {
+            ub->Release();
+        }
+        comps.descriptor.UniformBuffers.clear();
+        delete comps.swapchain;
+        for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            comps.imageAvailableSemaphores[i].Destroy(device);
+            comps.renderFinishedSemaphores[i].Destroy(device);
+            comps.inFlightFences[i].Destroy(device);
+        }
+        Renderer2D::Shutdown();
+
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+        vkDestroyDescriptorPool(Api::GetDevice()->GetDevice(), g_ImguiPool,
+                                nullptr);
+        vkDestroyDescriptorPool(device, comps.descriptor.descriptorPool,
+                                nullptr);
+        vkDestroyDescriptorSetLayout(
+            device, comps.descriptor.descriptorSetLayout, nullptr);
+
+        Api::Shutdown();
+    }
 }  // namespace FooGame

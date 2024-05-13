@@ -2,6 +2,7 @@
 #include "../Backend/VulkanCheckResult.h"
 #include "Device.h"
 #include "Api.h"
+#include "vulkan/vulkan_core.h"
 namespace FooGame
 {
 
@@ -129,6 +130,17 @@ namespace FooGame
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts    = &info.DescriptorSetLayout;
+
+        VkPushConstantRange pushConstants{};
+        if (info.pushConstantCount > 0)
+        {
+            pushConstants.offset     = 0;
+            pushConstants.size       = info.pushConstantSize;
+            pushConstants.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+            pipelineLayoutInfo.pPushConstantRanges    = &pushConstants;
+            pipelineLayoutInfo.pushConstantRangeCount = info.pushConstantCount;
+        }
 
         VK_CALL(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr,
                                        &pipeline.pipelineLayout));

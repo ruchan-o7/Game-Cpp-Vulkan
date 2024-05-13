@@ -6,10 +6,9 @@
 #include "../Graphics/Api.h"
 #include "../Graphics/Shader.h"
 #include "../Core/OrthographicCamera.h"
-#include "Core/Core/PerspectiveCamera.h"
-#include "Core/Graphics/Pipeline.h"
-#include "Core/Graphics/Texture2D.h"
-#include "vulkan/vulkan_core.h"
+#include "../Core/PerspectiveCamera.h"
+#include "../Graphics/Pipeline.h"
+#include "../Graphics/Texture2D.h"
 namespace FooGame
 {
 
@@ -407,6 +406,7 @@ namespace FooGame
     {
         return s_Data.Stats;
     }
+
     void Renderer2D::Shutdown()
     {
         auto device = Api::GetDevice()->GetDevice();
@@ -418,8 +418,7 @@ namespace FooGame
                                 nullptr);
         vkDestroyPipeline(device, s_Data.api.Pipeline.pipeline, nullptr);
         vkDestroySampler(device, s_Data.api.TextureSampler, nullptr);
-        DestroyImage(s_Data.frameData.DefaultTexture.get());
+        // DestroyImage(s_Data.frameData.DefaultTexture.get());
         delete[] s_Data.frameData.QuadVertexBufferBase;
-        // TODO: clear created resources
     }
 }  // namespace FooGame

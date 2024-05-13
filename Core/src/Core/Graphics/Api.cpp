@@ -269,8 +269,8 @@ namespace FooGame
     void Api::SetViewportAndScissors(VkCommandBuffer cmd, float w, float h)
     {
         VkViewport viewport{};
-        viewport.x        = w / -2.0f;  // 0
-        viewport.y        = h / -2.0f;  // 0
+        viewport.x        = 0;
+        viewport.y        = 0;
         viewport.width    = w;
         viewport.height   = h;
         viewport.minDepth = 0.0f;
@@ -291,10 +291,6 @@ namespace FooGame
         vkDestroyPipelineLayout(device, s_Api.graphicsPipeline.pipelineLayout,
                                 nullptr);
         vkDestroyRenderPass(device, s_Api.renderPass, nullptr);
-        // vkDestroyDescriptorPool(device, s_Api.descriptor.descriptorPool,
-        //                         nullptr);
-        // vkDestroyDescriptorSetLayout(
-        //     device, s_Api.descriptor.descriptorSetLayout, nullptr);
         vkDestroyCommandPool(device, s_Api.commandPool, nullptr);
         vkDestroyDevice(device, nullptr);
 
