@@ -1,5 +1,6 @@
 #pragma once
 #include "../Core/Base.h"
+#include "Core/Graphics/Api.h"
 #include "Core/Graphics/Texture2D.h"
 #include <vulkan/vulkan.h>
 namespace FooGame
@@ -64,6 +65,12 @@ namespace FooGame
             static void BindPipeline(VkCommandBuffer cmd);
             static void NextBatch();
             static void StartBatch();
+            static void UpdateUniformData(UniformBufferObject ubd);
+            static void BindDescriptorSets(
+                VkCommandBuffer cmd, Pipeline& pipeline,
+                VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+                u32 firstSet = 0, u32 dSetCount = 1, u32 dynamicOffsetCount = 0,
+                u32* dynamicOffsets = nullptr);
     };
 
 }  // namespace FooGame

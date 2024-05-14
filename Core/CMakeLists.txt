@@ -21,6 +21,7 @@ set(CORE_SOURCES
 	"src/Core/Backend/VulkanCheckResult.cpp"
 
 	"src/Core/Graphics/Api.h"
+	"src/Core/Graphics/Types/QuadVertex.h"
 	"src/Core/Graphics/Buffer.h"
 	"src/Core/Graphics/Command.h"
 	"src/Core/Graphics/Device.h"
@@ -86,5 +87,6 @@ target_link_libraries("${PROJECT_NAME}" PUBLIC glfw glm "${Vulkan_LIBRARIES}")
 target_precompile_headers(Core PRIVATE "src/pch.h")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-add_compile_definitions(FOO_DEBUG)
+	add_compile_definitions(FOO_DEBUG)
 endif()
+add_compile_definitions($<$<CONFIG:Debug>:FOO_DEBUG>)

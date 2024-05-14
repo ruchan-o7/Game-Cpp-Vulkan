@@ -9,99 +9,13 @@
 #include "../Core/PerspectiveCamera.h"
 #include "../Graphics/Pipeline.h"
 #include "../Graphics/Texture2D.h"
+#include "Types/QuadVertex.h"
+#include "Types/DescriptorData.h"
 #include <glm/gtx/string_cast.hpp>
 namespace FooGame
 {
 
-    struct QuadVertex
-    {
-            glm::vec3 Position;
-            glm::vec4 Color;
-            glm::vec2 TexCoord;
-            float TexIndex;
-            float TilingFactor;
-            static VkVertexInputBindingDescription GetBindingDescription()
-            {
-                VkVertexInputBindingDescription bindingDescription{};
-                bindingDescription.binding   = 0;
-                bindingDescription.stride    = sizeof(QuadVertex);
-                bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-                return bindingDescription;
-            }
-            static List<VkVertexInputAttributeDescription>
-            GetAttributeDescriptionList()
-            {
-                List<VkVertexInputAttributeDescription> attributeDescriptions{};
-                attributeDescriptions.resize(5);
-
-                attributeDescriptions[0].binding  = 0;
-                attributeDescriptions[0].location = 0;
-                attributeDescriptions[0].format   = VK_FORMAT_R32G32B32_SFLOAT;
-                attributeDescriptions[0].offset =
-                    offsetof(QuadVertex, Position);
-
-                attributeDescriptions[1].binding  = 0;
-                attributeDescriptions[1].location = 1;
-                attributeDescriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-                attributeDescriptions[1].offset = offsetof(QuadVertex, Color);
-
-                attributeDescriptions[2].binding  = 0;
-                attributeDescriptions[2].location = 2;
-                attributeDescriptions[2].format   = VK_FORMAT_R32G32_SFLOAT;
-                attributeDescriptions[2].offset =
-                    offsetof(QuadVertex, TexCoord);
-
-                attributeDescriptions[3].binding  = 0;
-                attributeDescriptions[3].location = 3;
-                attributeDescriptions[3].format   = VK_FORMAT_R32_SFLOAT;
-                attributeDescriptions[3].offset =
-                    offsetof(QuadVertex, TexIndex);
-
-                attributeDescriptions[4].binding  = 0;
-                attributeDescriptions[4].location = 4;
-                attributeDescriptions[4].format   = VK_FORMAT_R32_SFLOAT;
-                attributeDescriptions[4].offset =
-                    offsetof(QuadVertex, TilingFactor);
-                return attributeDescriptions;
-            }
-            static std::array<VkVertexInputAttributeDescription, 5>
-            GetAttributeDescrp()
-            {
-                std::array<VkVertexInputAttributeDescription, 5>
-                    attributeDescriptions{};
-                attributeDescriptions[0].binding  = 0;
-                attributeDescriptions[0].location = 0;
-                attributeDescriptions[0].format   = VK_FORMAT_R32G32B32_SFLOAT;
-                attributeDescriptions[0].offset =
-                    offsetof(QuadVertex, Position);
-
-                attributeDescriptions[1].binding  = 0;
-                attributeDescriptions[1].location = 1;
-                attributeDescriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-                attributeDescriptions[1].offset = offsetof(QuadVertex, Color);
-
-                attributeDescriptions[2].binding  = 0;
-                attributeDescriptions[2].location = 2;
-                attributeDescriptions[2].format   = VK_FORMAT_R32G32_SFLOAT;
-                attributeDescriptions[2].offset =
-                    offsetof(QuadVertex, TexCoord);
-
-                attributeDescriptions[3].binding  = 0;
-                attributeDescriptions[3].location = 3;
-                attributeDescriptions[3].format   = VK_FORMAT_R32_SFLOAT;
-                attributeDescriptions[3].offset =
-                    offsetof(QuadVertex, TexIndex);
-
-                attributeDescriptions[4].binding  = 0;
-                attributeDescriptions[4].location = 4;
-                attributeDescriptions[4].format   = VK_FORMAT_R32_SFLOAT;
-                attributeDescriptions[4].offset =
-                    offsetof(QuadVertex, TilingFactor);
-                return attributeDescriptions;
-            }
-    };
-#if 0
+#if 1
 #define VERT_PATH "../../../Shaders/QuadShaderVert.spv"
 #define FRAG_PATH "../../../Shaders/QuadShaderFrag.spv"
 #else
@@ -117,6 +31,8 @@ namespace FooGame
             {
                     Buffer* VertexBuffer = nullptr;
                     Buffer* IndexBuffer  = nullptr;
+                    List<Buffer*> UniformBuffers;
+                    DescriptorData descriptor;
             };
             Resources resources;
             struct FrameData
@@ -175,6 +91,88 @@ namespace FooGame
             s_Data.frameData.QuadVertexBufferBase =
                 new QuadVertex[s_Data.MaxVertices];
         }
+        {
+            s_Data.resources.UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+
+            for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+            {
+                BufferBuilder uBuffBuilder{};
+                uBuffBuilder.SetUsage(BufferUsage::UNIFORM)
+                    .SetInitialSize(sizeof(UniformBufferObject))
+                    .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+                s_Data.resources.UniformBuffers[i] = CreateDynamicBuffer(
+                    sizeof(UniformBufferObject), BufferUsage::UNIFORM);
+            }
+        }
+        {
+            VkDescriptorPoolSize poolSizes[1] = {};
+            poolSizes[0].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            poolSizes[0].descriptorCount = MAX_FRAMES_IN_FLIGHT;
+
+            VkDescriptorPoolCreateInfo poolInfo{};
+            poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+            poolInfo.poolSizeCount = ARRAY_COUNT(poolSizes);
+            poolInfo.pPoolSizes    = poolSizes;
+            poolInfo.maxSets       = MAX_FRAMES_IN_FLIGHT;
+            VK_CALL(vkCreateDescriptorPool(device->GetDevice(), &poolInfo,
+                                           nullptr,
+                                           &s_Data.resources.descriptor.pool));
+        }
+        {
+            VkDescriptorSetLayoutBinding uboLayoutBinding{};
+            uboLayoutBinding.binding         = 0;
+            uboLayoutBinding.descriptorCount = 1;
+            uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            uboLayoutBinding.pImmutableSamplers = nullptr;
+            uboLayoutBinding.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
+            VkDescriptorSetLayoutBinding bindings[1] = {uboLayoutBinding};
+            VkDescriptorSetLayoutCreateInfo layoutInfo{};
+            layoutInfo.sType =
+                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            layoutInfo.bindingCount = ARRAY_COUNT(bindings);
+            layoutInfo.pBindings    = bindings;
+
+            VK_CALL(vkCreateDescriptorSetLayout(
+                device->GetDevice(), &layoutInfo, nullptr,
+                &s_Data.resources.descriptor.SetLayout));
+            List<VkDescriptorSetLayout> layouts(
+                MAX_FRAMES_IN_FLIGHT, s_Data.resources.descriptor.SetLayout);
+            VkDescriptorSetAllocateInfo allocInfo{};
+            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocInfo.descriptorPool     = s_Data.resources.descriptor.pool;
+            allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
+            allocInfo.pSetLayouts        = layouts.data();
+
+            VK_CALL(vkAllocateDescriptorSets(device->GetDevice(), &allocInfo,
+                                             s_Data.resources.descriptor.Sets));
+        }
+        {
+            for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+            {
+                VkDescriptorBufferInfo bufferInfo{};
+                bufferInfo.buffer =
+                    *s_Data.resources.UniformBuffers[i]->GetBuffer();
+                bufferInfo.offset = 0;
+                bufferInfo.range  = sizeof(UniformBufferObject);
+
+                VkWriteDescriptorSet descriptorWrites[1] = {};
+                descriptorWrites[0].sType =
+                    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrites[0].dstSet =
+                    s_Data.resources.descriptor.Sets[i];
+                descriptorWrites[0].dstBinding      = 0;
+                descriptorWrites[0].dstArrayElement = 0;
+                descriptorWrites[0].descriptorType =
+                    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                descriptorWrites[0].descriptorCount = 1;
+                descriptorWrites[0].pBufferInfo     = &bufferInfo;
+
+                vkUpdateDescriptorSets(device->GetDevice(),
+                                       ARRAY_COUNT(descriptorWrites),
+                                       descriptorWrites, 0, nullptr);
+            }
+        }
 
         // Create graphics pipeline
         {
@@ -189,7 +187,7 @@ namespace FooGame
             info.LineWidth           = 2.0f;
             info.CullMode            = CullMode::BACK;
             info.MultiSampling       = MultiSampling::LEVEL_1;
-            info.DescriptorSetLayout = *Engine::GetDescriptorSetLayout();
+            info.DescriptorSetLayout = s_Data.resources.descriptor.SetLayout;
             s_Data.api.Pipeline      = CreateGraphicsPipeline(info);
         }
 
@@ -202,7 +200,7 @@ namespace FooGame
 
         ubd.View       = camera.GetView();
         ubd.Projection = camera.GetProjection();
-        Engine::UpdateUniformData(ubd);
+        UpdateUniformData(ubd);
         StartBatch();
     }
     void Renderer2D::BeginScene(const OrthographicCamera& camera)
@@ -210,12 +208,13 @@ namespace FooGame
         UniformBufferObject ubd{};
         ubd.View       = camera.GetView();
         ubd.Projection = camera.GetProjection();
-
-        std::cout << "OrthoGraphic view: " << glm::to_string(ubd.View) << '\n';
-        std::cout << "OrthoGraphic projection: "
-                  << glm::to_string(ubd.Projection) << '\n';
-        Engine::UpdateUniformData(ubd);
+        UpdateUniformData(ubd);
         StartBatch();
+    }
+    void Renderer2D::UpdateUniformData(UniformBufferObject ubd)
+    {
+        s_Data.resources.UniformBuffers[Engine::GetCurrentFrame()]->SetData(
+            sizeof(ubd), &ubd);
     }
 
     void Renderer2D::EndScene()
@@ -390,7 +389,7 @@ namespace FooGame
         vkCmdBindIndexBuffer(cmd, *s_Data.resources.IndexBuffer->GetBuffer(), 0,
                              VK_INDEX_TYPE_UINT32);
         // bind descriptorsets
-        Engine::BindDescriptorSets(cmd, s_Data.api.Pipeline);
+        BindDescriptorSets(cmd, s_Data.api.Pipeline);
         if (s_Data.frameData.QuadIndexCount)
         {
             u32 dataSize =
@@ -401,6 +400,17 @@ namespace FooGame
             vkCmdDrawIndexed(cmd, s_Data.frameData.QuadIndexCount, 2, 0, 0, 0);
             s_Data.frameData.DrawCall++;
         }
+    }
+    void Renderer2D::BindDescriptorSets(VkCommandBuffer cmd, Pipeline& pipeline,
+                                        VkPipelineBindPoint bindPoint,
+                                        u32 firstSet, u32 dSetCount,
+                                        u32 dynamicOffsetCount,
+                                        u32* dynamicOffsets)
+    {
+        vkCmdBindDescriptorSets(
+            cmd, bindPoint, pipeline.pipelineLayout, firstSet, dSetCount,
+            &s_Data.resources.descriptor.Sets[Engine::GetCurrentFrame()],
+            dynamicOffsetCount, dynamicOffsets);
     }
     void Renderer2D::ResetStats()
     {
@@ -424,6 +434,12 @@ namespace FooGame
         delete s_Data.resources.IndexBuffer;
         s_Data.resources.VertexBuffer->Release();
         delete s_Data.resources.VertexBuffer;
+        for (auto& ub : s_Data.resources.UniformBuffers)
+        {
+            ub->Release();
+            delete ub;
+        }
+        s_Data.resources.UniformBuffers.clear();
         vkDestroyPipelineLayout(device, s_Data.api.Pipeline.pipelineLayout,
                                 nullptr);
         vkDestroyPipeline(device, s_Data.api.Pipeline.pipeline, nullptr);

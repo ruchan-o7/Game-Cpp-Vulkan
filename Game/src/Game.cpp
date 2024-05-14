@@ -68,9 +68,7 @@ namespace FooGame
                     Renderer2D::BeginDrawing();
                     {
                         Renderer2D::BeginScene(m_OrthoCamera);
-                        // DrawQuads(m_BenchmarkAmount, m_Tex, m_Tilin,
-                        //           m_Tint);
-                        Renderer2D::DrawQuad({0.0f, 0.0f}, {1.0f, 1.0f}, m_Tex,
+                        Renderer2D::DrawQuad({.5f, .5f}, {0.5f, 0.5f}, m_Tex,
                                              m_Tilin, m_Tint);
                         Renderer2D::EndScene();
                     }

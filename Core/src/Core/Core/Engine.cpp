@@ -12,7 +12,6 @@
 #include <imgui_internal.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
-#include "../Graphics/Buffer.h"
 #include "vulkan/vulkan_core.h"
 
 namespace FooGame
@@ -34,14 +33,6 @@ namespace FooGame
             List<Semaphore> renderFinishedSemaphores;
             bool framebufferResized = false;
 
-            struct Descriptor
-            {
-                    VkDescriptorSetLayout descriptorSetLayout;
-                    VkDescriptorPool descriptorPool;
-                    VkDescriptorSet descriptorSets[3];
-                    List<Buffer*> UniformBuffers;
-            };
-            Descriptor descriptor;
             struct Command
             {
                     List<VkCommandBuffer> commandBuffers;
@@ -120,10 +111,6 @@ namespace FooGame
         vkFreeCommandBuffers(Api::GetDevice()->GetDevice(),
                              comps.command.commandPool, 1, &commandBuffer);
     }
-    VkDescriptorPool Engine::GetDescriptorPool()
-    {
-        return comps.descriptor.descriptorPool;
-    }
     void Engine::Init(WindowsWindow& window)
     {
         comps.windowHandle = window.GetWindowHandle();
@@ -150,108 +137,6 @@ namespace FooGame
         }
 
         comps.swapchain->CreateFramebuffers();
-
-        {
-            comps.descriptor.UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-            for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-            {
-                BufferBuilder uBuffBuilder{};
-                uBuffBuilder.SetUsage(BufferUsage::UNIFORM)
-                    .SetInitialSize(sizeof(UniformBufferObject))
-                    .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-                comps.descriptor.UniformBuffers[i] = CreateDynamicBuffer(
-                    sizeof(UniformBufferObject), BufferUsage::UNIFORM);
-            }
-        }
-        // CreateDescriptorPool();
-        {
-            VkDescriptorPoolSize poolSizes[1] = {};
-            poolSizes[0].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            poolSizes[0].descriptorCount = MAX_FRAMES_IN_FLIGHT;
-
-            VkDescriptorPoolCreateInfo poolInfo{};
-            poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-            poolInfo.poolSizeCount = ARRAY_COUNT(poolSizes);
-            poolInfo.pPoolSizes    = poolSizes;
-            poolInfo.maxSets       = MAX_FRAMES_IN_FLIGHT;
-            VK_CALL(vkCreateDescriptorPool(device, &poolInfo, nullptr,
-                                           &comps.descriptor.descriptorPool));
-        }
-        {
-            VkDescriptorSetLayoutBinding uboLayoutBinding{};
-            uboLayoutBinding.binding         = 0;
-            uboLayoutBinding.descriptorCount = 1;
-            uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            uboLayoutBinding.pImmutableSamplers = nullptr;
-            uboLayoutBinding.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
-
-            // VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-            // samplerLayoutBinding.binding         = 1;
-            // samplerLayoutBinding.descriptorCount = 1;
-            // samplerLayoutBinding.descriptorType =
-            //     VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            // samplerLayoutBinding.pImmutableSamplers = nullptr;
-            // samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-            VkDescriptorSetLayoutBinding bindings[1] = {uboLayoutBinding};
-            VkDescriptorSetLayoutCreateInfo layoutInfo{};
-            layoutInfo.sType =
-                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            layoutInfo.bindingCount = ARRAY_COUNT(bindings);
-            layoutInfo.pBindings    = bindings;
-
-            VK_CALL(vkCreateDescriptorSetLayout(
-                device, &layoutInfo, nullptr,
-                &comps.descriptor.descriptorSetLayout));
-            List<VkDescriptorSetLayout> layouts(
-                MAX_FRAMES_IN_FLIGHT, comps.descriptor.descriptorSetLayout);
-            VkDescriptorSetAllocateInfo allocInfo{};
-            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            allocInfo.descriptorPool     = GetDescriptorPool();
-            allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
-            allocInfo.pSetLayouts        = layouts.data();
-
-            VK_CALL(vkAllocateDescriptorSets(device, &allocInfo,
-                                             comps.descriptor.descriptorSets));
-        }
-        {
-            comps.descriptor.UniformBuffers.resize(3);
-            for (u32 i = 0; i < 3; i++)
-            {
-                BufferBuilder uBuffBuilder{};
-                uBuffBuilder.SetUsage(BufferUsage::UNIFORM)
-                    .SetInitialSize(sizeof(UniformBufferObject))
-                    .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-                comps.descriptor.UniformBuffers[i] = CreateDynamicBuffer(
-                    sizeof(UniformBufferObject), BufferUsage::UNIFORM);
-            }
-        }
-        {
-            for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-            {
-                VkDescriptorBufferInfo bufferInfo{};
-                bufferInfo.buffer =
-                    *comps.descriptor.UniformBuffers[i]->GetBuffer();
-                bufferInfo.offset = 0;
-                bufferInfo.range  = sizeof(UniformBufferObject);
-
-                VkWriteDescriptorSet descriptorWrites[1] = {};
-                descriptorWrites[0].sType =
-                    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[0].dstSet = comps.descriptor.descriptorSets[i];
-                descriptorWrites[0].dstBinding      = 0;
-                descriptorWrites[0].dstArrayElement = 0;
-                descriptorWrites[0].descriptorType =
-                    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                descriptorWrites[0].descriptorCount = 1;
-                descriptorWrites[0].pBufferInfo     = &bufferInfo;
-
-                vkUpdateDescriptorSets(device, ARRAY_COUNT(descriptorWrites),
-                                       descriptorWrites, 0, nullptr);
-            }
-        }
         {
             comps.command.commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
             VkCommandBufferAllocateInfo allocInfo{};
@@ -283,22 +168,7 @@ namespace FooGame
     {
         Shutdown();
     }
-    VkDescriptorSetLayout* Engine::GetDescriptorSetLayout()
-    {
-        return &comps.descriptor.descriptorSetLayout;
-    }
 
-    void Engine::BindDescriptorSets(VkCommandBuffer cmd, Pipeline& pipeline,
-                                    VkPipelineBindPoint bindPoint, u32 firstSet,
-                                    u32 dSetCount, u32 dynamicOffsetCount,
-                                    u32* dynamicOffsets)
-    {
-        vkCmdBindDescriptorSets(
-            cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipelineLayout,
-            firstSet, dSetCount,
-            &comps.descriptor.descriptorSets[GetCurrentFrame()],
-            dynamicOffsetCount, dynamicOffsets);
-    }
     void Engine::BeginDrawing()
     {
         // frameData.DrawCall = 0;
@@ -466,8 +336,8 @@ namespace FooGame
     }
     void Engine::UpdateUniformData(UniformBufferObject ubo)
     {
-        comps.descriptor.UniformBuffers[GetCurrentFrame()]->SetData(sizeof(ubo),
-                                                                    &ubo);
+        // comps.descriptor.UniformBuffers[GetCurrentFrame()]->SetData(sizeof(ubo),
+        //                                                             &ubo);
     }
     void Engine::InitImgui()
     {
@@ -526,12 +396,7 @@ namespace FooGame
     {
         auto device = Api::GetDevice()->GetDevice();
         Api::WaitIdle();
-
-        for (auto& ub : comps.descriptor.UniformBuffers)
-        {
-            ub->Release();
-        }
-        comps.descriptor.UniformBuffers.clear();
+        vkDestroyCommandPool(device, comps.command.commandPool, nullptr);
         delete comps.swapchain;
         for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
@@ -546,10 +411,6 @@ namespace FooGame
         ImGui::DestroyContext();
         vkDestroyDescriptorPool(Api::GetDevice()->GetDevice(), g_ImguiPool,
                                 nullptr);
-        vkDestroyDescriptorPool(device, comps.descriptor.descriptorPool,
-                                nullptr);
-        vkDestroyDescriptorSetLayout(
-            device, comps.descriptor.descriptorSetLayout, nullptr);
 
         Api::Shutdown();
     }
