@@ -102,13 +102,6 @@ namespace FooGame
             }
         }
         {
-            VkPhysicalDeviceDescriptorIndexingFeatures indexing_features{
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT,
-                nullptr};
-
-            bool bindless_supported =
-                indexing_features.descriptorBindingPartiallyBound &&
-                indexing_features.runtimeDescriptorArray;
             float priorities = 1.0f;
             VkDeviceQueueCreateInfo queueCreateInfo{};
             queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -116,30 +109,21 @@ namespace FooGame
             queueCreateInfo.queueCount       = 1;
             queueCreateInfo.pQueuePriorities = &priorities;
 
-            VkPhysicalDeviceFeatures2 deviceFeatures2{
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-                &indexing_features};
             VkPhysicalDeviceFeatures deviceFeatures{};
             deviceFeatures.samplerAnisotropy = VK_TRUE;
-            deviceFeatures2.features         = deviceFeatures;
-
-            vkGetPhysicalDeviceFeatures2(m_PhysicalDevice, &deviceFeatures2);
 
             VkDeviceCreateInfo createInfo{};
             createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
             createInfo.queueCreateInfoCount = 1;
             createInfo.pQueueCreateInfos    = &queueCreateInfo;
             createInfo.pEnabledFeatures     = nullptr;
-            createInfo.pNext                = &deviceFeatures2;
             createInfo.enabledExtensionCount =
                 static_cast<u32>(info.deviceExtensions.size());
             createInfo.ppEnabledExtensionNames = info.deviceExtensions.data();
             createInfo.enabledLayerCount =
                 static_cast<u32>(info.validationLayers.size());
             createInfo.ppEnabledLayerNames = info.validationLayers.data();
-            indexing_features.descriptorBindingPartiallyBound = VK_TRUE;
-            indexing_features.runtimeDescriptorArray          = VK_TRUE;
-            deviceFeatures2.pNext = &indexing_features;
+
             VK_CALL(vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr,
                                    &m_Device));
             vkGetDeviceQueue(m_Device, m_GraphicQueueFamily, 0,

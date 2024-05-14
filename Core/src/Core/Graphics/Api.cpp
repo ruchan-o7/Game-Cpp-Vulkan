@@ -4,8 +4,6 @@
 #include <pch.h>
 #include "../Backend/VulkanCheckResult.h"
 #include "../Core/Base.h"
-#include "../Graphics/Shader.h"
-#include "../Backend/Vertex.h"
 #include "../Core/Window.h"
 #include "../Graphics/Device.h"
 namespace FooGame
@@ -65,10 +63,6 @@ namespace FooGame
                             VkBufferCopy& region)
     {
         vkCmdCopyBuffer(cmd, source, target, regionCount, &region);
-    }
-    VkCommandPool Api::GetCommandPool()
-    {
-        return s_Api.commandPool;
     }
     VkRenderPass Api::GetRenderpass()
     {
@@ -148,7 +142,7 @@ namespace FooGame
                 static_cast<u32>(extensions.size());
 
             VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-#ifdef _DEBUG
+#ifdef FOO_DEBUG
 
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             createInfo.enabledLayerCount   = validationLayers.size();
@@ -174,7 +168,7 @@ namespace FooGame
                 static_cast<u32>(extensions.size());
             VK_CALL(vkCreateInstance(&createInfo, nullptr, &s_Api.instance));
 
-#ifdef _DEBUG
+#ifdef FOO_DEBUG
             VK_CALL(CreateDebugUtilsMessengerEXT(s_Api.instance,
                                                  &debugCreateInfo, nullptr,
                                                  &s_Api.debugMessenger));
@@ -187,17 +181,6 @@ namespace FooGame
             s_Api.device =
                 Device::CreateDevice(deviceExtensions, validationLayers);
         }
-    }
-
-    void Api::CreateCommandPool()
-    {
-        VkCommandPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        poolInfo.queueFamilyIndex = s_Api.device->GetGraphicsFamily();
-
-        VK_CALL(vkCreateCommandPool(s_Api.device->GetDevice(), &poolInfo,
-                                    nullptr, &s_Api.commandPool));
     }
 
     void Api::CreateRenderpass(VkFormat colorAttachmentFormat)
@@ -294,7 +277,7 @@ namespace FooGame
         vkDestroyCommandPool(device, s_Api.commandPool, nullptr);
         vkDestroyDevice(device, nullptr);
 
-#ifdef _DEBUG
+#ifdef FOO_DEBUG
         DestroyDebugUtilsMessengerEXT(s_Api.instance, s_Api.debugMessenger,
                                       nullptr);
 #endif

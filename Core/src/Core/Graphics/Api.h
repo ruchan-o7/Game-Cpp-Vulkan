@@ -26,7 +26,6 @@ namespace FooGame
             static void WaitIdle();
             static VkSurfaceKHR GetSurface();
             static Device* GetDevice();
-            static VkCommandPool GetCommandPool();
             static VkRenderPass GetRenderpass();
             static VkInstance GetInstance();
             static VkDescriptorSetLayout GetDescriptorSetLayout();

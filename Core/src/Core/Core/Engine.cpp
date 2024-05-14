@@ -29,7 +29,6 @@ namespace FooGame
     {
             GLFWwindow* windowHandle;
             Swapchain* swapchain;
-            List<VkCommandBuffer> commandBuffers;
             List<Fence> inFlightFences;
             List<Semaphore> imageAvailableSemaphores;
             List<Semaphore> renderFinishedSemaphores;
@@ -43,6 +42,12 @@ namespace FooGame
                     List<Buffer*> UniformBuffers;
             };
             Descriptor descriptor;
+            struct Command
+            {
+                    List<VkCommandBuffer> commandBuffers;
+                    VkCommandPool commandPool;
+            };
+            Command command;
     };
     FrameData frameData{};
     EngineComponents comps{};
@@ -79,7 +84,7 @@ namespace FooGame
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.level       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = Api::GetCommandPool();
+        allocInfo.commandPool = comps.command.commandPool;
         allocInfo.commandBufferCount = 1;
 
         VkCommandBuffer commandBuffer{};
@@ -113,7 +118,7 @@ namespace FooGame
         vkQueueWaitIdle(Api::GetDevice()->GetGraphicsQueue());
 
         vkFreeCommandBuffers(Api::GetDevice()->GetDevice(),
-                             Api::GetCommandPool(), 1, &commandBuffer);
+                             comps.command.commandPool, 1, &commandBuffer);
     }
     VkDescriptorPool Engine::GetDescriptorPool()
     {
@@ -134,7 +139,16 @@ namespace FooGame
         Api::CreateRenderpass(GetSwapchainImageFormat());
         comps.swapchain->SetRenderpass();
 
-        Api::CreateCommandPool();
+        {
+            VkCommandPoolCreateInfo poolInfo{};
+            poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+            poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+            poolInfo.queueFamilyIndex = Api::GetDevice()->GetGraphicsFamily();
+
+            VK_CALL(vkCreateCommandPool(device, &poolInfo, nullptr,
+                                        &comps.command.commandPool));
+        }
+
         comps.swapchain->CreateFramebuffers();
 
         {
@@ -172,16 +186,15 @@ namespace FooGame
             uboLayoutBinding.pImmutableSamplers = nullptr;
             uboLayoutBinding.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
 
-            VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-            samplerLayoutBinding.binding         = 1;
-            samplerLayoutBinding.descriptorCount = 1;
-            samplerLayoutBinding.descriptorType =
-                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            samplerLayoutBinding.pImmutableSamplers = nullptr;
-            samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+            // VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+            // samplerLayoutBinding.binding         = 1;
+            // samplerLayoutBinding.descriptorCount = 1;
+            // samplerLayoutBinding.descriptorType =
+            //     VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            // samplerLayoutBinding.pImmutableSamplers = nullptr;
+            // samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-            VkDescriptorSetLayoutBinding bindings[2] = {uboLayoutBinding,
-                                                        samplerLayoutBinding};
+            VkDescriptorSetLayoutBinding bindings[1] = {uboLayoutBinding};
             VkDescriptorSetLayoutCreateInfo layoutInfo{};
             layoutInfo.sType =
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -195,7 +208,7 @@ namespace FooGame
                 MAX_FRAMES_IN_FLIGHT, comps.descriptor.descriptorSetLayout);
             VkDescriptorSetAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            allocInfo.descriptorPool     = Engine::GetDescriptorPool();
+            allocInfo.descriptorPool     = GetDescriptorPool();
             allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
             allocInfo.pSetLayouts        = layouts.data();
 
@@ -240,14 +253,15 @@ namespace FooGame
             }
         }
         {
-            comps.commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+            comps.command.commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
             VkCommandBufferAllocateInfo allocInfo{};
             allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-            allocInfo.commandPool        = Api::GetCommandPool();
-            allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-            allocInfo.commandBufferCount = (u32)comps.commandBuffers.size();
-            VK_CALL(vkAllocateCommandBuffers(device, &allocInfo,
-                                             comps.commandBuffers.data()));
+            allocInfo.commandPool = comps.command.commandPool;
+            allocInfo.level       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+            allocInfo.commandBufferCount =
+                (u32)comps.command.commandBuffers.size();
+            VK_CALL(vkAllocateCommandBuffers(
+                device, &allocInfo, comps.command.commandBuffers.data()));
         }
         {
             comps.imageAvailableSemaphores.clear();
@@ -297,7 +311,8 @@ namespace FooGame
         }
         frameData.imageIndex = imageIndex;
         comps.inFlightFences[frameData.currentFrame].Reset();
-        ResetCommandBuffer(comps.commandBuffers[frameData.currentFrame]);
+        ResetCommandBuffer(
+            comps.command.commandBuffers[frameData.currentFrame]);
         BeginDrawing_();
         {
             ImGui_ImplVulkan_NewFrame();
@@ -313,7 +328,8 @@ namespace FooGame
     {
         ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(
-            ImGui::GetDrawData(), comps.commandBuffers[frameData.currentFrame]);
+            ImGui::GetDrawData(),
+            comps.command.commandBuffers[frameData.currentFrame]);
         Submit();
     }
 
@@ -350,7 +366,7 @@ namespace FooGame
 
     void Engine::BeginRenderpass()
     {
-        auto cb = comps.commandBuffers[frameData.currentFrame];
+        auto cb = comps.command.commandBuffers[frameData.currentFrame];
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType      = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass = Api::GetRenderpass();
@@ -369,7 +385,7 @@ namespace FooGame
     }
     void Engine::BeginDrawing_()
     {
-        auto cb = comps.commandBuffers[frameData.currentFrame];
+        auto cb = comps.command.commandBuffers[frameData.currentFrame];
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -378,11 +394,11 @@ namespace FooGame
     }
     VkCommandBuffer Engine::GetCurrentCommandbuffer()
     {
-        return comps.commandBuffers[frameData.currentFrame];
+        return comps.command.commandBuffers[frameData.currentFrame];
     }
     void Engine::Submit()
     {
-        auto cb = comps.commandBuffers[frameData.currentFrame];
+        auto cb = comps.command.commandBuffers[frameData.currentFrame];
         vkCmdEndRenderPass(cb);
         VK_CALL(vkEndCommandBuffer(cb));
 
@@ -398,7 +414,7 @@ namespace FooGame
 
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers =
-            &comps.commandBuffers[frameData.currentFrame];
+            &comps.command.commandBuffers[frameData.currentFrame];
 
         VkSemaphore signalSemaphores[] = {
             comps.renderFinishedSemaphores[frameData.currentFrame].Get()};

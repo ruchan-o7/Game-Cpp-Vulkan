@@ -38,6 +38,9 @@ namespace FooGame
                 return VK_SHADER_STAGE_VERTEX_BIT;
             case FooGame::ShaderStage::FRAGMENT:
                 return VK_SHADER_STAGE_FRAGMENT_BIT;
+            default:
+                std::cerr << "[ERROR] | Shader stage type not found !!!"
+                          << std::endl;
         }
     }
     VkPipelineShaderStageCreateInfo Shader::CreateInfo()

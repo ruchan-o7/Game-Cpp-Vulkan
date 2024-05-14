@@ -65,7 +65,9 @@ namespace FooGame
         rasterizer.polygonMode             = VK_POLYGON_MODE_FILL;
         rasterizer.lineWidth               = info.LineWidth;
         rasterizer.cullMode                = cullMode;
-        rasterizer.frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        rasterizer.frontFace               = cullMode == VK_CULL_MODE_BACK_BIT
+                                                 ? VK_FRONT_FACE_COUNTER_CLOCKWISE
+                                                 : VK_FRONT_FACE_CLOCKWISE;
         rasterizer.depthBiasEnable         = VK_FALSE;
         VkSampleCountFlagBits sampleCount{};
         switch (info.MultiSampling)
@@ -118,7 +120,8 @@ namespace FooGame
         colorBlending.blendConstants[3] = 0.0f;
 
         VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT,
-                                          VK_DYNAMIC_STATE_SCISSOR};
+                                          VK_DYNAMIC_STATE_SCISSOR,
+                                          VK_DYNAMIC_STATE_LINE_WIDTH};
         VkPipelineDynamicStateCreateInfo dynamicState{};
         dynamicState.sType =
             VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;

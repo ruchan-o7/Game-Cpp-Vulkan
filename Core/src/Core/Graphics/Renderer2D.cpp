@@ -100,8 +100,13 @@ namespace FooGame
                 return attributeDescriptions;
             }
     };
+#if 0
 #define VERT_PATH "../../../Shaders/QuadShaderVert.spv"
 #define FRAG_PATH "../../../Shaders/QuadShaderFrag.spv"
+#else
+#define VERT_PATH "../../Shaders/QuadShaderVert.spv"
+#define FRAG_PATH "../../Shaders/QuadShaderFrag.spv"
+#endif
     struct Renderer2DData
     {
             static const u32 MaxQuads    = 20000;

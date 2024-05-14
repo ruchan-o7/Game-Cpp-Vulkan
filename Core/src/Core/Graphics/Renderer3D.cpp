@@ -14,6 +14,16 @@
 #include "vulkan/vulkan_core.h"
 namespace FooGame
 {
+#if 0
+#define VERT_SHADER "../../../Shaders/vert.spv"
+#define FRAG_SHADER "../../../Shaders/frag.spv"
+#define MODEL_PATH  "../../../Assets/Model/viking_room.obj"
+#else
+#define VERT_SHADER "../../Shaders/vert.spv"
+#define FRAG_SHADER "../../Shaders/frag.spv"
+#define MODEL_PATH  "../../Assets/Model/viking_room.obj"
+
+#endif
     struct MeshPushConstants
     {
             glm::vec4 data;
@@ -52,8 +62,8 @@ namespace FooGame
         g_IsInitialized = true;
         {
             PipelineInfo info{};
-            Shader vert{"../../../Shaders/vert.spv", ShaderStage::VERTEX};
-            Shader frag{"../../../Shaders/frag.spv", ShaderStage::FRAGMENT};
+            Shader vert{VERT_SHADER, ShaderStage::VERTEX};
+            Shader frag{FRAG_SHADER, ShaderStage::FRAGMENT};
             info.Shaders = List<Shader*>{&vert, &frag};
             info.VertexAttributeDescriptons =
                 Vertex::GetAttributeDescriptionList();
@@ -66,8 +76,7 @@ namespace FooGame
             info.pushConstantCount   = 1;
 
             s_Data.api.GraphicsPipeline = CreateGraphicsPipeline(info);
-            s_Data.Res.DefaultModel =
-                Model::LoadModel("../../../Assets/Model/viking_room.obj");
+            s_Data.Res.DefaultModel     = Model::LoadModel(MODEL_PATH);
             SubmitModel(s_Data.Res.DefaultModel);
         }
     }

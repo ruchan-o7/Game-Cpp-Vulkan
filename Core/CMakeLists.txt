@@ -84,3 +84,7 @@ set_target_properties("${PROJECT_NAME}" PROPERTIES CXX_STANDARD 17)
 target_link_libraries("${PROJECT_NAME}" PUBLIC glfw glm "${Vulkan_LIBRARIES}")
 
 target_precompile_headers(Core PRIVATE "src/pch.h")
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+add_compile_definitions(FOO_DEBUG)
+endif()
