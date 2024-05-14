@@ -9,6 +9,7 @@
 #include "../Core/PerspectiveCamera.h"
 #include "../Graphics/Pipeline.h"
 #include "../Graphics/Texture2D.h"
+#include <glm/gtx/string_cast.hpp>
 namespace FooGame
 {
 
@@ -209,6 +210,10 @@ namespace FooGame
         UniformBufferObject ubd{};
         ubd.View       = camera.GetView();
         ubd.Projection = camera.GetProjection();
+
+        std::cout << "OrthoGraphic view: " << glm::to_string(ubd.View) << '\n';
+        std::cout << "OrthoGraphic projection: "
+                  << glm::to_string(ubd.Projection) << '\n';
         Engine::UpdateUniformData(ubd);
         StartBatch();
     }

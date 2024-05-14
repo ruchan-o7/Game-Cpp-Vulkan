@@ -4,7 +4,6 @@
 #include <Core/Events/ApplicationEvent.h>
 #include <Core/Events/KeyEvent.h>
 #include <Core/Core/Engine.h>
-#include "Core/Core/OrthographicCamera.h"
 #include "Core/Core/PerspectiveCamera.h"
 #include "Core/Events/MouseMovedEvent.h"
 #include "Core/Graphics/Renderer2D.h"

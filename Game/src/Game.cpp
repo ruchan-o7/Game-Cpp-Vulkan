@@ -12,6 +12,7 @@
 #include "Core/Graphics/Renderer3D.h"
 #include "Core/Input/KeyCodes.h"
 #include "imgui.h"
+#define GLM_ENABLE_EXPERIMENTAL
 #include <Core/Graphics/Camera.h>
 namespace FooGame
 {
@@ -43,12 +44,9 @@ namespace FooGame
     void Game::Run()
     {
         Engine::Init(*m_Window);
-        m_Camera.RecalculateViewMatrix();
 
         OrthographicCamera m_OrthoCamera{-1.0f, 1.0f, -1.0f, 1.0f};
         // m_OrthoCamera.MoveTo({2.0f, 2.0f, 2.0f});
-
-        m_Camera.RecalculateViewMatrix();
         while (!m_Window->ShouldClose())
         {
             m_Window->PollEvents();
@@ -56,6 +54,16 @@ namespace FooGame
 
             double currentTime = m_Window->GetTime();
             {
+                {
+                    Renderer3D::BeginDraw();
+                    {
+                        Renderer3D::BeginScene(m_Camera);
+                        Renderer3D::DrawModel();
+                        Renderer3D::EndScene();
+                    }
+                    Renderer3D::EndDraw();
+                }
+
                 {
                     Renderer2D::BeginDrawing();
                     {
@@ -68,16 +76,6 @@ namespace FooGame
                     }
                     Renderer2D::EndDrawing();
                 }
-                {
-                    Renderer3D::BeginDraw();
-                    {
-                        Renderer3D::BeginScene(m_Camera);
-                        Renderer3D::DrawModel();
-                        Renderer3D::EndScene();
-                    }
-                    Renderer2D::EndDrawing();
-                }
-
                 {
                     ImGui::Begin("Benchmark");
                     ImGui::SliderInt("Amount", &m_BenchmarkAmount, 10, 1000);
@@ -108,6 +106,7 @@ namespace FooGame
                     m_Tint.y = tint[1];
                     m_Tint.z = tint[2];
                     m_Tint.w = tint[3];
+
                     ImGui::End();
                 }
             }

@@ -34,7 +34,7 @@ namespace FooGame
         private:
             glm::mat4 m_View       = glm::mat4(1.0f);
             glm::mat4 m_Projection = glm::mat4(1.0f);
-            glm::vec3 m_Position   = glm::vec3{2.0f, 2.0f, 2.0f};
+            glm::vec3 m_Position   = glm::vec3{0.0f, 0.0f, 0.0f};
 
             glm::vec3 m_Up      = {0.0f, 0.0f, 1.0f};
             glm::vec3 m_WorldUp = {0.0f, 0.0f, 1.0f};

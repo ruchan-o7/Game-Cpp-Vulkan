@@ -10,8 +10,9 @@
 #include "Core/Core/PerspectiveCamera.h"
 #include "Shader.h"
 #include <cassert>
-#include "../Core/Window.h"
-#include "vulkan/vulkan_core.h"
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/string_cast.hpp>
+#include <imgui.h>
 namespace FooGame
 {
 #if 0
@@ -107,6 +108,9 @@ namespace FooGame
 
         ubd.View       = camera.GetView();
         ubd.Projection = camera.GetProjection();
+        std::cout << "Perspective view: " << glm::to_string(ubd.View) << '\n';
+        std::cout << "Perspective projection: "
+                  << glm::to_string(ubd.Projection) << '\n';
         Engine::UpdateUniformData(ubd);
     }
 
@@ -121,7 +125,7 @@ namespace FooGame
     {
         DrawModel(*s_Data.Res.DefaultModel);
     }
-    void Renderer3D::DrawModel(const Model& model)
+    void Renderer3D::DrawModel(Model& model)
     {
         auto currentFrame = Engine::GetCurrentFrame();
         auto cmd          = Engine::GetCurrentCommandbuffer();
@@ -134,10 +138,21 @@ namespace FooGame
         VkBuffer vertexBuffers[] = {*s_Data.Res.VertexBuffer->GetBuffer()};
         VkDeviceSize offsets[]   = {0};
         MeshPushConstants push{};
-        push.renderMatrix = glm::rotate(
-            glm::mat4(1.0f),
-            glm::radians(45.0f) * (float)WindowsWindow::Get().GetTime(),
-            glm::vec3{0.5f, 0.3f, .2f});
+        // push.renderMatrix = glm::rotate(
+        //     glm::translate(glm::mat4(1.0f),
+        //                    model.Position),  // glm::mat4(1.0f),
+        //     glm::radians(45.0f) * (float)WindowsWindow::Get().GetTime(),
+        //     glm::vec3{0.5f, 0.3f, .2f});
+        ImGui::Begin("Model position");
+        float modelPos[3] = {model.Position.x, model.Position.y,
+                             model.Position.z};
+        ImGui::SliderFloat3("model pos", modelPos, -3.0f, 3.0f);
+        model.Position.x = modelPos[0];
+        model.Position.y = modelPos[1];
+        model.Position.z = modelPos[2];
+
+        ImGui::End();
+        push.renderMatrix = glm::translate(glm::mat4(1.0f), model.Position);
         vkCmdPushConstants(cmd, s_Data.api.GraphicsPipeline.pipelineLayout,
                            VK_SHADER_STAGE_VERTEX_BIT, 0,
                            sizeof(MeshPushConstants), &push);

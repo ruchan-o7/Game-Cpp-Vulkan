@@ -19,7 +19,7 @@ namespace FooGame
 
         public:
             static void DrawModel();
-            static void DrawModel(const Model& model);
+            static void DrawModel(Model& model);
 
         public:
             static void SubmitModel(const Shared<Model>& model);
