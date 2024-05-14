@@ -16,8 +16,8 @@ namespace FooGame
             static void EndScene();
             static void Flush();
             static void Shutdown();
-            static void BeginDrawing();
-            static void EndDrawing();
+            static void BeginDraw();
+            static void EndDraw();
 
         public:
             static void DrawQuad(const glm::vec2& position,

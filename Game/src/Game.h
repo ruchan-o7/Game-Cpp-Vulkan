@@ -4,9 +4,8 @@
 #include <Core/Events/ApplicationEvent.h>
 #include <Core/Events/KeyEvent.h>
 #include <Core/Core/Engine.h>
-#include "Core/Core/PerspectiveCamera.h"
 #include "Core/Events/MouseMovedEvent.h"
-#include "Core/Graphics/Renderer2D.h"
+#include "World/Level.h"
 namespace FooGame
 {
     class Game
@@ -17,13 +16,11 @@ namespace FooGame
             void Run();
 
         private:
+            List<Level*> m_Levels;
             WindowsWindow* m_Window;
-            i32 m_BenchmarkAmount = 100;
-            PerspectiveCamera m_Camera;
-            bool m_SecondMouse = false;
-            Shared<Texture2D> m_Tex;
-            float m_Tilin    = 1.0f;
-            glm::vec4 m_Tint = {1.0f, 1.0f, 1.0f, 1.0f};
+
+        private:
+            float m_DeltaTime = 0.01f;
 
         private:
             void Init();

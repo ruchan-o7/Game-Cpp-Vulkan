@@ -203,8 +203,6 @@ namespace FooGame
         Submit();
     }
 
-    double deltaTime_     = 0;
-    double lastFrameTime_ = 0;
     bool Engine::AcquireNextImage(u32& imageIndex)
     {
         auto err = comps.swapchain->AcquireNextImage(

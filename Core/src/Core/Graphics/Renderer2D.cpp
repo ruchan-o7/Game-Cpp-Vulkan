@@ -359,13 +359,13 @@ namespace FooGame
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         VK_CALL(vkBeginCommandBuffer(cb, &beginInfo));
     }
-    void Renderer2D::BeginDrawing()
+    void Renderer2D::BeginDraw()
     {
         s_Data.frameData.QuadIndexCount = 0;
         s_Data.frameData.QuadVertexBufferPtr =
             s_Data.frameData.QuadVertexBufferBase;
     }
-    void Renderer2D::EndDrawing()
+    void Renderer2D::EndDraw()
     {
         auto currentFrame = Engine::GetCurrentFrame();
         auto cmd          = Engine::GetCurrentCommandbuffer();

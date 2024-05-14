@@ -59,3 +59,7 @@ String StrFormat(const String& format, Args... args)
     std::snprintf(buf.get(), size, format.c_str(), args...);
     return String(buf.get(), buf.get() + size - 1);
 }
+#define DELETE_COPY(x)               \
+public:                              \
+    x(const x&)            = delete; \
+    x& operator=(const x&) = delete;\
