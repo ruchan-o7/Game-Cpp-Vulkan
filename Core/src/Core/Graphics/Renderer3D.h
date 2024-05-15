@@ -1,6 +1,7 @@
 #pragma once
 #include "Core/Graphics/Api.h"
 #include "Core/Graphics/Model.h"
+#include "Core/Scene/GameObject.h"
 #include "vulkan/vulkan_core.h"
 namespace FooGame
 {
@@ -20,7 +21,7 @@ namespace FooGame
 
         public:
             // static void DrawModel();
-            static void DrawModel(const Shared<Model>& model);
+            static void DrawModel(const Shared<GameObject>& object);
 
         public:
             [[nodiscard]] static u32 SubmitModel(const Shared<Model>& model);

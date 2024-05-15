@@ -1,5 +1,8 @@
+#include "Core/Core/Base.h"
 #include "Core/Core/Window.h"
 #include "Core/Graphics/Texture2D.h"
+#include "Core/Scene/GameObject.h"
+#include "Core/Scene/Component.h"
 #include "Scene.h"
 #include <Core/Graphics/Renderer3D.h>
 #include <imgui.h>
@@ -22,34 +25,50 @@ namespace FooGame
     {
         std::cout << "Attached" << std::endl;
         {
-            m_Model      = Model::LoadModel(MODEL_PATH);
+            Objects["viking 1"] = CreateShared<GameObject>("viking 1");
+            Objects["viking 2"] = CreateShared<GameObject>("viking 2");
+
+            auto model1  = Model::LoadModel(MODEL_PATH);
             auto texture = LoadTexture(MODEL_TEXTURE);
-            m_Model->GetMeshes()[0].SetTexture(texture);
-            u32 id = Renderer3D::SubmitModel(m_Model);
-            m_Model->SetId(id);
+            model1->GetMeshes()[0].SetTexture(texture);
+            u32 id = Renderer3D::SubmitModel(model1);
+            model1->SetId(id);
+            auto renderer = CreateShared<MeshRendererComponent>(model1);
+            Objects["viking 1"]->AddComponent(renderer);
         }
         {
-            m_Model2     = Model::LoadModel(MODEL_PATH);
+            auto model2  = Model::LoadModel(MODEL_PATH);
             auto texture = LoadTexture(MODEL_TEXTURE);
-            m_Model2->GetMeshes()[0].SetTexture(texture);
-            u32 id = Renderer3D::SubmitModel(m_Model2);
-            m_Model2->SetId(id);
+            model2->GetMeshes()[0].SetTexture(texture);
+            u32 id        = Renderer3D::SubmitModel(model2);
+            auto renderer = CreateShared<MeshRendererComponent>(model2);
+            Objects["viking 2"]->AddComponent(renderer);
+            model2->SetId(id);
         }
     }
     void SampleScene::OnUpdate(float deltaTime)
     {
-        m_Model->Position.x  = sinf((float)WindowsWindow::Get().GetTime());
-        m_Model->Position.y  = cosf((float)WindowsWindow::Get().GetTime());
-        m_Model2->Position.x = cosf((float)WindowsWindow::Get().GetTime());
-        m_Model2->Position.y = sinf((float)WindowsWindow::Get().GetTime());
+        Objects["viking 1"]->Transform.Position.x =
+            sinf((float)WindowsWindow::Get().GetTime());
+        Objects["viking 1"]->Transform.Position.y =
+            cosf((float)WindowsWindow::Get().GetTime());
     }
     void SampleScene::OnRender()
     {
         Renderer3D::BeginDraw();
         {
             Renderer3D::BeginScene(m_Camera);
-            Renderer3D::DrawModel(m_Model);
-            Renderer3D::DrawModel(m_Model2);
+            for (auto& o : Objects)
+            {
+                if (!o.second->IsEnabled())
+                {
+                    continue;
+                }
+                if (auto mrc = o.second->GetComponent<MeshRendererComponent>())
+                {
+                    Renderer3D::DrawModel(o.second);
+                }
+            }
             Renderer3D::EndScene();
         }
         Renderer3D::EndDraw();
@@ -60,6 +79,27 @@ namespace FooGame
         float pos[3]    = {posisitons.x, posisitons.y, posisitons.z};
         ImGui::SliderFloat3("Camera pos", pos, -10.0f, 10.0f);
         m_Camera.SetPosition({pos[0], pos[1], pos[2]});
+        ImGui::Begin("Game objects");
+        for (auto& obj : Objects)
+        {
+            auto& o      = obj.second;
+            float pos[3] = {o->Transform.Position.x, o->Transform.Position.y,
+                            o->Transform.Position.z};
+            ImGui::SliderFloat3("Position", pos, -10.f, 10.0f);
+
+            float rot[3] = {o->Transform.Rotation.x, o->Transform.Rotation.y,
+                            o->Transform.Rotation.z};
+            ImGui::SliderFloat3("Rotation", rot, -10.f, 10.0f);
+
+            float scale[3] = {o->Transform.Scale.x, o->Transform.Scale.y,
+                              o->Transform.Scale.z};
+            ImGui::SliderFloat3("Scale", scale, 0.f, 10.0f);
+
+            o->Transform.Position = {pos[0], pos[1], pos[2]};
+            o->Transform.Rotation = {rot[0], rot[1], rot[2]};
+            o->Transform.Scale    = {scale[0], scale[1], scale[2]};
+        }
+        ImGui::End();
     }
 
 }  // namespace FooGame

@@ -1,8 +1,10 @@
 #pragma once
+#include <unordered_map>
 #include "Core/Core/Base.h"
 #include "Core/Core/PerspectiveCamera.h"
 #include "Core/Events/Event.h"
 #include "Core/Graphics/Model.h"
+#include "Core/Scene/GameObject.h"
 namespace FooGame
 {
     class Scene
@@ -26,10 +28,9 @@ namespace FooGame
             void OnUpdate(float deltaTime) override;
             void OnUI() override;
             void OnRender() override;
+            std::unordered_map<String, Shared<GameObject>> Objects;
 
         private:
             PerspectiveCamera m_Camera;
-            Shared<Model> m_Model;
-            Shared<Model> m_Model2;
     };
 }  // namespace FooGame

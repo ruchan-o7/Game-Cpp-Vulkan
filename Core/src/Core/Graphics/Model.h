@@ -35,7 +35,6 @@ namespace FooGame
             static Shared<Model> LoadModel(const String& path);
             List<Mesh>& GetMeshes() { return m_Meshes; }
             Model(List<Mesh>&& meshes);
-            glm::vec3 Position = {0.0f, 0.0f, 0.0f};
             void SetId(u32 id) { m_Id = id; }
             const u32 GetId() const { return m_Id; }
 

@@ -2,25 +2,27 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include "Core/Graphics/Model.h"
 namespace FooGame
 {
-#define DEFAULT(X)         \
-public:                    \
-    X()         = default; \
-    X(const X&) = default;
-
-    struct TransformComponent
+    class GameObject;
+    struct Component
     {
-            glm::vec3 Position{0.0f, 0.0f, 0.0f};
-            glm::vec3 Rotation{0.0f, 0.0f, 0.0f};
-            glm::vec3 Scale{1.0f, 1.0f, 1.0f};
-            DEFAULT(TransformComponent)
-            TransformComponent(const glm::vec3& pos) : Position(pos) {}
-            glm::mat4 GetTransform() const
-            {
-                glm::mat4 rotation = glm::toMat4(glm::quat(Rotation));
-                return glm::translate(glm::mat4(1.0f), Position) * rotation *
-                       glm::scale(glm::mat4(1.0f), Scale);
-            }
+        public:
+            Component()          = default;
+            virtual ~Component() = default;
+            void SetOwner(GameObject* owner) { this->m_Owner = owner; }
+            GameObject* GetOwner() const { return m_Owner; }
+
+        private:
+            GameObject* m_Owner = nullptr;
+    };
+    struct MeshRendererComponent : public Component
+    {
+            MeshRendererComponent(Shared<Model> model) : m_Model(model) {}
+            Shared<Model> GetModel() const { return m_Model; }
+
+        private:
+            Shared<Model> m_Model;
     };
 }  // namespace FooGame

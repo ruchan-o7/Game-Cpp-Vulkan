@@ -9,6 +9,8 @@
 #include "../Graphics/Texture2D.h"
 #include "Core/Backend/VulkanCheckResult.h"
 #include "Core/Core/PerspectiveCamera.h"
+#include "Core/Scene/Component.h"
+#include "Core/Scene/GameObject.h"
 #include "Shader.h"
 #include "../../Core/Graphics/Types/DescriptorData.h"
 #include "vulkan/vulkan_core.h"
@@ -175,7 +177,7 @@ namespace FooGame
     void Renderer3D::Flush()
     {
     }
-    void Renderer3D::DrawModel(const Shared<Model>& model)
+    void Renderer3D::DrawModel(const Shared<GameObject>& object)
     {
         auto currentFrame = Engine::GetCurrentFrame();
         auto cmd          = Engine::GetCurrentCommandbuffer();
@@ -183,6 +185,8 @@ namespace FooGame
 
         BindPipeline(cmd);
 
+        auto comp      = object->GetComponent<MeshRendererComponent>();
+        auto model     = comp->GetModel();
         auto id        = model->GetId();
         auto& modelRes = s_Data.Res.ModelMap[id];
         auto& mesh     = model->GetMeshes()[0];
@@ -191,7 +195,7 @@ namespace FooGame
         VkBuffer vertexBuffers[] = {*modelRes.VertexBuffer->GetBuffer()};
         VkDeviceSize offsets[]   = {0};
         MeshPushConstants push{};
-        push.renderMatrix = glm::translate(glm::mat4(1.0f), model->Position);
+        push.renderMatrix = object->Transform.GetTransform();
         auto allocator    = s_Data.Res.DescriptorAllocatorPool->GetAllocator();
         allocator.Allocate(mesh.GetLayout(), *mesh.GetSet(currentFrame));
         // for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
