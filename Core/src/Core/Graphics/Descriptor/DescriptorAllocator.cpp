@@ -1,5 +1,6 @@
 #include "DescriptorAllocator.h"
 #include <vulkan/vulkan.h>
+#include "Core/Core/Base.h"
 #include "pch.h"
 #include <mutex>
 namespace vke
@@ -24,8 +25,8 @@ namespace vke
     };
     struct PoolStorage
     {
-            std::vector<DescriptorAllocator> _usableAllocators;
-            std::vector<DescriptorAllocator> _fullAllocators;
+            List<DescriptorAllocator> _usableAllocators;
+            List<DescriptorAllocator> _fullAllocators;
     };
 
     struct PoolSize
@@ -35,7 +36,7 @@ namespace vke
     };
     struct PoolSizes
     {
-            std::vector<PoolSize> sizes = {
+            List<PoolSize> sizes = {
                 {               VK_DESCRIPTOR_TYPE_SAMPLER, 1.f},
                 {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4.f},
                 {         VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4.f},
@@ -73,10 +74,10 @@ namespace vke
             std::mutex _poolMutex;
 
             // zero is for static pool, next is for frame indexing
-            std::vector<std::unique_ptr<PoolStorage>> _descriptorPools;
+            List<std::unique_ptr<PoolStorage>> _descriptorPools;
 
             // fully cleared allocators
-            std::vector<DescriptorAllocator> _clearAllocators;
+            List<DescriptorAllocator> _clearAllocators;
     };
 
     vke::DescriptorAllocatorPool* vke::DescriptorAllocatorPool::Create(
@@ -196,7 +197,7 @@ namespace vke
     VkDescriptorPool DescriptorAllocatorPoolImpl::createPool(
         int count, VkDescriptorPoolCreateFlags flags)
     {
-        std::vector<VkDescriptorPoolSize> sizes;
+        List<VkDescriptorPoolSize> sizes;
         sizes.reserve(_poolSizes.sizes.size());
         for (auto sz : _poolSizes.sizes)
         {
