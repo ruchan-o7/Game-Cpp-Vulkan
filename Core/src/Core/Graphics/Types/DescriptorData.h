@@ -7,7 +7,7 @@ namespace FooGame
     {
             VkDescriptorPool pool;
             VkDescriptorSetLayout SetLayout;
-            VkDescriptorSet Sets[3];
+            // VkDescriptorSet Sets[3];
     };
 
 }  // namespace FooGame

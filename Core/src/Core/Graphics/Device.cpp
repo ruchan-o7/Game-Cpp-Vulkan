@@ -116,7 +116,7 @@ namespace FooGame
             createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
             createInfo.queueCreateInfoCount = 1;
             createInfo.pQueueCreateInfos    = &queueCreateInfo;
-            createInfo.pEnabledFeatures     = nullptr;
+            createInfo.pEnabledFeatures     = &deviceFeatures;
             createInfo.enabledExtensionCount =
                 static_cast<u32>(info.deviceExtensions.size());
             createInfo.ppEnabledExtensionNames = info.deviceExtensions.data();

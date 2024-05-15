@@ -23,7 +23,7 @@ namespace FooGame
             static void DrawModel(const Shared<Model>& model);
 
         public:
-            static void SubmitModel(const Shared<Model>& model);
+            [[nodiscard]] static u32 SubmitModel(const Shared<Model>& model);
 
         private:
             static void BindPipeline(VkCommandBuffer cmd);

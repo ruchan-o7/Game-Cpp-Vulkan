@@ -13,12 +13,14 @@
 #include "../../Core/Graphics/Types/DescriptorData.h"
 #include "vulkan/vulkan_core.h"
 #include <cassert>
+#include <unordered_map>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 #include <imgui.h>
+#include "Descriptor/DescriptorAllocator.h"
 namespace FooGame
 {
-#if 1
+#if 0
 #define VERT_SHADER "../../../Shaders/vert.spv"
 #define FRAG_SHADER "../../../Shaders/frag.spv"
 #else
@@ -33,16 +35,22 @@ namespace FooGame
             glm::vec4 data;
             glm::mat4 renderMatrix;
     };
+    struct ModelDrawData
+    {
+            Buffer* VertexBuffer = nullptr;
+            Buffer* IndexBuffer  = nullptr;
+    };
 
     struct RenderData
     {
             struct Resources
             {
-                    Buffer* VertexBuffer = nullptr;
-                    Buffer* IndexBuffer  = nullptr;
+                    std::unordered_map<u32, ModelDrawData> ModelMap;
+                    u32 FreeIndex = 0;
                     List<Buffer*> UniformBuffers;
                     Shared<Model> DefaultModel = nullptr;
                     DescriptorData descriptor;
+                    vke::DescriptorAllocatorPool* DescriptorAllocatorPool;
             };
             struct FrameData
             {
@@ -78,28 +86,28 @@ namespace FooGame
             s_Data.Res.UniformBuffers[i] = CreateDynamicBuffer(
                 sizeof(UniformBufferObject), BufferUsage::UNIFORM);
         }
-        {
-            VkDescriptorPoolSize poolSizes[1] = {};
-            poolSizes[0].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            poolSizes[0].descriptorCount = MAX_FRAMES_IN_FLIGHT;
 
-            VkDescriptorPoolCreateInfo poolInfo{};
-            poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-            poolInfo.poolSizeCount = ARRAY_COUNT(poolSizes);
-            poolInfo.pPoolSizes    = poolSizes;
-            poolInfo.maxSets       = MAX_FRAMES_IN_FLIGHT;
-            VK_CALL(vkCreateDescriptorPool(device->GetDevice(), &poolInfo,
-                                           nullptr,
-                                           &s_Data.Res.descriptor.pool));
-        }
+        s_Data.Res.DescriptorAllocatorPool =
+            vke::DescriptorAllocatorPool::Create(device->GetDevice());
+        auto allocator = s_Data.Res.DescriptorAllocatorPool->GetAllocator();
         {
+            s_Data.Res.DescriptorAllocatorPool->SetPoolSizeMultiplier(
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_FRAMES_IN_FLIGHT);
             VkDescriptorSetLayoutBinding uboLayoutBinding{};
             uboLayoutBinding.binding         = 0;
             uboLayoutBinding.descriptorCount = 1;
             uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             uboLayoutBinding.pImmutableSamplers = nullptr;
             uboLayoutBinding.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
-            VkDescriptorSetLayoutBinding bindings[1] = {uboLayoutBinding};
+            VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+            samplerLayoutBinding.binding         = 1;
+            samplerLayoutBinding.descriptorCount = 1;
+            samplerLayoutBinding.descriptorType =
+                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            samplerLayoutBinding.pImmutableSamplers = nullptr;
+            samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+            VkDescriptorSetLayoutBinding bindings[2] = {uboLayoutBinding,
+                                                        samplerLayoutBinding};
             VkDescriptorSetLayoutCreateInfo layoutInfo{};
             layoutInfo.sType =
                 VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -109,40 +117,10 @@ namespace FooGame
             VK_CALL(vkCreateDescriptorSetLayout(
                 device->GetDevice(), &layoutInfo, nullptr,
                 &s_Data.Res.descriptor.SetLayout));
-            List<VkDescriptorSetLayout> layouts(
-                MAX_FRAMES_IN_FLIGHT, s_Data.Res.descriptor.SetLayout);
-            VkDescriptorSetAllocateInfo allocInfo{};
-            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            allocInfo.descriptorPool     = s_Data.Res.descriptor.pool;
-            allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
-            allocInfo.pSetLayouts        = layouts.data();
-
-            VK_CALL(vkAllocateDescriptorSets(device->GetDevice(), &allocInfo,
-                                             s_Data.Res.descriptor.Sets));
         }
         {
-            for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-            {
-                VkDescriptorBufferInfo bufferInfo{};
-                bufferInfo.buffer = *s_Data.Res.UniformBuffers[i]->GetBuffer();
-                bufferInfo.offset = 0;
-                bufferInfo.range  = sizeof(UniformBufferObject);
-
-                VkWriteDescriptorSet descriptorWrites[1] = {};
-                descriptorWrites[0].sType =
-                    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[0].dstSet     = s_Data.Res.descriptor.Sets[i];
-                descriptorWrites[0].dstBinding = 0;
-                descriptorWrites[0].dstArrayElement = 0;
-                descriptorWrites[0].descriptorType =
-                    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                descriptorWrites[0].descriptorCount = 1;
-                descriptorWrites[0].pBufferInfo     = &bufferInfo;
-
-                vkUpdateDescriptorSets(device->GetDevice(),
-                                       ARRAY_COUNT(descriptorWrites),
-                                       descriptorWrites, 0, nullptr);
-            }
+            s_Data.api.DefaultTexture =
+                LoadTexture("../../textures/texture.jpg");
         }
         {
             PipelineInfo info{};
@@ -162,26 +140,24 @@ namespace FooGame
             s_Data.api.GraphicsPipeline = CreateGraphicsPipeline(info);
         }
     }
-    void Renderer3D::SubmitModel(const Shared<Model>& model)
+    u32 Renderer3D::SubmitModel(const Shared<Model>& model)
     {
-        if (s_Data.Res.VertexBuffer)
-        {
-            s_Data.Res.VertexBuffer->Release();
-        }
-        if (s_Data.Res.IndexBuffer)
-        {
-            s_Data.Res.IndexBuffer->Release();
-        }
-        s_Data.Res.VertexBuffer =
-            CreateVertexBuffer(model->GetMeshes()[0].m_Vertices);
-        s_Data.Res.IndexBuffer =
-            CreateIndexBuffer(model->GetMeshes()[0].m_Indices);
+        auto& mesh                                = model->GetMeshes()[0];
+        s_Data.Res.ModelMap[s_Data.Res.FreeIndex] = {
+            CreateVertexBuffer(mesh.m_Vertices),
+            CreateIndexBuffer(mesh.m_Indices)};
+        auto device    = Api::GetDevice()->GetDevice();
+        auto allocator = s_Data.Res.DescriptorAllocatorPool->GetAllocator();
+        s_Data.Res.FreeIndex++;
+        return s_Data.Res.FreeIndex - 1;
     }
     void Renderer3D::BeginDraw()
     {
+        s_Data.FrameData.DrawCall = 0;
     }
     void Renderer3D::EndDraw()
     {
+        s_Data.Res.DescriptorAllocatorPool->Flip();
     }
     void Renderer3D::BeginScene(const PerspectiveCamera& camera)
     {
@@ -207,30 +183,67 @@ namespace FooGame
 
         BindPipeline(cmd);
 
+        auto id        = model->GetId();
+        auto& modelRes = s_Data.Res.ModelMap[id];
+        auto& mesh     = model->GetMeshes()[0];
+
         Api::SetViewportAndScissors(cmd, extent.width, extent.height);
-        VkBuffer vertexBuffers[] = {*s_Data.Res.VertexBuffer->GetBuffer()};
+        VkBuffer vertexBuffers[] = {*modelRes.VertexBuffer->GetBuffer()};
         VkDeviceSize offsets[]   = {0};
         MeshPushConstants push{};
-        ImGui::Begin("Model position");
-        float modelPos[3] = {model->Position.x, model->Position.y,
-                             model->Position.z};
-        ImGui::SliderFloat3("model pos", modelPos, -3.0f, 3.0f);
-        model->Position.x = modelPos[0];
-        model->Position.y = modelPos[1];
-        model->Position.z = modelPos[2];
-
-        ImGui::End();
         push.renderMatrix = glm::translate(glm::mat4(1.0f), model->Position);
+        auto allocator    = s_Data.Res.DescriptorAllocatorPool->GetAllocator();
+        allocator.Allocate(mesh.GetLayout(), *mesh.GetSet(currentFrame));
+        // for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        //   {
+        VkDescriptorBufferInfo bufferInfo{};
+        bufferInfo.buffer =
+            *s_Data.Res.UniformBuffers[currentFrame]->GetBuffer();
+        bufferInfo.offset = 0;
+        bufferInfo.range  = sizeof(UniformBufferObject);
+
+        VkWriteDescriptorSet descriptorWrites[2] = {};
+        descriptorWrites[0].sType      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[0].dstSet     = *mesh.GetSet(currentFrame);
+        descriptorWrites[0].dstBinding = 0;
+        descriptorWrites[0].dstArrayElement = 0;
+        descriptorWrites[0].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[0].descriptorCount = 1;
+        descriptorWrites[0].pBufferInfo     = &bufferInfo;
+
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfo.imageView   = mesh.m_Texture->ImageView;
+        imageInfo.sampler     = mesh.m_Texture->Sampler;
+
+        descriptorWrites[1].sType      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet     = mesh.m_DescriptorSets[currentFrame];
+        descriptorWrites[1].dstBinding = 1;
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType =
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[1].descriptorCount = 1;
+        descriptorWrites[1].pImageInfo      = &imageInfo;
+
+        vkUpdateDescriptorSets(Api::GetDevice()->GetDevice(),
+                               ARRAY_COUNT(descriptorWrites), descriptorWrites,
+                               0, nullptr);
+        // }
         vkCmdPushConstants(cmd, s_Data.api.GraphicsPipeline.pipelineLayout,
                            VK_SHADER_STAGE_VERTEX_BIT, 0,
                            sizeof(MeshPushConstants), &push);
         vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
 
-        vkCmdBindIndexBuffer(cmd, *s_Data.Res.IndexBuffer->GetBuffer(), 0,
+        vkCmdBindIndexBuffer(cmd, *modelRes.IndexBuffer->GetBuffer(), 0,
                              VK_INDEX_TYPE_UINT32);
-        BindDescriptorSets(cmd, s_Data.api.GraphicsPipeline);
+        auto set = model->GetMeshes()[0].GetSet(Engine::GetCurrentFrame());
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                s_Data.api.GraphicsPipeline.pipelineLayout, 0,
+                                1, set, 0, nullptr);
+        // BindDescriptorSets(cmd, s_Data.api.GraphicsPipeline);
         vkCmdDrawIndexed(cmd, model->GetMeshes()[0].m_Indices.size(), 1, 0, 0,
                          0);
+        s_Data.FrameData.DrawCall++;
     }
     void Renderer3D::BindDescriptorSets(VkCommandBuffer cmd, Pipeline& pipeline,
                                         VkPipelineBindPoint bindPoint,
@@ -238,10 +251,6 @@ namespace FooGame
                                         u32 dynamicOffsetCount,
                                         u32* dynamicOffsets)
     {
-        vkCmdBindDescriptorSets(
-            cmd, bindPoint, pipeline.pipelineLayout, firstSet, dSetCount,
-            &s_Data.Res.descriptor.Sets[Engine::GetCurrentFrame()],
-            dynamicOffsetCount, dynamicOffsets);
     }
     void Renderer3D::BindPipeline(VkCommandBuffer cmd)
     {
@@ -252,12 +261,15 @@ namespace FooGame
     void Renderer3D::Shutdown()
     {
         auto device = Api::GetDevice()->GetDevice();
+        for (auto& [index, data] : s_Data.Res.ModelMap)
+        {
+            data.IndexBuffer->Release();
+            data.VertexBuffer->Release();
+        }
+        vkDestroyDescriptorPool(
+            device, s_Data.Res.DescriptorAllocatorPool->GetAllocator().vkPool,
+            nullptr);
 
-        s_Data.Res.IndexBuffer->Release();
-        delete s_Data.Res.IndexBuffer;
-        s_Data.Res.VertexBuffer->Release();
-        delete s_Data.Res.VertexBuffer;
-        s_Data.Res.DefaultModel.reset();
         for (auto& ub : s_Data.Res.UniformBuffers)
         {
             ub->Release();

@@ -15,7 +15,7 @@
 namespace FooGame
 {
 
-#if 1
+#if 0
 #define VERT_PATH "../../../Shaders/QuadShaderVert.spv"
 #define FRAG_PATH "../../../Shaders/QuadShaderFrag.spv"
 #else
@@ -32,6 +32,7 @@ namespace FooGame
                     Buffer* VertexBuffer = nullptr;
                     Buffer* IndexBuffer  = nullptr;
                     List<Buffer*> UniformBuffers;
+                    VkDescriptorSet set[3];
                     DescriptorData descriptor;
             };
             Resources resources;
@@ -145,7 +146,7 @@ namespace FooGame
             allocInfo.pSetLayouts        = layouts.data();
 
             VK_CALL(vkAllocateDescriptorSets(device->GetDevice(), &allocInfo,
-                                             s_Data.resources.descriptor.Sets));
+                                             s_Data.resources.set));
         }
         {
             for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -159,8 +160,7 @@ namespace FooGame
                 VkWriteDescriptorSet descriptorWrites[1] = {};
                 descriptorWrites[0].sType =
                     VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[0].dstSet =
-                    s_Data.resources.descriptor.Sets[i];
+                descriptorWrites[0].dstSet          = s_Data.resources.set[i];
                 descriptorWrites[0].dstBinding      = 0;
                 descriptorWrites[0].dstArrayElement = 0;
                 descriptorWrites[0].descriptorType =
@@ -409,7 +409,7 @@ namespace FooGame
     {
         vkCmdBindDescriptorSets(
             cmd, bindPoint, pipeline.pipelineLayout, firstSet, dSetCount,
-            &s_Data.resources.descriptor.Sets[Engine::GetCurrentFrame()],
+            &s_Data.resources.set[Engine::GetCurrentFrame()],
             dynamicOffsetCount, dynamicOffsets);
     }
     void Renderer2D::ResetStats()

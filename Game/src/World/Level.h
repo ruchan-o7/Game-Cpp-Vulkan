@@ -30,5 +30,6 @@ namespace FooGame
         private:
             PerspectiveCamera m_Camera;
             Shared<Model> m_Model;
+            Shared<Model> m_Model2;
     };
 }  // namespace FooGame

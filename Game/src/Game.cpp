@@ -21,6 +21,7 @@ namespace FooGame
     {
         m_Window = new WindowsWindow();
         m_Window->SetOnEventFunction(BIND_EVENT_FN(Game::OnEvent));
+        Engine::Init(*m_Window);
     }
     static void DrawQuads(int amount, const Shared<Texture2D> texture,
                           float tiling, glm::vec4 tint)
@@ -39,7 +40,6 @@ namespace FooGame
     }
     void Game::Run()
     {
-        Engine::Init(*m_Window);
         m_Levels.emplace_back(new SampleLevel());
         double lastTime = 0;
 

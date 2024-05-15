@@ -9,7 +9,9 @@ namespace FooGame
             VkImage Image;
             VkImageView ImageView;
             VkDeviceMemory ImageMemory;
+            VkSampler Sampler;
             u32 width, height;
+            String path;
     };
 
     VkImageView CreateImageView(VkFormat format,
@@ -31,7 +33,7 @@ namespace FooGame
     void DestroyImage(VkImage& texture);
     void DestroyImage(VkImage& texture, VkDeviceMemory& imageMem);
     void LoadTexture(Texture2D* texture, const std::string& path);
-    Shared<Texture2D> LoadTexture(const std::string& path);
+    [[nodiscard]] Shared<Texture2D> LoadTexture(const std::string& path);
     void TransitionImageLayout(Texture2D* texture, VkFormat format,
                                VkImageLayout oldLayout,
                                VkImageLayout newLayout);
