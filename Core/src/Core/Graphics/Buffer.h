@@ -1,6 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include "../Backend/Vertex.h"
+#include "Core/Core/Base.h"
 namespace FooGame
 {
     struct Texture2D;
@@ -22,9 +23,10 @@ namespace FooGame
     };
     class Buffer
     {
+            DELETE_COPY(Buffer);
+
         public:
             Buffer(BufferCreateInfo info);
-            Buffer(const Buffer& other) = delete;
             Buffer(Buffer&& other);
             ~Buffer() = default;
             void Release();

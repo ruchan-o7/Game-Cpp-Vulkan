@@ -21,7 +21,6 @@ namespace FooGame
 #if 1
 #define VERT_SHADER "../../../Shaders/vert.spv"
 #define FRAG_SHADER "../../../Shaders/frag.spv"
-#define MODEL_PATH  "../../../Assets/Model/viking_room.obj"
 #else
 #define VERT_SHADER "../../Shaders/vert.spv"
 #define FRAG_SHADER "../../Shaders/frag.spv"
@@ -161,8 +160,6 @@ namespace FooGame
             info.pushConstantCount   = 1;
 
             s_Data.api.GraphicsPipeline = CreateGraphicsPipeline(info);
-            s_Data.Res.DefaultModel     = Model::LoadModel(MODEL_PATH);
-            SubmitModel(s_Data.Res.DefaultModel);
         }
     }
     void Renderer3D::SubmitModel(const Shared<Model>& model)
@@ -202,11 +199,7 @@ namespace FooGame
     void Renderer3D::Flush()
     {
     }
-    void Renderer3D::DrawModel()
-    {
-        DrawModel(*s_Data.Res.DefaultModel);
-    }
-    void Renderer3D::DrawModel(Model& model)
+    void Renderer3D::DrawModel(const Shared<Model>& model)
     {
         auto currentFrame = Engine::GetCurrentFrame();
         auto cmd          = Engine::GetCurrentCommandbuffer();
@@ -215,35 +208,28 @@ namespace FooGame
         BindPipeline(cmd);
 
         Api::SetViewportAndScissors(cmd, extent.width, extent.height);
-        // bind vertexbuffers
         VkBuffer vertexBuffers[] = {*s_Data.Res.VertexBuffer->GetBuffer()};
         VkDeviceSize offsets[]   = {0};
         MeshPushConstants push{};
-        // push.renderMatrix = glm::rotate(
-        //     glm::translate(glm::mat4(1.0f),
-        //                    model.Position),  // glm::mat4(1.0f),
-        //     glm::radians(45.0f) * (float)WindowsWindow::Get().GetTime(),
-        //     glm::vec3{0.5f, 0.3f, .2f});
         ImGui::Begin("Model position");
-        float modelPos[3] = {model.Position.x, model.Position.y,
-                             model.Position.z};
+        float modelPos[3] = {model->Position.x, model->Position.y,
+                             model->Position.z};
         ImGui::SliderFloat3("model pos", modelPos, -3.0f, 3.0f);
-        model.Position.x = modelPos[0];
-        model.Position.y = modelPos[1];
-        model.Position.z = modelPos[2];
+        model->Position.x = modelPos[0];
+        model->Position.y = modelPos[1];
+        model->Position.z = modelPos[2];
 
         ImGui::End();
-        push.renderMatrix = glm::translate(glm::mat4(1.0f), model.Position);
+        push.renderMatrix = glm::translate(glm::mat4(1.0f), model->Position);
         vkCmdPushConstants(cmd, s_Data.api.GraphicsPipeline.pipelineLayout,
                            VK_SHADER_STAGE_VERTEX_BIT, 0,
                            sizeof(MeshPushConstants), &push);
         vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
 
-        // bind index buffers
         vkCmdBindIndexBuffer(cmd, *s_Data.Res.IndexBuffer->GetBuffer(), 0,
                              VK_INDEX_TYPE_UINT32);
         BindDescriptorSets(cmd, s_Data.api.GraphicsPipeline);
-        vkCmdDrawIndexed(cmd, model.GetMeshes()[0].m_Indices.size(), 1, 0, 0,
+        vkCmdDrawIndexed(cmd, model->GetMeshes()[0].m_Indices.size(), 1, 0, 0,
                          0);
     }
     void Renderer3D::BindDescriptorSets(VkCommandBuffer cmd, Pipeline& pipeline,

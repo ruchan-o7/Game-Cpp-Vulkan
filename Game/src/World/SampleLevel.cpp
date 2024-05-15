@@ -3,6 +3,7 @@
 #include <imgui.h>
 namespace FooGame
 {
+#define MODEL_PATH "../../../Assets/Model/viking_room.obj"
     SampleLevel::SampleLevel()
     {
         OnAttach();
@@ -10,6 +11,8 @@ namespace FooGame
     void SampleLevel::OnAttach()
     {
         std::cout << "Attached" << std::endl;
+        m_Model = Model::LoadModel(MODEL_PATH);
+        Renderer3D::SubmitModel(m_Model);
     }
     void SampleLevel::OnUpdate(float deltaTime)
     {
@@ -19,7 +22,7 @@ namespace FooGame
         Renderer3D::BeginDraw();
         {
             Renderer3D::BeginScene(m_Camera);
-            Renderer3D::DrawModel();
+            Renderer3D::DrawModel(m_Model);
             Renderer3D::EndScene();
         }
         Renderer3D::EndDraw();

@@ -2,6 +2,7 @@
 #include "Core/Core/Base.h"
 #include "Core/Core/PerspectiveCamera.h"
 #include "Core/Events/Event.h"
+#include "Core/Graphics/Model.h"
 namespace FooGame
 {
     class Level
@@ -28,5 +29,6 @@ namespace FooGame
 
         private:
             PerspectiveCamera m_Camera;
+            Shared<Model> m_Model;
     };
 }  // namespace FooGame
