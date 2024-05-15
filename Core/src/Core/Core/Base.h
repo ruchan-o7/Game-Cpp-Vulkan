@@ -62,4 +62,4 @@ String StrFormat(const String& format, Args... args)
 #define DELETE_COPY(x)               \
 public:                              \
     x(const x&)            = delete; \
-    x& operator=(const x&) = delete;\
+    x& operator=(const x&) = delete;
