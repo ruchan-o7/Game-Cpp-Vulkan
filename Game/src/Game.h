@@ -5,7 +5,7 @@
 #include <Core/Events/KeyEvent.h>
 #include <Core/Core/Engine.h>
 #include "Core/Events/MouseMovedEvent.h"
-#include "World/Level.h"
+#include "Core/Scene/Scene.h"
 namespace FooGame
 {
     class Game
@@ -16,7 +16,7 @@ namespace FooGame
             void Run();
 
         private:
-            List<Level*> m_Levels;
+            List<Scene*> m_Scenes;
             WindowsWindow* m_Window;
 
         private:

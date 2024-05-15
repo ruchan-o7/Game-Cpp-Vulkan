@@ -33,6 +33,9 @@ set(CORE_SOURCES
 	"src/Core/Graphics/Pipeline.h"
 	"src/Core/Graphics/Renderer2D.h"
 	"src/Core/Graphics/Renderer3D.h"
+	"src/Core/Scene/Component.h"
+	"src/Core/Scene/GameObject.h"
+	"src/Core/Scene/Scene.h"
 	"src/Core/Graphics/Descriptor/DescriptorAllocator.h"
 
 	"src/Core/Graphics/Api.cpp"
@@ -49,6 +52,7 @@ set(CORE_SOURCES
 	"src/Core/Graphics/Pipeline.cpp"
 	"src/Core/Graphics/Renderer2D.cpp"
 	"src/Core/Graphics/Renderer3D.cpp"
+	"src/Core/Scene/SampleScene.cpp"
 	"src/Core/Graphics/Descriptor/DescriptorAllocator.cpp"
 )
 set(IMGUI_SRCS

@@ -5,11 +5,11 @@
 #include "Core/Graphics/Model.h"
 namespace FooGame
 {
-    class Level
+    class Scene
     {
-            DELETE_COPY(Level)
+            DELETE_COPY(Scene)
         public:
-            Level() = default;
+            Scene() = default;
             virtual void OnAttach(){};
             virtual void OnDetach(){};
             virtual void OnUpdate(float deltaTime){};
@@ -17,11 +17,11 @@ namespace FooGame
             virtual void OnUI(){};
             virtual void OnEvent(Event& event){};
     };
-    class SampleLevel final : public Level
+    class SampleScene final : public Scene
     {
-            DELETE_COPY(SampleLevel)
+            DELETE_COPY(SampleScene)
         public:
-            SampleLevel();
+            SampleScene();
             void OnAttach() override;
             void OnUpdate(float deltaTime) override;
             void OnUI() override;

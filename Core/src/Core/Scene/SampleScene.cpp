@@ -1,6 +1,6 @@
 #include "Core/Core/Window.h"
 #include "Core/Graphics/Texture2D.h"
-#include "Level.h"
+#include "Scene.h"
 #include <Core/Graphics/Renderer3D.h>
 #include <imgui.h>
 #include <cmath>
@@ -14,11 +14,11 @@ namespace FooGame
 #define MODEL_PATH    "../../Assets/Model/viking_room.obj"
 #define MODEL_TEXTURE "../../Assets/Model/viking_room.png"
 #endif
-    SampleLevel::SampleLevel()
+    SampleScene::SampleScene()
     {
         OnAttach();
     }
-    void SampleLevel::OnAttach()
+    void SampleScene::OnAttach()
     {
         std::cout << "Attached" << std::endl;
         {
@@ -36,14 +36,14 @@ namespace FooGame
             m_Model2->SetId(id);
         }
     }
-    void SampleLevel::OnUpdate(float deltaTime)
+    void SampleScene::OnUpdate(float deltaTime)
     {
         m_Model->Position.x  = sinf((float)WindowsWindow::Get().GetTime());
         m_Model->Position.y  = cosf((float)WindowsWindow::Get().GetTime());
         m_Model2->Position.x = cosf((float)WindowsWindow::Get().GetTime());
         m_Model2->Position.y = sinf((float)WindowsWindow::Get().GetTime());
     }
-    void SampleLevel::OnRender()
+    void SampleScene::OnRender()
     {
         Renderer3D::BeginDraw();
         {
@@ -54,7 +54,7 @@ namespace FooGame
         }
         Renderer3D::EndDraw();
     }
-    void SampleLevel::OnUI()
+    void SampleScene::OnUI()
     {
         auto posisitons = m_Camera.GetPosition();
         float pos[3]    = {posisitons.x, posisitons.y, posisitons.z};

@@ -8,8 +8,7 @@ message("Configuring ${PROJECT_NAME}")
 set(GAME_SOURCES
 	"src/main.cpp"
 	"src/Game.cpp"
-	"src/World/Level.h"
-	"src/World/SampleLevel.cpp")
+	)
 
 add_executable("${PROJECT_NAME}" "${GAME_SOURCES}")
 

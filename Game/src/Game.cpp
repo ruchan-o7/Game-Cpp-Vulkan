@@ -40,7 +40,7 @@ namespace FooGame
     }
     void Game::Run()
     {
-        m_Levels.emplace_back(new SampleLevel());
+        m_Scenes.emplace_back(new SampleScene());
         double lastTime = 0;
 
         while (!m_Window->ShouldClose())
@@ -50,13 +50,13 @@ namespace FooGame
             m_DeltaTime        = currentTime - lastTime;
             lastTime           = currentTime;
 
-            for (auto& l : m_Levels)
+            for (auto& l : m_Scenes)
             {
                 l->OnUpdate(currentTime);
             }
 
             Engine::BeginDrawing();
-            for (auto& l : m_Levels)
+            for (auto& l : m_Scenes)
             {
                 l->OnRender();
                 l->OnUI();
@@ -68,7 +68,7 @@ namespace FooGame
     void Game::Shutdown()
     {
         Engine::Shutdown();
-        m_Levels.clear();
+        m_Scenes.clear();
         delete m_Window;
     }
     Game::~Game()
