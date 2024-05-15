@@ -15,7 +15,7 @@
 namespace FooGame
 {
 
-#if 0
+#if 1
 #define VERT_PATH "../../../Shaders/QuadShaderVert.spv"
 #define FRAG_PATH "../../../Shaders/QuadShaderFrag.spv"
 #else
@@ -80,12 +80,11 @@ namespace FooGame
 
             s_Data.resources.IndexBuffer = CreateIndexBuffer(quadIndices);
             quadIndices.clear();
-
-            s_Data.frameData.QuadVertexPositions[0] = {-0.5f, -0.5f, 0.0f,
+            s_Data.frameData.QuadVertexPositions[0] = {-1.0f, 1.0f, 0.0f, 1.0f};
+            s_Data.frameData.QuadVertexPositions[1] = {-1.0f, -1.0f, 0.0f,
                                                        1.0f};
-            s_Data.frameData.QuadVertexPositions[1] = {0.5f, -0.5f, 0.0f, 1.0f};
-            s_Data.frameData.QuadVertexPositions[2] = {0.5f, 0.5f, 0.0f, 1.0f};
-            s_Data.frameData.QuadVertexPositions[3] = {-0.5f, 0.5f, 0.0f, 1.0f};
+            s_Data.frameData.QuadVertexPositions[2] = {1.0f, -1.0f, 0.0f, 1.0f};
+            s_Data.frameData.QuadVertexPositions[3] = {1.0f, 1.0f, 0.0f, 1.0f};
             s_Data.resources.VertexBuffer           = CreateDynamicBuffer(
                 sizeof(QuadVertex) * Renderer2DData::MaxIndices,
                 BufferUsage::VERTEX);

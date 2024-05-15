@@ -22,13 +22,15 @@
 #include "Descriptor/DescriptorAllocator.h"
 namespace FooGame
 {
-#if 0
-#define VERT_SHADER "../../../Shaders/vert.spv"
-#define FRAG_SHADER "../../../Shaders/frag.spv"
+#if 1
+#define VERT_SHADER          "../../../Shaders/vert.spv"
+#define FRAG_SHADER          "../../../Shaders/frag.spv"
+#define DEFAULT_TEXTURE_PATH "../../../textures/texture.jpg"
 #else
-#define VERT_SHADER "../../Shaders/vert.spv"
-#define FRAG_SHADER "../../Shaders/frag.spv"
-#define MODEL_PATH  "../../Assets/Model/viking_room.obj"
+#define VERT_SHADER          "../../Shaders/vert.spv"
+#define FRAG_SHADER          "../../Shaders/frag.spv"
+#define MODEL_PATH           "../../Assets/Model/viking_room.obj"
+#define DEFAULT_TEXTURE_PATH "../../textures/texture.jpg"
 
 #endif
 
@@ -121,8 +123,7 @@ namespace FooGame
                 &s_Data.Res.descriptor.SetLayout));
         }
         {
-            s_Data.api.DefaultTexture =
-                LoadTexture("../../textures/texture.jpg");
+            s_Data.api.DefaultTexture = LoadTexture(DEFAULT_TEXTURE_PATH);
         }
         {
             PipelineInfo info{};

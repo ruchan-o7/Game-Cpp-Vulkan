@@ -1,5 +1,6 @@
 #include "Core/Core/Base.h"
 #include "Core/Core/Window.h"
+#include "Core/Graphics/Renderer2D.h"
 #include "Core/Graphics/Texture2D.h"
 #include "Core/Scene/GameObject.h"
 #include "Core/Scene/Component.h"
@@ -10,7 +11,7 @@
 namespace FooGame
 {
 
-#if 0
+#if 1
 #define MODEL_PATH    "../../../Assets/Model/viking_room.obj"
 #define MODEL_TEXTURE "../../../Assets/Model/viking_room.png"
 #else
@@ -52,7 +53,13 @@ namespace FooGame
             sinf((float)WindowsWindow::Get().GetTime());
         Objects["viking 1"]->Transform.Position.y =
             cosf((float)WindowsWindow::Get().GetTime());
+        float width  = WindowsWindow::Get().GetWidth();
+        float height = WindowsWindow::Get().GetHeight();
+        m_Ortho.SetProj(0.0f, width, 0.0f, height);
+        m_Camera.SetAspect(width / height);
     }
+    float sizeX = 10.0f, sizeY = 10.0f;
+    float x = 20.0f, y = 20.f;
     void SampleScene::OnRender()
     {
         Renderer3D::BeginDraw();
@@ -72,6 +79,24 @@ namespace FooGame
             Renderer3D::EndScene();
         }
         Renderer3D::EndDraw();
+        Renderer2D::BeginDraw();
+        {
+            Renderer2D::BeginScene(m_Ortho);
+            ImGui::Begin("Quad");
+            float pos[2]  = {x, y};
+            float size[2] = {sizeX, sizeY};
+            ImGui::SliderFloat2("Position", pos, -200.0f, 200.0f);
+            ImGui::SliderFloat2("Scale", size, -200.0f, 200.0f);
+            x     = pos[0];
+            y     = pos[1];
+            sizeX = size[0];
+            sizeY = size[1];
+            Renderer2D::DrawQuad({x, y}, {sizeX, sizeY},
+                                 {1.0f, 1.0f, 1.0f, 1.0f});
+            ImGui::End();
+            Renderer2D::EndScene();
+        }
+        Renderer2D::EndDraw();
     }
     void SampleScene::OnUI()
     {
@@ -99,6 +124,7 @@ namespace FooGame
             o->Transform.Rotation = {rot[0], rot[1], rot[2]};
             o->Transform.Scale    = {scale[0], scale[1], scale[2]};
         }
+
         ImGui::End();
     }
 

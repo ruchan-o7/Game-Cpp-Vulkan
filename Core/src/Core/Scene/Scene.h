@@ -1,6 +1,7 @@
 #pragma once
 #include <unordered_map>
 #include "Core/Core/Base.h"
+#include "Core/Core/OrthographicCamera.h"
 #include "Core/Core/PerspectiveCamera.h"
 #include "Core/Events/Event.h"
 #include "Core/Graphics/Model.h"
@@ -32,5 +33,6 @@ namespace FooGame
 
         private:
             PerspectiveCamera m_Camera;
+            OrthographicCamera m_Ortho{0, 1, 0, -1};
     };
 }  // namespace FooGame
