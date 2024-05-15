@@ -33,6 +33,7 @@ set(CORE_SOURCES
 	"src/Core/Graphics/Pipeline.h"
 	"src/Core/Graphics/Renderer2D.h"
 	"src/Core/Graphics/Renderer3D.h"
+	"src/Core/Graphics/Descriptor/DescriptorAllocator.h"
 
 	"src/Core/Graphics/Api.cpp"
 	"src/Core/Graphics/Buffer.cpp"
@@ -48,6 +49,7 @@ set(CORE_SOURCES
 	"src/Core/Graphics/Pipeline.cpp"
 	"src/Core/Graphics/Renderer2D.cpp"
 	"src/Core/Graphics/Renderer3D.cpp"
+	"src/Core/Graphics/Descriptor/DescriptorAllocator.h"
 )
 set(IMGUI_SRCS
 	"${IMGUI_SRC_DIR}/imgui.cpp"
