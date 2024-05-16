@@ -10,7 +10,8 @@ namespace FooGame
 {
     class Scene
     {
-            DELETE_COPY(Scene)
+            DELETE_COPY(Scene);
+
         public:
             Scene() = default;
             virtual void OnAttach(){};
@@ -19,6 +20,8 @@ namespace FooGame
             virtual void OnRender(){};
             virtual void OnUI(){};
             virtual void OnEvent(Event& event){};
+
+        public:
     };
     class SampleScene final : public Scene
     {

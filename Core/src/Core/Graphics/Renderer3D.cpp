@@ -143,7 +143,7 @@ namespace FooGame
             s_Data.api.GraphicsPipeline = CreateGraphicsPipeline(info);
         }
     }
-    u32 Renderer3D::SubmitModel(const Shared<Model>& model)
+    void Renderer3D::SubmitModel(const Shared<Model>& model)
     {
         auto& mesh                                = model->GetMeshes()[0];
         s_Data.Res.ModelMap[s_Data.Res.FreeIndex] = {
@@ -151,8 +151,8 @@ namespace FooGame
             CreateIndexBuffer(mesh.m_Indices)};
         auto device    = Api::GetDevice()->GetDevice();
         auto allocator = s_Data.Res.DescriptorAllocatorPool->GetAllocator();
+        model->SetId(s_Data.Res.FreeIndex);
         s_Data.Res.FreeIndex++;
-        return s_Data.Res.FreeIndex - 1;
     }
     void Renderer3D::BeginDraw()
     {
@@ -172,10 +172,6 @@ namespace FooGame
     }
 
     void Renderer3D::EndScene()
-    {
-        Flush();
-    }
-    void Renderer3D::Flush()
     {
     }
     void Renderer3D::DrawModel(const Shared<GameObject>& object)
@@ -199,8 +195,26 @@ namespace FooGame
         push.renderMatrix = object->Transform.GetTransform();
         auto allocator    = s_Data.Res.DescriptorAllocatorPool->GetAllocator();
         allocator.Allocate(mesh.GetLayout(), *mesh.GetSet(currentFrame));
-        // for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        //   {
+        vkCmdPushConstants(cmd, s_Data.api.GraphicsPipeline.pipelineLayout,
+                           VK_SHADER_STAGE_VERTEX_BIT, 0,
+                           sizeof(MeshPushConstants), &push);
+        vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
+
+        vkCmdBindIndexBuffer(cmd, *modelRes.IndexBuffer->GetBuffer(), 0,
+                             VK_INDEX_TYPE_UINT32);
+        BindDescriptorSets(cmd, mesh, s_Data.api.GraphicsPipeline);
+        vkCmdDrawIndexed(cmd, model->GetMeshes()[0].m_Indices.size(), 1, 0, 0,
+                         0);
+        s_Data.FrameData.DrawCall++;
+    }
+    void Renderer3D::BindDescriptorSets(VkCommandBuffer cmd, Mesh& mesh,
+                                        Pipeline& pipeLine,
+                                        VkPipelineBindPoint bindPoint,
+                                        u32 firstSet, u32 dSetCount,
+                                        u32 dynamicOffsetCount,
+                                        u32* dynamicOffsets)
+    {
+        auto currentFrame = Engine::GetCurrentFrame();
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer =
             *s_Data.Res.UniformBuffers[currentFrame]->GetBuffer();
@@ -233,34 +247,19 @@ namespace FooGame
         vkUpdateDescriptorSets(Api::GetDevice()->GetDevice(),
                                ARRAY_COUNT(descriptorWrites), descriptorWrites,
                                0, nullptr);
-        // }
-        vkCmdPushConstants(cmd, s_Data.api.GraphicsPipeline.pipelineLayout,
-                           VK_SHADER_STAGE_VERTEX_BIT, 0,
-                           sizeof(MeshPushConstants), &push);
-        vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
-
-        vkCmdBindIndexBuffer(cmd, *modelRes.IndexBuffer->GetBuffer(), 0,
-                             VK_INDEX_TYPE_UINT32);
-        auto set = model->GetMeshes()[0].GetSet(Engine::GetCurrentFrame());
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                s_Data.api.GraphicsPipeline.pipelineLayout, 0,
-                                1, set, 0, nullptr);
-        // BindDescriptorSets(cmd, s_Data.api.GraphicsPipeline);
-        vkCmdDrawIndexed(cmd, model->GetMeshes()[0].m_Indices.size(), 1, 0, 0,
-                         0);
-        s_Data.FrameData.DrawCall++;
-    }
-    void Renderer3D::BindDescriptorSets(VkCommandBuffer cmd, Pipeline& pipeline,
-                                        VkPipelineBindPoint bindPoint,
-                                        u32 firstSet, u32 dSetCount,
-                                        u32 dynamicOffsetCount,
-                                        u32* dynamicOffsets)
-    {
+        vkCmdBindDescriptorSets(cmd, bindPoint, pipeLine.pipelineLayout, 0, 1,
+                                mesh.GetSet(currentFrame), 0, nullptr);
     }
     void Renderer3D::BindPipeline(VkCommandBuffer cmd)
     {
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
                           s_Data.api.GraphicsPipeline.pipeline);
+    }
+    void Renderer3D::SubmitScene(const Shared<Scene>& scene)
+    {
+    }
+    void Renderer3D::ReleaseScene()
+    {
     }
 
     void Renderer3D::Shutdown()
