@@ -4,7 +4,6 @@
 #include "Core/Core/OrthographicCamera.h"
 #include "Core/Core/PerspectiveCamera.h"
 #include "Core/Events/Event.h"
-#include "Core/Graphics/Model.h"
 #include "Core/Scene/GameObject.h"
 namespace FooGame
 {
@@ -14,9 +13,10 @@ namespace FooGame
 
         public:
             Scene() = default;
-            virtual void OnAttach(){};
-            virtual void OnDetach(){};
+            virtual void OnCreate(){};
             virtual void OnUpdate(float deltaTime){};
+            virtual void OnLateUpdate(float deltaTime){};
+            virtual void OnFixedUpdate(){};
             virtual void OnRender(){};
             virtual void OnUI(){};
             virtual void OnEvent(Event& event){};
@@ -28,7 +28,7 @@ namespace FooGame
             DELETE_COPY(SampleScene)
         public:
             SampleScene();
-            void OnAttach() override;
+            void OnCreate() override;
             void OnUpdate(float deltaTime) override;
             void OnUI() override;
             void OnRender() override;

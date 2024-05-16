@@ -20,9 +20,9 @@ namespace FooGame
 #endif
     SampleScene::SampleScene()
     {
-        OnAttach();
+        OnCreate();
     }
-    void SampleScene::OnAttach()
+    void SampleScene::OnCreate()
     {
         // Load Scene model to renderer
         std::cout << "Attached" << std::endl;
