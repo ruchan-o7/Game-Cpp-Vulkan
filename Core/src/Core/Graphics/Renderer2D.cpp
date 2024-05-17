@@ -11,6 +11,7 @@
 #include "../Graphics/Texture2D.h"
 #include "Types/QuadVertex.h"
 #include "Types/DescriptorData.h"
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 namespace FooGame
 {

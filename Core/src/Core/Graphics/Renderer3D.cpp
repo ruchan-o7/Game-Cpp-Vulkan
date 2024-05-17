@@ -16,8 +16,6 @@
 #include "vulkan/vulkan_core.h"
 #include <cassert>
 #include <unordered_map>
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/string_cast.hpp>
 #include <imgui.h>
 #include "Descriptor/DescriptorAllocator.h"
 namespace FooGame
@@ -43,6 +41,13 @@ namespace FooGame
     {
             Buffer* VertexBuffer = nullptr;
             Buffer* IndexBuffer  = nullptr;
+    };
+    struct StaticMeshContainer
+    {
+            List<Unique<Buffer>> VertexBuffer;
+            List<Unique<Buffer>> IndexBuffer;
+            size_t TotalSize = 0;
+            // todo some sort of data structure for keeping indexes offsets etc
     };
 
     struct RenderData
