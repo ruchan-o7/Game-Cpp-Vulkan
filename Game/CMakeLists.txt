@@ -1,4 +1,3 @@
-
 project(Game
 	LANGUAGES CXX)
 

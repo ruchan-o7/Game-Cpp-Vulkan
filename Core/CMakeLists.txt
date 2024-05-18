@@ -81,7 +81,6 @@ target_include_directories("${PROJECT_NAME}" PRIVATE
 	"${Vulkan_INCLUDE_DIRS}"
 	"${GLFW_INCLUDE_DIR}"
 	"${GLM_INCLUDE_DIR}"
-	"${VK_BOOTSTRAP_INCLUDE_DIR}"
 	"${STB_INCLUDE_DIR}"
 	"${IMGUI_SRC_DIR}"
 	"${TINY_OBJ_LOADER_INCLUDE_DIR}"
@@ -95,7 +94,4 @@ target_link_libraries("${PROJECT_NAME}" PUBLIC glfw glm "${Vulkan_LIBRARIES}")
 
 target_precompile_headers(Core PRIVATE "src/pch.h")
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-	add_compile_definitions(FOO_DEBUG)
-endif()
-add_compile_definitions($<$<CONFIG:Debug>:FOO_DEBUG>)
+# add_compile_definitions($<$<CONFIG:Debug>:FOO_DEBUG>)

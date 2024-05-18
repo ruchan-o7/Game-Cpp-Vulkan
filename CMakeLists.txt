@@ -5,6 +5,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(Game
 	LANGUAGES CXX C)
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+	add_compile_definitions(FOO_DEBUG)
+endif()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -28,6 +31,8 @@ set(GLM_INCLUDE_DIR "${EXTERNAL_DIR}/glm/include")
 set(STB_INCLUDE_DIR "${EXTERNAL_DIR}/stbi")
 set(IMGUI_SRC_DIR "${EXTERNAL_DIR}/imgui")
 set(TINY_OBJ_LOADER_INCLUDE_DIR "${EXTERNAL_DIR}/tiny_obj_loader")
-add_subdirectory(Core)
 
+add_subdirectory(Engine)
+
+add_subdirectory(Core)
 add_subdirectory(Game)
