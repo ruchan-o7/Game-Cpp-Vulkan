@@ -1,4 +1,5 @@
 #pragma once
+#include "src/Events/Event.h"
 namespace FooGame
 {
     class WindowsWindow;
@@ -11,6 +12,7 @@ namespace FooGame
 
         private:
             void Init();
+            void OnEvent(Event& event);
 
         private:
             WindowsWindow* m_Window;

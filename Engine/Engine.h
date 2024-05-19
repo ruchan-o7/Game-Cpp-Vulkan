@@ -1,5 +1,7 @@
 #pragma once
 
+#include "src/Engine/Renderer2D.h"
+#include "src/Engine/Renderer3D.h"
 #include "src/Engine/Api.h"
 #include "src/Engine/Backend.h"
 #include "src/Engine/Buffer.h"

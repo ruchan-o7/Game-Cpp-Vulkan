@@ -1,8 +1,7 @@
 #include "Game.h"
 #include <pch.h>
+#include <Engine.h>
 #include "Core/Core/Base.h"
-#include "Core/Graphics/Renderer2D.h"
-#include "Core/Graphics/Renderer3D.h"
 #include "Core/Scene/Scene.h"
 #include "imgui.h"
 #include "src/Engine/Backend.h"
