@@ -36,6 +36,7 @@ set(TINY_OBJ_LOADER_INCLUDE_DIR "${EXTERNAL_DIR}/tiny_obj_loader")
 set(ENTT_INCLUDE_DIR "${EXTERNAL_DIR}/entt/src")
 set(ENGINE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/Engine")
 add_subdirectory(Engine)
+add_subdirectory(Editor)
 
 add_subdirectory(Core)
 add_subdirectory(Game)

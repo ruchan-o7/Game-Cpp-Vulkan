@@ -47,7 +47,7 @@ target_link_libraries("${PROJECT_NAME}" PUBLIC
 	glfw glm "${Vulkan_LIBRARIES}"
 	)
 
-target_include_directories("${PROJECT_NAME}" PRIVATE
+target_include_directories("${PROJECT_NAME}" PUBLIC
 	"${Vulkan_INCLUDE_DIRS}"
 	"${STB_INCLUDE_DIR}"
 	"${IMGUI_SRC_DIR}"
