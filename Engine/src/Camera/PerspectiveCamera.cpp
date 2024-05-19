@@ -1,7 +1,7 @@
 #include "PerspectiveCamera.h"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
-namespace Engine
+namespace FooGame
 {
 
     PerspectiveCamera::PerspectiveCamera()
@@ -42,53 +42,11 @@ namespace Engine
             m_Zoom = 120;
         }
     }
-    const glm::mat4 PerspectiveCamera::GetModel() const
-    {
-        return glm::rotate(glm::mat4(1.0f), glm::radians(90.0f),
-                           glm::vec3{0.0f, 0.0f, 1.0f});
-    }
 
     void PerspectiveCamera::SetPosition(glm::vec3 newPos)
     {
         m_Position = newPos;
         RecalculateViewMatrix();
     }
-    void PerspectiveCamera::GoForward()
-    {
-        m_Position += glm::vec3{0.0f, 1.0f, 0.0f} * m_Direction;
-    }
-    void PerspectiveCamera::GoBackward()
-    {
-        m_Position -= glm::vec3{0.0f, 1.0f, 0.0f} * m_Direction;
-    }
-    void PerspectiveCamera::GoLeft()
-    {
-        m_Position -= glm::normalize(glm::cross(m_Direction, m_Up));
-    }
-    void PerspectiveCamera::GoRight()
-    {
-        m_Position += glm::normalize(glm::cross(m_Direction, m_Up));
-    }
-    void PerspectiveCamera::GoUp()
-    {
-        m_Position += glm::vec3(0.0f, 0.0f, 0.2f);
-    }
-    void PerspectiveCamera::GoDown()
-    {
-        m_Position -= glm::vec3(0.0f, 0.0f, 0.2f);
-    }
-    void PerspectiveCamera::Look(double offsetX, double offsetY)
-    {
-        m_Yaw   += offsetX;
-        m_Pitch += offsetY;
-        if (m_Pitch > 89.0f)
-        {
-            m_Pitch = 89.0f;
-        }
-        if (m_Pitch < -89.0f)
-        {
-            m_Pitch = -89.0f;
-        }
-    }
 
-}  // namespace Engine
+}  // namespace FooGame

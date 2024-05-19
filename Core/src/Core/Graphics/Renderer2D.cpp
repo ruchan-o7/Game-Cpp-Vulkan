@@ -1,14 +1,5 @@
 #include "Renderer2D.h"
 #include "../Core/Base.h"
-#include "../Core/Engine.h"
-#include "../Graphics/Buffer.h"
-#include "../Backend/VulkanCheckResult.h"
-#include "../Graphics/Api.h"
-#include "../Graphics/Shader.h"
-#include "../Core/OrthographicCamera.h"
-#include "../Core/PerspectiveCamera.h"
-#include "../Graphics/Pipeline.h"
-#include "../Graphics/Texture2D.h"
 #include "Types/QuadVertex.h"
 #include "Types/DescriptorData.h"
 #define GLM_ENABLE_EXPERIMENTAL
@@ -42,7 +33,7 @@ namespace FooGame
                     QuadVertex* QuadVertexBufferBase = nullptr;
                     QuadVertex* QuadVertexBufferPtr  = nullptr;
                     glm::vec4 QuadVertexPositions[4];
-                    Shared<Texture2D> DefaultTexture;
+                    std::shared_ptr<Texture2D> DefaultTexture;
                     u32 QuadIndexCount = 0;
                     u32 QuadCount      = 0;
                     u32 DrawCall       = 0;
@@ -213,7 +204,7 @@ namespace FooGame
     }
     void Renderer2D::UpdateUniformData(UniformBufferObject ubd)
     {
-        s_Data.resources.UniformBuffers[Engine::GetCurrentFrame()]->SetData(
+        s_Data.resources.UniformBuffers[Backend::GetCurrentFrame()]->SetData(
             sizeof(ubd), &ubd);
     }
 
@@ -367,15 +358,15 @@ namespace FooGame
     }
     void Renderer2D::EndDraw()
     {
-        auto currentFrame = Engine::GetCurrentFrame();
-        auto cmd          = Engine::GetCurrentCommandbuffer();
+        auto currentFrame = Backend::GetCurrentFrame();
+        auto cmd          = Backend::GetCurrentCommandbuffer();
     }
 
     void Renderer2D::Flush()
     {
-        auto currentFrame = Engine::GetCurrentFrame();
-        auto cmd          = Engine::GetCurrentCommandbuffer();
-        auto extent       = Engine::GetSwapchainExtent();
+        auto currentFrame = Backend::GetCurrentFrame();
+        auto cmd          = Backend::GetCurrentCommandbuffer();
+        auto extent       = Backend::GetSwapchainExtent();
         BindPipeline(cmd);
 
         Api::SetViewportAndScissors(cmd, extent.width, extent.height);
@@ -409,7 +400,7 @@ namespace FooGame
     {
         vkCmdBindDescriptorSets(
             cmd, bindPoint, pipeline.pipelineLayout, firstSet, dSetCount,
-            &s_Data.resources.set[Engine::GetCurrentFrame()],
+            &s_Data.resources.set[Backend::GetCurrentFrame()],
             dynamicOffsetCount, dynamicOffsets);
     }
     void Renderer2D::ResetStats()

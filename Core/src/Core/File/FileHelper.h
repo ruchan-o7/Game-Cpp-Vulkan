@@ -1,7 +1,6 @@
 #pragma once
-#include "../Core/Base.h"
-#include "pch.h"
+#include <vector>
 namespace FooGame
 {
-    List<char> ReadFile(const std::string& file_path);
+    // std::vector<char> ReadFile(const std::string& file_path);
 }

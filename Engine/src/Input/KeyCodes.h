@@ -1,10 +1,10 @@
 #pragma once
 #include <ostream>
 #include "../Defines.h"
-namespace Engine
+namespace FooGame
 {
 
-    typedef enum class KeyCode : u16
+    typedef enum class KeyCode : uint16_t
     {
         // From glfw3.h
         Space      = 32,
@@ -154,7 +154,7 @@ namespace Engine
         Locked = 2
     };
 
-    typedef enum class MouseButton : u16
+    typedef enum class MouseButton : uint16_t
     {
         Button0 = 0,
         Button1 = 1,
@@ -179,4 +179,4 @@ namespace Engine
         return os;
     }
 
-}  // namespace Engine
+}  // namespace FooGame

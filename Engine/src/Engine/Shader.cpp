@@ -3,9 +3,9 @@
 #include <fstream>
 #include <iostream>
 #include "Device.h"
-namespace Engine
+namespace FooGame
 {
-    static List<char> ReadFile(const std::string& file_path)
+    static std::vector<char> ReadFile(const std::string& file_path)
     {
         std::ifstream file(file_path, std::ios::ate | std::ios::binary);
 
@@ -16,7 +16,7 @@ namespace Engine
         }
 
         size_t file_size = (size_t)file.tellg();
-        List<char> buffer(file_size);
+        std::vector<char> buffer(file_size);
 
         file.seekg(0);
         file.read(buffer.data(), static_cast<std::streamsize>(file_size));
@@ -55,9 +55,9 @@ namespace Engine
     {
         switch (m_Stage)
         {
-            case Engine::ShaderStage::VERTEX:
+            case ShaderStage::VERTEX:
                 return VK_SHADER_STAGE_VERTEX_BIT;
-            case Engine::ShaderStage::FRAGMENT:
+            case ShaderStage::FRAGMENT:
                 return VK_SHADER_STAGE_FRAGMENT_BIT;
             default:
                 std::cerr << "[ERROR] | Shader stage type not found !!!"
@@ -73,4 +73,4 @@ namespace Engine
         stageInfo.pName  = "main";
         return stageInfo;
     }
-}  // namespace Engine
+}  // namespace FooGame

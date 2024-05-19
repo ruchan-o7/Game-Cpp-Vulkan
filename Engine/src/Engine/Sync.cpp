@@ -2,7 +2,7 @@
 #include <vulkan/vulkan.h>
 #include "../Engine/VulkanCheckResult.h"
 
-namespace Engine
+namespace FooGame
 {
     Fence::Fence(VkDevice device) : m_Device(device)
     {
@@ -16,7 +16,7 @@ namespace Engine
         m_Fence  = other.m_Fence;
         m_Device = other.m_Device;
     }
-    void Fence::Wait(u64 timeOut)
+    void Fence::Wait(uint64_t timeOut)
     {
         vkWaitForFences(m_Device, 1, &m_Fence, VK_TRUE, timeOut);
     }
@@ -43,4 +43,4 @@ namespace Engine
     {
         vkDestroySemaphore(device, m_Semaphore, nullptr);
     }
-}  // namespace Engine
+}  // namespace FooGame

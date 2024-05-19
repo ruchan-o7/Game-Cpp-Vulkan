@@ -1,7 +1,6 @@
 #include "Vertex.h"
 #include <vulkan/vulkan.h>
-#include "vulkan/vulkan_core.h"
-namespace Engine
+namespace FooGame
 {
 
     VkVertexInputBindingDescription Vertex::GetBindingDescription()
@@ -46,10 +45,10 @@ namespace Engine
         //     offsetof(Vertex, TilingFactor);
         return attributeDescriptions;
     }
-    List<VkVertexInputAttributeDescription>
+    std::vector<VkVertexInputAttributeDescription>
     Vertex::GetAttributeDescriptionList()
     {
-        List<VkVertexInputAttributeDescription> attributeDescriptions{};
+        std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
         attributeDescriptions.resize(3);
         attributeDescriptions[0].binding  = 0;
         attributeDescriptions[0].location = 0;
@@ -79,4 +78,4 @@ namespace Engine
         //     offsetof(Vertex, TilingFactor);
         return attributeDescriptions;
     }
-}  // namespace Engine
+}  // namespace FooGame

@@ -1,8 +1,9 @@
 #pragma once
 #include <vulkan/vulkan.h>
+#include <cstdint>
 #include "../Defines.h"
 #include "../Geometry/Vertex.h"
-namespace Engine
+namespace FooGame
 {
     struct Texture2D;
     enum class BufferUsage
@@ -63,7 +64,7 @@ namespace Engine
             BufferCreateInfo createInfo;
     };
     Buffer* CreateDynamicBuffer(size_t size, BufferUsage usage);
-    Buffer* CreateVertexBuffer(const List<Vertex> vertices);
-    Buffer* CreateIndexBuffer(const List<u32>& indices);
+    Buffer* CreateVertexBuffer(const std::vector<Vertex> vertices);
+    Buffer* CreateIndexBuffer(const std::vector<uint32_t>& indices);
     static VkBufferUsageFlags ParseBufferUsage(BufferUsage usage);
-}  // namespace Engine
+}  // namespace FooGame

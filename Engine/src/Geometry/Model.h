@@ -1,45 +1,47 @@
 #pragma once
+#include <memory>
 #include "../Engine/Texture2D.h"
 #include "../Geometry/Vertex.h"
-namespace Engine
+namespace FooGame
 {
 
     class Mesh
     {
         public:
-            Mesh(List<Vertex>&& vertices, List<u32>&& indices);
-            List<Vertex> m_Vertices;
-            List<u32> m_Indices;
+            Mesh(std::vector<Vertex>&& vertices,
+                 std::vector<uint32_t>&& indices);
+            std::vector<Vertex> m_Vertices;
+            std::vector<uint32_t> m_Indices;
 
-            void SetTexture(const Shared<Texture2D>& texture)
+            void SetTexture(const std::shared_ptr<Texture2D>& texture)
             {
                 m_Texture = texture;
             }
 
             VkDescriptorSetLayout GetLayout() const { return m_Layout; }
-            VkDescriptorSet* GetSet(u32 index)
+            VkDescriptorSet* GetSet(uint32_t index)
             {
                 return &m_DescriptorSets[index];
             }
-            List<VkDescriptorSet>& GetSets() { return m_DescriptorSets; }
+            std::vector<VkDescriptorSet>& GetSets() { return m_DescriptorSets; }
             void UpdateDescriptorBuffer(const VkBuffer& buffer, VkDevice device,
-                                        u32 index);
-            List<VkDescriptorSet> m_DescriptorSets{3};
+                                        uint32_t index);
+            std::vector<VkDescriptorSet> m_DescriptorSets{3};
             VkDescriptorSetLayout m_Layout;
-            Shared<Texture2D> m_Texture;
+            std::shared_ptr<Texture2D> m_Texture;
     };
     class Model
     {
         public:
-            static Shared<Model> LoadModel(const String& path);
-            List<Mesh>& GetMeshes() { return m_Meshes; }
-            Model(List<Mesh>&& meshes);
-            void SetId(u32 id) { m_Id = id; }
-            const u32 GetId() const { return m_Id; }
+            std::vector<Mesh>& GetMeshes() { return m_Meshes; }
+            Model(std::vector<Mesh>&& meshes);
+            void SetId(uint32_t id) { m_Id = id; }
+            const uint32_t GetId() const { return m_Id; }
+            glm::mat4 Transform{1.0f};
 
         private:
-            List<Mesh> m_Meshes;
-            u32 m_Id = 0;
+            std::vector<Mesh> m_Meshes;
+            uint32_t m_Id = 0;
     };
 
-}  // namespace Engine
+}  // namespace FooGame

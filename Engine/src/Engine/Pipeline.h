@@ -1,7 +1,8 @@
 #pragma once
 #include <vulkan/vulkan.h>
+#include <vector>
 #include "../Defines.h"
-namespace Engine
+namespace FooGame
 {
     class Shader;
 
@@ -25,16 +26,17 @@ namespace Engine
     };
     struct PipelineInfo
     {
-            List<Shader*> Shaders;
-            List<VkVertexInputBindingDescription> VertexBindings;
-            List<VkVertexInputAttributeDescription> VertexAttributeDescriptons;
+            std::vector<Shader*> Shaders;
+            std::vector<VkVertexInputBindingDescription> VertexBindings;
+            std::vector<VkVertexInputAttributeDescription>
+                VertexAttributeDescriptons;
             CullMode CullMode;
             float LineWidth = 1.0f;
             MultiSampling MultiSampling;
             VkDescriptorSetLayout DescriptorSetLayout;
-            u32 pushConstantSize  = 0;
-            u32 pushConstantCount = 0;
+            uint32_t pushConstantSize  = 0;
+            uint32_t pushConstantCount = 0;
     };
     Pipeline CreateGraphicsPipeline(PipelineInfo info);
 
-}  // namespace Engine
+}  // namespace FooGame

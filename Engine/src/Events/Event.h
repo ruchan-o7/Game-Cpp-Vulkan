@@ -1,6 +1,6 @@
 #pragma once
 #include <sstream>
-namespace Engine
+namespace FooGame
 {
 
     enum class EventType
@@ -96,4 +96,4 @@ namespace Engine
     {
         return os << e.ToString();
     }
-}  // namespace Engine
+}  // namespace FooGame

@@ -1,10 +1,11 @@
 #pragma once
 #include "../Defines.h"
 #include <array>
+#include <vector>
 #include <glm/glm.hpp>
 struct VkVertexInputBindingDescription;
 struct VkVertexInputAttributeDescription;
-namespace Engine
+namespace FooGame
 {
     struct Vertex
     {
@@ -14,8 +15,8 @@ namespace Engine
             static VkVertexInputBindingDescription GetBindingDescription();
             static std::array<VkVertexInputAttributeDescription, 3>
             GetAttributeDescrp();
-            static List<VkVertexInputAttributeDescription>
+            static std::vector<VkVertexInputAttributeDescription>
             GetAttributeDescriptionList();
     };
 
-}  // namespace Engine
+}  // namespace FooGame

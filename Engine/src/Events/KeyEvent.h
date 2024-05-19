@@ -1,7 +1,7 @@
 #pragma once
 #include "Event.h"
 #include "../Input/KeyCodes.h"
-namespace Engine
+namespace FooGame
 {
 
     class KeyEvent : public Event
@@ -68,4 +68,4 @@ namespace Engine
 
             EVENT_CLASS_TYPE(KeyTyped)
     };
-}  // namespace Engine
+}  // namespace FooGame

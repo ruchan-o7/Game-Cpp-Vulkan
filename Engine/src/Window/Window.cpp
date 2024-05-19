@@ -5,7 +5,7 @@
 #include "../Events/ApplicationEvent.h"
 #include "../Input/KeyCodes.h"
 #include "../Events/MouseMovedEvent.h"
-namespace Engine
+namespace FooGame
 {
     static WindowsWindow* s_Instance = nullptr;
     WindowsWindow& WindowsWindow::Get()
@@ -175,4 +175,4 @@ namespace Engine
         Shutdown();
     }
 
-}  // namespace Engine
+}  // namespace FooGame

@@ -1,16 +1,12 @@
 #include "Game.h"
 #include <pch.h>
 #include "Core/Core/Base.h"
-#include "Core/Core/Engine.h"
-#include "Core/Core/Window.h"
-#include "Core/Events/ApplicationEvent.h"
-#include "Core/Events/Event.h"
-#include "Core/Events/MouseMovedEvent.h"
 #include "Core/Graphics/Renderer2D.h"
-#include "Core/Input/KeyCodes.h"
+#include "Core/Graphics/Renderer3D.h"
+#include "Core/Scene/Scene.h"
 #include "imgui.h"
+#include "src/Engine/Backend.h"
 #define GLM_ENABLE_EXPERIMENTAL
-#include <Core/Graphics/Camera.h>
 namespace FooGame
 {
     Game::Game()
@@ -21,7 +17,10 @@ namespace FooGame
     {
         m_Window = new WindowsWindow();
         m_Window->SetOnEventFunction(BIND_EVENT_FN(Game::OnEvent));
-        Engine::Init(*m_Window);
+        Backend::Init(*m_Window);
+        Renderer2D::Init();
+        Renderer3D::Init();
+        m_Scenes.emplace_back(new Scene());
     }
     static void DrawQuads(int amount, const Shared<Texture2D> texture,
                           float tiling, glm::vec4 tint)
@@ -40,7 +39,6 @@ namespace FooGame
     }
     void Game::Run()
     {
-        m_Scenes.emplace_back(new SampleScene());
         double lastTime = 0;
 
         while (!m_Window->ShouldClose())
@@ -55,19 +53,20 @@ namespace FooGame
                 l->OnUpdate(currentTime);
             }
 
-            Engine::BeginDrawing();
+            Backend::BeginDrawing();
             for (auto& l : m_Scenes)
             {
-                l->OnRender();
-                l->OnUI();
+                l->RenderScene3D(&m_Camera);
+                // l->OnRender();
+                l->IMGUI();
             }
-            Engine::EndDrawing();
+            Backend::EndDrawing();
         }
     }
 
     void Game::Shutdown()
     {
-        Engine::Shutdown();
+        Backend::Shutdown();
         m_Scenes.clear();
         delete m_Window;
     }
@@ -103,7 +102,7 @@ namespace FooGame
     }
     bool Game::OnWindowResized(WindowResizeEvent& event)
     {
-        return Engine::OnWindowResized(event);
+        return Backend::OnWindowResized(event);
     }
     bool Game::OnMouseMoved(MouseMovedEvent& event)
     {

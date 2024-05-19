@@ -1,35 +1,23 @@
 #include "Renderer3D.h"
-#include "Api.h"
-#include "Buffer.h"
-#include "../Backend/Vertex.h"
 #include "../Core/Base.h"
-#include "../Core/Engine.h"
-#include "../Graphics/Model.h"
-#include "../Graphics/Pipeline.h"
-#include "../Graphics/Texture2D.h"
-#include "Core/Backend/VulkanCheckResult.h"
-#include "Core/Core/PerspectiveCamera.h"
-#include "Core/Scene/Component.h"
-#include "Core/Scene/GameObject.h"
-#include "Shader.h"
+#include <Engine.h>
 #include "../../Core/Graphics/Types/DescriptorData.h"
-#include "vulkan/vulkan_core.h"
 #include <cassert>
 #include <unordered_map>
 #include <imgui.h>
-#include "Descriptor/DescriptorAllocator.h"
 namespace FooGame
 {
+
 #if 1
 #define VERT_SHADER          "../../../Shaders/vert.spv"
 #define FRAG_SHADER          "../../../Shaders/frag.spv"
 #define DEFAULT_TEXTURE_PATH "../../../textures/texture.jpg"
 #else
+
 #define VERT_SHADER          "../../Shaders/vert.spv"
 #define FRAG_SHADER          "../../Shaders/frag.spv"
 #define MODEL_PATH           "../../Assets/Model/viking_room.obj"
 #define DEFAULT_TEXTURE_PATH "../../textures/texture.jpg"
-
 #endif
 
     struct MeshPushConstants
@@ -41,6 +29,7 @@ namespace FooGame
     {
             Buffer* VertexBuffer = nullptr;
             Buffer* IndexBuffer  = nullptr;
+            Model* PtrModel      = nullptr;
     };
     struct StaticMeshContainer
     {
@@ -57,7 +46,7 @@ namespace FooGame
                     std::unordered_map<u32, ModelDrawData> ModelMap;
                     u32 FreeIndex = 0;
                     List<Buffer*> UniformBuffers;
-                    Shared<Model> DefaultModel = nullptr;
+                    std::shared_ptr<Model> DefaultModel = nullptr;
                     DescriptorData descriptor;
                     vke::DescriptorAllocatorPool* DescriptorAllocatorPool;
             };
@@ -72,7 +61,7 @@ namespace FooGame
             {
                     Pipeline GraphicsPipeline;
                     VkSampler TextureSampler;
-                    Shared<Texture2D> DefaultTexture;
+                    std::shared_ptr<Texture2D> DefaultTexture;
             };
             Api api{};
     };
@@ -148,12 +137,12 @@ namespace FooGame
             s_Data.api.GraphicsPipeline = CreateGraphicsPipeline(info);
         }
     }
-    void Renderer3D::SubmitModel(const Shared<Model>& model)
+    void Renderer3D::SubmitModel(Model* model)
     {
         auto& mesh                                = model->GetMeshes()[0];
         s_Data.Res.ModelMap[s_Data.Res.FreeIndex] = {
             CreateVertexBuffer(mesh.m_Vertices),
-            CreateIndexBuffer(mesh.m_Indices)};
+            CreateIndexBuffer(mesh.m_Indices), model};
         auto device    = Api::GetDevice()->GetDevice();
         auto allocator = s_Data.Res.DescriptorAllocatorPool->GetAllocator();
         model->SetId(s_Data.Res.FreeIndex);
@@ -179,25 +168,24 @@ namespace FooGame
     void Renderer3D::EndScene()
     {
     }
-    void Renderer3D::DrawModel(const Shared<GameObject>& object)
+
+    void Renderer3D::DrawModel(u32 id, const glm::mat4& transform)
     {
-        auto currentFrame = Engine::GetCurrentFrame();
-        auto cmd          = Engine::GetCurrentCommandbuffer();
-        auto extent       = Engine::GetSwapchainExtent();
+        auto currentFrame = Backend::GetCurrentFrame();
+        auto cmd          = Backend::GetCurrentCommandbuffer();
+        auto extent       = Backend::GetSwapchainExtent();
 
         BindPipeline(cmd);
 
-        auto comp      = object->GetComponent<MeshRendererComponent>();
-        auto model     = comp->GetModel();
-        auto id        = model->GetId();
         auto& modelRes = s_Data.Res.ModelMap[id];
+        auto* model    = modelRes.PtrModel;
         auto& mesh     = model->GetMeshes()[0];
 
         Api::SetViewportAndScissors(cmd, extent.width, extent.height);
         VkBuffer vertexBuffers[] = {*modelRes.VertexBuffer->GetBuffer()};
         VkDeviceSize offsets[]   = {0};
         MeshPushConstants push{};
-        push.renderMatrix = object->Transform.GetTransform();
+        push.renderMatrix = transform;
         auto allocator    = s_Data.Res.DescriptorAllocatorPool->GetAllocator();
         allocator.Allocate(mesh.GetLayout(), *mesh.GetSet(currentFrame));
         vkCmdPushConstants(cmd, s_Data.api.GraphicsPipeline.pipelineLayout,
@@ -219,7 +207,7 @@ namespace FooGame
                                         u32 dynamicOffsetCount,
                                         u32* dynamicOffsets)
     {
-        auto currentFrame = Engine::GetCurrentFrame();
+        auto currentFrame = Backend::GetCurrentFrame();
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer =
             *s_Data.Res.UniformBuffers[currentFrame]->GetBuffer();
@@ -260,10 +248,10 @@ namespace FooGame
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
                           s_Data.api.GraphicsPipeline.pipeline);
     }
-    void Renderer3D::SubmitScene(const Shared<Scene>& scene)
+    void Renderer3D::SubmitScene(Scene* scene)
     {
     }
-    void Renderer3D::ReleaseScene()
+    void Renderer3D::ReleaseScene(Scene* scene)
     {
     }
 
@@ -292,7 +280,7 @@ namespace FooGame
     }
     void Renderer3D::UpdateUniformData(UniformBufferObject ubd)
     {
-        s_Data.Res.UniformBuffers[Engine::GetCurrentFrame()]->SetData(
+        s_Data.Res.UniformBuffers[Backend::GetCurrentFrame()]->SetData(
             sizeof(ubd), &ubd);
     }
 

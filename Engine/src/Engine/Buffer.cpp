@@ -3,14 +3,14 @@
 #include "Api.h"
 #include "Texture2D.h"
 #include "Device.h"
-namespace Engine
+namespace FooGame
 {
 
-    static u32 SelectMemoryType(
+    static uint32_t SelectMemoryType(
         const VkPhysicalDeviceMemoryProperties& memoryProperties,
-        u32 memoryTypeBits, VkMemoryPropertyFlags flags)
+        uint32_t memoryTypeBits, VkMemoryPropertyFlags flags)
     {
-        for (u32 i = 0; i < memoryProperties.memoryTypeCount; ++i)
+        for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i)
         {
             if ((memoryTypeBits & (1 << i)) != 0 &&
                 (memoryProperties.memoryTypes[i].propertyFlags & flags) ==
@@ -45,7 +45,7 @@ namespace Engine
         auto device             = Api::GetDevice();
         auto dev                = device->GetDevice();
         auto memoryRequirements = device->GetMemoryRequirements(m_Buffer);
-        u32 memoryTypeIndex =
+        uint32_t memoryTypeIndex =
             SelectMemoryType(device->GetMemoryProperties(),
                              memoryRequirements.memoryTypeBits, m_MemoryFlags);
         assert(memoryTypeIndex != ~0u);
@@ -148,7 +148,7 @@ namespace Engine
         return std::move(buffer);
     }
 
-    Buffer* CreateIndexBuffer(const List<u32>& indices)
+    Buffer* CreateIndexBuffer(const std::vector<uint32_t>& indices)
     {
         size_t bufferSize = sizeof(indices[0]) * indices.size();
         auto* stagingBuffer =
@@ -170,7 +170,7 @@ namespace Engine
         return new Buffer{std::move(indexBuffer)};
     }
 
-    Buffer* CreateVertexBuffer(const List<Vertex> vertices)
+    Buffer* CreateVertexBuffer(const std::vector<Vertex> vertices)
     {
         size_t bufferSize = sizeof(vertices[0]) * vertices.size();
 
@@ -209,40 +209,40 @@ namespace Engine
         VkBufferUsageFlags usageFlag{};
         switch (usage)
         {
-            case Engine::BufferUsage::VERTEX:
+            case BufferUsage::VERTEX:
             {
                 usageFlag = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
             }
             break;
-            case Engine::BufferUsage::UNIFORM:
+            case BufferUsage::UNIFORM:
             {
                 usageFlag = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
             }
             break;
-            case Engine::BufferUsage::INDEX:
+            case BufferUsage::INDEX:
             {
                 usageFlag = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
             }
             break;
-            case Engine::BufferUsage::TRANSFER_SRC:
+            case BufferUsage::TRANSFER_SRC:
             {
                 usageFlag = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
             }
             break;
-            case Engine::BufferUsage::TRANSFER_DST:
+            case BufferUsage::TRANSFER_DST:
             {
                 usageFlag = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
             }
             break;
 
-            case Engine::BufferUsage::TRANSFER_DST_VERTEX:
+            case BufferUsage::TRANSFER_DST_VERTEX:
             {
                 usageFlag = VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
             }
             break;
 
-            case Engine::BufferUsage::TRANSFER_DST_INDEX:
+            case BufferUsage::TRANSFER_DST_INDEX:
             {
                 usageFlag = VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                             VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
@@ -251,4 +251,4 @@ namespace Engine
         }
         return usageFlag;
     }
-}  // namespace Engine
+}  // namespace FooGame

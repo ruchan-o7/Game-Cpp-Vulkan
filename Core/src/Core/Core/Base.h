@@ -16,33 +16,21 @@
 #define u16 uint16_t
 #define i16 int16_t
 
-constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
-
-#define BIT(x) (1 << x)
-
-#define BIND_EVENT_FN(fn)                    \
-    [this](auto&&... args) -> decltype(auto) \
-    { return this->fn(std::forward<decltype(args)>(args)...); }
-#define ARRAY_COUNT(x) (sizeof(x) / sizeof(x[0]))
+template <typename T>
+using List = std::vector<T>;
 
 template <typename T>
 using Shared = std::shared_ptr<T>;
 template <typename T>
 using Unique = std::unique_ptr<T>;
 
-template <typename T, typename... Args>
-constexpr Shared<T> CreateShared(Args&&... args)
-{
-    return std::make_shared<T>(std::forward<Args>(args)...);
-}
-template <typename T, typename... Args>
-constexpr Unique<T> CreateUnique(Args&&... args)
-{
-    return std::make_unique<T>(std::forward<Args>(args)...);
-}
-template <typename T>
-using List = std::vector<T>;
+#define BIT(x) (1 << x)
 
+#define BIND_EVENT_FN(fn)                    \
+    [this](auto&&... args) -> decltype(auto) \
+    { return this->fn(std::forward<decltype(args)>(args)...); }
+
+#define ARRAY_COUNT(x) (sizeof(x) / sizeof(x[0]))
 using String = std::string;
 
 template <typename... Args>
@@ -55,7 +43,7 @@ String StrFormat(const String& format, Args... args)
                   << " Error during string format: " << format << std::endl;
     }
     auto size = static_cast<size_t>(size_s);
-    Unique<char[]> buf(new char[size]);
+    std::unique_ptr<char[]> buf{new char[size]};
     std::snprintf(buf.get(), size, format.c_str(), args...);
     return String(buf.get(), buf.get() + size - 1);
 }

@@ -5,7 +5,7 @@
 #include "Api.h"
 #include "Sync.h"
 #include "../Events/ApplicationEvent.h"
-namespace Engine
+namespace FooGame
 {
     class Backend
     {
@@ -24,8 +24,8 @@ namespace Engine
             static void BeginRenderpass(VkRenderPass& renderpass);
 
             static bool OnWindowResized(WindowResizeEvent& event);
-            static u32 GetCurrentFrame();
-            static u32 GetImageIndex();
+            static uint32_t GetCurrentFrame();
+            static uint32_t GetImageIndex();
             static VkFormat GetSwapchainImageFormat();
             static VkExtent2D GetSwapchainExtent();
             static VkRenderPass GetRenderPass();
@@ -38,6 +38,6 @@ namespace Engine
             static void Submit();
             static void InitImgui();
             static void RecreateSwapchain();
-            static bool AcquireNextImage(u32& imageIndex);
+            static bool AcquireNextImage(uint32_t& imageIndex);
     };
-}  // namespace Engine
+}  // namespace FooGame

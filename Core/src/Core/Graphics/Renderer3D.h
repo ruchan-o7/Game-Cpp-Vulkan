@@ -1,15 +1,10 @@
 #pragma once
-#include "Core/Core/Base.h"
-#include "Core/Graphics/Api.h"
-#include "Core/Graphics/Model.h"
-#include "Core/Scene/GameObject.h"
-#include "Core/Scene/Scene.h"
-#include "vulkan/vulkan_core.h"
+#include "../Core/Base.h"
+#include "../Scene/Scene.h"
+#include <Engine.h>
 namespace FooGame
 {
 
-    class OrthographicCamera;
-    class PerspectiveCamera;
     class Renderer3D
     {
         public:
@@ -19,15 +14,17 @@ namespace FooGame
             static void BeginScene(const PerspectiveCamera& camera);
             static void EndScene();
             static void Shutdown();
-            static void SubmitScene(const Shared<Scene>& scene);
-            static void ReleaseScene();
+            static void SubmitScene(Scene* scene);
+            static void ReleaseScene(Scene* scene);
 
         public:
-            // static void DrawModel();
-            static void DrawModel(const Shared<GameObject>& object);
+            static void DrawModel(u32 id, const glm::mat4& transform);
+            // static void DrawModel(u32 id, float transform);
+            // static void DrawModel(Model* model);
+            // static void DrawModel(GameObject* object);
 
         public:
-            static void SubmitModel(const Shared<Model>& model);
+            static void SubmitModel(Model* model);
 
         private:
             static void BindPipeline(VkCommandBuffer cmd);

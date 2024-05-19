@@ -2,7 +2,7 @@
 #include "KeyCodes.h"
 #include <glm/glm.hpp>
 
-namespace Engine
+namespace FooGame
 {
     class Input
     {
@@ -13,4 +13,4 @@ namespace Engine
             static void SetCursorMode(CursorMode mode);
     };
 
-}  // namespace Engine
+}  // namespace FooGame

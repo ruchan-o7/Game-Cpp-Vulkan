@@ -1,9 +1,9 @@
 #pragma once
 #include "Event.h"
 #include "../Defines.h"
-namespace Engine
+namespace FooGame
 {
-    using MouseCode = u16;
+    using MouseCode = uint16_t;
 
     namespace Mouse
     {
@@ -122,4 +122,4 @@ namespace Engine
 
             EVENT_CLASS_TYPE(MouseButtonReleased)
     };
-}  // namespace Engine
+}  // namespace FooGame

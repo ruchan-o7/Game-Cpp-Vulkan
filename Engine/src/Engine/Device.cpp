@@ -2,7 +2,7 @@
 #include <vulkan/vulkan.h>
 #include "Api.h"
 #include "VulkanCheckResult.h"
-namespace Engine
+namespace FooGame
 {
 
     VkPhysicalDeviceMemoryProperties Device::GetMemoryProperties()
@@ -40,7 +40,8 @@ namespace Engine
         VK_CALL(vkAllocateMemory(m_Device, &allocInfo, nullptr, &memory));
     }
 
-    u32 Device::FindMemoryType(u32 filter, VkMemoryPropertyFlags properties)
+    uint32_t Device::FindMemoryType(uint32_t filter,
+                                    VkMemoryPropertyFlags properties)
     {
         VkPhysicalDeviceMemoryProperties memProperties;
         vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &memProperties);
@@ -74,7 +75,7 @@ namespace Engine
             VkPhysicalDeviceProperties deviceProps{};
             m_PhysicalDevice = devices[0];
 
-            for (u32 i = 0; i < m_PhysicalDeviceCount; i++)
+            for (uint32_t i = 0; i < m_PhysicalDeviceCount; i++)
             {
                 const auto device = devices[i];
                 vkGetPhysicalDeviceProperties(device, &deviceProps);
@@ -88,7 +89,7 @@ namespace Engine
             VkQueueFamilyProperties queueProperties[32] = {};
             vkGetPhysicalDeviceQueueFamilyProperties(
                 m_PhysicalDevice, &m_QueueFamilyCount, queueProperties);
-            for (u32 i = 0; i < m_QueueFamilyCount; i++)
+            for (uint32_t i = 0; i < m_QueueFamilyCount; i++)
             {
                 const auto queueF = queueProperties[i];
                 if (queueF.queueFlags & VK_QUEUE_GRAPHICS_BIT)
@@ -115,10 +116,10 @@ namespace Engine
             createInfo.pQueueCreateInfos    = &queueCreateInfo;
             createInfo.pEnabledFeatures     = &deviceFeatures;
             createInfo.enabledExtensionCount =
-                static_cast<u32>(info.deviceExtensions.size());
+                static_cast<uint32_t>(info.deviceExtensions.size());
             createInfo.ppEnabledExtensionNames = info.deviceExtensions.data();
             createInfo.enabledLayerCount =
-                static_cast<u32>(info.validationLayers.size());
+                static_cast<uint32_t>(info.validationLayers.size());
             createInfo.ppEnabledLayerNames = info.validationLayers.data();
 
             VK_CALL(vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr,
@@ -136,10 +137,11 @@ namespace Engine
                                                           surface, &caps));
         return caps;
     }
-    List<VkSurfaceFormatKHR> Device::GetSurfaceFormats(VkSurfaceKHR surface)
+    std::vector<VkSurfaceFormatKHR> Device::GetSurfaceFormats(
+        VkSurfaceKHR surface)
     {
-        u32 formatCount = 0;
-        List<VkSurfaceFormatKHR> formats;
+        uint32_t formatCount = 0;
+        std::vector<VkSurfaceFormatKHR> formats;
         VK_CALL(vkGetPhysicalDeviceSurfaceFormatsKHR(m_PhysicalDevice, surface,
                                                      &formatCount, nullptr));
         formats.resize(formatCount);
@@ -148,10 +150,11 @@ namespace Engine
         return formats;
     }
 
-    List<VkPresentModeKHR> Device::GetSurfacePresentModes(VkSurfaceKHR surface)
+    std::vector<VkPresentModeKHR> Device::GetSurfacePresentModes(
+        VkSurfaceKHR surface)
     {
-        u32 count;
-        List<VkPresentModeKHR> modes{};
+        uint32_t count;
+        std::vector<VkPresentModeKHR> modes{};
         VK_CALL(vkGetPhysicalDeviceSurfacePresentModesKHR(
             m_PhysicalDevice, surface, &count, nullptr));
         modes.reserve(count);
@@ -159,10 +162,10 @@ namespace Engine
             m_PhysicalDevice, surface, &count, modes.data()));
         return modes;
     }
-    Device* Device::CreateDevice(const List<const char*>& layers,
-                                 const List<const char*>& extensions)
+    Device* Device::CreateDevice(const std::vector<const char*>& layers,
+                                 const std::vector<const char*>& extensions)
     {
         return new Device({layers, extensions});
     }
 
-}  // namespace Engine
+}  // namespace FooGame

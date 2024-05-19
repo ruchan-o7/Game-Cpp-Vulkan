@@ -4,7 +4,7 @@
 #include "Device.h"
 #include "VulkanCheckResult.h"
 #include "../Window/Window.h"
-namespace Engine
+namespace FooGame
 {
 
 #define VERT_PATH "../../../Shaders/vert.spv"
@@ -56,7 +56,7 @@ namespace Engine
     }
 
     void Api::CmdCopyBuffer(VkCommandBuffer& cmd, VkBuffer& source,
-                            VkBuffer& target, u32 regionCount,
+                            VkBuffer& target, uint32_t regionCount,
                             VkBufferCopy& region)
     {
         vkCmdCopyBuffer(cmd, source, target, regionCount, &region);
@@ -106,8 +106,9 @@ namespace Engine
             func(instance, debugMessenger, pAllocator);
         }
     }
-    List<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    List<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
+    std::vector<const char*> deviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
     Api::~Api()
     {
         Shutdown();
@@ -129,13 +130,13 @@ namespace Engine
             createInfo.enabledLayerCount = 0;
             createInfo.pNext             = nullptr;
 
-            u32 extensionCount;
+            uint32_t extensionCount;
             const char** glfwExtensions;
             glfwExtensions = glfwGetRequiredInstanceExtensions(&extensionCount);
             std::vector<const char*> extensions(
                 glfwExtensions, glfwExtensions + extensionCount);
             createInfo.enabledExtensionCount =
-                static_cast<u32>(extensions.size());
+                static_cast<uint32_t>(extensions.size());
 
             VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 #ifdef FOO_DEBUG
@@ -161,7 +162,7 @@ namespace Engine
 #endif
             createInfo.ppEnabledExtensionNames = extensions.data();
             createInfo.enabledExtensionCount =
-                static_cast<u32>(extensions.size());
+                static_cast<uint32_t>(extensions.size());
             VK_CALL(vkCreateInstance(&createInfo, nullptr, &s_Api.instance));
 
 #ifdef FOO_DEBUG
@@ -256,9 +257,9 @@ namespace Engine
         viewport.maxDepth = 1.0f;
         vkCmdSetViewport(cmd, 0, 1, &viewport);
         VkRect2D scissor{
-            {                               0,0                                            },
-            {static_cast<u32>(viewport.width),
-             static_cast<u32>(viewport.height)}
+            {                                    0,0                                                 },
+            {static_cast<uint32_t>(viewport.width),
+             static_cast<uint32_t>(viewport.height)}
         };
         vkCmdSetScissor(cmd, 0, 1, &scissor);
     }
@@ -278,4 +279,4 @@ namespace Engine
         vkDestroyInstance(s_Api.instance, nullptr);
     }
 
-}  // namespace Engine
+}  // namespace FooGame

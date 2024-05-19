@@ -1,22 +1,23 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include "../Defines.h"
-namespace Engine
+#include <vector>
+namespace FooGame
 {
     struct DeviceCreateInfo
     {
-            List<const char*> deviceExtensions;
-            List<const char*> validationLayers;
+            std::vector<const char*> deviceExtensions;
+            std::vector<const char*> validationLayers;
     };
     class Device
     {
         public:
-            static Device* CreateDevice(const List<const char*>& layers,
-                                        const List<const char*>& extensions);
+            static Device* CreateDevice(
+                const std::vector<const char*>& layers,
+                const std::vector<const char*>& extensions);
 
         public:
             VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
-            u32 GetGraphicsFamily() const { return m_GraphicQueueFamily; }
+            uint32_t GetGraphicsFamily() const { return m_GraphicQueueFamily; }
             VkQueue GetPresentQueue() const { return m_PresentQueue; }
             VkPhysicalDevice GetPhysicalDevice() const
             {
@@ -25,15 +26,18 @@ namespace Engine
             VkDevice GetDevice() const { return m_Device; }
             VkPhysicalDeviceProperties GetPhysicalDeviceProperties();
             VkSurfaceCapabilitiesKHR GetSurfaceCaps(VkSurfaceKHR surface);
-            List<VkSurfaceFormatKHR> GetSurfaceFormats(VkSurfaceKHR surface);
-            List<VkPresentModeKHR> GetSurfacePresentModes(VkSurfaceKHR surface);
+            std::vector<VkSurfaceFormatKHR> GetSurfaceFormats(
+                VkSurfaceKHR surface);
+            std::vector<VkPresentModeKHR> GetSurfacePresentModes(
+                VkSurfaceKHR surface);
             VkPhysicalDeviceMemoryProperties GetMemoryProperties();
             VkMemoryRequirements GetMemoryRequirements(VkImage& image);
             VkMemoryRequirements GetMemoryRequirements(VkBuffer& buffer);
             void AllocateMemory(VkMemoryAllocateInfo& allocInfo,
                                 VkDeviceMemory& memory);
 
-            u32 FindMemoryType(u32 filter, VkMemoryPropertyFlags properties);
+            uint32_t FindMemoryType(uint32_t filter,
+                                    VkMemoryPropertyFlags properties);
             void WaitIdle();
 
         private:
@@ -45,9 +49,9 @@ namespace Engine
             VkQueue m_GraphicsQueue;
 
         private:
-            u32 m_PhysicalDeviceCount = 0;
-            u32 m_QueueFamilyCount    = -1;
-            u32 m_GraphicQueueFamily  = -1;
-            u32 m_PresentQueueFamily  = -1;
+            uint32_t m_PhysicalDeviceCount = 0;
+            uint32_t m_QueueFamilyCount    = -1;
+            uint32_t m_GraphicQueueFamily  = -1;
+            uint32_t m_PresentQueueFamily  = -1;
     };
-}  // namespace Engine
+}  // namespace FooGame

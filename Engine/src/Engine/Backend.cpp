@@ -3,6 +3,7 @@
 #include "../Engine/VulkanCheckResult.h"
 #include "../Defines.h"
 #include "../Window/Window.h"
+#include <vector>
 #include "Api.h"
 #include "Device.h"
 #include "Swapchain.h"
@@ -11,28 +12,28 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 
-namespace Engine
+namespace FooGame
 {
 
     struct FrameData
     {
-            u32 imageIndex   = 0;
-            u32 currentFrame = 0;
-            i32 fbWidth      = 0;
-            i32 fbHeight     = 0;
+            uint32_t imageIndex   = 0;
+            uint32_t currentFrame = 0;
+            int32_t fbWidth       = 0;
+            int32_t fbHeight      = 0;
     };
     struct EngineComponents
     {
             GLFWwindow* windowHandle;
             Swapchain* swapchain;
-            List<Fence> inFlightFences;
-            List<Semaphore> imageAvailableSemaphores;
-            List<Semaphore> renderFinishedSemaphores;
+            std::vector<Fence> inFlightFences;
+            std::vector<Semaphore> imageAvailableSemaphores;
+            std::vector<Semaphore> renderFinishedSemaphores;
             bool framebufferResized = false;
 
             struct Command
             {
-                    List<VkCommandBuffer> commandBuffers;
+                    std::vector<VkCommandBuffer> commandBuffers;
                     VkCommandPool commandPool;
             };
             Command command;
@@ -40,11 +41,11 @@ namespace Engine
     FrameData frameData{};
     EngineComponents comps{};
 
-    u32 Backend::GetCurrentFrame()
+    uint32_t Backend::GetCurrentFrame()
     {
         return frameData.currentFrame;
     }
-    u32 Backend::GetImageIndex()
+    uint32_t Backend::GetImageIndex()
     {
         return frameData.imageIndex;
     }
@@ -141,7 +142,7 @@ namespace Engine
             allocInfo.commandPool = comps.command.commandPool;
             allocInfo.level       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
             allocInfo.commandBufferCount =
-                (u32)comps.command.commandBuffers.size();
+                (uint32_t)comps.command.commandBuffers.size();
             VK_CALL(vkAllocateCommandBuffers(
                 device, &allocInfo, comps.command.commandBuffers.data()));
         }
@@ -168,7 +169,7 @@ namespace Engine
     {
         // frameData.DrawCall = 0;
         WaitFence(comps.inFlightFences[frameData.currentFrame]);
-        u32 imageIndex;
+        uint32_t imageIndex;
         if (!AcquireNextImage(imageIndex))
         {
             frameData.imageIndex = imageIndex;
@@ -198,7 +199,7 @@ namespace Engine
         Submit();
     }
 
-    bool Backend::AcquireNextImage(u32& imageIndex)
+    bool Backend::AcquireNextImage(uint32_t& imageIndex)
     {
         auto err = comps.swapchain->AcquireNextImage(
             Api::GetDevice()->GetDevice(),
@@ -391,7 +392,7 @@ namespace Engine
         Api::WaitIdle();
         vkDestroyCommandPool(device, comps.command.commandPool, nullptr);
         delete comps.swapchain;
-        for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
             comps.imageAvailableSemaphores[i].Destroy(device);
             comps.renderFinishedSemaphores[i].Destroy(device);
@@ -406,4 +407,4 @@ namespace Engine
 
         Api::Shutdown();
     }
-}  // namespace Engine
+}  // namespace FooGame

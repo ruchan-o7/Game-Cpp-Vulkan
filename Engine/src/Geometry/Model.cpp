@@ -2,12 +2,12 @@
 #include "../Engine/Api.h"
 #include "../Engine/Device.h"
 #include "../Engine/VulkanCheckResult.h"
-namespace Engine
+namespace FooGame
 {
-    Model::Model(List<Mesh>&& meshes) : m_Meshes(std::move(meshes))
+    Model::Model(std::vector<Mesh>&& meshes) : m_Meshes(std::move(meshes))
     {
     }
-    Mesh::Mesh(List<Vertex>&& vertices, List<u32>&& indices)
+    Mesh::Mesh(std::vector<Vertex>&& vertices, std::vector<uint32_t>&& indices)
         : m_Vertices(std::move(vertices)), m_Indices(std::move(indices))
     {
         auto device = Api::GetDevice();
@@ -34,52 +34,10 @@ namespace Engine
         VK_CALL(vkCreateDescriptorSetLayout(device->GetDevice(), &layoutInfo,
                                             nullptr, &m_Layout));
     }
-    // Shared<Model> Model::LoadModel(const String& path)
-    // {
-    //     tinyobj::attrib_t attrib;
-    //     List<tinyobj::shape_t> shapes;
-    //     List<tinyobj::material_t> materials;
-    //     String warn, err;
-    //     List<Vertex> vertices;
-    //     List<u32> indices;
-    //
-    //     if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
-    //                           path.c_str()))
-    //     {
-    //         assert(0 && "Model could not loaded!!!");
-    //     }
-    //     for (const auto& shape : shapes)
-    //     {
-    //         for (const auto& index : shape.mesh.indices)
-    //         {
-    //             Vertex vertex{};
-    //             vertex.Position = {
-    //                 attrib.vertices[3 * index.vertex_index + 0],
-    //                 attrib.vertices[3 * index.vertex_index + 1],
-    //                 attrib.vertices[3 * index.vertex_index + 2],
-    //             };
-    //             vertex.TexCoord = {
-    //                 attrib.texcoords[2 * index.texcoord_index + 0],
-    //                 1.0f - attrib.texcoords[2 * index.texcoord_index + 1],
-    //             };
-    //             vertex.Color = {
-    //                 attrib.colors[3 * index.vertex_index + 0],
-    //                 attrib.colors[3 * index.vertex_index + 1],
-    //                 attrib.colors[3 * index.vertex_index + 2],
-    //             };  // im not sure
-    //
-    //             vertices.push_back(vertex);
-    //             indices.push_back(indices.size());
-    //         }
-    //     }
-    //     List<Mesh> meshes;
-    //     meshes.push_back({std::move(vertices), std::move(indices)});
-    //     return CreateShared<Model>(std::move(meshes));
-    // }
     void Mesh::UpdateDescriptorBuffer(const VkBuffer& buffer, VkDevice device,
-                                      u32 index)
+                                      uint32_t index)
     {
-        // for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        // for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = buffer;
         bufferInfo.offset = 0;
@@ -112,4 +70,4 @@ namespace Engine
                                descriptorWrites, 0, nullptr);
     }
 
-}  // namespace Engine
+}  // namespace FooGame

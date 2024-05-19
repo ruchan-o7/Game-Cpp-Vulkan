@@ -1,11 +1,11 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include "../Defines.h"
+#include <unordered_map>
 #include <iostream>
-namespace Engine
+namespace FooGame
 {
 
-    static HashMap<VkResult, String> ErrorDescriptions = {
+    static std::unordered_map<VkResult, std::string> ErrorDescriptions = {
         {                                  VK_SUCCESS,"Command successfully completed"                                                      },
         {                                VK_NOT_READY,      "A fence or query has not yet completed"},
         {                                  VK_TIMEOUT,
@@ -162,4 +162,4 @@ namespace Engine
     }
     void populateDebugMessengerCreateInfo(
         VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-}  // namespace Engine
+}  // namespace FooGame

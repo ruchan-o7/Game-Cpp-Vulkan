@@ -3,7 +3,7 @@
 #include "../Engine/Device.h"
 #include "../Engine/Api.h"
 #include "Shader.h"
-namespace Engine
+namespace FooGame
 {
 
     Pipeline CreateGraphicsPipeline(PipelineInfo info)
@@ -15,7 +15,7 @@ namespace Engine
 
         auto device = Api::GetDevice()->GetDevice();
 
-        List<VkPipelineShaderStageCreateInfo> shaderStages;
+        std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
         for (auto& shader : info.Shaders)
         {
             shaderStages.push_back(shader->CreateInfo());
@@ -25,7 +25,7 @@ namespace Engine
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
         vertexInputInfo.vertexBindingDescriptionCount =
-            static_cast<u32>(info.VertexBindings.size());
+            static_cast<uint32_t>(info.VertexBindings.size());
         vertexInputInfo.pVertexBindingDescriptions = info.VertexBindings.data();
         vertexInputInfo.vertexAttributeDescriptionCount =
             static_cast<uint32_t>(info.VertexAttributeDescriptons.size());
@@ -170,4 +170,4 @@ namespace Engine
         return pipeline;
     }
 
-}  // namespace Engine
+}  // namespace FooGame

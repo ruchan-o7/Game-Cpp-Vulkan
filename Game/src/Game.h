@@ -1,11 +1,7 @@
 #pragma once
-#include <Core/Core/Window.h>
-#include <Core/Events/Event.h>
-#include <Core/Events/ApplicationEvent.h>
-#include <Core/Events/KeyEvent.h>
-#include <Core/Core/Engine.h>
-#include "Core/Events/MouseMovedEvent.h"
-#include "Core/Scene/Scene.h"
+#include <Engine.h>
+#include <Core/Scene/Scene.h>
+#include <vector>
 namespace FooGame
 {
     class Game
@@ -16,8 +12,9 @@ namespace FooGame
             void Run();
 
         private:
-            List<Scene*> m_Scenes;
+            std::vector<Scene*> m_Scenes;
             WindowsWindow* m_Window;
+            PerspectiveCamera m_Camera;
 
         private:
             float m_DeltaTime = 0.01f;

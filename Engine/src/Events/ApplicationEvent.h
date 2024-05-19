@@ -1,6 +1,6 @@
 #pragma once
 #include "Event.h"
-namespace Engine
+namespace FooGame
 {
 
     class WindowResizeEvent : public Event
@@ -62,4 +62,4 @@ namespace Engine
             EVENT_CLASS_TYPE(AppRender)
             EVENT_CLASS_CATEGORY(EventCategoryApplication)
     };
-}  // namespace Engine
+}  // namespace FooGame

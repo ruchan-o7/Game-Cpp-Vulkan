@@ -3,7 +3,7 @@
 #include "VulkanCheckResult.h"
 #include "Api.h"
 #include "../Defines.h"
-namespace Engine
+namespace FooGame
 {
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
         const std::vector<VkSurfaceFormatKHR>& availableFormats)
@@ -127,7 +127,7 @@ namespace Engine
                                 m_SwapchainImages.data());
 
         m_SwapchainImageViews.resize(m_SwapchainImages.size());
-        for (u32 i = 0; i < m_SwapchainImages.size(); i++)
+        for (uint32_t i = 0; i < m_SwapchainImages.size(); i++)
         {
             CreateImageView(m_SwapchainImages[i], m_SwapchainImageViews[i],
                             m_ImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
@@ -146,8 +146,8 @@ namespace Engine
     }
     void Swapchain::CreateFramebuffers()
     {
-        auto device = Api::GetDevice()->GetDevice();
-        u32 ivSize  = m_SwapchainImageViews.size();
+        auto device     = Api::GetDevice()->GetDevice();
+        uint32_t ivSize = m_SwapchainImageViews.size();
         m_SwapchainFrameBuffers.resize(ivSize);
 
         for (size_t i = 0; i < ivSize; i++)
@@ -168,12 +168,12 @@ namespace Engine
                                         &m_SwapchainFrameBuffers[i]));
         }
     }
-    VkFramebuffer Swapchain::GetFrameBuffer(u32 imageIndex)
+    VkFramebuffer Swapchain::GetFrameBuffer(uint32_t imageIndex)
     {
         return m_SwapchainFrameBuffers[imageIndex];
     }
     VkResult Swapchain::AcquireNextImage(VkDevice device, Semaphore& semaphore,
-                                         u32* imageIndex)
+                                         uint32_t* imageIndex)
     {
         return vkAcquireNextImageKHR(device, m_Swapchain, UINT64_MAX,
                                      semaphore.Get(), VK_NULL_HANDLE,
@@ -211,4 +211,4 @@ namespace Engine
     {
         return new Swapchain(createInfo);
     }
-}  // namespace Engine
+}  // namespace FooGame

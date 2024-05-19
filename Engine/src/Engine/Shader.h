@@ -1,7 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include "../Defines.h"
-namespace Engine
+#include <string>
+namespace FooGame
 {
     enum class ShaderStage
     {
@@ -11,7 +11,7 @@ namespace Engine
     class Shader
     {
         public:
-            Shader(const String& path, ShaderStage stage);
+            Shader(const std::string& path, ShaderStage stage);
             ~Shader();
             VkShaderModule GetModule() const;
             ShaderStage GetShaderStage() const { return m_Stage; };
@@ -23,4 +23,4 @@ namespace Engine
             std::string m_Path;
             VkShaderModule m_Module;
     };
-}  // namespace Engine
+}  // namespace FooGame

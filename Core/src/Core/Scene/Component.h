@@ -1,28 +1,78 @@
 #pragma once
-
+#include <Engine.h>
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include "Core/Graphics/Model.h"
+#include <memory>
+#include "Core/Core/Base.h"
+#include "Core/Core/UUID.h"
 namespace FooGame
 {
-    class GameObject;
-    struct Component
+    struct IDComponent
     {
-        public:
-            Component()          = default;
-            virtual ~Component() = default;
-            void SetOwner(GameObject* owner) { this->m_Owner = owner; }
-            GameObject* GetOwner() const { return m_Owner; }
+            UUID ID;
 
-        private:
-            GameObject* m_Owner = nullptr;
+            IDComponent()                   = default;
+            IDComponent(const IDComponent&) = default;
     };
-    struct MeshRendererComponent : public Component
+
+    struct TransformComponent
     {
-            MeshRendererComponent(Shared<Model> model) : m_Model(model) {}
-            Shared<Model> GetModel() const { return m_Model; }
+            glm::vec3 Translation = {0.0f, 0.0f, 0.0f};
+            glm::vec3 Rotation    = {0.0f, 0.0f, 0.0f};
+            glm::vec3 Scale       = {1.0f, 1.0f, 1.0f};
 
-        private:
-            Shared<Model> m_Model;
+            TransformComponent()                          = default;
+            TransformComponent(const TransformComponent&) = default;
+            TransformComponent(const glm::vec3& translation)
+                : Translation(translation)
+            {
+            }
+
+            glm::mat4 GetTransform() const
+            {
+                glm::mat4 rotation = glm::toMat4(glm::quat(Rotation));
+
+                return glm::translate(glm::mat4(1.0f), Translation) * rotation *
+                       glm::scale(glm::mat4(1.0f), Scale);
+            }
     };
+    struct MeshRendererComponent
+    {
+            Shared<Model> PtrModel;
+            MeshRendererComponent()                             = default;
+            MeshRendererComponent(const MeshRendererComponent&) = default;
+            MeshRendererComponent(std::shared_ptr<Model> model)
+                : PtrModel(model)
+            {
+            }
+    };
+    class ScriptableEntity;
+
+    struct ScriptComponent
+    {
+            ScriptableEntity* Instance = nullptr;
+
+            ScriptableEntity* (*InstantiateScript)();
+            void (*DestroyScript)(ScriptComponent*);
+
+            template <typename T>
+            void Bind()
+            {
+                InstantiateScript = []()
+                { return static_cast<ScriptableEntity*>(new T()); };
+                DestroyScript = [](ScriptComponent* nsc)
+                {
+                    delete nsc->Instance;
+                    nsc->Instance = nullptr;
+                };
+            }
+    };
+    template <typename... Component>
+    struct ComponentGroup
+    {
+    };
+
+    using AllComponents =
+        ComponentGroup<TransformComponent, MeshRendererComponent,
+                       ScriptComponent>;
 }  // namespace FooGame

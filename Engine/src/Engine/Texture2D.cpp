@@ -5,7 +5,7 @@
 #include "Backend.h"
 #include "Api.h"
 #include "Device.h"
-namespace Engine
+namespace FooGame
 {
 
     void CreateImage(Texture2D& image, VkExtent2D extent, VkFormat format,
@@ -101,9 +101,8 @@ namespace Engine
     {
         image.path     = path;
         Device* device = Api::GetDevice();
-        i32 texWidth, texHeight, texChannels;
+        int32_t texWidth, texHeight, texChannels;
         stbi_uc* pixels        = stbi_load(path.c_str(), &texWidth, &texHeight,
-
                                            &texChannels, STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
         if (!pixels)
@@ -166,7 +165,7 @@ namespace Engine
         VK_CALL(vkCreateSampler(device->GetDevice(), &samplerInfo, nullptr,
                                 &image.Sampler));
     }
-    Shared<Texture2D> LoadTexture(const std::string& path)
+    std::shared_ptr<Texture2D> LoadTexture(const std::string& path)
     {
         Texture2D image{};
         LoadTexture(image, path);
@@ -221,4 +220,4 @@ namespace Engine
 
         Backend::EndSingleTimeCommands(cmd);
     }
-}  // namespace Engine
+}  // namespace FooGame

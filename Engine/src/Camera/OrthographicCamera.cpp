@@ -1,7 +1,7 @@
 #include "OrthographicCamera.h"
 #include "glm/gtx/quaternion.hpp"
 
-namespace Engine
+namespace FooGame
 {
 
     void OrthographicCamera::RecalculateViewMatrix()
@@ -38,21 +38,4 @@ namespace Engine
         m_Left   = left;
         RecalculateViewMatrix();
     }
-    void OrthographicCamera::GoLeft()
-    {
-    }
-    void OrthographicCamera::GoRight()
-    {
-    }
-    void OrthographicCamera::GoUp()
-    {
-        m_Position += glm::vec3(0.0f, 0.0f, 0.2f);
-    }
-    void OrthographicCamera::GoDown()
-    {
-        m_Position -= glm::vec3(0.0f, 0.0f, 0.2f);
-    }
-    void OrthographicCamera::Look(double offsetX, double offsetY)
-    {
-    }
-}  // namespace Engine
+}  // namespace FooGame

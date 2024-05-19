@@ -1,12 +1,10 @@
 #pragma once
 #include "../Core/Base.h"
-#include "Core/Graphics/Api.h"
-#include "Core/Graphics/Texture2D.h"
+#include <Engine.h>
 #include <vulkan/vulkan.h>
 namespace FooGame
 {
-    class OrthographicCamera;
-    class PerspectiveCamera;
+    using namespace Engine;
     class Renderer2D
     {
         public:
@@ -22,17 +20,18 @@ namespace FooGame
         public:
             static void DrawQuad(const glm::vec2& position,
                                  const glm::vec2& size, const glm::vec4& color);
+
             static void DrawQuad(const glm::vec3& position,
                                  const glm::vec2& size, const glm::vec4& color);
 
             static void DrawQuad(const glm::vec2& position,
                                  const glm::vec2& size,
-                                 const Shared<Texture2D>& texture,
+                                 const std::shared_ptr<Texture2D>& texture,
                                  float tilingFactor         = 1.0f,
                                  const glm::vec4& tintColor = glm::vec4(1.0f));
             static void DrawQuad(const glm::vec3& position,
                                  const glm::vec2& size,
-                                 const Shared<Texture2D>& texture,
+                                 const std::shared_ptr<Texture2D>& texture,
                                  float tilingFactor         = 1.0f,
                                  const glm::vec4& tintColor = glm::vec4(1.0f));
 
@@ -40,7 +39,7 @@ namespace FooGame
                                  const glm::vec4& color);
 
             static void DrawQuad(const glm::mat4& transform,
-                                 const Shared<Texture2D>& texture,
+                                 const std::shared_ptr<Texture2D>& texture,
                                  float tilingFactor         = 1.0f,
                                  const glm::vec4& tintColor = glm::vec4(1.0f));
             static void DrawRotatedQuad(const glm::vec2& position,

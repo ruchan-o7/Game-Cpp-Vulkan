@@ -2,7 +2,7 @@
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 #include "../Defines.h"
-namespace Engine
+namespace FooGame
 {
 #define MAX_FRAMES_IN_FLIGHT 2
     class WindowsWindow;
@@ -38,7 +38,7 @@ namespace Engine
                                          VkDeviceSize deviceSize = 0);
             static void UnMapMemory(VkDeviceMemory& mem);
             static void CmdCopyBuffer(VkCommandBuffer& cmd, VkBuffer& source,
-                                      VkBuffer& target, u32 regionCount,
+                                      VkBuffer& target, uint32_t regionCount,
                                       VkBufferCopy& region);
             static void CreateBuffer(const VkBufferCreateInfo& info,
                                      VkBuffer& buffer);
@@ -50,4 +50,4 @@ namespace Engine
             Api() = default;
     };
 
-}  // namespace Engine
+}  // namespace FooGame

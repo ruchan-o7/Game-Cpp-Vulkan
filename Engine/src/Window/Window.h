@@ -1,18 +1,17 @@
 #pragma once
-#include "../Defines.h"
 #include "../Events/Event.h"
 #include <functional>
 
 struct GLFWwindow;
-namespace Engine
+namespace FooGame
 {
     struct WindowProperties
     {
-            String Title;
-            u32 Width;
-            u32 Height;
-            WindowProperties(const String& title = "Game", u32 width = 1600,
-                             u32 height = 900)
+            std::string Title;
+            uint32_t Width;
+            uint32_t Height;
+            WindowProperties(const std::string& title = "Game",
+                             uint32_t width = 1600, uint32_t height = 900)
                 : Title(title), Width(width), Height(height)
             {
             }
@@ -32,8 +31,8 @@ namespace Engine
             {
                 m_Data.EventCallback = callback;
             }
-            const u32 GetWidth() const { return m_Data.Width; }
-            const u32 GetHeight() const { return m_Data.Height; }
+            const uint32_t GetWidth() const { return m_Data.Width; }
+            const uint32_t GetHeight() const { return m_Data.Height; }
             bool SetVsync(bool enabled);
             void PollEvents();
             void SetWindowTitle(const char* title);
@@ -52,7 +51,7 @@ namespace Engine
             GLFWwindow* m_WindowHandle = nullptr;
             struct WindowData
             {
-                    String Title;
+                    std::string Title;
                     int Width, Height;
                     bool VSync;
                     double CursorPosX, CursorPosY;
@@ -61,4 +60,4 @@ namespace Engine
             };
             WindowData m_Data;
     };
-}  // namespace Engine
+}  // namespace FooGame

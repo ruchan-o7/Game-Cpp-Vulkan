@@ -1,6 +1,6 @@
 #pragma once
 #include <vulkan/vulkan.h>
-namespace Engine
+namespace FooGame
 {
 
     struct DescriptorData
@@ -10,4 +10,4 @@ namespace Engine
             // VkDescriptorSet Sets[3];
     };
 
-}  // namespace Engine
+}  // namespace FooGame

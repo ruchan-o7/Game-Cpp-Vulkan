@@ -1,7 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include "../Defines.h"
-namespace Engine
+namespace FooGame
 {
     class Fence
     {
@@ -10,7 +10,7 @@ namespace Engine
         public:
             Fence(VkDevice device);
             Fence(Fence&& other);
-            void Wait(u64 timeOut = UINT64_MAX);
+            void Wait(uint64_t timeOut = UINT64_MAX);
             VkFence Get() const { return m_Fence; }
             void Reset();
             void Destroy(VkDevice device);
@@ -33,4 +33,4 @@ namespace Engine
             VkSemaphore m_Semaphore;
             VkDevice m_Device;
     };
-}  // namespace Engine
+}  // namespace FooGame
