@@ -8,6 +8,10 @@
 namespace FooGame
 {
 
+    struct FrameStatistics
+    {
+            uint32_t DrawCall = 0;
+    };
     class Renderer3D
     {
         public:
@@ -17,10 +21,8 @@ namespace FooGame
             static void BeginScene(const PerspectiveCamera& camera);
             static void EndScene();
             static void Shutdown();
-            [[nodiscard]] static uint32_t SubmitMesh(Mesh* mesh);
             static void ClearBuffers();
-            // static void SubmitScene(Scene* scene);
-            // static void ReleaseScene(Scene* scene);
+            static FrameStatistics GetStats();
 
         public:
             static void DrawModel(uint32_t id, const glm::mat4& transform);
@@ -28,6 +30,7 @@ namespace FooGame
                                  const Texture2D& texture);
 
         public:
+            [[nodiscard]] static uint32_t SubmitMesh(Mesh* mesh);
             static void SubmitModel(Model* model);
 
         private:

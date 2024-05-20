@@ -1,4 +1,10 @@
 #include "PerspectiveCamera.h"
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/quaternion.hpp>
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_LEFT_HANDED
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
 namespace FooGame
@@ -29,6 +35,20 @@ namespace FooGame
     void PerspectiveCamera::SetAspect(float aspect)
     {
         m_Aspect = aspect;
+    }
+    void PerspectiveCamera::Rotate(glm::vec2 delta)
+    {
+        float yawSign  = GetUpDirection().y < 0 ? 1.0f : -1.0f;
+        m_Yaw         += yawSign * delta.y * 10.0f;
+        m_Pitch       += delta.x * 10.0f;
+    }
+    glm::vec3 PerspectiveCamera::GetUpDirection() const
+    {
+        return glm::rotate(GetOrientation(), glm::vec3(0.0f, 0.0f, 1.0f));
+    }
+    glm::quat PerspectiveCamera::GetOrientation() const
+    {
+        return glm::quat(glm::vec3(-m_Pitch, -m_Yaw, 0.0f));
     }
     void PerspectiveCamera::Zoom(float amount)
     {

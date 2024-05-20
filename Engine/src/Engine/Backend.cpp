@@ -17,7 +17,7 @@
 namespace FooGame
 {
 
-    struct FrameData
+    struct FrameStatistics
     {
             uint32_t imageIndex   = 0;
             uint32_t currentFrame = 0;
@@ -41,7 +41,7 @@ namespace FooGame
             Command command;
             DeletionQueue deletionQueue;
     };
-    FrameData frameData{};
+    FrameStatistics frameData{};
     EngineComponents comps{};
 
     uint32_t Backend::GetCurrentFrame()

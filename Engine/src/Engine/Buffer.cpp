@@ -3,6 +3,7 @@
 #include "Api.h"
 #include "Texture2D.h"
 #include "Device.h"
+#include "vulkan/vulkan_core.h"
 namespace FooGame
 {
 
@@ -26,12 +27,13 @@ namespace FooGame
 
     void Buffer::Release()
     {
-        Api::DestoryBuffer(m_Buffer);
-        Api::FreeMemory(m_Memory);
+        auto device = Api::GetVkDevice();
+        vkDestroyBuffer(device, m_Buffer, nullptr);
+        vkFreeMemory(device, m_Memory, nullptr);
     }
     void Buffer::Create()
     {
-        auto device                   = Api::GetDevice()->GetDevice();
+        auto device                   = Api::GetVkDevice();
         VkBufferCreateInfo createInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
         createInfo.size               = m_Size;
         createInfo.usage              = m_Usage;
@@ -74,7 +76,7 @@ namespace FooGame
     }
     void Buffer::SetData(size_t size, void* data)
     {
-        auto device = Api::GetDevice()->GetDevice();
+        auto device = Api::GetVkDevice();
         if (m_MemoryFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
         {
             memcpy(m_Data, data, size);

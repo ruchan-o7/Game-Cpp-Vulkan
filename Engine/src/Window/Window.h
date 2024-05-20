@@ -24,6 +24,7 @@ namespace FooGame
             WindowsWindow(WindowProperties specifications = WindowProperties());
             ~WindowsWindow();
             static WindowsWindow& Get();
+            static double GetTime();
             void Run();
             void Close();
             GLFWwindow* GetWindowHandle() const { return m_WindowHandle; }
@@ -38,7 +39,6 @@ namespace FooGame
             void SetWindowTitle(const char* title);
             void SetCursorCenter();
             bool ShouldClose();
-            double GetTime();
             double GetCursorPosX() const;
             double GetCursorPosY() const;
             inline void WaitEvent();

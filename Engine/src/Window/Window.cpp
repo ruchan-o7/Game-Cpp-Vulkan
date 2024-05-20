@@ -12,6 +12,10 @@ namespace FooGame
     {
         return *s_Instance;
     }
+    double WindowsWindow::GetTime()
+    {
+        return glfwGetTime();
+    }
     WindowsWindow::WindowsWindow(WindowProperties specifications)
     {
         s_Instance = this;
@@ -22,10 +26,6 @@ namespace FooGame
         glfwWaitEvents();
     }
 
-    double WindowsWindow::GetTime()
-    {
-        return glfwGetTime();
-    }
     void WindowsWindow::SetWindowTitle(const char* title)
     {
         m_Data.Title = title;

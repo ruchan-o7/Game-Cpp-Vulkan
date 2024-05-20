@@ -58,12 +58,6 @@ namespace FooGame
                     vke::DescriptorAllocatorPool* DescriptorAllocatorPool;
                     DeletionQueue deletionQueue;
             };
-            struct FrameData
-            {
-                    uint32_t DrawCall = 0;
-            };
-            Resources Res;
-            FrameData FrameData;
 
             struct Api
             {
@@ -71,6 +65,8 @@ namespace FooGame
                     VkSampler TextureSampler;
                     std::shared_ptr<Texture2D> DefaultTexture;
             };
+            Resources Res;
+            FrameStatistics FrameData;
             Api api{};
     };
     static RenderData s_Data;
@@ -110,14 +106,6 @@ namespace FooGame
         auto allocator = s_Data.Res.DescriptorAllocatorPool->GetAllocator();
         s_Data.Res.DescriptorAllocatorPool->SetPoolSizeMultiplier(
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_FRAMES_IN_FLIGHT);
-        // s_Data.Res.deletionQueue.PushFunction(
-        //     [&](VkDevice device)
-        //     {
-        //         vkDestroyDescriptorPool(
-        //             device,
-        //             s_Data.Res.DescriptorAllocatorPool->GetAllocator().vkPool,
-        //             nullptr);
-        //     });
         {
             VkDescriptorSetLayoutBinding uboLayoutBinding{};
             uboLayoutBinding.binding         = 0;
@@ -198,6 +186,10 @@ namespace FooGame
     void Renderer3D::BeginDraw()
     {
         s_Data.FrameData.DrawCall = 0;
+    }
+    FrameStatistics Renderer3D::GetStats()
+    {
+        return s_Data.FrameData;
     }
     void Renderer3D::EndDraw()
     {

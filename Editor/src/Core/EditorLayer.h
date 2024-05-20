@@ -21,6 +21,6 @@ namespace FooGame
             CommandLineArgs m_Args;
 
         private:
-            void UpdateCamera();
+            void UpdateCamera(float ts);
     };
 }  // namespace FooGame

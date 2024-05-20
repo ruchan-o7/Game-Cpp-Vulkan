@@ -3,6 +3,7 @@
 #include <iostream>
 #include <Scene/Scene.h>
 #include "Core/Base.h"
+#include "Core/LayerStack.h"
 #include "imgui.h"
 #include "src/Engine/Backend.h"
 #include "src/Engine/Renderer3D.h"
@@ -31,6 +32,7 @@ namespace FooGame
             { return Editor::OnEvent(std::forward<decltype(args)>(args)...); });
         Backend::Init(*m_Window);
         Renderer3D::Init();
+        m_LayerStack = new LayerStack;
     }
     void Editor::Run()
     {
@@ -39,15 +41,20 @@ namespace FooGame
             m_Window->PollEvents();
             Backend::BeginDrawing();
 
-            for (auto& l : m_LayerStack)
+            for (auto& l : *m_LayerStack)
             {
                 l->OnUpdate(0.2f);
             }
-            for (auto& l : m_LayerStack)
+            for (auto& l : *m_LayerStack)
             {
                 l->OnImGuiRender();
             }
-
+            ImGui::Begin("Statistics");
+            {
+                auto stats = Renderer3D::GetStats();
+                ImGui::Text("Draw call :%i", stats.DrawCall);
+            }
+            ImGui::End();
             Backend::EndDrawing();
         }
         Backend::WaitIdle();
@@ -66,7 +73,7 @@ namespace FooGame
             BIND_EVENT_FN(Editor::OnMousePressed));
         dispatcher.Dispatch<MouseButtonReleasedEvent>(
             BIND_EVENT_FN(Editor::OnMouseRelease));
-        for (auto& l : m_LayerStack)
+        for (auto& l : *m_LayerStack)
         {
             l->OnEvent(e);
         }
@@ -84,7 +91,7 @@ namespace FooGame
     }
     void Editor::PushLayer(Layer* layer)
     {
-        m_LayerStack.PushLayer(layer);
+        m_LayerStack->PushLayer(layer);
         layer->OnAttach();
     }
     bool Editor::OnWindowResized(WindowResizeEvent& event)
@@ -122,10 +129,7 @@ namespace FooGame
 
     Editor::~Editor()
     {
-        for (auto* l : m_LayerStack)
-        {
-            m_LayerStack.PopOverlay(l);
-        }
+        delete m_LayerStack;
         Renderer3D::Shutdown();
         Backend::Shutdown();
         delete m_Window;

@@ -26,6 +26,6 @@ namespace FooGame
 
         private:
             WindowsWindow* m_Window;
-            LayerStack m_LayerStack;
+            LayerStack* m_LayerStack;
     };
 }  // namespace FooGame
