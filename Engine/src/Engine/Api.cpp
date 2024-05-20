@@ -2,8 +2,10 @@
 #include <array>
 #include <GLFW/glfw3.h>
 #include "Device.h"
+#include "Types/DeletionQueue.h"
 #include "VulkanCheckResult.h"
 #include "../Window/Window.h"
+#include "vulkan/vulkan_core.h"
 namespace FooGame
 {
 
@@ -17,7 +19,7 @@ namespace FooGame
             Device* device;
             VkSurfaceKHR surface;
             VkRenderPass renderPass;
-            VkCommandPool commandPool;
+            DeletionVector queue;
     };
     ApiData s_Api{};
     static inline VkDevice GetVkDevice()
@@ -164,19 +166,34 @@ namespace FooGame
             createInfo.enabledExtensionCount =
                 static_cast<uint32_t>(extensions.size());
             VK_CALL(vkCreateInstance(&createInfo, nullptr, &s_Api.instance));
+            s_Api.queue.PushFunction(
+                [&](VkDevice d)
+                { vkDestroyInstance(s_Api.instance, nullptr); });
 
 #ifdef FOO_DEBUG
             VK_CALL(CreateDebugUtilsMessengerEXT(s_Api.instance,
                                                  &debugCreateInfo, nullptr,
                                                  &s_Api.debugMessenger));
+            s_Api.queue.PushFunction(
+                [&](VkDevice d)
+                {
+                    DestroyDebugUtilsMessengerEXT(
+                        s_Api.instance, s_Api.debugMessenger, nullptr);
+                });
 #endif
             VK_CALL(glfwCreateWindowSurface(s_Api.instance,
                                             window->GetWindowHandle(), nullptr,
                                             &s_Api.surface));
+            s_Api.queue.PushFunction(
+                [&](VkDevice) {
+                    vkDestroySurfaceKHR(s_Api.instance, s_Api.surface, nullptr);
+                });
         }
         {
             s_Api.device =
                 Device::CreateDevice(deviceExtensions, validationLayers);
+            s_Api.queue.PushFunction([&](VkDevice d)
+                                     { s_Api.device->Destroy(); });
         }
     }
 
@@ -245,6 +262,9 @@ namespace FooGame
 
         VK_CALL(vkCreateRenderPass(s_Api.device->GetDevice(), &renderPassInfo,
                                    nullptr, &s_Api.renderPass));
+        s_Api.queue.PushFunction(
+            [&](VkDevice d)
+            { vkDestroyRenderPass(d, s_Api.renderPass, nullptr); });
     }
     void Api::SetViewportAndScissors(VkCommandBuffer cmd, float w, float h)
     {
@@ -267,16 +287,13 @@ namespace FooGame
     void Api::Shutdown()
     {
         auto device = GetVkDevice();
-        vkDestroyRenderPass(device, s_Api.renderPass, nullptr);
-        vkDestroyCommandPool(device, s_Api.commandPool, nullptr);
-        vkDestroyDevice(device, nullptr);
+        s_Api.queue.Flush(device);
 
-#ifdef FOO_DEBUG
-        DestroyDebugUtilsMessengerEXT(s_Api.instance, s_Api.debugMessenger,
-                                      nullptr);
-#endif
-        vkDestroySurfaceKHR(s_Api.instance, s_Api.surface, nullptr);
-        vkDestroyInstance(s_Api.instance, nullptr);
+        // #ifdef FOO_DEBUG
+        //         // DestroyDebugUtilsMessengerEXT(s_Api.instance,
+        //         s_Api.debugMessenger,
+        //         //                               nullptr);
+        // #endif
     }
 
 }  // namespace FooGame

@@ -39,6 +39,7 @@ namespace FooGame
             uint32_t FindMemoryType(uint32_t filter,
                                     VkMemoryPropertyFlags properties);
             void WaitIdle();
+            void Destroy();
 
         private:
             Device(DeviceCreateInfo info);

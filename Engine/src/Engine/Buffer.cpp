@@ -77,13 +77,13 @@ namespace FooGame
         auto device = Api::GetDevice()->GetDevice();
         if (m_MemoryFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
         {
-            std::memcpy(m_Data, data, size);
+            memcpy(m_Data, data, size);
         }
         else
         {
             vkMapMemory(device, m_Memory, 0, size, 0, &m_Data);
             // Api::MapMemory(&m_Memory, 0, size, &m_Data);
-            std::memcpy(m_Data, data, size);
+            memcpy(m_Data, data, size);
             vkUnmapMemory(device, m_Memory);
             // Api::UnMapMemory(m_Memory);
         }

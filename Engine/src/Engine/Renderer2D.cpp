@@ -5,6 +5,7 @@
 #include "Types/DescriptorData.h"
 #include "Buffer.h"
 #include "Backend.h"
+#include <cstring>
 #include "VulkanCheckResult.h"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
@@ -96,7 +97,7 @@ namespace FooGame
                 uBuffBuilder.SetUsage(BufferUsage::UNIFORM)
                     .SetInitialSize(sizeof(UniformBufferObject))
                     .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
                 s_Data.resources.UniformBuffers[i] = CreateDynamicBuffer(
                     sizeof(UniformBufferObject), BufferUsage::UNIFORM);
             }

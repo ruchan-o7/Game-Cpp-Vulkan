@@ -1,6 +1,7 @@
 #include "DescriptorAllocator.h"
 #include <vulkan/vulkan.h>
 #include <mutex>
+#include <memory>
 #include <vector>
 #include "../../Defines.h"
 namespace vke

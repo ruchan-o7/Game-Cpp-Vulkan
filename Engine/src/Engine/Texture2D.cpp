@@ -5,6 +5,7 @@
 #include "Backend.h"
 #include "Api.h"
 #include "Device.h"
+#include "vulkan/vulkan_core.h"
 namespace FooGame
 {
 
@@ -85,16 +86,18 @@ namespace FooGame
     void DestroyImage(VkImage& image, VkDeviceMemory& imageMem)
     {
         auto device = Api::GetDevice()->GetDevice();
-
         vkDestroyImage(device, image, nullptr);
         vkFreeMemory(device, imageMem, nullptr);
     }
     void DestroyImage(Texture2D* image)
     {
         auto device = Api::GetDevice()->GetDevice();
+        DestroyImage(image->Image, image->ImageMemory);
         vkDestroyImageView(device, image->ImageView, nullptr);
-        vkDestroyImage(device, image->Image, nullptr);
-        vkFreeMemory(device, image->ImageMemory, nullptr);
+        if (image->Sampler)
+        {
+            vkDestroySampler(device, image->Sampler, nullptr);
+        }
     }
 
     void LoadTexture(Texture2D& image, const std::string& path)

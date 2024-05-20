@@ -5,9 +5,12 @@
 #include "Buffer.h"
 #include "Device.h"
 #include "Shader.h"
+#include "Texture2D.h"
 #include "Types/DescriptorData.h"
 #include "Descriptor/DescriptorAllocator.h"
 #include "VulkanCheckResult.h"
+#include "Types/DeletionQueue.h"
+#include "vulkan/vulkan_core.h"
 #include <imgui.h>
 namespace FooGame
 {
@@ -53,6 +56,7 @@ namespace FooGame
                     std::shared_ptr<Model> DefaultModel = nullptr;
                     DescriptorData descriptor;
                     vke::DescriptorAllocatorPool* DescriptorAllocatorPool;
+                    DeletionQueue deletionQueue;
             };
             struct FrameData
             {
@@ -88,13 +92,33 @@ namespace FooGame
             s_Data.Res.UniformBuffers[i] = CreateDynamicBuffer(
                 sizeof(UniformBufferObject), BufferUsage::UNIFORM);
         }
+        s_Data.Res.deletionQueue.PushFunction(
+            [&](VkDevice device)
+            {
+                for (auto& buffer : s_Data.Res.UniformBuffers)
+                {
+                    buffer->Release();
+                }
+                s_Data.Res.UniformBuffers.clear();
+            });
 
         s_Data.Res.DescriptorAllocatorPool =
             vke::DescriptorAllocatorPool::Create(device->GetDevice());
+        s_Data.Res.deletionQueue.PushFunction(
+            [&](VkDevice device)
+            { delete s_Data.Res.DescriptorAllocatorPool; });
         auto allocator = s_Data.Res.DescriptorAllocatorPool->GetAllocator();
+        s_Data.Res.DescriptorAllocatorPool->SetPoolSizeMultiplier(
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_FRAMES_IN_FLIGHT);
+        // s_Data.Res.deletionQueue.PushFunction(
+        //     [&](VkDevice device)
+        //     {
+        //         vkDestroyDescriptorPool(
+        //             device,
+        //             s_Data.Res.DescriptorAllocatorPool->GetAllocator().vkPool,
+        //             nullptr);
+        //     });
         {
-            s_Data.Res.DescriptorAllocatorPool->SetPoolSizeMultiplier(
-                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_FRAMES_IN_FLIGHT);
             VkDescriptorSetLayoutBinding uboLayoutBinding{};
             uboLayoutBinding.binding         = 0;
             uboLayoutBinding.descriptorCount = 1;
@@ -119,9 +143,21 @@ namespace FooGame
             VK_CALL(vkCreateDescriptorSetLayout(
                 device->GetDevice(), &layoutInfo, nullptr,
                 &s_Data.Res.descriptor.SetLayout));
+            s_Data.Res.deletionQueue.PushFunction(
+                [&](VkDevice device)
+                {
+                    vkDestroyDescriptorSetLayout(
+                        device, s_Data.Res.descriptor.SetLayout, nullptr);
+                });
         }
         {
             s_Data.api.DefaultTexture = LoadTexture(DEFAULT_TEXTURE_PATH);
+            s_Data.Res.deletionQueue.PushFunction(
+                [&](VkDevice device)
+                {
+                    DestroyImage(s_Data.api.DefaultTexture.get());
+                    s_Data.api.DefaultTexture.reset();
+                });
         }
         {
             PipelineInfo info{};
@@ -139,6 +175,16 @@ namespace FooGame
             info.pushConstantCount   = 1;
 
             s_Data.api.GraphicsPipeline = CreateGraphicsPipeline(info);
+            s_Data.Res.deletionQueue.PushFunction(
+                [&](VkDevice device)
+                {
+                    vkDestroyPipelineLayout(
+                        device, s_Data.api.GraphicsPipeline.pipelineLayout,
+                        nullptr);
+                    vkDestroyPipeline(Api::GetDevice()->GetDevice(),
+                                      s_Data.api.GraphicsPipeline.pipeline,
+                                      nullptr);
+                });
         }
     }
     void Renderer3D::SubmitModel(Model* model)
@@ -151,6 +197,15 @@ namespace FooGame
         auto allocator = s_Data.Res.DescriptorAllocatorPool->GetAllocator();
         model->SetId(s_Data.Res.FreeIndex);
         s_Data.Res.FreeIndex++;
+        // s_Data.Res.deletionQueue.PushFunction(
+        //     [&](VkDevice device)
+        //     {
+        //         auto res = s_Data.Res.ModelMap[s_Data.Res.FreeIndex - 1];
+        //         res.IndexBuffer->Release();
+        //         res.VertexBuffer->Release();
+        //         delete res.IndexBuffer;
+        //         delete res.VertexBuffer;
+        //     });
     }
     void Renderer3D::BeginDraw()
     {
@@ -262,25 +317,12 @@ namespace FooGame
     void Renderer3D::Shutdown()
     {
         auto device = Api::GetDevice()->GetDevice();
+        s_Data.Res.deletionQueue.Flush(device);
         for (auto& [index, data] : s_Data.Res.ModelMap)
         {
-            data.IndexBuffer->Release();
             data.VertexBuffer->Release();
+            data.IndexBuffer->Release();
         }
-        vkDestroyDescriptorPool(
-            device, s_Data.Res.DescriptorAllocatorPool->GetAllocator().vkPool,
-            nullptr);
-
-        for (auto& ub : s_Data.Res.UniformBuffers)
-        {
-            ub->Release();
-            delete ub;
-        }
-        s_Data.Res.UniformBuffers.clear();
-        vkDestroyPipelineLayout(
-            device, s_Data.api.GraphicsPipeline.pipelineLayout, nullptr);
-        vkDestroyPipeline(device, s_Data.api.GraphicsPipeline.pipeline,
-                          nullptr);
     }
     void Renderer3D::UpdateUniformData(UniformBufferObject ubd)
     {

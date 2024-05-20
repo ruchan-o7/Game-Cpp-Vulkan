@@ -7,6 +7,7 @@
 #include "Api.h"
 #include "Device.h"
 #include "Swapchain.h"
+#include "Types/DeletionQueue.h"
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <backends/imgui_impl_glfw.h>
@@ -37,6 +38,7 @@ namespace FooGame
                     VkCommandPool commandPool;
             };
             Command command;
+            DeletionQueue deletionQueue;
     };
     FrameData frameData{};
     EngineComponents comps{};
@@ -121,6 +123,8 @@ namespace FooGame
                 .SetExtent({static_cast<uint32_t>(w), static_cast<uint32_t>(h)})
                 .Build();
 
+        comps.deletionQueue.PushFunction([&](VkDevice d)
+                                         { delete comps.swapchain; });
         Api::CreateRenderpass(GetSwapchainImageFormat());
         comps.swapchain->SetRenderpass();
 
@@ -132,6 +136,10 @@ namespace FooGame
 
             VK_CALL(vkCreateCommandPool(device, &poolInfo, nullptr,
                                         &comps.command.commandPool));
+            comps.deletionQueue.PushFunction(
+                [&](VkDevice d) {
+                    vkDestroyCommandPool(d, comps.command.commandPool, nullptr);
+                });
         }
 
         comps.swapchain->CreateFramebuffers();
@@ -157,8 +165,28 @@ namespace FooGame
                 comps.renderFinishedSemaphores.emplace_back(Semaphore{device});
                 comps.inFlightFences.emplace_back(Fence{device});
             }
+            comps.deletionQueue.PushFunction(
+                [&](VkDevice d)
+                {
+                    for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+                    {
+                        comps.imageAvailableSemaphores[i].Destroy(d);
+                        comps.renderFinishedSemaphores[i].Destroy(d);
+                        comps.inFlightFences[i].Destroy(d);
+                    }
+                });
         }
         InitImgui();
+
+        comps.deletionQueue.PushFunction(
+            [&](VkDevice d)
+            {
+                ImGui_ImplVulkan_Shutdown();
+                ImGui_ImplGlfw_Shutdown();
+                ImGui::DestroyContext();
+
+                vkDestroyDescriptorPool(d, g_ImguiPool, nullptr);
+            });
     }
     Backend::~Backend()
     {
@@ -390,20 +418,7 @@ namespace FooGame
     {
         auto device = Api::GetDevice()->GetDevice();
         Api::WaitIdle();
-        vkDestroyCommandPool(device, comps.command.commandPool, nullptr);
-        delete comps.swapchain;
-        for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            comps.imageAvailableSemaphores[i].Destroy(device);
-            comps.renderFinishedSemaphores[i].Destroy(device);
-            comps.inFlightFences[i].Destroy(device);
-        }
-
-        ImGui_ImplVulkan_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
-        ImGui::DestroyContext();
-        vkDestroyDescriptorPool(Api::GetDevice()->GetDevice(), g_ImguiPool,
-                                nullptr);
+        comps.deletionQueue.Flush(device);
 
         Api::Shutdown();
     }

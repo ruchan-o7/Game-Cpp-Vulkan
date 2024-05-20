@@ -7,10 +7,10 @@ namespace FooGame
 
     struct Texture2D
     {
-            VkImage Image;
-            VkImageView ImageView;
-            VkDeviceMemory ImageMemory;
-            VkSampler Sampler;
+            VkImage Image{};
+            VkImageView ImageView{};
+            VkDeviceMemory ImageMemory{};
+            VkSampler Sampler{};
             uint32_t width, height;
             std::string path;
     };
