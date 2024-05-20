@@ -1,6 +1,6 @@
 #include "Input.h"
 #include <GLFW/glfw3.h>
-#include "../Core/Window.h"
+#include "../Window/Window.h"
 namespace FooGame
 {
 

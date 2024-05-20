@@ -15,6 +15,7 @@ namespace FooGame
             static void BeginDrawing();
             static void EndDrawing();
             static void WaitFence(Fence& fence);
+            static void WaitIdle();
             static void Shutdown();
             static void UpdateUniformData(UniformBufferObject ubo);
             static void ResetCommandBuffer(VkCommandBuffer& buf,

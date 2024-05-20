@@ -53,8 +53,9 @@ namespace FooGame
             return;
         }
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        m_WindowHandle = glfwCreateWindow(m_Data.Width, m_Data.Height, "GAME",
-                                          nullptr, nullptr);
+        m_WindowHandle =
+            glfwCreateWindow(m_Data.Width, m_Data.Height, m_Data.Title.c_str(),
+                             nullptr, nullptr);
         glfwSetWindowUserPointer(m_WindowHandle, &m_Data);
         if (!glfwVulkanSupported())
         {

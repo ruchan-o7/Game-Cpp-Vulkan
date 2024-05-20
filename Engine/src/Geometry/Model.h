@@ -10,6 +10,8 @@ namespace FooGame
         public:
             Mesh(std::vector<Vertex>&& vertices,
                  std::vector<uint32_t>&& indices);
+            Mesh(Mesh&&) = default;
+
             std::vector<Vertex> m_Vertices;
             std::vector<uint32_t> m_Indices;
 
@@ -33,15 +35,15 @@ namespace FooGame
     class Model
     {
         public:
-            std::vector<Mesh>& GetMeshes() { return m_Meshes; }
             Model(std::vector<Mesh>&& meshes);
-            void SetId(uint32_t id) { m_Id = id; }
-            const uint32_t GetId() const { return m_Id; }
+            std::vector<Mesh>& GetMeshes() { return m_Meshes; }
+            void PushId(uint32_t id) { m_Ids.push_back(id); }
+            const std::vector<uint32_t>& GetIds() const { return m_Ids; }
             glm::mat4 Transform{1.0f};
 
         private:
             std::vector<Mesh> m_Meshes;
-            uint32_t m_Id = 0;
+            std::vector<uint32_t> m_Ids;
     };
 
 }  // namespace FooGame

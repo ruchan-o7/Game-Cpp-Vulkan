@@ -13,11 +13,11 @@ namespace FooGame
 {
 
 #if 1
-#define VERT_PATH "../../../Shaders/QuadShaderVert.spv"
-#define FRAG_PATH "../../../Shaders/QuadShaderFrag.spv"
+#define VERT_PATH "../../../Assets/Shaders/QuadShaderVert.spv"
+#define FRAG_PATH "../../../Assets/Shaders/QuadShaderFrag.spv"
 #else
-#define VERT_PATH "../../Shaders/QuadShaderVert.spv"
-#define FRAG_PATH "../../Shaders/QuadShaderFrag.spv"
+#define VERT_PATH "../../Assets/Shaders/QuadShaderVert.spv"
+#define FRAG_PATH "../../Assets/Shaders/QuadShaderFrag.spv"
 #endif
     struct Renderer2DData
     {

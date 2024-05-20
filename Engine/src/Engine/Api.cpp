@@ -8,10 +8,6 @@
 #include "vulkan/vulkan_core.h"
 namespace FooGame
 {
-
-#define VERT_PATH "../../../Shaders/vert.spv"
-#define FRAG_PATH "../../../Shaders/frag.spv"
-
     struct ApiData
     {
             VkInstance instance;
@@ -22,7 +18,7 @@ namespace FooGame
             DeletionVector queue;
     };
     ApiData s_Api{};
-    static inline VkDevice GetVkDevice()
+    VkDevice Api::GetVkDevice()
     {
         return s_Api.device->GetDevice();
     }

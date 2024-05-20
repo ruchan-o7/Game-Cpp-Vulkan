@@ -3,8 +3,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <memory>
-#include "Core/Core/Base.h"
-#include "Core/Core/UUID.h"
+#include "../Core/Base.h"
+#include "../Core/UUID.h"
 namespace FooGame
 {
     struct IDComponent

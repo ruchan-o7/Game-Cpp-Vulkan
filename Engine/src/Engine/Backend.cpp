@@ -8,6 +8,7 @@
 #include "Device.h"
 #include "Swapchain.h"
 #include "Types/DeletionQueue.h"
+#include "vulkan/vulkan_core.h"
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <backends/imgui_impl_glfw.h>
@@ -110,6 +111,10 @@ namespace FooGame
 
         vkFreeCommandBuffers(Api::GetDevice()->GetDevice(),
                              comps.command.commandPool, 1, &commandBuffer);
+    }
+    void Backend::WaitIdle()
+    {
+        vkDeviceWaitIdle(Api::GetDevice()->GetDevice());
     }
     void Backend::Init(WindowsWindow& window)
     {

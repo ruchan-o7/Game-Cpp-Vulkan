@@ -170,9 +170,9 @@ namespace FooGame
     }
     std::shared_ptr<Texture2D> LoadTexture(const std::string& path)
     {
-        Texture2D image{};
-        LoadTexture(image, path);
-        return std::make_shared<Texture2D>(image);
+        Texture2D tex{};
+        LoadTexture(tex, path);
+        return std::make_shared<Texture2D>(std::move(tex));
     }
 
     void TransitionImageLayout(Texture2D* image, VkFormat format,

@@ -4,7 +4,8 @@ message("----------")
 message("Configuring ${PROJECT_NAME}")
 
 
-file(GLOB ENGINE_SOURCE "src/Engine/*.cpp" "src/Engine/*.h")
+file(GLOB_RECURSE ENGINE_SOURCE "src/Engine/*.cpp" "src/Engine/*.h")
+file(GLOB_RECURSE INPUT_SOURCE "src/Input/*.cpp" "src/Input/*.h")
 file(GLOB CAMERA_SOURCE "src/Camera/*.cpp" "src/Camera/*.h")
 set(WINDOW_SOURCE "src/Window/Window.h;src/Window/Window.cpp")
 set(GEOMETRY_SOURCE
@@ -27,6 +28,7 @@ set(IMGUI_SRCS
 )
 set(ENGINE_SOURCES
 	"${ENGINE_SOURCE}"
+	"${INPUT_SOURCE}"
 	"${CAMERA_SOURCE}"
 	"${WINDOW_SOURCE}"
 	"${GEOMETRY_SOURCE}"

@@ -65,6 +65,8 @@ namespace FooGame
 
     void Game::Shutdown()
     {
+        Renderer2D::Shutdown();
+        Renderer3D::Shutdown();
         Backend::Shutdown();
         m_Scenes.clear();
         delete m_Window;

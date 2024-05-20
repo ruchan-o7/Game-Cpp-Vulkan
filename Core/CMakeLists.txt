@@ -33,12 +33,13 @@ set(CORE_SOURCES
 )
 add_library("${PROJECT_NAME}" "${CORE_SOURCES}")
 
-target_include_directories("${PROJECT_NAME}" PRIVATE
+target_include_directories("${PROJECT_NAME}" PUBLIC
 	"${Vulkan_INCLUDE_DIRS}"
 	"${GLFW_INCLUDE_DIR}"
 	"${ENTT_INCLUDE_DIR}"
 	"${GLM_INCLUDE_DIR}"
 	"${STB_INCLUDE_DIR}"
+	"${JSON_INCLUDE_DIR}"
 	"${IMGUI_SRC_DIR}"
 	"${ENGINE_INCLUDE_DIR}"
 	"${TINY_OBJ_LOADER_INCLUDE_DIR}"
@@ -51,12 +52,10 @@ set_target_properties("${PROJECT_NAME}" PROPERTIES CXX_STANDARD 17)
 target_link_libraries("${PROJECT_NAME}"
 	PUBLIC glfw glm
 	"${Vulkan_LIBRARIES}"
-	Engine EnTT::EnTT
+	Engine EnTT::EnTT nlohmann_json
 )
 
 add_compile_definitions(
-$<$<CONFIG:Debug>:FOO_DEBUG>
+	$<$<CONFIG:Debug>:FOO_DEBUG>
 )
 target_precompile_headers(Core PRIVATE "src/pch.h")
-
-# add_compile_definitions($<$<CONFIG:Debug>:FOO_DEBUG>)

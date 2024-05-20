@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.h>
 #include <memory>
 #include <string>
+#include <iostream>
 namespace FooGame
 {
 
@@ -13,7 +14,7 @@ namespace FooGame
             VkSampler Sampler{};
             uint32_t width, height;
             std::string path;
-    };
+        };
 
     VkImageView CreateImageView(VkFormat format,
                                 VkImageAspectFlags aspectFlags);

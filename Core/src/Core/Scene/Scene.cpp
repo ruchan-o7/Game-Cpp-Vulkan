@@ -1,14 +1,13 @@
 #include "Scene.h"
-#include "Core/Graphics/Renderer3D.h"
-#include "Core/Graphics/Renderer2D.h"
 #include "../Scene/Entity.h"
 #include "../Scene/ScriptableEntity.h"
 #include <imgui.h>
 #include "../Resources/LoadModel.h"
 #include "Core/Scene/Component.h"
 #include "glm/fwd.hpp"
-#include "src/Camera/OrthographicCamera.h"
-#include "src/Camera/PerspectiveCamera.h"
+#include <Engine.h>
+#include <memory>
+#include <nlohmann/json.hpp>
 namespace FooGame
 {
 
@@ -47,9 +46,8 @@ namespace FooGame
         glm::mat4{1.0f};
         auto model = LoadModel(MODEL_PATH);
         model->GetMeshes()[0].SetTexture(LoadTexture(MODEL_TEXTURE));
-        e.AddComponent<MeshRendererComponent>(std::move(model));
+        auto& comp = e.AddComponent<MeshRendererComponent>(std::move(model));
         e.AddComponent<ScriptComponent>().Bind<Foo>();
-        auto& comp = e.GetComponent<MeshRendererComponent>();
         Renderer3D::SubmitModel(comp.PtrModel.get());
         auto transform = comp.PtrModel->Transform;
     }
@@ -212,9 +210,12 @@ namespace FooGame
         camera->RecalculateViewMatrix();
         Renderer3D::BeginScene(*camera);
         m_Registry.view<TransformComponent, MeshRendererComponent>().each(
-            [=](auto transform, auto& comp) {
-                Renderer3D::DrawModel(comp.PtrModel->GetId(),
-                                      transform.GetTransform());
+            [=](auto transform, auto& comp)
+            {
+                for (auto& id : comp.PtrModel->GetIds())
+                {
+                    Renderer3D::DrawModel(id, transform.GetTransform());
+                }
             });
         Renderer3D::EndScene();
     }
@@ -282,4 +283,13 @@ namespace FooGame
         Entity entity, MeshRendererComponent& component)
     {
     }
+    std::unique_ptr<Scene> LoadSceneFromJson(std::ifstream& stream)
+    {
+        using json       = nlohmann::json;
+        json data        = json::parse(stream);
+        int id           = data["id"];
+        std::string name = data["name"];
+        return std::make_unique<Scene>();
+    }
+
 }  // namespace FooGame

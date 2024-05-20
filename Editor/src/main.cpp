@@ -1,6 +1,8 @@
 #include "Editor.h"
-int main()
+int main(int argc, const char** argv)
 {
-    FooGame::Editor editor{};
+    FooGame::Editor editor{
+        {argc, argv}
+    };
     editor.Run();
 }

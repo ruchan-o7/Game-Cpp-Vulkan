@@ -2,6 +2,7 @@
 #include "../Core/UUID.h"
 #include <entt/entt.hpp>
 #include <entt/entity/registry.hpp>
+#include <fstream>
 // #include <Engine.h>
 namespace FooGame
 {
@@ -64,38 +65,5 @@ namespace FooGame
             // friend class SceneSerializer;
             // friend class SceneHierarchyPanel;
     };
-    // class Scene
-    // {
-    //         DELETE_COPY(Scene);
-    //
-    //     public:
-    //         Scene() = default;
-    //         virtual void OnCreate(){};
-    //         virtual void OnUpdate(float deltaTime){};
-    //         virtual void OnLateUpdate(float deltaTime){};
-    //         virtual void OnFixedUpdate(){};
-    //         virtual void OnRender(){};
-    //         virtual void OnUI(){};
-    //         virtual void OnEvent(Event& event){};
-    //
-    //     public:
-    // };
-    // class SampleScene final : public Scene
-    // {
-    //         DELETE_COPY(SampleScene);
-    //
-    //     public:
-    //         SampleScene();
-    //         void OnCreate() override;
-    //         void OnUpdate(float deltaTime) override;
-    //         void OnUI() override;
-    //         void OnRender() override;
-    //         Shared<Model> m_V1;
-    //         Shared<Model> m_V2;
-    //         std::unordered_map<String, std::shared_ptr<GameObject>> Objects;
-    //
-    //     private:
-    //         PerspectiveCamera m_Camera;
-    //         OrthographicCamera m_Ortho{0, 1, 0, -1};
-    // };
+    std::unique_ptr<Scene> LoadSceneFromJson(std::ifstream& stream);
 }  // namespace FooGame
