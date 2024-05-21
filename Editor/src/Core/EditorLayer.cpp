@@ -8,7 +8,7 @@
 #include "src/Window/Window.h"
 namespace FooGame
 {
-#if 1
+#if 0
 #define SCENE_JSON "../../../Assets/Scenes/scene.json"
 #else
 #define SCENE_JSON "../../Assets/Scenes/scene.json"
@@ -57,15 +57,15 @@ namespace FooGame
         ImGui::Begin("Camera pos");
         auto cameraPos = m_Camera.GetPosition();
         float pos[3]   = {cameraPos.x, cameraPos.y, cameraPos.z};
-        ImGui::SliderFloat3("Position", pos, -20.0f, 20.0f);
+        ImGui::SliderFloat3("Position", pos, -20.0f, 20.0f,"%.2f");
         m_Camera.SetPosition({pos[0], pos[1], pos[2]});
-        ImGui::DragFloat("Yaw", &m_Camera.m_Yaw, 0.5f, -180.f, 180.f);
-        ImGui::DragFloat("Pitch", &m_Camera.m_Pitch, 0.5f, -180.f, 180.f);
-        ImGui::DragFloat("Near clip", &m_Camera.m_NearClip, 0.5f, 0.0001f,
+        ImGui::DragFloat("Yaw", &m_Camera.m_Yaw, 0.1f, -720.f,9999.9f,"%.1f");
+        ImGui::DragFloat("Pitch", &m_Camera.m_Pitch, 0.1f, -720.f,9999.9f);
+        ImGui::DragFloat("Near clip", &m_Camera.m_NearClip, 0.1f, 0.0001f,
                          10.f);
-        ImGui::DragFloat("Far clip", &m_Camera.m_FarClip, 0.5f, 1.0f, 10000.0f);
+        ImGui::DragFloat("Far clip", &m_Camera.m_FarClip, 0.1f, 1.0f, 10000.0f);
         ImGui::DragFloat("Aspect ", &m_Camera.m_Aspect, 0.1f, 0.001f, 3.0f);
-        ImGui::DragFloat("Zoom ", &m_Camera.m_Zoom, 0.1f, 0.01f, 120.0f);
+        ImGui::DragFloat("Zoom ", &m_Camera.m_Zoom, 0.1f, 0.1f, 179.0f);
         float dir[3] = {
             m_Camera.m_Direction.x,
             m_Camera.m_Direction.y,
@@ -85,16 +85,6 @@ namespace FooGame
         m_Camera.m_Direction.y = dir[1];
         m_Camera.m_Direction.z = dir[2];
 
-        auto view = m_Camera.GetView();
-        ImGui::LabelText("View matrix %su", "");
-        for (int i = 0; i < 4; i++)
-        {
-            for (int j = 0; j < 4; j++)
-            {
-                ImGui::Text("[%f,%f,%f,%f]", view[i][j], view[i][j], view[i][j],
-                            view[i][j]);
-            }
-        }
         ImGui::End();
     }
     void EditorLayer::OnUpdate(float ts)
@@ -136,5 +126,6 @@ namespace FooGame
             m_Camera.Rotate(delta);
         }
         m_Camera.SetPosition(pos);
+        m_Camera.SetAspect((float)WindowsWindow::Get().GetWidth()/(float)WindowsWindow::Get().GetHeight());
     }
 }  // namespace FooGame

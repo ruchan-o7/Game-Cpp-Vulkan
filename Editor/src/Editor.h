@@ -27,5 +27,6 @@ namespace FooGame
         private:
             WindowsWindow* m_Window;
             LayerStack* m_LayerStack;
+            bool m_ShouldRender = true;
     };
 }  // namespace FooGame

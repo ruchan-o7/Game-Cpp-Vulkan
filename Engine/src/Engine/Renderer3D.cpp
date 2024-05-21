@@ -15,7 +15,7 @@
 namespace FooGame
 {
 
-#if 1
+#if 0
 #define VERT_SHADER          "../../../Assets/Shaders/vert.spv"
 #define FRAG_SHADER          "../../../Assets/Shaders/frag.spv"
 #define DEFAULT_TEXTURE_PATH "../../../Assets/Textures/texture.jpg"
@@ -186,6 +186,8 @@ namespace FooGame
     void Renderer3D::BeginDraw()
     {
         s_Data.FrameData.DrawCall = 0;
+        s_Data.FrameData.VertexCount = 0;
+        s_Data.FrameData.IndexCount = 0;
     }
     FrameStatistics Renderer3D::GetStats()
     {
@@ -252,6 +254,9 @@ namespace FooGame
         BindDescriptorSets(cmd, *modelRes.PtrMesh, s_Data.api.GraphicsPipeline);
         vkCmdDrawIndexed(cmd, modelRes.PtrMesh->m_Indices.size(), 1, 0, 0, 0);
         s_Data.FrameData.DrawCall++;
+        s_Data.FrameData.VertexCount += modelRes.PtrMesh->m_Vertices.size();
+        s_Data.FrameData.IndexCount+= modelRes.PtrMesh->m_Indices.size();
+
     }
     void Renderer3D::DrawMesh(uint32_t id, const glm::mat4& transform,
                               const Texture2D& texture)
@@ -284,6 +289,8 @@ namespace FooGame
                            s_Data.api.GraphicsPipeline);
         vkCmdDrawIndexed(cmd, modelRes.PtrMesh->m_Indices.size(), 1, 0, 0, 0);
         s_Data.FrameData.DrawCall++;
+        s_Data.FrameData.VertexCount += modelRes.PtrMesh->m_Vertices.size();
+        s_Data.FrameData.IndexCount+= modelRes.PtrMesh->m_Indices.size();
     }
     void Renderer3D::BindDescriptorSets(
         VkCommandBuffer cmd, const Texture2D& texture, VkDescriptorSet& set,

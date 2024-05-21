@@ -5,7 +5,7 @@
         {
             "id": 1,
             "name": "Viking 1",
-            "path": "../../../Assets/Model/viking_room.obj",
+            "path": "../../Assets/Model/viking_room.obj",
             "transform": {
                 "position": {
                     "x": 0.0,
@@ -27,6 +27,6 @@
         }
     ],
     "textures": [
-        "../../../Assets/Model/viking_room.png"
+        "../../Assets/Model/viking_room.png"
     ]
 }

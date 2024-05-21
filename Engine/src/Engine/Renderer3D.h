@@ -11,6 +11,8 @@ namespace FooGame
     struct FrameStatistics
     {
             uint32_t DrawCall = 0;
+            uint64_t VertexCount = 0;
+            uint64_t IndexCount = 0;
     };
     class Renderer3D
     {
