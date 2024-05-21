@@ -30,6 +30,7 @@ set_property(TARGET "nlohmann_json" PROPERTY FOLDER "Dependencies")
 
 set(EXTERNAL_DIR "${CMAKE_SOURCE_DIR}/external")
 
+set(SPDLOG_INCLUDE_DIR "${EXTERNAL_DIR}/glfw/spdlog")
 set(GLFW_INCLUDE_DIR "${EXTERNAL_DIR}/glfw/include")
 set(GLM_INCLUDE_DIR "${EXTERNAL_DIR}/glm/include")
 set(STB_INCLUDE_DIR "${EXTERNAL_DIR}/stbi")
@@ -38,7 +39,7 @@ set(ENTT_INCLUDE_DIR "${EXTERNAL_DIR}/entt/src")
 set(IMGUI_SRC_DIR "${EXTERNAL_DIR}/imgui")
 set(TINY_OBJ_LOADER_INCLUDE_DIR "${EXTERNAL_DIR}/tiny_obj_loader")
 set(ENGINE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/Engine")
-set(CORE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/Core/src/Core")
+set(CORE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/Core/src")
 
 add_subdirectory(Engine)
 add_subdirectory(Editor)

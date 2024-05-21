@@ -13,9 +13,6 @@ set(CORE_SOURCES
 	"src/Core/File/FileHelper.cpp"
 	"src/Core/Core/UUID.cpp"
 
-	"src/Core/Graphics/Types/QuadVertex.h"
-	"src/Core/Graphics/Renderer2D.h"
-	"src/Core/Graphics/Renderer3D.h"
 	"src/Core/Resources/LoadModel.h"
 
 	"src/Core/Scene/Component.h"
@@ -24,8 +21,6 @@ set(CORE_SOURCES
 	"src/Core/Scene/Scene.h"
 
 	"src/Core/Backend/TinyObjLoader.cpp"
-	"src/Core/Graphics/Renderer2D.cpp"
-	"src/Core/Graphics/Renderer3D.cpp"
 
 	"src/Core/Scene/Scene.cpp"
 	"src/Core/Scene/Entity.cpp"
@@ -34,6 +29,7 @@ set(CORE_SOURCES
 add_library("${PROJECT_NAME}" "${CORE_SOURCES}")
 
 target_include_directories("${PROJECT_NAME}" PUBLIC
+	"${SPDLOG_INCLUDE_DIR}"
 	"${Vulkan_INCLUDE_DIRS}"
 	"${GLFW_INCLUDE_DIR}"
 	"${ENTT_INCLUDE_DIR}"
