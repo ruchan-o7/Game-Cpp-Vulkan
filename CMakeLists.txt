@@ -30,7 +30,7 @@ set_property(TARGET "nlohmann_json" PROPERTY FOLDER "Dependencies")
 
 set(EXTERNAL_DIR "${CMAKE_SOURCE_DIR}/external")
 
-set(SPDLOG_INCLUDE_DIR "${EXTERNAL_DIR}/glfw/spdlog")
+set(SPDLOG_INCLUDE_DIR "${EXTERNAL_DIR}/spdlog")
 set(GLFW_INCLUDE_DIR "${EXTERNAL_DIR}/glfw/include")
 set(GLM_INCLUDE_DIR "${EXTERNAL_DIR}/glm/include")
 set(STB_INCLUDE_DIR "${EXTERNAL_DIR}/stbi")

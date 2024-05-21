@@ -4,6 +4,7 @@
 #include <Core.h>
 namespace FooGame
 {
+    class Mesh;
     struct Texture2D;
     struct MeshData
     {

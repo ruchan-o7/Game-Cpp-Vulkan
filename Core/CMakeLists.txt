@@ -11,19 +11,20 @@ set(CORE_SOURCES
 	"src/pch.cpp"
 
 	"src/Core/File/FileHelper.cpp"
-	"src/Core/Core/UUID.cpp"
-
-	"src/Core/Resources/LoadModel.h"
-
-	"src/Core/Scene/Component.h"
-	"src/Core/Scene/Entity.h"
-	"src/Core/Scene/ScriptableEntity.h"
-	"src/Core/Scene/Scene.h"
 
 	"src/Core/Backend/TinyObjLoader.cpp"
 
+	"src/Core/Core/UUID.cpp"
+	"src/Core/Core/Log.cpp"
+
+	"src/Core/Scene/Component.h"
+	"src/Core/Scene/ScriptableEntity.h"
+	"src/Core/Scene/Scene.h"
 	"src/Core/Scene/Scene.cpp"
+	"src/Core/Scene/Entity.h"
 	"src/Core/Scene/Entity.cpp"
+
+	"src/Core/Resources/LoadModel.h"
 	"src/Core/Resources/LoadModel.cpp"
 )
 add_library("${PROJECT_NAME}" "${CORE_SOURCES}")

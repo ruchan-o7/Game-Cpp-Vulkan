@@ -1,6 +1,7 @@
 #include "Editor.h"
 #include <Engine.h>
 #include <iostream>
+#include "Core/Core/Log.h"
 #include "Core/LayerStack.h"
 #include "imgui.h"
 #include "Core/EditorLayer.h"
@@ -9,12 +10,13 @@ namespace FooGame
 {
     Editor::Editor(CommandLineArgs args) : m_Window(nullptr)
     {
-        std::cout << "Editor instantiating" << std::endl;
         Init();
         PushLayer(new EditorLayer(args));
     }
     void Editor::Init()
     {
+        Log::Init();
+        FOO_INFO("Editor instantiating");
         WindowProperties properties{};
         properties.Title  = "Level editor";
         properties.Width  = 1600;

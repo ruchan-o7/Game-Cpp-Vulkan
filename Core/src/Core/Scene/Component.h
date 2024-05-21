@@ -1,12 +1,11 @@
 #pragma once
-#include <Engine.h>
+#include "../Core/Base.h"
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include <memory>
-#include "../Core/Base.h"
 #include "../Core/UUID.h"
 namespace FooGame
 {
+    class Model;
     struct IDComponent
     {
             UUID ID;

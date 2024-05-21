@@ -1,3 +1,4 @@
+#include <Engine.h>
 #include "Scene.h"
 #include "../Scene/Entity.h"
 #include "../Scene/ScriptableEntity.h"
@@ -5,7 +6,6 @@
 #include "../Resources/LoadModel.h"
 #include "Core/Scene/Component.h"
 #include "glm/fwd.hpp"
-#include <Engine.h>
 #include <memory>
 #include <nlohmann/json.hpp>
 namespace FooGame

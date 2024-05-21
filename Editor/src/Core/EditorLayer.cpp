@@ -3,6 +3,7 @@
 #include "EditorLayer.h"
 #include <imgui.h>
 #include <fstream>
+#include "Core/Core/Log.h"
 namespace FooGame
 {
 #if 1
@@ -13,6 +14,7 @@ namespace FooGame
     EditorLayer::EditorLayer(const CommandLineArgs& args)
         : Layer("Editor Layer"), m_Args(args)
     {
+        FOO_INFO("Editor layer Created");
     }
     void EditorLayer::OnAttach()
     {
@@ -37,9 +39,8 @@ namespace FooGame
             vertexSize += m->m_Vertices.size() * sizeof(Vertex);
             indexSize  += m->m_Indices.size() * sizeof(uint32_t);
         }
-        std::cout << "Will allocate " << vertexSize
-                  << " of bytes for vertices\n";
-        std::cout << "Will allocate " << indexSize << " of bytes for indices\n";
+        FOO_INFO("Will allocate {0} of bytes for vertices", vertexSize);
+        FOO_INFO("Will allocate {0} of bytes for indices", indexSize);
         for (auto& [t, m, id, tIndex] : m_EditorScene->Meshes)
         {
             id = Renderer3D::SubmitMesh(m.get());

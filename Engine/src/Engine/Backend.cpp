@@ -3,13 +3,12 @@
 #include "../Engine/VulkanCheckResult.h"
 #include "../Defines.h"
 #include "../Window/Window.h"
+#include "../Events/ApplicationEvent.h"
 #include <vector>
 #include "Api.h"
 #include "Device.h"
 #include "Swapchain.h"
 #include "Types/DeletionQueue.h"
-#include "src/Events/ApplicationEvent.h"
-#include "vulkan/vulkan_core.h"
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <backends/imgui_impl_glfw.h>

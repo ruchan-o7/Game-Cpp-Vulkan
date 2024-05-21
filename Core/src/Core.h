@@ -1,5 +1,6 @@
 #pragma once
 #include "Core/Core/Base.h"
+#include "Core/Core/Log.h"
 #include "Core/Core/UUID.h"
 
 #include "Core/File/FileHelper.h"
