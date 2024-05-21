@@ -1,17 +1,26 @@
 #pragma once
-#include "Camera.h"
+#define GLM_ENABLE_EXPERIMENTAL
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_LEFT_HANDED
+#include <glm/glm.hpp>
 namespace FooGame
 {
-    class PerspectiveCamera : public Camera
+    class PerspectiveCamera
     {
         public:
             PerspectiveCamera();
-            void SetPosition(glm::vec3 newPos);
+            const glm::vec3 GetPosition() const { return m_Position; }
+            const glm::mat4& GetView() const { return m_View; }
+
+            const glm::mat4& GetProjection() const { return m_Projection; }
+            void SetProjection(const glm::mat4& projection);
+            void SetPosition(const glm::vec3& newPos);
             void SetAspect(float aspect);
-            void RecalculateViewMatrix() override;
             void Zoom(float amount = 10);
             void Pan(glm::vec2 delta);
             void Rotate(glm::vec2 delta);
+            void RecalculateViewMatrix();
 
             float m_Zoom     = 90.0f;
             float m_Yaw      = 0.0f;
@@ -29,6 +38,9 @@ namespace FooGame
         private:
             glm::vec3 GetUpDirection() const;
             glm::quat GetOrientation() const;
+            glm::mat4 m_Projection = glm::mat4(1.0f);
+            glm::mat4 m_View       = glm::mat4(1.0f);
+            glm::vec3 m_Position   = glm::vec3{0.0f, 0.0f, 0.0f};
     };
 
 }  // namespace FooGame

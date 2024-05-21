@@ -1,12 +1,11 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
-#include "../Window/Window.h"
 #include "Api.h"
 #include "Sync.h"
-#include "../Events/ApplicationEvent.h"
 namespace FooGame
 {
+    class WindowsWindow;
+    class WindowResizeEvent;
     class Backend
     {
         public:

@@ -5,13 +5,13 @@
 #include "Buffer.h"
 #include "Device.h"
 #include "Shader.h"
-#include "Texture2D.h"
 #include "Types/DescriptorData.h"
 #include "Descriptor/DescriptorAllocator.h"
 #include "VulkanCheckResult.h"
 #include "Types/DeletionQueue.h"
-#include "vulkan/vulkan_core.h"
+#include "../Camera/PerspectiveCamera.h"
 #include <imgui.h>
+#include "Pipeline.h"
 namespace FooGame
 {
 

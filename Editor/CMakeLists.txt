@@ -33,7 +33,7 @@ target_include_directories("${PROJECT_NAME}" PUBLIC
 	"src"
 )
 
-set_property(TARGET "${PROJECT_NAME}" PROPERTY FOLDER "Editor")
+set_property(TARGET "${PROJECT_NAME}" PROPERTY FOLDER "Core")
 
 set_target_properties("${PROJECT_NAME}" PROPERTIES CXX_STANDARD 17)
 

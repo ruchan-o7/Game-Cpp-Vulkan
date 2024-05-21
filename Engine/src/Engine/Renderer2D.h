@@ -1,14 +1,13 @@
 #pragma once
 #include <memory>
 #include <vulkan/vulkan.h>
-#include <glm/glm.hpp>
 #include "../Camera/PerspectiveCamera.h"
 #include "../Camera/OrthographicCamera.h"
-#include "Texture2D.h"
-#include "Api.h"
 #include "Pipeline.h"
 namespace FooGame
 {
+    class Texture2D;
+    struct UniformBufferObject;
     class Renderer2D
     {
         public:

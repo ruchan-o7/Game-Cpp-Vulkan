@@ -14,7 +14,6 @@
 #include "src/Engine/VulkanCheckResult.h"
 #include "src/Engine/Descriptor/DescriptorAllocator.h"
 
-#include "src/Camera/Camera.h"
 #include "src/Camera/OrthographicCamera.h"
 #include "src/Camera/PerspectiveCamera.h"
 

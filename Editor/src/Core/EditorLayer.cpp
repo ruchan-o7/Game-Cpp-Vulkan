@@ -1,11 +1,8 @@
-#include "EditorLayer.h"
+#include <vector>
 #include <Engine.h>
+#include "EditorLayer.h"
 #include <imgui.h>
-#include <cmath>
 #include <fstream>
-#include "src/Engine/Renderer3D.h"
-#include "src/Input/KeyCodes.h"
-#include "src/Window/Window.h"
 namespace FooGame
 {
 #if 1
@@ -35,7 +32,7 @@ namespace FooGame
 #endif
         size_t vertexSize = 0;
         size_t indexSize  = 0;
-        for (auto& [t, m, id, tIndex] : m_EditorScene->Meshes)
+        for (const auto& [t, m, id, tIndex] : m_EditorScene->Meshes)
         {
             vertexSize += m->m_Vertices.size() * sizeof(Vertex);
             indexSize  += m->m_Indices.size() * sizeof(uint32_t);
@@ -58,7 +55,7 @@ namespace FooGame
         auto cameraPos = m_Camera.GetPosition();
         float pos[3]   = {cameraPos.x, cameraPos.y, cameraPos.z};
         ImGui::SliderFloat3("Position", pos, -20.0f, 20.0f);
-        m_Camera.SetPosition({pos[0], pos[1], pos[2]});
+        m_Camera.SetPosition(glm::vec3{pos[0], pos[1], pos[2]});
         ImGui::DragFloat("Yaw", &m_Camera.m_Yaw, 0.5f, -180.f, 180.f);
         ImGui::DragFloat("Pitch", &m_Camera.m_Pitch, 0.5f, -180.f, 180.f);
         ImGui::DragFloat("Near clip", &m_Camera.m_NearClip, 0.5f, 0.0001f,
@@ -103,7 +100,7 @@ namespace FooGame
 
         Renderer3D::BeginDraw();
         Renderer3D::BeginScene(m_Camera);
-        for (auto& [transform, mesh, id, tIndex] : m_EditorScene->Meshes)
+        for (auto [transform, mesh, id, tIndex] : m_EditorScene->Meshes)
         {
             auto texture = m_EditorScene->Textures[tIndex];
             Renderer3D::DrawMesh(id, transform.GetTransform(), *texture);

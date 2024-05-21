@@ -1,17 +1,10 @@
 #include "Editor.h"
 #include <Engine.h>
 #include <iostream>
-#include <Scene/Scene.h>
-#include "Core/Base.h"
 #include "Core/LayerStack.h"
 #include "imgui.h"
-#include "src/Engine/Backend.h"
-#include "src/Engine/Renderer3D.h"
-#include "src/Events/Event.h"
 #include "Core/EditorLayer.h"
-#include "src/Input/KeyCodes.h"
 #include <nlohmann/json.hpp>
-#include "Core/EditorLayer.h"
 namespace FooGame
 {
     Editor::Editor(CommandLineArgs args) : m_Window(nullptr)

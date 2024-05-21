@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include <vector>
-#include <Scene/Component.h>
+#include <Core.h>
 namespace FooGame
 {
     struct Texture2D;

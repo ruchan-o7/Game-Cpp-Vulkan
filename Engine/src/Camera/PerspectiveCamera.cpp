@@ -1,10 +1,6 @@
 #include "PerspectiveCamera.h"
 
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_FORCE_LEFT_HANDED
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
 namespace FooGame
@@ -63,7 +59,11 @@ namespace FooGame
         }
     }
 
-    void PerspectiveCamera::SetPosition(glm::vec3 newPos)
+    void PerspectiveCamera::SetProjection(const glm::mat4& projection)
+    {
+        m_Projection = projection;
+    }
+    void PerspectiveCamera::SetPosition(const glm::vec3& newPos)
     {
         m_Position = newPos;
         RecalculateViewMatrix();

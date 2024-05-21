@@ -1,13 +1,12 @@
 #pragma once
-#include <vulkan/vulkan.h>
-#include "../Camera/PerspectiveCamera.h"
 #include "../Engine/Api.h"
 #include "../Engine/Pipeline.h"
 #include "../Geometry/Model.h"
-#include "Texture2D.h"
 namespace FooGame
 {
 
+    class PerspectiveCamera;
+    struct Pipeline;
     struct FrameStatistics
     {
             uint32_t DrawCall = 0;

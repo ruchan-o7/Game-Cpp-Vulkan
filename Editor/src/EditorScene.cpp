@@ -1,9 +1,7 @@
 #include "EditorScene.h"
-#include <algorithm>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <fstream>
-#include "src/Engine/Texture2D.h"
 #include <tiny_obj_loader.h>
 namespace FooGame
 {

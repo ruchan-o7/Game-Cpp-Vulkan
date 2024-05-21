@@ -1,7 +1,6 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
-#include "../Defines.h"
 namespace FooGame
 {
 #define MAX_FRAMES_IN_FLIGHT 2
