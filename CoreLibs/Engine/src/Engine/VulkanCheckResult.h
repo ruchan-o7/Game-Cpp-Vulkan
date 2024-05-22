@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.h>
 #include <unordered_map>
 #include <iostream>
+#include <Log.h>
 namespace FooGame
 {
 
@@ -113,11 +114,11 @@ namespace FooGame
     {
         if (x != VK_SUCCESS)
         {
-            std::cout << "\033[1;31;49m **Vulkan Function Call Error** "
-                         "Description : \033[0m"
-                      << ErrorDescriptions[x]
-                      << " \033[2;90;49m [at Line : " << line
-                      << " in File : " << file << "\033[0m]" << std::endl;
+            FOO_ENGINE_ERROR(
+                "**Vulkan Function Call Error**\n Description : \n {0}, At "
+                "line {1}",
+                ErrorDescriptions[x], file);
+
             return true;
         }
         else
@@ -156,8 +157,21 @@ namespace FooGame
                   const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                   void* pUserData)
     {
-        std::cerr << "[VULKAN] | " << pCallbackData->pMessage << std::endl;
-
+        if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+        {
+            FOO_ENGINE_ERROR("[VULKAN] | {0}", pCallbackData->pMessage);
+            return VK_FALSE;
+        }
+        if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+        {
+            FOO_ENGINE_WARN("[VULKAN] | {0}", pCallbackData->pMessage);
+            return VK_FALSE;
+        }
+        if (messageSeverity < VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+        {
+            FOO_ENGINE_TRACE("[VULKAN] | {0}", pCallbackData->pMessage);
+            return VK_TRUE;
+        }
         return VK_FALSE;
     }
     void populateDebugMessengerCreateInfo(

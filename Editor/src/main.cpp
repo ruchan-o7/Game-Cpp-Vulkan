@@ -1,8 +1,8 @@
 #include <exception>
 #include "Editor.h"
+#include <Log.h>
 int main(int argc, const char** argv)
 {
-    std::cout << "Argv " << argv << std::endl;
     try
     {
         FooGame::Editor editor{
@@ -12,7 +12,7 @@ int main(int argc, const char** argv)
     }
     catch (const std::exception& e)
     {
-        std::cout << "Exception " << e.what();
+        FOO_EDITOR_CRITICAL("Exception occured \n \t {0}", e.what());
     }
     return 0;
 }

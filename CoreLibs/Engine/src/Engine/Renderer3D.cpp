@@ -12,6 +12,7 @@
 #include "../Camera/PerspectiveCamera.h"
 #include <imgui.h>
 #include "Pipeline.h"
+#include <Log.h>
 namespace FooGame
 {
 
@@ -74,6 +75,7 @@ namespace FooGame
     void Renderer3D::Init()
     {
         assert(!g_IsInitialized && "Do not init renderer3d twice!");
+        FOO_ENGINE_INFO("3D Renderer system initializing!");
         auto* device    = Api::GetDevice();
         g_IsInitialized = true;
         s_Data.Res.UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);

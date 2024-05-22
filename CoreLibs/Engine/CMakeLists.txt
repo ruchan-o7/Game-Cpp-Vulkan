@@ -49,12 +49,13 @@ $<$<CONFIG:Debug>:FOO_DEBUG>
 set_target_properties("${PROJECT_NAME}" PROPERTIES CXX_STANDARD 17)
 
 target_link_libraries("${PROJECT_NAME}" PUBLIC
-	glfw glm "${Vulkan_LIBRARIES}"
+	glfw glm Log "${Vulkan_LIBRARIES}"
 	)
 
 target_include_directories("${PROJECT_NAME}" PUBLIC
 	"${CORE_INCLUDE_DIRS}"
 	"${Vulkan_INCLUDE_DIRS}"
+	"${LOG_INCLUDE_DIR}"
 	"${STB_INCLUDE_DIR}"
 	"${IMGUI_SRC_DIR}"
 	"${GLFW_INCLUDE_DIR}"

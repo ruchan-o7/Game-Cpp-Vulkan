@@ -13,7 +13,7 @@
 #include <imgui_internal.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
-
+#include <Log.h>
 namespace FooGame
 {
 
@@ -118,6 +118,7 @@ namespace FooGame
     }
     void Backend::Init(WindowsWindow& window)
     {
+        FOO_ENGINE_INFO("Initializing renderer backend");
         comps.windowHandle = window.GetWindowHandle();
         Api::Init(&window);
         auto device = Api::GetDevice()->GetDevice();

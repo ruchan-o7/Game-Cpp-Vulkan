@@ -5,6 +5,7 @@
 #include "../Events/ApplicationEvent.h"
 #include "../Input/KeyCodes.h"
 #include "../Events/MouseMovedEvent.h"
+#include <Log.h>
 namespace FooGame
 {
     static WindowsWindow* s_Instance = nullptr;
@@ -41,15 +42,16 @@ namespace FooGame
     }
     void WindowsWindow::Init(const WindowProperties& props)
     {
+        FOO_ENGINE_INFO("Window creating");
         m_Data.Height = props.Height;
         m_Data.Width  = props.Width;
         m_Data.Title  = props.Title;
         if (!glfwInit())
         {
-            std::cerr << "GLFW COULD NOT INIT\n";
+            FOO_ENGINE_CRITICAL("GLFW could not initialized!");
             const char* message;
             glfwGetError(&message);
-            std::cout << message << std::endl;
+            FOO_ENGINE_ERROR(message);
             return;
         }
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -59,7 +61,7 @@ namespace FooGame
         glfwSetWindowUserPointer(m_WindowHandle, &m_Data);
         if (!glfwVulkanSupported())
         {
-            std::cerr << "Vulkan not supported!\n";
+            FOO_ENGINE_CRITICAL("Vulkan not supported!");
             return;
         }
         glfwSetKeyCallback(

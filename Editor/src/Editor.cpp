@@ -10,12 +10,14 @@ namespace FooGame
 {
     Editor::Editor(CommandLineArgs args) : m_Window(nullptr)
     {
+        Log::Init(AppType::Editor);
+        FOO_EDITOR_INFO("Argv {0}", *args.argv);
+
         Init();
         PushLayer(new EditorLayer(args));
     }
     void Editor::Init()
     {
-        Log::Init(AppType::Editor);
         FOO_EDITOR_INFO("Editor instantiating");
         WindowProperties properties{};
         properties.Title  = "Level editor";
