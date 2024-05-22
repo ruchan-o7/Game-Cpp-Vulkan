@@ -1,7 +1,7 @@
 #include "LoadModel.h"
 #include <tiny_obj_loader.h>
 #include <memory>
-#include "Core/Core/Base.h"
+#include "../Core/Base.h"
 namespace FooGame
 {
 

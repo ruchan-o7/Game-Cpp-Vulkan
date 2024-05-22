@@ -1,6 +1,6 @@
 #pragma once
 #include <Engine.h>
-#include <Core/Scene/Scene.h>
+#include <Core.h>
 #include <vector>
 namespace FooGame
 {

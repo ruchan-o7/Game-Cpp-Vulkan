@@ -17,7 +17,7 @@ set_target_properties("${PROJECT_NAME}" PROPERTIES CXX_STANDARD 17)
 target_link_libraries("${PROJECT_NAME}" PRIVATE Core)
 
 target_include_directories("${PROJECT_NAME}" PRIVATE
-	"${CMAKE_SOURCE_DIR}/Core/src"
+	"${CORE_INCLUDE_DIR}"
 	"${Vulkan_INCLUDE_DIR}"
 	"${IMGUI_SRC_DIR}"
 	"${ENGINE_INCLUDE_DIR}"

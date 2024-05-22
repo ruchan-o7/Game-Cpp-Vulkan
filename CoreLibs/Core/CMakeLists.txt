@@ -10,21 +10,21 @@ find_package(Vulkan REQUIRED)
 set(CORE_SOURCES
 	"src/pch.cpp"
 
-	"src/Core/File/FileHelper.cpp"
+	"src/File/FileHelper.cpp"
 
-	"src/Core/Backend/TinyObjLoader.cpp"
+	"src/Backend/TinyObjLoader.cpp"
 
-	"src/Core/Core/UUID.cpp"
+	"src/Core/UUID.cpp"
 
-	"src/Core/Scene/Component.h"
-	"src/Core/Scene/ScriptableEntity.h"
-	"src/Core/Scene/Scene.h"
-	"src/Core/Scene/Scene.cpp"
-	"src/Core/Scene/Entity.h"
-	"src/Core/Scene/Entity.cpp"
+	"src/Scene/Component.h"
+	"src/Scene/ScriptableEntity.h"
+	"src/Scene/Scene.h"
+	"src/Scene/Scene.cpp"
+	"src/Scene/Entity.h"
+	"src/Scene/Entity.cpp"
 
-	"src/Core/Resources/LoadModel.h"
-	"src/Core/Resources/LoadModel.cpp"
+	"src/Resources/LoadModel.h"
+	"src/Resources/LoadModel.cpp"
 )
 add_library("${PROJECT_NAME}" "${CORE_SOURCES}")
 

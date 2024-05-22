@@ -4,7 +4,7 @@
 #include "../Scene/ScriptableEntity.h"
 #include <imgui.h>
 #include "../Resources/LoadModel.h"
-#include "Core/Scene/Component.h"
+#include "../Scene/Component.h"
 #include "glm/fwd.hpp"
 #include <memory>
 #include <nlohmann/json.hpp>

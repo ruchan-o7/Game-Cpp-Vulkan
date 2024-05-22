@@ -1,10 +1,8 @@
 #include "Game.h"
-#include <pch.h>
 #include <Engine.h>
-#include "Core/Core/Base.h"
-#include "Core/Scene/Scene.h"
+#include <Core.h>
 #include "imgui.h"
-#include "src/Engine/Backend.h"
+#include <Log.h>
 #define GLM_ENABLE_EXPERIMENTAL
 namespace FooGame
 {
@@ -14,6 +12,7 @@ namespace FooGame
     }
     void Game::Init()
     {
+        Log::Init(AppType::Game);
         m_Window = new WindowsWindow();
         m_Window->SetOnEventFunction(BIND_EVENT_FN(Game::OnEvent));
         Backend::Init(*m_Window);

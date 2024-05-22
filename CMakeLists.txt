@@ -39,7 +39,7 @@ set(ENTT_INCLUDE_DIR "${EXTERNAL_DIR}/entt/src")
 set(IMGUI_SRC_DIR "${EXTERNAL_DIR}/imgui")
 set(TINY_OBJ_LOADER_INCLUDE_DIR "${EXTERNAL_DIR}/tiny_obj_loader")
 set(ENGINE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/CoreLibs/Engine")
-set(CORE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/CoreLibs/Core/src")
+set(CORE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/CoreLibs/Core")
 set(LOG_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/CoreLibs/Log")
 
 add_subdirectory(CoreLibs)
