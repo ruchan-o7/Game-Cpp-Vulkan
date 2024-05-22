@@ -2,10 +2,11 @@
 #include <Engine.h>
 #include "EditorLayer.h"
 #include <imgui.h>
-#include <fstream>
+#include "EditorSceneDeserializer.h"
 #include <Log.h>
 namespace FooGame
 {
+
 #if 1
 #define SCENE_JSON "../../../Assets/Scenes/scene.json"
 #else
@@ -18,10 +19,10 @@ namespace FooGame
     }
     void EditorLayer::OnAttach()
     {
+        FOO_EDITOR_INFO("Reading scene data");
 #ifdef FOO_DEBUG
-        std::ifstream f(SCENE_JSON);
-        m_EditorScene = EditorScene::LoadScene(f);
-        f.close();
+        EditorSceneDeserializer serializer;
+        m_EditorScene = std::move(serializer.DeSerialize(SCENE_JSON));
 #else
         if (m_Args.count > 1)
         {
@@ -34,17 +35,23 @@ namespace FooGame
 #endif
         size_t vertexSize = 0;
         size_t indexSize  = 0;
-        for (const auto& [t, m, id, tIndex] : m_EditorScene->Meshes)
+        FOO_EDITOR_INFO("Scene : {0}", m_EditorScene->Name);
+        FOO_EDITOR_INFO("Textures size : {0}", m_EditorScene->Textures.size());
+        FOO_EDITOR_INFO("Mesh size : {0}", m_EditorScene->Meshes.size());
+        for (int i = 0; i < m_EditorScene->Meshes.size(); i++)
         {
-            vertexSize += m->m_Vertices.size() * sizeof(Vertex);
-            indexSize  += m->m_Indices.size() * sizeof(uint32_t);
+            auto& mData = m_EditorScene->Meshes[i];
+
+            vertexSize += mData.MeshPtr->m_Vertices.size() * sizeof(Vertex);
+            indexSize  += mData.MeshPtr->m_Indices.size() * sizeof(uint32_t);
         }
         FOO_EDITOR_INFO("Will allocate {0} of bytes for vertices", vertexSize);
         FOO_EDITOR_INFO("Will allocate {0} of bytes for indices", indexSize);
-        for (auto& [t, m, id, tIndex] : m_EditorScene->Meshes)
-        {
-            id = Renderer3D::SubmitMesh(m.get());
-        }
+
+        // for (auto& [t, m, id, tIndex] : m_EditorScene->Meshes)
+        // {
+        //     id = Renderer3D::SubmitMesh(m.get());
+        // }
     }
     void EditorLayer::OnDetach()
     {
@@ -101,11 +108,11 @@ namespace FooGame
 
         Renderer3D::BeginDraw();
         Renderer3D::BeginScene(m_Camera);
-        for (auto [transform, mesh, id, tIndex] : m_EditorScene->Meshes)
-        {
-            auto texture = m_EditorScene->Textures[tIndex];
-            Renderer3D::DrawMesh(id, transform.GetTransform(), *texture);
-        }
+        // for (auto [transform, mesh, id, tIndex] : m_EditorScene->Meshes)
+        // {
+        //     auto texture = m_EditorScene->Textures[tIndex];
+        //     Renderer3D::DrawMesh(id, transform.GetTransform(), *texture);
+        // }
         Renderer3D::EndScene();
         Renderer3D::EndDraw();
     }

@@ -12,7 +12,10 @@ namespace FooGame
             Mesh(std::vector<Vertex>&& vertices,
                  std::vector<uint32_t>&& indices);
             Mesh(Mesh&&) = default;
-
+            Mesh()       = default;
+            Mesh(const std::vector<Vertex>& vertices,
+                 const std::vector<uint32_t>& indices);
+            ~Mesh();
             std::vector<Vertex> m_Vertices;
             std::vector<uint32_t> m_Indices;
 
@@ -32,6 +35,7 @@ namespace FooGame
             std::vector<VkDescriptorSet> m_DescriptorSets{3};
             VkDescriptorSetLayout m_Layout;
             std::shared_ptr<Texture2D> m_Texture;
+            float value = 10.0f;
     };
     class Model
     {

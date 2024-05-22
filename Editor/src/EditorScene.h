@@ -12,6 +12,10 @@ namespace FooGame
             std::shared_ptr<Mesh> MeshPtr;
             uint32_t Id;
             uint32_t TextureIndex;
+            // MeshData()  = default;
+            ~MeshData() = default;
+            // MeshData(const MeshData& other);
+            // MeshData(MeshData&& other);
     };
     class EditorScene
     {
