@@ -15,7 +15,6 @@ set(CORE_SOURCES
 	"src/Core/Backend/TinyObjLoader.cpp"
 
 	"src/Core/Core/UUID.cpp"
-	"src/Core/Core/Log.cpp"
 
 	"src/Core/Scene/Component.h"
 	"src/Core/Scene/ScriptableEntity.h"
@@ -43,7 +42,7 @@ target_include_directories("${PROJECT_NAME}" PUBLIC
 	"src"
 )
 
-set_property(TARGET "${PROJECT_NAME}" PROPERTY FOLDER "Core")
+set_property(TARGET "${PROJECT_NAME}" PROPERTY FOLDER "CoreLibs")
 
 set_target_properties("${PROJECT_NAME}" PROPERTIES CXX_STANDARD 17)
 target_link_libraries("${PROJECT_NAME}"

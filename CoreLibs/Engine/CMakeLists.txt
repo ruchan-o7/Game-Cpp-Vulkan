@@ -61,4 +61,4 @@ target_include_directories("${PROJECT_NAME}" PUBLIC
 	"${GLM_INCLUDE_DIR}"
 )
 
-set_property(TARGET "${PROJECT_NAME}" PROPERTY FOLDER "Core")
+set_property(TARGET "${PROJECT_NAME}" PROPERTY FOLDER "CoreLibs")

@@ -3,7 +3,7 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <fstream>
-#include "Core/Core/Log.h"
+#include <Log.h>
 #include <tiny_obj_loader.h>
 namespace FooGame
 {
@@ -19,7 +19,7 @@ namespace FooGame
         if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
                               path.c_str()))
         {
-            FOO_CRITICAL("Model could not loaded!!!");
+            FOO_EDITOR_CRITICAL("Model could not loaded!!!");
             std::cin.get();
         }
         for (const auto& shape : shapes)
@@ -96,12 +96,12 @@ namespace FooGame
                 scene->Textures[meshData.TextureIndex]);
             scene->Meshes.emplace_back(std::move(meshData));
         }
-        FOO_INFO("Scene data loaded successfully");
+        FOO_EDITOR_INFO("Scene data loaded successfully");
         return std::move(scene);
     }
     EditorScene::~EditorScene()
     {
-        FOO_TRACE("Editor Scene deleting...");
+        FOO_EDITOR_TRACE("Editor Scene deleting...");
         for (auto& t : Textures)
         {
             DestroyImage(t.get());

@@ -1,11 +1,11 @@
 #include "Editor.h"
 #include <Engine.h>
 #include <iostream>
-#include "Core/Core/Log.h"
 #include "Core/LayerStack.h"
 #include "imgui.h"
 #include "Core/EditorLayer.h"
 #include <nlohmann/json.hpp>
+#include <Log.h>
 namespace FooGame
 {
     Editor::Editor(CommandLineArgs args) : m_Window(nullptr)
@@ -15,8 +15,8 @@ namespace FooGame
     }
     void Editor::Init()
     {
-        Log::Init();
-        FOO_INFO("Editor instantiating");
+        Log::Init(AppType::Editor);
+        FOO_EDITOR_INFO("Editor instantiating");
         WindowProperties properties{};
         properties.Title  = "Level editor";
         properties.Width  = 1600;
