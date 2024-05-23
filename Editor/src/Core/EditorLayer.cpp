@@ -7,7 +7,7 @@
 namespace FooGame
 {
 
-#if 1
+#if 0
 #define SCENE_JSON "../../../Assets/Scenes/scene.json"
 #else
 #define SCENE_JSON "../../Assets/Scenes/scene.json"
@@ -48,10 +48,10 @@ namespace FooGame
         FOO_EDITOR_INFO("Will allocate {0} of bytes for vertices", vertexSize);
         FOO_EDITOR_INFO("Will allocate {0} of bytes for indices", indexSize);
 
-        // for (auto& [t, m, id, tIndex] : m_EditorScene->Meshes)
-        // {
-        //     id = Renderer3D::SubmitMesh(m.get());
-        // }
+        for (auto& [t, m, id, tIndex] : m_EditorScene->Meshes)
+        {
+            id = Renderer3D::SubmitMesh(m.get());
+        }
     }
     void EditorLayer::OnDetach()
     {
@@ -91,6 +91,50 @@ namespace FooGame
         m_Camera.m_Direction.z = dir[2];
 
         ImGui::End();
+        int i = 0;
+        for (auto& m : m_EditorScene->Meshes)
+        {
+            float pos[3] = {
+                m.Transform.Translation.x,
+                m.Transform.Translation.y,
+                m.Transform.Translation.z,
+            };
+            float scale[3] = {
+                m.Transform.Scale.x,
+                m.Transform.Scale.y,
+                m.Transform.Scale.z,
+            };
+            float rot[3] = {
+                m.Transform.Rotation.x,
+                m.Transform.Rotation.y,
+                m.Transform.Rotation.z,
+            };
+            ImGui::Begin("mesh");
+            ImGui::PushID(i);
+
+            ImGui::SliderFloat3("Position", pos, -99.f, 99.f);
+            ImGui::SliderFloat3("Scale", scale, 0.1f, 99.f);
+            ImGui::SliderFloat3("Rotation", rot, -99.f, 99.f);
+            ImGui::PopID();
+
+            ImGui::End();
+            m.Transform.Translation = glm::vec3{
+                pos[0],
+                pos[1],
+                pos[2],
+            };
+            m.Transform.Scale = glm::vec3{
+                scale[0],
+                scale[1],
+                scale[2],
+            };
+            m.Transform.Rotation = glm::vec3{
+                rot[0],
+                rot[1],
+                rot[2],
+            };
+            i++;
+        }
     }
     void EditorLayer::OnUpdate(float ts)
     {
@@ -98,11 +142,11 @@ namespace FooGame
 
         Renderer3D::BeginDraw();
         Renderer3D::BeginScene(m_Camera);
-        // for (auto [transform, mesh, id, tIndex] : m_EditorScene->Meshes)
-        // {
-        //     auto texture = m_EditorScene->Textures[tIndex];
-        //     Renderer3D::DrawMesh(id, transform.GetTransform(), *texture);
-        // }
+        for (auto [transform, mesh, id, tIndex] : m_EditorScene->Meshes)
+        {
+            auto texture = m_EditorScene->Textures[tIndex];
+            Renderer3D::DrawMesh(id, transform.GetTransform(), *texture);
+        }
         Renderer3D::EndScene();
         Renderer3D::EndDraw();
     }

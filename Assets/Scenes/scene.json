@@ -5,7 +5,7 @@
         {
             "id": 1,
             "name": "Viking 1",
-            "path": "../../../Assets/Model/viking_room.obj",
+            "path": "../../Assets/Model/viking_room.obj",
             "format":"obj",
             "transform": {
                 "position": {
@@ -33,9 +33,9 @@
             "format":"glb",
             "transform": {
                 "position": {
-                    "x": 1.0,
-                    "y": 1.0,
-                    "z": 1.0
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0
                 },
                 "scale": {
                     "x": 1.0,

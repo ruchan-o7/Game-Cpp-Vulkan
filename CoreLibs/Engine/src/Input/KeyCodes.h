@@ -1,5 +1,6 @@
 #pragma once
 #include <ostream>
+#include <cstdint>
 #include "../Defines.h"
 namespace FooGame
 {

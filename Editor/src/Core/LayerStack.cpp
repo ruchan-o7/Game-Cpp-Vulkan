@@ -1,5 +1,6 @@
 #include "LayerStack.h"
 #include "Layer.h"
+#include <algorithm>
 namespace FooGame
 {
     LayerStack::~LayerStack()

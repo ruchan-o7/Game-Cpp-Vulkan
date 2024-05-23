@@ -12,7 +12,7 @@
 namespace FooGame
 {
 
-#if 1
+#if VS_CODE_DEBUGGER
 #define VERT_PATH "../../../Assets/Shaders/QuadShaderVert.spv"
 #define FRAG_PATH "../../../Assets/Shaders/QuadShaderFrag.spv"
 #else

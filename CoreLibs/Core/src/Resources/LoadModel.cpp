@@ -90,7 +90,7 @@ namespace FooGame
 
         for (const auto& mesh : model.meshes)
         {
-            FOO_CORE_TRACE("Mesh : {0}", mesh.name);
+            FOO_CORE_TRACE("Parsing Mesh : {0}", mesh.name);
             for (const auto& primitive : mesh.primitives)
             {
                 const tinygltf::Accessor& posAccessor =
