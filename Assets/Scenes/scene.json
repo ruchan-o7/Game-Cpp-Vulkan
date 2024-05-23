@@ -5,8 +5,8 @@
         {
             "id": 1,
             "name": "Viking 1",
-            "path": "../../Assets/Model/viking_room.obj",
-            "format":"obj",
+            "path": "../../../Assets/Model/viking_room.obj",
+            "format": "obj",
             "transform": {
                 "position": {
                     "x": 0.0,
@@ -30,7 +30,7 @@
             "id": 2,
             "name": "GLTF Test",
             "path": "Models/Avocado.glb",
-            "format":"glb",
+            "format": "glb",
             "transform": {
                 "position": {
                     "x": 0.0,
@@ -52,6 +52,6 @@
         }
     ],
     "textures": [
-        "../../Assets/Model/viking_room.png"
+        "../../../Assets/Model/viking_room.png"
     ]
 }

@@ -25,6 +25,8 @@ set(CORE_SOURCES
 
 	"src/Resources/LoadModel.h"
 	"src/Resources/LoadModel.cpp"
+	"src/Resources/AssetLoader.h"
+	"src/Resources/AssetLoader.cpp"
 )
 add_library("${PROJECT_NAME}" "${CORE_SOURCES}")
 

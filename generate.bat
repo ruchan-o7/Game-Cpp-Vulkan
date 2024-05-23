@@ -1,3 +1,3 @@
 @echo off
 call cls
-call cmake -S . -O build -G "Ninja"
+call cmake -S . -O build -G "MinGW Makefiles"

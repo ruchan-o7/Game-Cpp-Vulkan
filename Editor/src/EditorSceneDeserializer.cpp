@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <Core.h>
 #include <nlohmann/json.hpp>
 #include <tiny_obj_loader.h>
 #include <Engine.h>
@@ -127,7 +128,9 @@ namespace FooGame
             else if (format == "gltf" || format == "glb")
             {
                 std::string modelFullPath = GetModelFullPath(scenePath, path);
-                meshData.MeshPtr = LoadGLTF(modelFullPath, format == "glb");
+                // meshData.MeshPtr = LoadGLTF(modelFullPath, format == "glb");
+                meshData.MeshPtr =
+                    AssetLoader::LoadGLTFMesh(modelFullPath, true);
                 ApplyTransformation(meshData, staticMesh);
                 // TODO FOR NOW
                 meshData.TextureIndex = staticMesh["textureIndex"];
@@ -144,7 +147,7 @@ namespace FooGame
         stream.close();
         size_t vertexSize = 0;
         size_t indexSize  = 0;
-        for (auto & mesh : scene->Meshes)
+        for (auto& mesh : scene->Meshes)
         {
             vertexSize += mesh.MeshPtr->m_Vertices.size() * sizeof(Vertex);
             indexSize  += mesh.MeshPtr->m_Indices.size() * sizeof(uint32_t);

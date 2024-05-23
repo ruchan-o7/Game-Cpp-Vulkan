@@ -227,7 +227,10 @@ namespace FooGame
         for (auto& [index, data] : s_Data.Res.MeshMap)
         {
             data.VertexBuffer->Release();
-            data.IndexBuffer->Release();
+            if (data.IndexBuffer)
+            {
+                data.IndexBuffer->Release();
+            }
         }
     }
 
@@ -407,7 +410,10 @@ namespace FooGame
         for (auto& [index, data] : s_Data.Res.MeshMap)
         {
             data.VertexBuffer->Release();
-            data.IndexBuffer->Release();
+            if (data.IndexBuffer)
+            {
+                data.IndexBuffer->Release();
+            }
         }
     }
     void Renderer3D::UpdateUniformData(UniformBufferObject ubd)

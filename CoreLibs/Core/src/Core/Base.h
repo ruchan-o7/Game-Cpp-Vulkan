@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <cstdio>
 #include "pch.h"
 #define GLM_FORCE_RADIANS
@@ -24,6 +25,17 @@ using Shared = std::shared_ptr<T>;
 template <typename T>
 using Unique = std::unique_ptr<T>;
 
+template <typename T, typename... Args>
+constexpr Unique<T> CreateUnique(Args&&... args)
+{
+    return std::make_unique<T>(std::forward<Args>(args)...);
+}
+
+template <typename T, typename... Args>
+constexpr Shared<T> CreateShared(Args&&... args)
+{
+    return std::make_shared<T>(std::forward<Args>(args)...);
+}
 #define BIT(x) (1 << x)
 
 #define BIND_EVENT_FN(fn)                    \
@@ -39,8 +51,8 @@ String StrFormat(const String& format, Args... args)
     i32 size_s = std::snprintf(nullptr, 0, format.c_str(), args...) + 1;
     if (size_s <= 0)
     {
-        std::cerr << "[ERROR] | "
-                  << " Error during string format: " << format << std::endl;
+        std::cerr << "[ERROR] | " << " Error during string format: " << format
+                  << std::endl;
     }
     auto size = static_cast<size_t>(size_s);
     std::unique_ptr<char[]> buf{new char[size]};

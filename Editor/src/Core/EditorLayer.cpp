@@ -7,7 +7,7 @@
 namespace FooGame
 {
 
-#if 0
+#if 1
 #define SCENE_JSON "../../../Assets/Scenes/scene.json"
 #else
 #define SCENE_JSON "../../Assets/Scenes/scene.json"
