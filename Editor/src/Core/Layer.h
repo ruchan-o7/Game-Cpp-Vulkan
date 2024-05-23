@@ -1,8 +1,9 @@
 #pragma once
 #include <string>
-#include <Engine.h>
+
 namespace FooGame
 {
+    class Event;
     class Layer
     {
         public:

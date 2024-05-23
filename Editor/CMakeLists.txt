@@ -16,6 +16,8 @@ set(EDITOR_SOURCES
 	"src/Editor.cpp"
 	"src/EditorScene.h"
 	"src/EditorScene.cpp"
+	"src/EditorSceneDeserializer.h"
+	"src/EditorSceneDeserializer.cpp"
 	"src/main.cpp"
 )
 add_executable("${PROJECT_NAME}" "${EDITOR_SOURCES}")
@@ -26,6 +28,7 @@ target_include_directories("${PROJECT_NAME}" PUBLIC
 	"${ENTT_INCLUDE_DIR}"
 	"${GLM_INCLUDE_DIR}"
 	"${CORE_INCLUDE_DIR}"
+	"${LOG_INCLUDE_DIR}"
 	"${STB_INCLUDE_DIR}"
 	"${IMGUI_SRC_DIR}"
 	"${ENGINE_INCLUDE_DIR}"
@@ -37,7 +40,7 @@ set_property(TARGET "${PROJECT_NAME}" PROPERTY FOLDER "Editor")
 
 set_target_properties("${PROJECT_NAME}" PROPERTIES CXX_STANDARD 17)
 
-target_link_libraries("${PROJECT_NAME}" Engine Core)
+target_link_libraries("${PROJECT_NAME}" Engine Core Log)
 add_compile_definitions(
 	$<$<CONFIG:Debug>:FOO_DEBUG>
 )

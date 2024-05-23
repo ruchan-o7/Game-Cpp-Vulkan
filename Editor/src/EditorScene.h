@@ -1,9 +1,10 @@
 #pragma once
 #include <memory>
 #include <vector>
-#include <Scene/Component.h>
+#include <Core.h>
 namespace FooGame
 {
+    class Mesh;
     struct Texture2D;
     struct MeshData
     {
@@ -11,6 +12,10 @@ namespace FooGame
             std::shared_ptr<Mesh> MeshPtr;
             uint32_t Id;
             uint32_t TextureIndex;
+            // MeshData()  = default;
+            ~MeshData() = default;
+            // MeshData(const MeshData& other);
+            // MeshData(MeshData&& other);
     };
     class EditorScene
     {

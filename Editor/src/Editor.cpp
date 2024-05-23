@@ -1,28 +1,24 @@
 #include "Editor.h"
 #include <Engine.h>
 #include <iostream>
-#include <Scene/Scene.h>
-#include "Core/Base.h"
 #include "Core/LayerStack.h"
 #include "imgui.h"
-#include "src/Engine/Backend.h"
-#include "src/Engine/Renderer3D.h"
-#include "src/Events/Event.h"
 #include "Core/EditorLayer.h"
-#include "src/Input/KeyCodes.h"
 #include <nlohmann/json.hpp>
-#include "Core/EditorLayer.h"
-#include <thread>
+#include <Log.h>
 namespace FooGame
 {
     Editor::Editor(CommandLineArgs args) : m_Window(nullptr)
     {
-        std::cout << "Editor instantiating" << std::endl;
+        Log::Init(AppType::Editor);
+        FOO_EDITOR_INFO("Argv {0}", *args.argv);
+
         Init();
         PushLayer(new EditorLayer(args));
     }
     void Editor::Init()
     {
+        FOO_EDITOR_INFO("Editor instantiating");
         WindowProperties properties{};
         properties.Title  = "Level editor";
         properties.Width  = 1600;
@@ -40,9 +36,9 @@ namespace FooGame
         while (!m_Window->ShouldClose())
         {
             m_Window->PollEvents();
-            if (!m_ShouldRender) {
-                std::this_thread::sleep_for(
-                std::chrono::milliseconds(100));
+            if (!m_ShouldRender)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 continue;
             }
             Backend::BeginDrawing();
@@ -58,7 +54,7 @@ namespace FooGame
             ImGui::Begin("Statistics");
             {
                 auto stats = Renderer3D::GetStats();
-                auto& io = ImGui::GetIO();
+                auto& io   = ImGui::GetIO();
                 ImGui::Text("Draw call :%i", stats.DrawCall);
                 ImGui::Text("Vertex count :%i", stats.VertexCount);
                 ImGui::Text("Index count :%i", stats.IndexCount);
@@ -107,7 +103,8 @@ namespace FooGame
     bool Editor::OnWindowResized(WindowResizeEvent& event)
     {
         m_ShouldRender = true;
-        if (event.GetWidth() == 0 || event.GetHeight() == 0) {
+        if (event.GetWidth() == 0 || event.GetHeight() == 0)
+        {
             m_ShouldRender = false;
         }
 
@@ -129,7 +126,7 @@ namespace FooGame
     {
         ImGuiIO& io = ImGui::GetIO();
         io.AddMouseButtonEvent(event.GetMouseButton(), true);
-        
+
         return true;
     }
     bool Editor::OnMouseRelease(MouseButtonReleasedEvent& event)
