@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
 
 namespace vke
 {

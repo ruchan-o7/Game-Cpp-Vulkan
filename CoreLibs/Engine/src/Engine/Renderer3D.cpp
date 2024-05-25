@@ -1,6 +1,9 @@
 #include "Renderer3D.h"
 #include "Backend.h"
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <unordered_map>
 #include "Buffer.h"
 #include "Device.h"
@@ -12,6 +15,9 @@
 #include "../Camera/PerspectiveCamera.h"
 #include <imgui.h>
 #include "Pipeline.h"
+// #include <Core.h>
+#include "../Engine/Texture2D.h"
+#include "../Geometry/AssetLoader.h"
 #include "vulkan/vulkan_core.h"
 #include <Log.h>
 namespace FooGame
@@ -65,7 +71,7 @@ namespace FooGame
             {
                     Pipeline GraphicsPipeline;
                     VkSampler TextureSampler;
-                    std::shared_ptr<Texture2D> DefaultTexture;
+                    Texture2D DefaultTexture;  // Owner is Renderer3D
             };
             Resources Res;
             FrameStatistics FrameData;
@@ -142,13 +148,12 @@ namespace FooGame
                 });
         }
         {
-            s_Data.api.DefaultTexture = LoadTexture(DEFAULT_TEXTURE_PATH);
+            uint8_t white[]           = {255, 255, 255, 255};
+            s_Data.api.DefaultTexture = AssetLoader::LoadFromBuffer(
+                white, sizeof(white), VK_FORMAT_R8G8B8A8_SRGB, 1, 1);
             s_Data.Res.deletionQueue.PushFunction(
                 [&](VkDevice device)
-                {
-                    DestroyImage(s_Data.api.DefaultTexture.get());
-                    s_Data.api.DefaultTexture.reset();
-                });
+                { AssetLoader::DestroyTexture(s_Data.api.DefaultTexture); });
         }
         {
             PipelineInfo info{};
@@ -182,8 +187,7 @@ namespace FooGame
     {
         for (auto& mesh : model->GetMeshes())
         {
-            int id = SubmitMesh(&mesh);
-            model->PushId(id);
+            SubmitMesh(&mesh);
         }
     }
     void Renderer3D::BeginDraw()
@@ -212,15 +216,15 @@ namespace FooGame
     void Renderer3D::EndScene()
     {
     }
-    uint32_t Renderer3D::SubmitMesh(Mesh* mesh)
+    void Renderer3D::SubmitMesh(Mesh* mesh)
     {
         s_Data.Res.MeshMap[s_Data.Res.FreeIndex] = {
             CreateVertexBuffer(mesh->m_Vertices),
             mesh->m_Indices.size() == 0 ? nullptr
                                         : CreateIndexBuffer(mesh->m_Indices),
             mesh};
+        mesh->RenderId = s_Data.Res.FreeIndex;
         s_Data.Res.FreeIndex++;
-        return s_Data.Res.FreeIndex - 1;
     }
     void Renderer3D::ClearBuffers()
     {
@@ -234,6 +238,92 @@ namespace FooGame
         }
     }
 
+    void Renderer3D::DrawModel(Model* model, const glm::mat4& transform)
+    {
+        auto currentFrame = Backend::GetCurrentFrame();
+        auto cmd          = Backend::GetCurrentCommandbuffer();
+        auto extent       = Backend::GetSwapchainExtent();
+
+        const auto& meshes = model->GetMeshes();
+        for (uint32_t i = 0; i < meshes.size(); i++)
+        {
+            const auto& mesh = meshes[i];
+            auto& modelRes   = s_Data.Res.MeshMap[mesh.RenderId];
+            auto& image =
+                model->images[mesh.materialData.BaseColorTextureIndex];
+
+            BindPipeline(cmd);
+
+            Api::SetViewportAndScissors(cmd, extent.width, extent.height);
+            VkBuffer vertexBuffers[] = {*modelRes.VertexBuffer->GetBuffer()};
+            VkDeviceSize offsets[]   = {0};
+            MeshPushConstants push{};
+            push.renderMatrix = transform;
+            auto allocator = s_Data.Res.DescriptorAllocatorPool->GetAllocator();
+            auto& currentSet = *modelRes.PtrMesh->GetSet(currentFrame);
+            // auto& currentSet = image.DescriptorSet;
+            allocator.Allocate(modelRes.PtrMesh->GetLayout(), currentSet);
+            vkCmdPushConstants(cmd, s_Data.api.GraphicsPipeline.pipelineLayout,
+                               VK_SHADER_STAGE_VERTEX_BIT, 0,
+                               sizeof(MeshPushConstants), &push);
+            {
+                VkDescriptorBufferInfo descriptorBufferInfo{};
+                descriptorBufferInfo.buffer =
+                    *s_Data.Res.UniformBuffers[currentFrame]->GetBuffer();
+                descriptorBufferInfo.offset = 0;
+                descriptorBufferInfo.range  = sizeof(UniformBufferObject);
+                std::vector<VkWriteDescriptorSet> descriptorWrites;
+                VkWriteDescriptorSet uniformSet{};
+
+                uniformSet.sType      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                uniformSet.dstSet     = currentSet;
+                uniformSet.dstBinding = 0;
+                uniformSet.dstArrayElement = 0;
+                uniformSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                uniformSet.descriptorCount = 1;
+                uniformSet.pBufferInfo     = &descriptorBufferInfo;
+                descriptorWrites.push_back(uniformSet);
+                for (auto& image : model->images)
+                {
+                    VkWriteDescriptorSet imageSet{};
+                    imageSet.sType  = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                    imageSet.dstSet = currentSet;
+                    imageSet.dstBinding      = 1;
+                    imageSet.dstArrayElement = 0;
+                    imageSet.descriptorType =
+                        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                    imageSet.descriptorCount = 1;
+                    imageSet.pImageInfo      = &image.Descriptor;
+                    descriptorWrites.push_back(imageSet);
+                }
+                vkUpdateDescriptorSets(Api::GetVkDevice(),
+                                       descriptorWrites.size(),
+                                       descriptorWrites.data(), 0, nullptr);
+                VkDescriptorSet sets[] = {currentSet};
+                vkCmdBindDescriptorSets(
+                    cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    s_Data.api.GraphicsPipeline.pipelineLayout, 0, 1, sets, 0,
+                    nullptr);
+            }
+            vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
+            if (modelRes.IndexBuffer)
+            {
+                vkCmdBindIndexBuffer(cmd, *modelRes.IndexBuffer->GetBuffer(), 0,
+                                     VK_INDEX_TYPE_UINT32);
+                vkCmdDrawIndexed(cmd, modelRes.PtrMesh->m_Indices.size(), 1, 0,
+                                 0, 0);
+            }
+            else
+            {
+                vkCmdDraw(cmd, mesh.m_Vertices.size(), 1, 0, 0);
+            }
+            // BindDescriptorSets(cmd, *modelRes.PtrMesh,
+            //                    s_Data.api.GraphicsPipeline);
+            s_Data.FrameData.DrawCall++;
+            s_Data.FrameData.VertexCount += modelRes.PtrMesh->m_Vertices.size();
+            s_Data.FrameData.IndexCount  += modelRes.PtrMesh->m_Indices.size();
+        }
+    }
     void Renderer3D::DrawModel(uint32_t id, const glm::mat4& transform)
     {
         auto currentFrame = Backend::GetCurrentFrame();
@@ -285,7 +375,7 @@ namespace FooGame
         push.renderMatrix = transform;
         auto allocator    = s_Data.Res.DescriptorAllocatorPool->GetAllocator();
         allocator.Allocate(modelRes.PtrMesh->GetLayout(),
-                           *modelRes.PtrMesh->GetSet(currentFrame));
+                           modelRes.PtrMesh->m_DescriptorSets[currentFrame]);
         vkCmdPushConstants(cmd, s_Data.api.GraphicsPipeline.pipelineLayout,
                            VK_SHADER_STAGE_VERTEX_BIT, 0,
                            sizeof(MeshPushConstants), &push);
@@ -345,7 +435,7 @@ namespace FooGame
         descriptorWrites[1].descriptorType =
             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         descriptorWrites[1].descriptorCount = 1;
-        descriptorWrites[1].pImageInfo      = &imageInfo;
+        descriptorWrites[1].pImageInfo      = &texture.Descriptor;
 
         vkUpdateDescriptorSets(Api::GetVkDevice(),
                                ARRAY_COUNT(descriptorWrites), descriptorWrites,

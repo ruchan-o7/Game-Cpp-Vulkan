@@ -1,6 +1,4 @@
 #pragma once
-#include <memory>
-#include <vector>
 #include <Core.h>
 namespace FooGame
 {
@@ -9,13 +7,14 @@ namespace FooGame
     struct MeshData
     {
             TransformComponent Transform;
-            std::shared_ptr<Mesh> MeshPtr;
-            uint32_t Id;
+            // Shared<Mesh> MeshPtr;
+            Shared<Model> ModelPtr;
+            // uint32_t Id;
             uint32_t TextureIndex;
-            // MeshData()  = default;
             ~MeshData() = default;
-            // MeshData(const MeshData& other);
-            // MeshData(MeshData&& other);
+    };
+    struct ModelData
+    {
     };
     class EditorScene
     {
@@ -25,9 +24,9 @@ namespace FooGame
             EditorScene() = default;
             ~EditorScene();
 
-            std::vector<MeshData> Meshes;
-            std::vector<std::shared_ptr<Texture2D>> Textures;
-            std::string Name;
+            List<MeshData> MeshDatas;
+            List<std::shared_ptr<Texture2D>> Textures;
+            String Name;
             int Id;
     };
 }  // namespace FooGame

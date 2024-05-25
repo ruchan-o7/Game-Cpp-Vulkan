@@ -1,14 +1,14 @@
 #include <vector>
 #include <Engine.h>
 #include "EditorLayer.h"
-#include <imgui.h>
 #include "EditorSceneDeserializer.h"
+#include "src/Engine/Renderer3D.h"
 #include <Log.h>
 namespace FooGame
 {
 
 #if 1
-#define SCENE_JSON "../../../Assets/Scenes/scene.json"
+#define SCENE_JSON "../../../Assets/Scenes/Prototype/scene.json"
 #else
 #define SCENE_JSON "../../Assets/Scenes/scene.json"
 #endif
@@ -37,20 +37,24 @@ namespace FooGame
         size_t indexSize  = 0;
         FOO_EDITOR_INFO("Scene : {0}", m_EditorScene->Name);
         FOO_EDITOR_INFO("Textures size : {0}", m_EditorScene->Textures.size());
-        FOO_EDITOR_INFO("Mesh size : {0}", m_EditorScene->Meshes.size());
-        for (int i = 0; i < m_EditorScene->Meshes.size(); i++)
+        FOO_EDITOR_INFO("Mesh size : {0}", m_EditorScene->MeshDatas.size());
+        for (int i = 0; i < m_EditorScene->MeshDatas.size(); i++)
         {
-            auto& mData = m_EditorScene->Meshes[i];
-
-            vertexSize += mData.MeshPtr->m_Vertices.size() * sizeof(Vertex);
-            indexSize  += mData.MeshPtr->m_Indices.size() * sizeof(uint32_t);
+            auto& mData = m_EditorScene->MeshDatas[i];
+            for (const auto& mesh : mData.ModelPtr->GetMeshes())
+            {
+                vertexSize += mesh.m_Vertices.size() * sizeof(Vertex);
+                indexSize  += mesh.m_Indices.size() * sizeof(uint32_t);
+            }
         }
-        FOO_EDITOR_INFO("Will allocate {0} of bytes for vertices", vertexSize);
-        FOO_EDITOR_INFO("Will allocate {0} of bytes for indices", indexSize);
+        FOO_EDITOR_INFO("Will allocate {0} of kbytes for vertices",
+                        (double)vertexSize / 1024.0);
+        FOO_EDITOR_INFO("Will allocate {0} of kbytes for indices",
+                        (double)indexSize / 1024.0);
 
-        for (auto& [t, m, id, tIndex] : m_EditorScene->Meshes)
+        for (auto& meshData : m_EditorScene->MeshDatas)
         {
-            id = Renderer3D::SubmitMesh(m.get());
+            Renderer3D::SubmitModel(meshData.ModelPtr.get());
         }
     }
     void EditorLayer::OnDetach()
@@ -92,7 +96,7 @@ namespace FooGame
 
         ImGui::End();
         int i = 0;
-        for (auto& m : m_EditorScene->Meshes)
+        for (auto& m : m_EditorScene->MeshDatas)
         {
             float pos[3] = {
                 m.Transform.Translation.x,
@@ -142,10 +146,18 @@ namespace FooGame
 
         Renderer3D::BeginDraw();
         Renderer3D::BeginScene(m_Camera);
-        for (auto [transform, mesh, id, tIndex] : m_EditorScene->Meshes)
+        for (auto& meshData : m_EditorScene->MeshDatas)
         {
-            auto texture = m_EditorScene->Textures[tIndex];
-            Renderer3D::DrawMesh(id, transform.GetTransform(), *texture);
+            Renderer3D::DrawModel(meshData.ModelPtr.get(),
+                                  meshData.Transform());
+            // for (const auto& mesh : meshData.ModelPtr->GetMeshes())
+            // {
+            //     auto texture =
+            //         m_EditorScene
+            //             ->Textures[mesh.materialData.BaseColorTextureIndex];
+            //     // Renderer3D::DrawMesh(mesh.RenderId, meshData.Transform(),
+            //     //                      *texture);
+            // }
         }
         Renderer3D::EndScene();
         Renderer3D::EndDraw();

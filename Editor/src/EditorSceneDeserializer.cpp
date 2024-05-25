@@ -1,68 +1,19 @@
 #include "EditorSceneDeserializer.h"
-#include <vector>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <memory>
 #include <Core.h>
 #include <nlohmann/json.hpp>
+#include "Log.h"
+#include "src/Geometry/AssetLoader.h"
+#include "src/Log.h"
 #include <tiny_obj_loader.h>
 #include <Engine.h>
 #include <Log.h>
 namespace FooGame
 {
 
-    static std::shared_ptr<Mesh> LoadObjMesh(const String& path)
-    {
-        tinyobj::attrib_t attrib;
-        std::vector<tinyobj::shape_t> shapes;
-        std::vector<tinyobj::material_t> materials;
-        std::string warn, err;
-        std::vector<Vertex> vertices;
-
-        std::vector<uint32_t> indices;
-
-        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
-                              path.c_str()))
-        {
-            FOO_EDITOR_CRITICAL("Model could not loaded!!!");
-            std::cin.get();
-        }
-        for (const auto& shape : shapes)
-        {
-            vertices.reserve(shape.mesh.indices.size());
-            for (const auto& index : shape.mesh.indices)
-            {
-                Vertex vertex{};
-                vertex.Position = {
-                    attrib.vertices[3 * index.vertex_index + 0],
-                    attrib.vertices[3 * index.vertex_index + 1],
-                    attrib.vertices[3 * index.vertex_index + 2],
-                };
-                vertex.TexCoord = {
-                    attrib.texcoords[2 * index.texcoord_index + 0],
-                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1],
-                };
-                vertex.Color = {
-                    attrib.colors[3 * index.vertex_index + 0],
-                    attrib.colors[3 * index.vertex_index + 1],
-                    attrib.colors[3 * index.vertex_index + 2],
-                };  // im not sure
-                vertices.push_back(vertex);
-                indices.push_back(indices.size());
-            }
-        }
-        return std::make_shared<Mesh>(std::move(vertices), std::move(indices));
-    }
-    std::string GetModelFullPath(const std::string& sceneJsonPath,
-                                 const std::string& modelRelativePath)
-    {
-        std::filesystem::path scenePath(sceneJsonPath);
-
-        std::filesystem::path modelPath =
-            scenePath.parent_path() / modelRelativePath;
-
-        return std::move(modelPath.string());
-    }
     static void ApplyTransformation(MeshData& meshData,
                                     nlohmann::basic_json<>& staticMesh)
     {
@@ -88,23 +39,92 @@ namespace FooGame
     std::unique_ptr<EditorScene> EditorSceneDeserializer::DeSerialize(
         const std::string& scenePath)
     {
+        using namespace std::filesystem;
         using json = nlohmann::json;
         FOO_EDITOR_INFO("Deserializing scene");
-        std::ifstream stream(scenePath);
+        auto sceneBasePath = canonical(scenePath);
+        std::ifstream stream(sceneBasePath);
 
         auto scene = std::make_unique<EditorScene>();
-        scene->Meshes.clear();
+        scene->MeshDatas.clear();
         json data   = json::parse(stream, nullptr, false);
         scene->Id   = std::move(data["id"]);
         scene->Name = data["name"];
+        for (auto& asset : data["assets"])
+        {
+            MeshData meshData{};
+            uint32_t assetId = asset["id"];
+
+            auto assetRelativePath =
+                sceneBasePath.parent_path() / path(asset["path"]);
+
+            std::ifstream ss(assetRelativePath);
+
+            auto assetJson        = json::parse(ss);
+            std::string assetName = assetJson["name"];
+            FOO_EDITOR_INFO("Asset {0} loading...", assetName);
+            auto assetAbsPath =
+                assetRelativePath.parent_path() / assetJson["modelPath"];
+            if (assetJson["format"] == "obj")
+            {
+                meshData.ModelPtr =
+                    AssetLoader::LoadObjModel(assetAbsPath.string());
+                meshData.ModelPtr->AssetId = assetId;
+                for (int i = 0; i < meshData.ModelPtr->m_Meshes.size(); i++)
+                {
+                    auto& mesh = meshData.ModelPtr->m_Meshes[i];
+                    mesh.materialData.Name =
+                        assetJson["meshes"][i]["material"]["name"];
+                    mesh.materialData.BaseColorTextureIndex =
+                        assetJson["meshes"][i]["material"]
+                                 ["baseColorTextureIndex"];
+                    mesh.materialData.NormalTextureIndex =
+                        assetJson["meshes"][i]["material"]
+                                 ["normalColorTextureIndex"];
+                    mesh.materialData.MetallicRoughnessIndex =
+                        assetJson["meshes"][i]["material"]
+                                 ["metallicRoughnessTextureIndex"];
+                }
+                for (const auto& img : assetJson["textures"])
+                {
+                    auto textureAbsPath =
+                        assetRelativePath.parent_path() / img["path"];
+                    auto texture =
+                        AssetLoader::LoadFromFile(textureAbsPath.string());
+                    meshData.ModelPtr->images.push_back({texture});
+                }
+            }
+            else if (assetJson["format"] == "glb")
+            {
+                meshData.ModelPtr =
+                    AssetLoader::LoadGLTFModel(assetAbsPath.string(), true);
+                for (int i = 0; i < meshData.ModelPtr->m_Meshes.size(); i++)
+                {
+                    auto& mesh = meshData.ModelPtr->m_Meshes[i];
+                    mesh.materialData.Name =
+                        assetJson["meshes"][i]["material"]["name"];
+                    mesh.materialData.BaseColorTextureIndex =
+                        assetJson["meshes"][i]["material"]
+                                 ["baseColorTextureIndex"];
+                    mesh.materialData.NormalTextureIndex =
+                        assetJson["meshes"][i]["material"]
+                                 ["normalColorTextureIndex"];
+                    mesh.materialData.MetallicRoughnessIndex =
+                        assetJson["meshes"][i]["material"]
+                                 ["metallicRoughnessTextureIndex"];
+                }
+            }
+            scene->MeshDatas.push_back(meshData);
+            ss.close();
+        }
+#if 0
         for (auto& t : data["textures"])
         {
             std::cout << "Texture " << t << std::endl;
-            scene->Textures.emplace_back(LoadTexture(t));
+            scene->Textures.emplace_back(AssetLoader::LoadFromFilePtr(t));
         }
         std::cout << "Loaded texture count is  " << scene->Textures.size()
                   << std::endl;
-        scene->Meshes.reserve(data["staticMeshes"].size());
         for (auto& staticMesh : data["staticMeshes"])
         {
             uint32_t id        = staticMesh["id"];
@@ -118,24 +138,22 @@ namespace FooGame
             FOO_EDITOR_TRACE("\t Mesh format : {0}", format);
             if (format == "obj")
             {
-                meshData.MeshPtr = LoadObjMesh(staticMesh["path"]);
+                meshData.ModelPtr =
+                    AssetLoader::LoadObjModel(staticMesh["path"]);
                 ApplyTransformation(meshData, staticMesh);
-                meshData.TextureIndex = staticMesh["textureIndex"];
-                meshData.MeshPtr->SetTexture(
-                    scene->Textures[meshData.TextureIndex]);
-                scene->Meshes.push_back(std::move(meshData));
             }
             else if (format == "gltf" || format == "glb")
             {
                 std::string modelFullPath = GetModelFullPath(scenePath, path);
                 // meshData.MeshPtr = LoadGLTF(modelFullPath, format == "glb");
-                meshData.MeshPtr =
-                    AssetLoader::LoadGLTFMesh(modelFullPath, true);
+                meshData.ModelPtr =
+                    AssetLoader::LoadGLTFModel(modelFullPath, true);
+
                 ApplyTransformation(meshData, staticMesh);
-                // TODO FOR NOW
+
                 meshData.TextureIndex = staticMesh["textureIndex"];
-                meshData.MeshPtr->SetTexture(0);  // TODO!
-                scene->Meshes.push_back(std::move(meshData));
+                // meshData.MeshPtr->SetTexture(0);  // TODO!
+                // scene->Meshes.push_back(std::move(meshData));
             }
             else
             {
@@ -143,17 +161,9 @@ namespace FooGame
                 continue;
             }
         }
+#endif
         FOO_EDITOR_INFO("Scene data loaded successfully");
         stream.close();
-        size_t vertexSize = 0;
-        size_t indexSize  = 0;
-        for (auto& mesh : scene->Meshes)
-        {
-            vertexSize += mesh.MeshPtr->m_Vertices.size() * sizeof(Vertex);
-            indexSize  += mesh.MeshPtr->m_Indices.size() * sizeof(uint32_t);
-        }
-        FOO_EDITOR_INFO("Will allocate {0} of bytes for vertices", vertexSize);
-        FOO_EDITOR_INFO("Will allocate {0} of bytes for indices", indexSize);
         return std::move(scene);
     }
 

@@ -3,7 +3,6 @@
 #include "../Scene/Entity.h"
 #include "../Scene/ScriptableEntity.h"
 #include <imgui.h>
-#include "../Resources/LoadModel.h"
 #include "../Scene/Component.h"
 #include "glm/fwd.hpp"
 #include <memory>
@@ -44,12 +43,13 @@ namespace FooGame
     {
         auto e = CreateEntity();
         glm::mat4{1.0f};
-        auto model = LoadModel(MODEL_PATH);
-        model->GetMeshes()[0].SetTexture(LoadTexture(MODEL_TEXTURE));
-        auto& comp = e.AddComponent<MeshRendererComponent>(std::move(model));
-        e.AddComponent<ScriptComponent>().Bind<Foo>();
-        Renderer3D::SubmitModel(comp.PtrModel.get());
-        auto transform = comp.PtrModel->Transform;
+        // auto model = LoadModel(MODEL_PATH);
+        // model->GetMeshes()[0].SetTexture(
+        //     AssetLoader::LoadFromFilePtr(MODEL_TEXTURE));
+        // auto& comp = e.AddComponent<MeshRendererComponent>(std::move(model));
+        // e.AddComponent<ScriptComponent>().Bind<Foo>();
+        // Renderer3D::SubmitModel(comp.PtrModel.get());
+        // auto transform = comp.PtrModel->Transform;
     }
 
     Scene::~Scene()

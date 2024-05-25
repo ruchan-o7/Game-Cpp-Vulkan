@@ -2,7 +2,6 @@
 #include <Engine.h>
 #include <iostream>
 #include "Core/LayerStack.h"
-#include "imgui.h"
 #include "Core/EditorLayer.h"
 #include <nlohmann/json.hpp>
 #include <Log.h>
@@ -56,8 +55,8 @@ namespace FooGame
                 auto stats = Renderer3D::GetStats();
                 auto& io   = ImGui::GetIO();
                 ImGui::Text("Draw call :%i", stats.DrawCall);
-                ImGui::Text("Vertex count :%i", stats.VertexCount);
-                ImGui::Text("Index count :%i", stats.IndexCount);
+                ImGui::Text("Vertex count :%llu", stats.VertexCount);
+                ImGui::Text("Index count :%llu", stats.IndexCount);
                 ImGui::Text("FPS :%f", io.Framerate);
             }
             ImGui::End();

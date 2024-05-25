@@ -9,9 +9,9 @@ namespace FooGame
     struct Pipeline;
     struct FrameStatistics
     {
-            uint32_t DrawCall = 0;
+            uint32_t DrawCall    = 0;
             uint64_t VertexCount = 0;
-            uint64_t IndexCount = 0;
+            uint64_t IndexCount  = 0;
     };
     class Renderer3D
     {
@@ -29,9 +29,10 @@ namespace FooGame
             static void DrawModel(uint32_t id, const glm::mat4& transform);
             static void DrawMesh(uint32_t id, const glm::mat4& transform,
                                  const Texture2D& texture);
+            static void DrawModel(Model* model, const glm::mat4& transform);
 
         public:
-            [[nodiscard]] static uint32_t SubmitMesh(Mesh* mesh);
+            static void SubmitMesh(Mesh* mesh);
             static void SubmitModel(Model* model);
 
         private:

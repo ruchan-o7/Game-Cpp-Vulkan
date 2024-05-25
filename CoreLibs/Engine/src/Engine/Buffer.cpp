@@ -1,4 +1,5 @@
 #include "Buffer.h"
+#include <cstdint>
 #include "Backend.h"
 #include "Api.h"
 #include "Texture2D.h"
@@ -122,7 +123,8 @@ namespace FooGame
         region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         region.imageSubresource.mipLevel   = 0;
         region.imageSubresource.layerCount = 1;
-        region.imageExtent                 = {image.width, image.height, 1};
+        region.imageExtent = {static_cast<uint32_t>(image.Width),
+                              static_cast<uint32_t>(image.Height), 1};
         vkCmdCopyBufferToImage(cmd, m_Buffer, image.Image,
                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                                &region);
