@@ -1,8 +1,8 @@
 #pragma once
-#include <Engine.h>
 #include <memory>
 namespace FooGame
 {
-    std::unique_ptr<Model> LoadModel(const std::string& path);
-    std::shared_ptr<Mesh> LoadGLTF(const std::string& path, bool isGlb = true);
+    // std::unique_ptr<Model> LoadModel(const std::string& path);
+    // std::shared_ptr<Mesh> LoadGLTF(const std::string& path, bool isGlb =
+    // true);
 }  // namespace FooGame
