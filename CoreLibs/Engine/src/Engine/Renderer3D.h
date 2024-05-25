@@ -6,6 +6,7 @@ namespace FooGame
 {
 
     class PerspectiveCamera;
+    class Camera;
     struct Pipeline;
     struct FrameStatistics
     {
@@ -20,6 +21,7 @@ namespace FooGame
             static void BeginDraw();
             static void EndDraw();
             static void BeginScene(const PerspectiveCamera& camera);
+            static void BeginScene(const Camera& camera);
             static void EndScene();
             static void Shutdown();
             static void ClearBuffers();

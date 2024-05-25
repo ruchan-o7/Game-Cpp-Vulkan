@@ -13,6 +13,7 @@
 #include "VulkanCheckResult.h"
 #include "Types/DeletionQueue.h"
 #include "../Camera/PerspectiveCamera.h"
+#include "../Camera/Camera.h"
 #include <imgui.h>
 #include "Pipeline.h"
 // #include <Core.h>
@@ -203,6 +204,13 @@ namespace FooGame
     void Renderer3D::EndDraw()
     {
         s_Data.Res.DescriptorAllocatorPool->Flip();
+    }
+    void Renderer3D::BeginScene(const Camera& camera)
+    {
+        UniformBufferObject ubd{};
+        ubd.View       = camera.matrices.view;
+        ubd.Projection = camera.matrices.perspective;
+        UpdateUniformData(ubd);
     }
     void Renderer3D::BeginScene(const PerspectiveCamera& camera)
     {

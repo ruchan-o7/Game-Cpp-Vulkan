@@ -4,6 +4,12 @@
 namespace FooGame
 {
 
+    bool Input::IsKeyReleased(KeyCode keycode)
+    {
+        GLFWwindow *windowHandle = WindowsWindow::Get().GetWindowHandle();
+        int state                = glfwGetKey(windowHandle, (int)keycode);
+        return state == GLFW_RELEASE;
+    }
     bool Input::IsKeyDown(KeyCode keycode)
     {
         GLFWwindow *windowHandle = WindowsWindow::Get().GetWindowHandle();

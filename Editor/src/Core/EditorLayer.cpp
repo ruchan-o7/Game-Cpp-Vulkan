@@ -2,7 +2,6 @@
 #include <Engine.h>
 #include "EditorLayer.h"
 #include "EditorSceneDeserializer.h"
-#include "src/Engine/Renderer3D.h"
 #include <Log.h>
 namespace FooGame
 {
@@ -56,6 +55,12 @@ namespace FooGame
         {
             Renderer3D::SubmitModel(meshData.ModelPtr.get());
         }
+        m_Camera2.setPerspective(60.0f, (float)1600.0f / (float)900.0f, 0.1f,
+                                 512.0f);
+        m_Camera2.setRotation(glm::vec3(-12.0f, 159.0f, 0.0f));
+        m_Camera2.setTranslation(glm::vec3(0.0f, 0.5f, 0.5f));
+        m_Camera2.movementSpeed = 10.0f;
+        m_Camera2.type          = Camera::CameraType::firstperson;
     }
     void EditorLayer::OnDetach()
     {
@@ -64,36 +69,38 @@ namespace FooGame
     void EditorLayer::OnImGuiRender()
     {
         ImGui::Begin("Camera pos");
-        auto cameraPos = m_Camera.GetPosition();
-        float pos[3]   = {cameraPos.x, cameraPos.y, cameraPos.z};
-        ImGui::SliderFloat3("Position", pos, -20.0f, 20.0f);
+        auto cameraPos = m_Camera2.position;
+        // auto cameraPos = m_Camera.GetPosition();
+        float pos[3] = {cameraPos.x, cameraPos.y, cameraPos.z};
+        ImGui::SliderFloat3("Position", pos, -10.0f, 10.0f);
         m_Camera.SetPosition(glm::vec3{pos[0], pos[1], pos[2]});
-        ImGui::DragFloat("Yaw", &m_Camera.m_Yaw, 0.5f, -180.f, 180.f);
-        ImGui::DragFloat("Pitch", &m_Camera.m_Pitch, 0.5f, -180.f, 180.f);
-        ImGui::DragFloat("Near clip", &m_Camera.m_NearClip, 0.5f, 0.0001f,
-                         10.f);
-        ImGui::DragFloat("Far clip", &m_Camera.m_FarClip, 0.1f, 1.0f, 10000.0f);
-        ImGui::DragFloat("Aspect ", &m_Camera.m_Aspect, 0.1f, 0.001f, 3.0f);
-        ImGui::DragFloat("Zoom ", &m_Camera.m_Zoom, 0.1f, 0.1f, 179.0f);
-        float dir[3] = {
-            m_Camera.m_Direction.x,
-            m_Camera.m_Direction.y,
-            m_Camera.m_Direction.z,
-        };
-        ImGui::DragFloat3("Direction ", dir, 0.1f);
-        float up[3] = {
-            m_Camera.m_Up.x,
-            m_Camera.m_Up.y,
-            m_Camera.m_Up.z,
-        };
-        ImGui::DragFloat3("Up ", up, 0.1f);
-        m_Camera.m_Up.x        = up[0];
-        m_Camera.m_Up.y        = up[1];
-        m_Camera.m_Up.z        = up[2];
-        m_Camera.m_Direction.x = dir[0];
-        m_Camera.m_Direction.y = dir[1];
-        m_Camera.m_Direction.z = dir[2];
-
+        // ImGui::DragFloat("Yaw", &m_Camera.m_Yaw, 0.5f, -180.f, 180.f);
+        // ImGui::DragFloat("Pitch", &m_Camera.m_Pitch, 0.5f, -180.f, 180.f);
+        // ImGui::DragFloat("Near clip", &m_Camera.m_NearClip, 0.5f, 0.0001f,
+        //                  10.f);
+        // ImGui::DragFloat("Far clip", &m_Camera.m_FarClip, 0.1f, 1.0f,
+        // 10000.0f); ImGui::DragFloat("Aspect ", &m_Camera2.m_Aspect, 0.1f,
+        // 0.001f, 3.0f);
+        ImGui::DragFloat("Zoom ", &m_Camera2.fov, 0.1f, 0.1f, 179.0f);
+        // float dir[3] = {
+        //     m_Camera.m_Direction.x,
+        //     m_Camera.m_Direction.y,
+        //     m_Camera.m_Direction.z,
+        // };
+        // ImGui::DragFloat3("Direction ", dir, 0.1f);
+        // float up[3] = {
+        //     m_Camera.m_Up.x,
+        //     m_Camera.m_Up.y,
+        //     m_Camera.m_Up.z,
+        // };
+        // ImGui::DragFloat3("Up ", up, 0.1f);
+        // m_Camera.m_Up.x        = up[0];
+        // m_Camera.m_Up.y        = up[1];
+        // m_Camera.m_Up.z        = up[2];
+        // m_Camera.m_Direction.x = dir[0];
+        // m_Camera.m_Direction.y = dir[1];
+        // m_Camera.m_Direction.z = dir[2];
+        //
         ImGui::End();
         int i = 0;
         for (auto& m : m_EditorScene->MeshDatas)
@@ -145,38 +152,80 @@ namespace FooGame
         UpdateCamera(ts);
 
         Renderer3D::BeginDraw();
-        Renderer3D::BeginScene(m_Camera);
+        Renderer3D::BeginScene(m_Camera2);
         for (auto& meshData : m_EditorScene->MeshDatas)
         {
             Renderer3D::DrawModel(meshData.ModelPtr.get(),
                                   meshData.Transform());
-            // for (const auto& mesh : meshData.ModelPtr->GetMeshes())
-            // {
-            //     auto texture =
-            //         m_EditorScene
-            //             ->Textures[mesh.materialData.BaseColorTextureIndex];
-            //     // Renderer3D::DrawMesh(mesh.RenderId, meshData.Transform(),
-            //     //                      *texture);
-            // }
         }
         Renderer3D::EndScene();
         Renderer3D::EndDraw();
     }
     void EditorLayer::OnEvent(Event& e)
     {
+        EventDispatcher dispatcher(e);
+        dispatcher.Dispatch<MouseMovedEvent>(
+            BIND_EVENT_FN(EditorLayer::OnMouseMoved));
+    }
+    bool EditorLayer::OnMousePressed(MouseButtonPressedEvent& event)
+    {
+        return true;
     }
     static float Sensitivity = 0.1f;
+    bool EditorLayer::OnMouseMoved(MouseMovedEvent& event)
+    {
+        int32_t dx = (int32_t)m_Camera2.LastMouseState.x - event.GetX();
+        int32_t dy = (int32_t)m_Camera2.LastMouseState.y - event.GetY();
+        m_Camera2.LastMouseState.x = dx;
+        m_Camera2.LastMouseState.y = dy;
+
+        if (Input::IsMouseButtonDown(MouseButton::Left))
+        {
+            m_Camera2.rotate(
+                glm::vec3(dy * m_Camera2.rotationSpeed * Sensitivity,
+                          -dx * m_Camera2.rotationSpeed * Sensitivity, 0.0f));
+        }
+        return true;
+    }
     void EditorLayer::UpdateCamera(float ts)
     {
         auto pos = m_Camera.GetPosition();
         if (Input::IsKeyDown(KeyCode::W))
         {
-            pos.z += 1.0f * Sensitivity * ts;
+            m_Camera2.keys.up  = true;
+            pos.z             += 1.0f * Sensitivity * ts;
+        }
+        if (Input::IsKeyReleased(KeyCode::W))
+        {
+            m_Camera2.keys.up = false;
         }
         if (Input::IsKeyDown(KeyCode::S))
         {
-            pos.z -= 1.0f * Sensitivity * ts;
+            m_Camera2.keys.down  = true;
+            pos.z               -= 1.0f * Sensitivity * ts;
         }
+        if (Input::IsKeyReleased(KeyCode::S))
+        {
+            m_Camera2.keys.down = false;
+        }
+        if (Input::IsKeyDown(KeyCode::D))
+        {
+            m_Camera2.keys.right = true;
+        }
+        if (Input::IsKeyReleased(KeyCode::D))
+        {
+            m_Camera2.keys.right = false;
+        }
+        if (Input::IsKeyDown(KeyCode::A))
+        {
+            m_Camera2.keys.left = true;
+        }
+        if (Input::IsKeyReleased(KeyCode::A))
+        {
+            m_Camera2.keys.left = false;
+        }
+        m_Camera2.update(ts);
+
         if (Input::IsMouseButtonDown(MouseButton::Right))
         {
             const glm::vec2& mouse{Input::GetMousePosition().x,

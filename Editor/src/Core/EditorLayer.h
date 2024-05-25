@@ -2,6 +2,7 @@
 #include "EditorScene.h"
 #include "Layer.h"
 #include "CommandLineArgs.h"
+#include <Engine.h>
 namespace FooGame
 {
     class EditorLayer final : public Layer
@@ -17,8 +18,12 @@ namespace FooGame
 
         private:
             PerspectiveCamera m_Camera;
+            Camera m_Camera2;
+            // Camera m_Camera2;
             std::unique_ptr<EditorScene> m_EditorScene;
             CommandLineArgs m_Args;
+            bool OnMouseMoved(MouseMovedEvent& event);
+            bool OnMousePressed(MouseButtonPressedEvent& event);
 
         private:
             void UpdateCamera(float ts);
