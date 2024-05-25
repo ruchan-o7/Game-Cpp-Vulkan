@@ -1,6 +1,16 @@
 {
     "id": 1,
     "name": "Foo game first scene prototype",
+    "assets": [
+        {
+            "id": 1,
+            "path": "SceneAssets/viking/viking_room_asset.json"
+        },
+        {
+            "id": 2,
+            "path": "SceneAssets/avocado/avocado_asset.json"
+        }
+    ],
     "staticMeshes": [
         {
             "id": 1,
