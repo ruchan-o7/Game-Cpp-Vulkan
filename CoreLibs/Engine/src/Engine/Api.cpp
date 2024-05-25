@@ -5,7 +5,6 @@
 #include "Types/DeletionQueue.h"
 #include "VulkanCheckResult.h"
 #include "../Window/Window.h"
-#include "vulkan/vulkan_core.h"
 namespace FooGame
 {
     struct ApiData

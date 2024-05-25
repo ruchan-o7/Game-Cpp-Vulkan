@@ -1,20 +1,20 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include <memory>
+#include <cstdint>
 #include <string>
-#include <iostream>
 namespace FooGame
 {
-
     struct Texture2D
     {
             VkImage Image{};
             VkImageView ImageView{};
             VkDeviceMemory ImageMemory{};
+            VkImageLayout ImageLayout;
             VkSampler Sampler{};
-            uint32_t width, height;
-            std::string path;
-        };
+            int32_t Width, Height, MipLevels, LayerCount;
+            VkDescriptorImageInfo Descriptor{};
+            std::string Path = "Texture";
+    };
 
     VkImageView CreateImageView(VkFormat format,
                                 VkImageAspectFlags aspectFlags);
@@ -31,12 +31,6 @@ namespace FooGame
     void CreateImage(Texture2D& texture, VkExtent2D extent, VkFormat format,
                      VkImageTiling tiling, VkImageUsageFlags usage,
                      VkMemoryPropertyFlags properties);
-    void DestroyImage(Texture2D* texture);
-    void DestroyImage(VkImage& texture);
-    void DestroyImage(VkImage& texture, VkDeviceMemory& imageMem);
-    void LoadTexture(Texture2D* texture, const std::string& path);
-    [[nodiscard]] std::shared_ptr<Texture2D> LoadTexture(
-        const std::string& path);
     void TransitionImageLayout(Texture2D* texture, VkFormat format,
                                VkImageLayout oldLayout,
                                VkImageLayout newLayout);

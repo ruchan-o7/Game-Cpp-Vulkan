@@ -2,7 +2,6 @@
 #include <vulkan/vulkan.h>
 #include "Api.h"
 #include "VulkanCheckResult.h"
-#include "vulkan/vulkan_core.h"
 namespace FooGame
 {
     void Device::Destroy()

@@ -5,7 +5,7 @@
 #include "Shader.h"
 namespace FooGame
 {
-
+#define CAST(x) static_cast<uint32_t>(x)
     Pipeline CreateGraphicsPipeline(PipelineInfo info)
 
     {
@@ -25,10 +25,11 @@ namespace FooGame
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
         vertexInputInfo.vertexBindingDescriptionCount =
-            static_cast<uint32_t>(info.VertexBindings.size());
+            CAST(info.VertexBindings.size());
         vertexInputInfo.pVertexBindingDescriptions = info.VertexBindings.data();
+
         vertexInputInfo.vertexAttributeDescriptionCount =
-            static_cast<uint32_t>(info.VertexAttributeDescriptons.size());
+            CAST(info.VertexAttributeDescriptons.size());
         vertexInputInfo.pVertexAttributeDescriptions =
             info.VertexAttributeDescriptons.data();
 

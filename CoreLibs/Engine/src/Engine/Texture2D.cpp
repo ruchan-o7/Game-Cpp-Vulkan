@@ -1,11 +1,13 @@
 #include "Texture2D.h"
+#include <apiset.h>
+#include <memory>
 #include "VulkanCheckResult.h"
 #include "Buffer.h"
+#include "src/Log.h"
 #include "stb_image.h"
 #include "Backend.h"
 #include "Api.h"
 #include "Device.h"
-#include "vulkan/vulkan_core.h"
 namespace FooGame
 {
 
@@ -78,31 +80,9 @@ namespace FooGame
         VK_CALL(
             vkCreateImageView(device, &viewInfo, nullptr, &image.ImageView));
     }
-    void DestroyImage(VkImage& image)
-    {
-        auto device = Api::GetDevice()->GetDevice();
-        vkDestroyImage(device, image, nullptr);
-    }
-    void DestroyImage(VkImage& image, VkDeviceMemory& imageMem)
-    {
-        auto device = Api::GetDevice()->GetDevice();
-        vkDestroyImage(device, image, nullptr);
-        vkFreeMemory(device, imageMem, nullptr);
-    }
-    void DestroyImage(Texture2D* image)
-    {
-        auto device = Api::GetDevice()->GetDevice();
-        DestroyImage(image->Image, image->ImageMemory);
-        vkDestroyImageView(device, image->ImageView, nullptr);
-        if (image->Sampler)
-        {
-            vkDestroySampler(device, image->Sampler, nullptr);
-        }
-    }
-
     void LoadTexture(Texture2D& image, const std::string& path)
     {
-        image.path     = path;
+        image.Path     = path;
         Device* device = Api::GetDevice();
         int32_t texWidth, texHeight, texChannels;
         stbi_uc* pixels        = stbi_load(path.c_str(), &texWidth, &texHeight,
@@ -110,9 +90,7 @@ namespace FooGame
         VkDeviceSize imageSize = texWidth * texHeight * 4;
         if (!pixels)
         {
-            std::cerr << "[ERROR] "
-                      << "Could not load image with path: " << path
-                      << std::endl;
+            FOO_ENGINE_ERROR("Coult not load image : {0}", path);
             return;
         }
         BufferBuilder staginfBufBuilder{};
@@ -126,8 +104,8 @@ namespace FooGame
         stagingBuffer.Bind();
         stbi_image_free(pixels);
 
-        image.width  = texWidth;
-        image.height = texHeight;
+        image.Width  = texWidth;
+        image.Height = texHeight;
 
         CreateImage(
             image,

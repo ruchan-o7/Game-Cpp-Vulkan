@@ -3,6 +3,7 @@
 #include "VulkanCheckResult.h"
 #include "Api.h"
 #include "../Defines.h"
+#include "../Geometry/AssetLoader.h"
 namespace FooGame
 {
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
@@ -42,7 +43,8 @@ namespace FooGame
     void Swapchain::Destroy()
     {
         auto device = Api::GetDevice()->GetDevice();
-        DestroyImage(&m_DepthImage);
+
+        AssetLoader::DestroyTexture(m_DepthImage);
         for (auto& fb : m_SwapchainFrameBuffers)
         {
             vkDestroyFramebuffer(device, fb, nullptr);

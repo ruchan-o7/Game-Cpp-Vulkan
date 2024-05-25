@@ -1,8 +1,5 @@
 #pragma once
-#define GLM_ENABLE_EXPERIMENTAL
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_FORCE_LEFT_HANDED
+#include "../Defines.h"
 #include <glm/glm.hpp>
 namespace FooGame
 {
