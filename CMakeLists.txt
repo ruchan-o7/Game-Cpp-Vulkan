@@ -51,3 +51,7 @@ add_subdirectory(CoreLibs)
 
 add_subdirectory(Game)
 add_subdirectory(Editor)
+
+set_property(TARGET "Log" PROPERTY FOLDER "CoreLibs")
+set_property(TARGET "Engine" PROPERTY FOLDER "CoreLibs")
+set_property(TARGET "Core" PROPERTY FOLDER "CoreLibs")

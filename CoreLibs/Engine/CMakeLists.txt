@@ -12,7 +12,18 @@ file(GLOB CAMERA_SOURCE "src/Camera/*.cpp" "src/Camera/*.h")
 
 set(WINDOW_SOURCE "src/Window/Window.h;src/Window/Window.cpp")
 set(GEOMETRY_SOURCE
-	"src/Geometry/Model.h;src/Geometry/Vertex.h;src/Geometry/Vertex.cpp;src/Geometry/Model.cpp")
+	"src/Geometry/Model.h"
+	"src/Geometry/Vertex.h"
+	"src/Geometry/Vertex.cpp"
+	"src/Geometry/Model.cpp"
+	"src/Geometry/Mesh.cpp"
+	"src/Geometry/AssetLoader.cpp"
+	)
+set(LIBS_IMPLS 
+ 	"src/Implementations/tiny_gltf.cpp"
+	"src/Implementations/tiny_obj_loader.cpp"
+	"src/Implementations/stb_image.cpp"
+)
 
 set(IMGUI_SRCS
 	"${IMGUI_SRC_DIR}/imgui.cpp"
@@ -31,11 +42,13 @@ set(IMGUI_SRCS
 )
 set(ENGINE_SOURCES
 	"${ENGINE_SOURCE}"
+	"${IMGUI_SRCS}"
 	"${INPUT_SOURCE}"
 	"${CAMERA_SOURCE}"
 	"${WINDOW_SOURCE}"
 	"${GEOMETRY_SOURCE}"
-	"${IMGUI_SRCS}"
+	"${ILIBS_IMPLSMGUI_SRCS}"
+	"${LIBS_IMPLS}"
 	"src/Engine/Descriptor/DescriptorAllocator.cpp"
 )
 
@@ -48,18 +61,17 @@ $<$<CONFIG:Debug>:FOO_DEBUG>
 )
 set_target_properties("${PROJECT_NAME}" PROPERTIES CXX_STANDARD 17)
 
-target_link_libraries("${PROJECT_NAME}" PUBLIC
-	glfw glm Log "${Vulkan_LIBRARIES}"
+target_link_libraries("${PROJECT_NAME}" PUBLIC imm32
+	glfw glm Log "${Vulkan_LIBRARIES}" 
 	)
 
 target_include_directories("${PROJECT_NAME}" PUBLIC
-	"${CORE_INCLUDE_DIRS}"
 	"${Vulkan_INCLUDE_DIRS}"
+	"${TINYGLTF_INCLUDE_DIR}"
+	"${TINY_OBJ_LOADER_INCLUDE_DIR}"
 	"${LOG_INCLUDE_DIR}"
 	"${STB_INCLUDE_DIR}"
 	"${IMGUI_SRC_DIR}"
 	"${GLFW_INCLUDE_DIR}"
 	"${GLM_INCLUDE_DIR}"
 )
-
-set_property(TARGET "${PROJECT_NAME}" PROPERTY FOLDER "CoreLibs")
