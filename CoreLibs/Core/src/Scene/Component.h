@@ -1,5 +1,7 @@
 #pragma once
 #include "../Core/Base.h"
+
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include "../Core/UUID.h"
@@ -26,7 +28,7 @@ namespace FooGame
                 : Translation(translation)
             {
             }
-
+            glm::mat4 operator()() { return GetTransform(); }
             glm::mat4 GetTransform() const
             {
                 glm::mat4 rotation = glm::toMat4(glm::quat(Rotation));
