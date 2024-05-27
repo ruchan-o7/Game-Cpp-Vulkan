@@ -14,89 +14,84 @@ namespace FooGame
                 lookat,
                 firstperson
             };
-            CameraType type = CameraType::lookat;
+            CameraType type = CameraType::firstperson;
 
-            glm::vec3 rotation       = glm::vec3();
-            glm::vec3 position       = glm::vec3();
-            glm::vec4 viewPos        = glm::vec4();
+            glm::vec3 Rotation       = glm::vec3();
+            glm::vec3 Position       = glm::vec3();
+            glm::vec4 ViewPos        = glm::vec4();
             glm::vec2 LastMouseState = glm::vec2();
+            glm::vec3 Front          = glm::vec3();
 
-            float rotationSpeed = 0.01f;
-            float movementSpeed = 0.01f;
+            float RotationSpeed = 0.01f;
+            float MovementSpeed = 0.01f;
 
-            float fov;
-            float znear, zfar;
-            bool updated = true;
-            bool flipY   = false;
+            float Fov;
+            float ZNear, ZFar;
+            bool flipY = false;
             struct
             {
-                    glm::mat4 perspective;
-                    glm::mat4 view;
+                    glm::mat4 Perspective;
+                    glm::mat4 View;
             } matrices;
+            void MoveUp();
+            void MoveDown();
+            void MoveLeft();
+            void MoveRight();
 
-            struct
-            {
-                    bool left  = false;
-                    bool right = false;
-                    bool up    = false;
-                    bool down  = false;
-            } keys;
+            void UpdateViewMatrix();
 
-            bool moving()
-            {
-                return keys.left || keys.right || keys.up || keys.down;
-            }
-            void updateViewMatrix();
+            const float GetNearClip() const { return ZNear; }
 
-            float GetNearClip() const { return znear; }
-
-            float GetFarClip() const { return zfar; }
+            const float GetFarClip() const { return ZFar; }
 
             void setPerspective(float fov, float aspect, float znear,
                                 float zfar);
 
             void updateAspectRatio(float aspect);
 
-            void setPosition(glm::vec3 position)
+            void SetPosition(glm::vec3 position)
             {
-                this->position = position;
-                updateViewMatrix();
+                this->Position = position;
+                UpdateViewMatrix();
             }
 
-            void setRotation(glm::vec3 rotation)
+            void SetRotation(glm::vec3 rotation)
             {
-                this->rotation = rotation;
-                updateViewMatrix();
+                this->Rotation = rotation;
+                UpdateViewMatrix();
             }
 
-            void rotate(glm::vec3 delta)
+            void Rotate(glm::vec3 delta)
             {
-                this->rotation += delta;
-                updateViewMatrix();
+                this->Rotation += delta;
+                UpdateViewMatrix();
             }
 
-            void setTranslation(glm::vec3 translation)
+            void SetTranslatin(glm::vec3 translation)
             {
-                this->position = translation;
-                updateViewMatrix();
+                this->Position = translation;
+                UpdateViewMatrix();
             };
 
-            void translate(glm::vec3 delta)
+            void Translate(glm::vec3 delta)
             {
-                this->position += delta;
-                updateViewMatrix();
+                this->Position += delta;
+                UpdateViewMatrix();
             }
 
-            void setRotationSpeed(float rotationSpeed)
+            void SetRotationSpeed(float rotationSpeed)
             {
-                this->rotationSpeed = rotationSpeed;
+                this->RotationSpeed = rotationSpeed;
             }
 
-            void setMovementSpeed(float movementSpeed)
+            void SetMovementSpeed(float movementSpeed)
             {
-                this->movementSpeed = movementSpeed;
+                this->MovementSpeed = movementSpeed;
             }
 
-            void update(float deltaTime);
+            void Update(float deltaTime);
+
+        private:
+            float MoveSpeed_;
     };
 }  // namespace FooGame

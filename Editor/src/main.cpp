@@ -13,6 +13,7 @@ int main(int argc, const char** argv)
     catch (const std::exception& e)
     {
         FOO_EDITOR_CRITICAL("Exception occured: \n \t {0}", e.what());
+        std::cin.get();
     }
     return 0;
 }

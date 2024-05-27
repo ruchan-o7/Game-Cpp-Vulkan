@@ -1,7 +1,6 @@
 #pragma once
-#include "Component.h"
 #include "../Scene/Scene.h"
-#include <entt/entt.hpp>
+#include "Component.h"
 namespace FooGame
 {
     class Entity

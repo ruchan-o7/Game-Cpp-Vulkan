@@ -16,25 +16,15 @@
 #include "../Camera/Camera.h"
 #include <imgui.h>
 #include "Pipeline.h"
-// #include <Core.h>
 #include "../Engine/Texture2D.h"
 #include "../Geometry/AssetLoader.h"
-#include "vulkan/vulkan_core.h"
 #include <Log.h>
 namespace FooGame
 {
-
-#if VS_CODE_DEBUGGER
-#define VERT_SHADER          "../../../Assets/Shaders/vert.spv"
-#define FRAG_SHADER          "../../../Assets/Shaders/frag.spv"
-#define DEFAULT_TEXTURE_PATH "../../../Assets/Textures/texture.jpg"
-#else
-
-#define VERT_SHADER          "../../Assets/Shaders/vert.spv"
-#define FRAG_SHADER          "../../Assets/Shaders/frag.spv"
-#define MODEL_PATH           "../../Assets/Model/viking_room.obj"
-#define DEFAULT_TEXTURE_PATH "../../Assets/Textures/texture.jpg"
-#endif
+#define VERT_SHADER          "Assets/Shaders/vert.spv"
+#define FRAG_SHADER          "Assets/Shaders/frag.spv"
+#define MODEL_PATH           "Assets/Model/viking_room.obj"
+#define DEFAULT_TEXTURE_PATH "Assets/Textures/texture.jpg"
 
     struct MeshPushConstants
     {
@@ -208,8 +198,8 @@ namespace FooGame
     void Renderer3D::BeginScene(const Camera& camera)
     {
         UniformBufferObject ubd{};
-        ubd.View       = camera.matrices.view;
-        ubd.Projection = camera.matrices.perspective;
+        ubd.View       = camera.matrices.View;
+        ubd.Projection = camera.matrices.Perspective;
         UpdateUniformData(ubd);
     }
     void Renderer3D::BeginScene(const PerspectiveCamera& camera)

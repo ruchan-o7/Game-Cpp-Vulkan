@@ -1,98 +1,85 @@
 #include "Camera.h"
 namespace FooGame
 {
-    void Camera::update(float deltaTime)
+    void Camera::Update(float deltaTime)
     {
-        updated = false;
         if (type == CameraType::firstperson)
         {
-            if (moving())
-            {
-                glm::vec3 camFront;
-                camFront.x = -cos(glm::radians(rotation.x)) *
-                             sin(glm::radians(rotation.y));
-                camFront.y = sin(glm::radians(rotation.x));
-                camFront.z = cos(glm::radians(rotation.x)) *
-                             cos(glm::radians(rotation.y));
-                camFront = glm::normalize(camFront);
+            glm::vec3 camFront;
+            camFront.x =
+                -cos(glm::radians(Rotation.x)) * sin(glm::radians(Rotation.y));
+            camFront.y = sin(glm::radians(Rotation.x));
+            camFront.z =
+                cos(glm::radians(Rotation.x)) * cos(glm::radians(Rotation.y));
+            Front = glm::normalize(camFront);
 
-                float moveSpeed = deltaTime * movementSpeed;
-
-                if (keys.up)
-                {
-                    position += camFront * moveSpeed;
-                }
-                if (keys.down)
-                {
-                    position -= camFront * moveSpeed;
-                }
-                if (keys.left)
-                {
-                    position -= glm::normalize(glm::cross(
-                                    camFront, glm::vec3(0.0f, 1.0f, 0.0f))) *
-                                moveSpeed;
-                }
-                if (keys.right)
-                {
-                    position += glm::normalize(glm::cross(
-                                    camFront, glm::vec3(0.0f, 1.0f, 0.0f))) *
-                                moveSpeed;
-                }
-            }
+            MoveSpeed_ = deltaTime * MovementSpeed;
         }
-        updateViewMatrix();
+        UpdateViewMatrix();
     };
+    void Camera::MoveUp()
+    {
+        Position += Front * MoveSpeed_;
+    }
+    void Camera::MoveDown()
+    {
+        Position -= Front * MoveSpeed_;
+    }
+    void Camera::MoveLeft()
+    {
+        Position -=
+            glm::normalize(glm::cross(Front, glm::vec3(0.0f, 1.0f, 0.0f))) *
+            MoveSpeed_;
+    }
+    void Camera::MoveRight()
+    {
+        Position +=
+            glm::normalize(glm::cross(Front, glm::vec3(0.0f, 1.0f, 0.0f))) *
+            MoveSpeed_;
+    }
 
     void Camera::setPerspective(float fov, float aspect, float znear,
                                 float zfar)
     {
-        glm::mat4 currentMatrix = matrices.perspective;
-        this->fov               = fov;
-        this->znear             = znear;
-        this->zfar              = zfar;
-        matrices.perspective =
+        glm::mat4 currentMatrix = matrices.Perspective;
+        this->Fov               = fov;
+        this->ZNear             = znear;
+        this->ZFar              = zfar;
+        matrices.Perspective =
             glm::perspective(glm::radians(fov), aspect, znear, zfar);
         if (flipY)
         {
-            matrices.perspective[1][1] *= -1.0f;
-        }
-        if (matrices.view != currentMatrix)
-        {
-            updated = true;
+            matrices.Perspective[1][1] *= -1.0f;
         }
     };
 
     void Camera::updateAspectRatio(float aspect)
     {
-        glm::mat4 currentMatrix = matrices.perspective;
-        matrices.perspective =
-            glm::perspective(glm::radians(fov), aspect, znear, zfar);
+        glm::mat4 currentMatrix = matrices.Perspective;
+        matrices.Perspective =
+            glm::perspective(glm::radians(Fov), aspect, ZNear, ZFar);
         if (flipY)
         {
-            matrices.perspective[1][1] *= -1.0f;
-        }
-        if (matrices.view != currentMatrix)
-        {
-            updated = true;
+            matrices.Perspective[1][1] *= -1.0f;
         }
     }
 
-    void Camera::updateViewMatrix()
+    void Camera::UpdateViewMatrix()
     {
-        glm::mat4 currentMatrix = matrices.view;
+        glm::mat4 currentMatrix = matrices.View;
 
         glm::mat4 rotM = glm::mat4(1.0f);
         glm::mat4 transM;
 
         rotM =
-            glm::rotate(rotM, glm::radians(rotation.x * (flipY ? -1.0f : 1.0f)),
+            glm::rotate(rotM, glm::radians(Rotation.x * (flipY ? -1.0f : 1.0f)),
                         glm::vec3(1.0f, 0.0f, 0.0f));
-        rotM = glm::rotate(rotM, glm::radians(rotation.y),
+        rotM = glm::rotate(rotM, glm::radians(Rotation.y),
                            glm::vec3(0.0f, 1.0f, 0.0f));
-        rotM = glm::rotate(rotM, glm::radians(rotation.z),
+        rotM = glm::rotate(rotM, glm::radians(Rotation.z),
                            glm::vec3(0.0f, 0.0f, 1.0f));
 
-        glm::vec3 translation = position;
+        glm::vec3 translation = Position;
         if (flipY)
         {
             translation.y *= -1.0f;
@@ -101,19 +88,14 @@ namespace FooGame
 
         if (type == CameraType::firstperson)
         {
-            matrices.view = rotM * transM;
+            matrices.View = rotM * transM;
         }
         else
         {
-            matrices.view = transM * rotM;
+            matrices.View = transM * rotM;
         }
 
-        viewPos =
-            glm::vec4(position, 0.0f) * glm::vec4(-1.0f, 1.0f, -1.0f, 1.0f);
-
-        if (matrices.view != currentMatrix)
-        {
-            updated = true;
-        }
+        ViewPos =
+            glm::vec4(Position, 0.0f) * glm::vec4(-1.0f, 1.0f, -1.0f, 1.0f);
     };
 }  // namespace FooGame

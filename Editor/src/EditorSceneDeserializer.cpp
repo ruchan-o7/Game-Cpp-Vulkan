@@ -5,12 +5,9 @@
 #include <memory>
 #include <Core.h>
 #include <nlohmann/json.hpp>
-#include "Log.h"
-#include "src/Geometry/AssetLoader.h"
-#include "src/Log.h"
-#include <tiny_obj_loader.h>
-#include <Engine.h>
 #include <Log.h>
+#include <Engine.h>
+#include <tiny_obj_loader.h>
 namespace FooGame
 {
 
@@ -42,7 +39,9 @@ namespace FooGame
         using namespace std::filesystem;
         using json = nlohmann::json;
         FOO_EDITOR_INFO("Deserializing scene");
-        auto sceneBasePath = canonical(scenePath);
+        auto cwd = current_path();
+        cwd.append(scenePath);
+        auto sceneBasePath = std::filesystem::canonical(cwd);
         std::ifstream stream(sceneBasePath);
 
         auto scene = std::make_unique<EditorScene>();
@@ -117,51 +116,6 @@ namespace FooGame
             scene->MeshDatas.push_back(meshData);
             ss.close();
         }
-#if 0
-        for (auto& t : data["textures"])
-        {
-            std::cout << "Texture " << t << std::endl;
-            scene->Textures.emplace_back(AssetLoader::LoadFromFilePtr(t));
-        }
-        std::cout << "Loaded texture count is  " << scene->Textures.size()
-                  << std::endl;
-        for (auto& staticMesh : data["staticMeshes"])
-        {
-            uint32_t id        = staticMesh["id"];
-            std::string name   = staticMesh["name"];
-            std::string path   = staticMesh["path"];
-            std::string format = staticMesh["format"];
-            MeshData meshData{};
-            FOO_EDITOR_TRACE("Mesh with id: {0}", id);
-            FOO_EDITOR_TRACE("\t Name : {0}", name);
-            FOO_EDITOR_TRACE("\t Path : {0}", path);
-            FOO_EDITOR_TRACE("\t Mesh format : {0}", format);
-            if (format == "obj")
-            {
-                meshData.ModelPtr =
-                    AssetLoader::LoadObjModel(staticMesh["path"]);
-                ApplyTransformation(meshData, staticMesh);
-            }
-            else if (format == "gltf" || format == "glb")
-            {
-                std::string modelFullPath = GetModelFullPath(scenePath, path);
-                // meshData.MeshPtr = LoadGLTF(modelFullPath, format == "glb");
-                meshData.ModelPtr =
-                    AssetLoader::LoadGLTFModel(modelFullPath, true);
-
-                ApplyTransformation(meshData, staticMesh);
-
-                meshData.TextureIndex = staticMesh["textureIndex"];
-                // meshData.MeshPtr->SetTexture(0);  // TODO!
-                // scene->Meshes.push_back(std::move(meshData));
-            }
-            else
-            {
-                FOO_EDITOR_WARN("Format {0} is not supported yet!", format);
-                continue;
-            }
-        }
-#endif
         FOO_EDITOR_INFO("Scene data loaded successfully");
         stream.close();
         return std::move(scene);
