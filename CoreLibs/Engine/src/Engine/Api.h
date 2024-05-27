@@ -4,7 +4,7 @@
 namespace FooGame
 {
 #define MAX_FRAMES_IN_FLIGHT 2
-    class WindowsWindow;
+    class Window;
     class Device;
 
     struct UniformBufferObject
@@ -17,7 +17,7 @@ namespace FooGame
     class Api
     {
         public:
-            static void Init(WindowsWindow* window);
+            static void Init(Window* window);
             static void CreateRenderpass(VkFormat colorAttachmentFormat);
             static void SetupDesciptorSetLayout();
             static void CreateCommandPool();

@@ -13,7 +13,7 @@ namespace FooGame
 
         private:
             std::vector<Scene*> m_Scenes;
-            WindowsWindow* m_Window;
+            Window* m_Window;
             PerspectiveCamera m_Camera;
 
         private:

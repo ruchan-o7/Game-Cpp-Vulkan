@@ -110,7 +110,7 @@ namespace FooGame
     {
         Shutdown();
     }
-    void Api::Init(WindowsWindow* window)
+    void Api::Init(Window* window)
     {
         {
             VkApplicationInfo appInfo{};

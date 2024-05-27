@@ -22,7 +22,7 @@ namespace FooGame
         properties.Title  = "Level editor";
         properties.Width  = 1600;
         properties.Height = 900;
-        m_Window          = new WindowsWindow(properties);
+        m_Window          = new Window(properties);
         m_Window->SetOnEventFunction(
             [this](auto&&... args) -> decltype(auto)
             { return Editor::OnEvent(std::forward<decltype(args)>(args)...); });

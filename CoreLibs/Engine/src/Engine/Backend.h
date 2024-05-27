@@ -4,13 +4,13 @@
 #include "Sync.h"
 namespace FooGame
 {
-    class WindowsWindow;
+    class Window;
     class WindowResizeEvent;
     class Backend
     {
         public:
             ~Backend();
-            static void Init(WindowsWindow& window);
+            static void Init(Window& window);
             static void BeginDrawing();
             static void EndDrawing();
             static void WaitFence(Fence& fence);

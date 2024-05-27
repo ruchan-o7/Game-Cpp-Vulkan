@@ -13,7 +13,7 @@ namespace FooGame
     void Game::Init()
     {
         Log::Init(AppType::Game);
-        m_Window = new WindowsWindow();
+        m_Window = new Window();
         m_Window->SetOnEventFunction(BIND_EVENT_FN(Game::OnEvent));
         Backend::Init(*m_Window);
         Renderer2D::Init();

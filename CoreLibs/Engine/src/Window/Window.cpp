@@ -1,6 +1,5 @@
 #include "Window.h"
 #include <GLFW/glfw3.h>
-#include <iostream>
 #include "../Events/KeyEvent.h"
 #include "../Events/ApplicationEvent.h"
 #include "../Input/KeyCodes.h"
@@ -8,39 +7,39 @@
 #include <Log.h>
 namespace FooGame
 {
-    static WindowsWindow* s_Instance = nullptr;
-    WindowsWindow& WindowsWindow::Get()
+    static Window* s_Instance = nullptr;
+    Window& Window::Get()
     {
         return *s_Instance;
     }
-    double WindowsWindow::GetTime()
+    double Window::GetTime()
     {
         return glfwGetTime();
     }
-    WindowsWindow::WindowsWindow(WindowProperties specifications)
+    Window::Window(WindowProperties specifications)
     {
         s_Instance = this;
         Init(specifications);
     }
-    inline void WindowsWindow::WaitEvent()
+    inline void Window::WaitEvent()
     {
         glfwWaitEvents();
     }
 
-    void WindowsWindow::SetWindowTitle(const char* title)
+    void Window::SetWindowTitle(const char* title)
     {
         m_Data.Title = title;
         glfwSetWindowTitle(m_WindowHandle, title);
     }
-    double WindowsWindow::GetCursorPosX() const
+    double Window::GetCursorPosX() const
     {
         return m_Data.CursorPosX;
     }
-    double WindowsWindow::GetCursorPosY() const
+    double Window::GetCursorPosY() const
     {
         return m_Data.CursorPosY;
     }
-    void WindowsWindow::Init(const WindowProperties& props)
+    void Window::Init(const WindowProperties& props)
     {
         FOO_ENGINE_INFO("Window creating");
         m_Data.Height = props.Height;
@@ -152,28 +151,28 @@ namespace FooGame
                 data.EventCallback(e);
             });
     }
-    void WindowsWindow::PollEvents()
+    void Window::PollEvents()
     {
         glfwPollEvents();
     }
-    bool WindowsWindow::ShouldClose()
+    bool Window::ShouldClose()
     {
         return glfwWindowShouldClose(m_WindowHandle);
     }
-    void WindowsWindow::SetCursorCenter()
+    void Window::SetCursorCenter()
     {
         glfwSetCursorPos(m_WindowHandle, m_Data.Width / 2, m_Data.Height / 2);
     }
-    void WindowsWindow::Shutdown()
+    void Window::Shutdown()
     {
         glfwDestroyWindow(m_WindowHandle);
         glfwTerminate();
     }
-    void WindowsWindow::Close()
+    void Window::Close()
     {
         glfwSetWindowShouldClose(m_WindowHandle, true);
     }
-    WindowsWindow::~WindowsWindow()
+    Window::~Window()
     {
         Shutdown();
     }

@@ -116,7 +116,7 @@ namespace FooGame
     {
         vkDeviceWaitIdle(Api::GetDevice()->GetDevice());
     }
-    void Backend::Init(WindowsWindow& window)
+    void Backend::Init(Window& window)
     {
         FOO_ENGINE_INFO("Initializing renderer backend");
         comps.windowHandle = window.GetWindowHandle();

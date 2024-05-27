@@ -5,7 +5,7 @@
 #include "Core/LayerStack.h"
 namespace FooGame
 {
-    class WindowsWindow;
+    class Window;
     class Editor
     {
         public:
@@ -25,7 +25,7 @@ namespace FooGame
             bool OnMouseRelease(MouseButtonReleasedEvent& event);
 
         private:
-            WindowsWindow* m_Window;
+            Window* m_Window;
             LayerStack* m_LayerStack;
             bool m_ShouldRender = true;
     };

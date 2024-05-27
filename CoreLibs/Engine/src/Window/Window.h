@@ -1,11 +1,12 @@
 #pragma once
 #include <cstdint>
-#include "../Events/Event.h"
 #include <functional>
+#include <string>
 
 struct GLFWwindow;
 namespace FooGame
 {
+    class Event;
     struct WindowProperties
     {
             std::string Title;
@@ -17,14 +18,14 @@ namespace FooGame
             {
             }
     };
-    class WindowsWindow
+    class Window
     {
             using EventCallback = std::function<void(Event&)>;
 
         public:
-            WindowsWindow(WindowProperties specifications = WindowProperties());
-            ~WindowsWindow();
-            static WindowsWindow& Get();
+            Window(WindowProperties specifications = WindowProperties());
+            ~Window();
+            static Window& Get();
             static double GetTime();
             void Run();
             void Close();

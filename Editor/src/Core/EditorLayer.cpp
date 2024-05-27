@@ -188,11 +188,11 @@ namespace FooGame
         }
         if (Input::IsKeyDown(KeyCode::D))
         {
-            m_Camera2.MoveRight();
+            m_Camera2.MoveLeft();
         }
         if (Input::IsKeyDown(KeyCode::A))
         {
-            m_Camera2.MoveLeft();
+            m_Camera2.MoveRight();
         }
         m_Camera2.Update(ts);
 

@@ -3,6 +3,8 @@
 #include <fstream>
 #include <iostream>
 #include "Device.h"
+#include "src/Log.h"
+#include "vulkan/vulkan_core.h"
 namespace FooGame
 {
     static std::vector<char> ReadFile(const std::string& file_path)
@@ -60,8 +62,8 @@ namespace FooGame
             case ShaderStage::FRAGMENT:
                 return VK_SHADER_STAGE_FRAGMENT_BIT;
             default:
-                std::cerr << "[ERROR] | Shader stage type not found !!!"
-                          << std::endl;
+                FOO_ENGINE_ERROR("Shader stage type not found");
+                return VK_SHADER_STAGE_COMPUTE_BIT;
         }
     }
     VkPipelineShaderStageCreateInfo Shader::CreateInfo()
