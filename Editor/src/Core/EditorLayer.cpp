@@ -4,8 +4,10 @@
 #include "EditorSceneDeserializer.h"
 #include "glm/fwd.hpp"
 #include "imgui.h"
+#include "src/Input/KeyCodes.h"
 #include <Log.h>
 namespace FooGame {
+
 #define SCENE_JSON "Assets/Scenes/Prototype/scene.json"
   EditorLayer::EditorLayer(const CommandLineArgs& args)
 	  : Layer("Editor Layer"), m_Args(args) {
@@ -147,14 +149,16 @@ namespace FooGame {
 	return true;
   }
   bool EditorLayer::OnMouseMoved(MouseMovedEvent& event) {
-	int32_t dx = (int32_t)m_Camera2.LastMouseState.x - event.GetX();
-	int32_t dy = (int32_t)m_Camera2.LastMouseState.y - event.GetY();
-	m_Camera2.LastMouseState.x = dx;
-	m_Camera2.LastMouseState.y = dy;
-
 	if (Input::IsMouseButtonDown(MouseButton::Right)) {
+	  Input::SetCursorMode(CursorMode::Locked);
+	  int32_t dx = (int32_t)m_Camera2.LastMouseState.x - event.GetX();
+	  int32_t dy = (int32_t)m_Camera2.LastMouseState.y - event.GetY();
+	  m_Camera2.LastMouseState.x = dx;
+	  m_Camera2.LastMouseState.y = dy;
 	  m_Camera2.Rotate(glm::vec3(dy * m_Camera2.RotationSpeed,
 								 -dx * m_Camera2.RotationSpeed, 0.0f));
+	} else {
+	  Input::SetCursorMode(CursorMode::Normal);
 	}
 	return true;
   }
