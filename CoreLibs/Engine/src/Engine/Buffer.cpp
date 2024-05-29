@@ -1,5 +1,5 @@
 #include "Buffer.h"
-#include <cstdint>
+#include <cstring>
 #include "Backend.h"
 #include "Api.h"
 #include "Texture2D.h"

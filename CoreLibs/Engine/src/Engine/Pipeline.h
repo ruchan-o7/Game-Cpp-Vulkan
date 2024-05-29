@@ -30,9 +30,9 @@ namespace FooGame
             std::vector<VkVertexInputBindingDescription> VertexBindings;
             std::vector<VkVertexInputAttributeDescription>
                 VertexAttributeDescriptons;
-            CullMode CullMode;
+            CullMode cullMode;
             float LineWidth = 1.0f;
-            MultiSampling MultiSampling;
+            MultiSampling multiSampling;
             VkDescriptorSetLayout DescriptorSetLayout;
             uint32_t pushConstantSize  = 0;
             uint32_t pushConstantCount = 0;

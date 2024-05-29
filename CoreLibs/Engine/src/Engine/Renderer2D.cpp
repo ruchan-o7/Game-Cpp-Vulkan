@@ -47,7 +47,7 @@ namespace FooGame
             Renderer2D::Statistics Stats;
             struct Api
             {
-                    Pipeline Pipeline;
+                    Pipeline pipeline;
                     VkSampler TextureSampler;
             };
             Api api{};
@@ -181,10 +181,10 @@ namespace FooGame
                 QuadVertex::GetAttributeDescriptionList();
             info.VertexBindings      = {QuadVertex::GetBindingDescription()};
             info.LineWidth           = 2.0f;
-            info.CullMode            = CullMode::BACK;
-            info.MultiSampling       = MultiSampling::LEVEL_1;
+            info.cullMode            = CullMode::BACK;
+            info.multiSampling       = MultiSampling::LEVEL_1;
             info.DescriptorSetLayout = s_Data.resources.descriptor.SetLayout;
-            s_Data.api.Pipeline      = CreateGraphicsPipeline(info);
+            s_Data.api.pipeline      = CreateGraphicsPipeline(info);
         }
 
         g_IsInitialized = true;
@@ -385,7 +385,7 @@ namespace FooGame
         vkCmdBindIndexBuffer(cmd, *s_Data.resources.IndexBuffer->GetBuffer(), 0,
                              VK_INDEX_TYPE_UINT32);
         // bind descriptorsets
-        BindDescriptorSets(cmd, s_Data.api.Pipeline);
+        BindDescriptorSets(cmd, s_Data.api.pipeline);
         if (s_Data.frameData.QuadIndexCount)
         {
             uint32_t dataSize =
@@ -415,7 +415,7 @@ namespace FooGame
     void Renderer2D::BindPipeline(VkCommandBuffer cmd)
     {
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          s_Data.api.Pipeline.pipeline);
+                          s_Data.api.pipeline.pipeline);
     }
 
     Renderer2D::Statistics Renderer2D::GetStats()
@@ -436,9 +436,9 @@ namespace FooGame
             delete ub;
         }
         s_Data.resources.UniformBuffers.clear();
-        vkDestroyPipelineLayout(device, s_Data.api.Pipeline.pipelineLayout,
+        vkDestroyPipelineLayout(device, s_Data.api.pipeline.pipelineLayout,
                                 nullptr);
-        vkDestroyPipeline(device, s_Data.api.Pipeline.pipeline, nullptr);
+        vkDestroyPipeline(device, s_Data.api.pipeline.pipeline, nullptr);
         vkDestroySampler(device, s_Data.api.TextureSampler, nullptr);
         // DestroyImage(s_Data.frameData.DefaultTexture.get());
         delete[] s_Data.frameData.QuadVertexBufferBase;
