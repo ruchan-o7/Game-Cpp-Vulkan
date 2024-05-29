@@ -24,7 +24,7 @@ namespace FooGame {
 
 	  float Fov, Aspect;
 	  float ZNear, ZFar;
-	  bool  flipY = false;
+	  bool  flipY = true;
 	  struct {
 		  glm::mat4 Perspective;
 		  glm::mat4 View;
