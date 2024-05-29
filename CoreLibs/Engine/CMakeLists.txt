@@ -61,7 +61,7 @@ $<$<CONFIG:Debug>:FOO_DEBUG>
 )
 set_target_properties("${PROJECT_NAME}" PROPERTIES CXX_STANDARD 17)
 
-target_link_libraries("${PROJECT_NAME}" PUBLIC imm32
+target_link_libraries("${PROJECT_NAME}" PUBLIC
 	glfw glm Log "${Vulkan_LIBRARIES}" 
 	)
 
