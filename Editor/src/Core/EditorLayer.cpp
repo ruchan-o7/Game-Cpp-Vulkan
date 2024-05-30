@@ -51,83 +51,94 @@ namespace FooGame {
 							 512.0f);
 	m_Camera2.SetRotation(glm::vec3(-12.0f, 159.0f, 0.0f));
 	m_Camera2.SetTranslatin(glm::vec3(0.0f, 0.5f, 0.5f));
-	m_Camera2.MovementSpeed = 10.0f;
+	m_Camera2.MovementSpeed = 0.1f;
+	m_Camera2.Fov           = 90.f;
 	m_Camera2.type          = Camera::CameraType::firstperson;
   }
   void EditorLayer::OnDetach() { Renderer3D::ClearBuffers(); }
   void EditorLayer::OnImGuiRender() {
-	ImGui::Begin("Camera");
-	auto  cameraPos = m_Camera2.Position;
-	float pos[3]    = {cameraPos.x, cameraPos.y, cameraPos.z};
-	float fov       = m_Camera2.Fov;
-	float rot[3]    = {
-        m_Camera2.Rotation.x,
-        m_Camera2.Rotation.y,
-        m_Camera2.Rotation.z,
-    };
-	float front[3] = {
-		m_Camera2.Front.x,
-		m_Camera2.Front.y,
-		m_Camera2.Front.z,
-	};
+	for (int i = 0; i < m_EditorScene->MeshDatas.size(); i++) {
+	  auto& mD = m_EditorScene->MeshDatas[i];
+	  if (ImGui::TreeNode("Models", "%s", mD.ModelPtr->Name.c_str())) {
+		ImGui::PushID(i);
+		if (ImGui::TreeNode("Position")) {
+		  float pos[3] = {
+			  mD.Transform.Translation.x,
+			  mD.Transform.Translation.y,
+			  mD.Transform.Translation.z,
+		  };
+		  ImGui::DragFloat3("Position", pos, 0.005, -FLT_MAX, +FLT_MAX);
+		  ImGui::TreePop();
+		  mD.Transform.Translation = glm::vec3 {
+			  pos[0],
+			  pos[1],
+			  pos[2],
+		  };
+		}
+		if (ImGui::TreeNode("Scale")) {
+		  float scale[3] = {
+			  mD.Transform.Scale.x,
+			  mD.Transform.Scale.y,
+			  mD.Transform.Scale.z,
+		  };
 
-	ImGui::DragFloat("Movement Speed ", &m_Camera2.MovementSpeed, 0.1f, 0.1f,
-					 5.0f);
-	ImGui::DragFloat("Rotation Speed ", &m_Camera2.RotationSpeed, 0.1f, 0.1f,
-					 5.0f);
-	ImGui::Checkbox("Flip y", &m_Camera2.flipY);
-	ImGui::DragFloat("Fov", &fov, 0.1f, 0.1f, 179.0f);
-	ImGui::DragFloat3("Position", pos, 0.1f, -1000.0f, 1000.0f);
-	ImGui::DragFloat3("Rotation", rot, 0.1f, -1000.0f, 1000.0f);
+		  ImGui::DragFloat3("Scale", scale, 0.005, -FLT_MAX, +FLT_MAX);
+		  ImGui::TreePop();
+		  mD.Transform.Scale = glm::vec3 {
+			  scale[0],
+			  scale[1],
+			  scale[2],
+		  };
+		}
+		if (ImGui::TreeNode("Rotation")) {
+		  float rot[3] = {
+			  mD.Transform.Rotation.x,
+			  mD.Transform.Rotation.y,
+			  mD.Transform.Rotation.z,
+		  };
+		  ImGui::DragFloat3("Rotation", rot, 0.005, -FLT_MAX, +FLT_MAX);
+		  ImGui::TreePop();
+		  mD.Transform.Rotation = glm::vec3 {
+			  rot[0],
+			  rot[1],
+			  rot[2],
+		  };
+		}
+		ImGui::PopID();
+		ImGui::TreePop();
+	  }
+	}
+	{
+	  ImGui::Begin("Camera");
+	  auto  cameraPos = m_Camera2.Position;
+	  float pos[3]    = {cameraPos.x, cameraPos.y, cameraPos.z};
+	  float fov       = m_Camera2.Fov;
+	  float rot[3]    = {
+          m_Camera2.Rotation.x,
+          m_Camera2.Rotation.y,
+          m_Camera2.Rotation.z,
+      };
+	  float front[3] = {
+		  m_Camera2.Front.x,
+		  m_Camera2.Front.y,
+		  m_Camera2.Front.z,
+	  };
 
-	m_Camera2.SetPosition(glm::vec3 {pos[0], pos[1], pos[2]});
-	m_Camera2.SetRotation(glm::vec3(rot[0], rot[1], rot[2]));
-	m_Camera2.SetFov(fov);
+	  ImGui::DragFloat("Movement Speed", &m_Camera2.MovementSpeed, 0.1f, 0.1f,
+					   5.0f);
+	  ImGui::DragFloat("Rotation Speed", &m_Camera2.RotationSpeed, 0.1f, 0.1f,
+					   5.0f);
+	  ImGui::Checkbox("Flip y", &m_Camera2.flipY);
+	  ImGui::DragFloat("Fov", &fov, 0.1f, 0.1f, 179.0f);
+	  ImGui::DragFloat3("Position", pos, 0.1f, -1000.0f, 1000.0f);
+	  ImGui::DragFloat3("Rotation", rot, 0.1f, -1000.0f, 1000.0f);
+
+	  m_Camera2.SetPosition(glm::vec3 {pos[0], pos[1], pos[2]});
+	  m_Camera2.SetRotation(glm::vec3(rot[0], rot[1], rot[2]));
+	  m_Camera2.SetFov(fov);
+	}
 
 	ImGui::End();
-	int i = 0;
-	for (auto& m : m_EditorScene->MeshDatas) {
-	  float pos[3] = {
-		  m.Transform.Translation.x,
-		  m.Transform.Translation.y,
-		  m.Transform.Translation.z,
-	  };
-	  float scale[3] = {
-		  m.Transform.Scale.x,
-		  m.Transform.Scale.y,
-		  m.Transform.Scale.z,
-	  };
-	  float rot[3] = {
-		  m.Transform.Rotation.x,
-		  m.Transform.Rotation.y,
-		  m.Transform.Rotation.z,
-	  };
-	  ImGui::Begin("mesh");
-	  ImGui::PushID(i);
-
-	  ImGui::SliderFloat3("Position", pos, -99.f, 99.f);
-	  ImGui::SliderFloat3("Scale", scale, 0.1f, 99.f);
-	  ImGui::SliderFloat3("Rotation", rot, -99.f, 99.f);
-	  ImGui::PopID();
-
-	  ImGui::End();
-	  m.Transform.Translation = glm::vec3 {
-		  pos[0],
-		  pos[1],
-		  pos[2],
-	  };
-	  m.Transform.Scale = glm::vec3 {
-		  scale[0],
-		  scale[1],
-		  scale[2],
-	  };
-	  m.Transform.Rotation = glm::vec3 {
-		  rot[0],
-		  rot[1],
-		  rot[2],
-	  };
-	  i++;
-	}
   }
   void EditorLayer::OnUpdate(float ts) {
 	UpdateCamera(ts);
