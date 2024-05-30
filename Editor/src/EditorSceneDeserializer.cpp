@@ -68,6 +68,7 @@ namespace FooGame {
 	  }
 	}
 	ss.close();
+	ApplyTransformation(mD, assetJson);
 	return mD;
   }
 

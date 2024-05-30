@@ -132,6 +132,8 @@ namespace FooGame {
 	  ImGui::DragFloat("Fov", &fov, 0.1f, 0.1f, 179.0f);
 	  ImGui::DragFloat3("Position", pos, 0.1f, -1000.0f, 1000.0f);
 	  ImGui::DragFloat3("Rotation", rot, 0.1f, -1000.0f, 1000.0f);
+	  ImGui::DragFloat("ZNear", &m_Camera2.ZNear, 0.01f, 0.0f, 1000000.0f);
+	  ImGui::DragFloat("ZFar", &m_Camera2.ZFar, 0.01f, 0.0f, 1000000.0f);
 
 	  m_Camera2.SetPosition(glm::vec3 {pos[0], pos[1], pos[2]});
 	  m_Camera2.SetRotation(glm::vec3(rot[0], rot[1], rot[2]));
