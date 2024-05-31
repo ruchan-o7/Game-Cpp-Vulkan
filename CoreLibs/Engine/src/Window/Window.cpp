@@ -74,19 +74,19 @@ namespace FooGame
                     case GLFW_PRESS:
                     {
                         KeyPressedEvent event((KeyCode)key, 0);
-                        data.EventCallback(event);
+                        data.eventCallback(event);
                         break;
                     }
                     case GLFW_RELEASE:
                     {
                         KeyReleasedEvent event((KeyCode)key);
-                        data.EventCallback(event);
+                        data.eventCallback(event);
                         break;
                     }
                     case GLFW_REPEAT:
                     {
                         KeyPressedEvent event((KeyCode)key, true);
-                        data.EventCallback(event);
+                        data.eventCallback(event);
                         break;
                     }
                 }
@@ -101,7 +101,7 @@ namespace FooGame
                 data.Height = height;
                 WindowResizeEvent e{static_cast<unsigned int>(width),
                                     static_cast<unsigned int>(height)};
-                data.EventCallback(e);
+                data.eventCallback(e);
             });
         glfwSetMouseButtonCallback(
             m_WindowHandle,
@@ -115,14 +115,14 @@ namespace FooGame
                     {
                         MouseButtonPressedEvent e{
                             static_cast<MouseCode>(button)};
-                        data.EventCallback(e);
+                        data.eventCallback(e);
                         break;
                     }
                     case GLFW_RELEASE:
                     {
                         MouseButtonReleasedEvent e{
                             static_cast<MouseCode>(button)};
-                        data.EventCallback(e);
+                        data.eventCallback(e);
                         break;
                     }
                 }
@@ -138,7 +138,7 @@ namespace FooGame
 
                 MouseMovedEvent e{static_cast<float>(xPos),
                                   static_cast<float>(yPos)};
-                data.EventCallback(e);
+                data.eventCallback(e);
             });
         glfwSetScrollCallback(
             m_WindowHandle,
@@ -148,7 +148,7 @@ namespace FooGame
                     *(WindowData*)glfwGetWindowUserPointer(window);
                 MouseScrolledEvent e{static_cast<float>(xOffset),
                                      static_cast<float>(yOffset)};
-                data.EventCallback(e);
+                data.eventCallback(e);
             });
     }
     void Window::PollEvents()

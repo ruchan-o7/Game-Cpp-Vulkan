@@ -32,7 +32,7 @@ namespace FooGame
             GLFWwindow* GetWindowHandle() const { return m_WindowHandle; }
             void SetOnEventFunction(const EventCallback& callback)
             {
-                m_Data.EventCallback = callback;
+                m_Data.eventCallback = callback;
             }
             const uint32_t GetWidth() const { return m_Data.Width; }
             const uint32_t GetHeight() const { return m_Data.Height; }
@@ -58,7 +58,7 @@ namespace FooGame
                     bool VSync;
                     double CursorPosX, CursorPosY;
 
-                    EventCallback EventCallback;
+                    EventCallback eventCallback;
             };
             WindowData m_Data;
     };

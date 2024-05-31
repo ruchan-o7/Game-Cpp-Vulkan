@@ -138,8 +138,8 @@ namespace FooGame {
       info.VertexAttributeDescriptons = Vertex::GetAttributeDescriptionList();
       info.VertexBindings      = {Vertex::GetBindingDescription()};
       info.LineWidth           = 2.0f;
-      info.CullMode            = CullMode::BACK;
-      info.MultiSampling       = MultiSampling::LEVEL_1;
+      info.cullMode            = CullMode::BACK;
+      info.multiSampling       = MultiSampling::LEVEL_1;
       info.DescriptorSetLayout = s_Data.Res.descriptor.SetLayout;
       info.pushConstantSize    = sizeof(MeshPushConstants);
       info.pushConstantCount   = 1;

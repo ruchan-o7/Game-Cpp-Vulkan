@@ -45,7 +45,7 @@ namespace FooGame
         viewportState.viewportCount = 1;
         viewportState.scissorCount  = 1;
         VkCullModeFlagBits cullMode{};
-        switch (info.CullMode)
+        switch (info.cullMode)
         {
             case CullMode::FRONT:
                 cullMode = VK_CULL_MODE_FRONT_BIT;
@@ -71,7 +71,7 @@ namespace FooGame
                                                  : VK_FRONT_FACE_CLOCKWISE;
         rasterizer.depthBiasEnable         = VK_FALSE;
         VkSampleCountFlagBits sampleCount{};
-        switch (info.MultiSampling)
+        switch (info.multiSampling)
         {
             case MultiSampling::LEVEL_1:
                 sampleCount = VK_SAMPLE_COUNT_1_BIT;
