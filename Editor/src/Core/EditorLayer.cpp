@@ -57,6 +57,10 @@ namespace FooGame {
   }
   void EditorLayer::OnDetach() { Renderer3D::ClearBuffers(); }
   void EditorLayer::OnImGuiRender() {
+	DrawMeshUI();
+	DrawCameraUI();
+  }
+  void EditorLayer::DrawMeshUI() {
 	for (int i = 0; i < m_EditorScene->MeshDatas.size(); i++) {
 	  auto& mD = m_EditorScene->MeshDatas[i];
 	  if (ImGui::TreeNode("Models", "%s", mD.ModelPtr->Name.c_str())) {
@@ -108,39 +112,38 @@ namespace FooGame {
 		ImGui::TreePop();
 	  }
 	}
-	{
-	  ImGui::Begin("Camera");
-	  auto  cameraPos = m_Camera2.Position;
-	  float pos[3]    = {cameraPos.x, cameraPos.y, cameraPos.z};
-	  float fov       = m_Camera2.Fov;
-	  float rot[3]    = {
-          m_Camera2.Rotation.x,
-          m_Camera2.Rotation.y,
-          m_Camera2.Rotation.z,
-      };
-	  float front[3] = {
-		  m_Camera2.Front.x,
-		  m_Camera2.Front.y,
-		  m_Camera2.Front.z,
-	  };
+  }
+  void EditorLayer::DrawCameraUI() {
+	ImGui::Begin("Camera");
+	auto  cameraPos = m_Camera2.Position;
+	float pos[3]    = {cameraPos.x, cameraPos.y, cameraPos.z};
+	float fov       = m_Camera2.Fov;
+	float rot[3]    = {
+        m_Camera2.Rotation.x,
+        m_Camera2.Rotation.y,
+        m_Camera2.Rotation.z,
+    };
+	float front[3] = {
+		m_Camera2.Front.x,
+		m_Camera2.Front.y,
+		m_Camera2.Front.z,
+	};
 
-	  ImGui::DragFloat("Movement Speed", &m_Camera2.MovementSpeed, 0.1f, 0.1f,
-					   5.0f);
-	  ImGui::DragFloat("Rotation Speed", &m_Camera2.RotationSpeed, 0.1f, 0.1f,
-					   5.0f);
-	  ImGui::Checkbox("Flip y", &m_Camera2.flipY);
-	  ImGui::DragFloat("Fov", &fov, 0.1f, 0.1f, 179.0f);
-	  ImGui::DragFloat3("Position", pos, 0.1f, -1000.0f, 1000.0f);
-	  ImGui::DragFloat3("Rotation", rot, 0.1f, -1000.0f, 1000.0f);
-	  ImGui::DragFloat("ZNear", &m_Camera2.ZNear, 0.01f, 0.0f, 1000000.0f);
-	  ImGui::DragFloat("ZFar", &m_Camera2.ZFar, 0.01f, 0.0f, 1000000.0f);
-
-	  m_Camera2.SetPosition(glm::vec3 {pos[0], pos[1], pos[2]});
-	  m_Camera2.SetRotation(glm::vec3(rot[0], rot[1], rot[2]));
-	  m_Camera2.SetFov(fov);
-	}
-
+	ImGui::DragFloat("Movement Speed", &m_Camera2.MovementSpeed, 0.1f, 0.1f,
+					 5.0f);
+	ImGui::DragFloat("Rotation Speed", &m_Camera2.RotationSpeed, 0.1f, 0.1f,
+					 5.0f);
+	ImGui::Checkbox("Flip y", &m_Camera2.flipY);
+	ImGui::DragFloat("Fov", &fov, 0.1f, 0.1f, 179.0f);
+	ImGui::DragFloat3("Position", pos, 0.1f, -1000.0f, 1000.0f);
+	ImGui::DragFloat3("Rotation", rot, 0.1f, -1000.0f, 1000.0f);
+	ImGui::DragFloat("ZNear", &m_Camera2.ZNear, 0.01f, 0.0f, 1000000.0f);
+	ImGui::DragFloat("ZFar", &m_Camera2.ZFar, 0.01f, 0.0f, 1000000.0f);
 	ImGui::End();
+
+	m_Camera2.SetPosition(glm::vec3 {pos[0], pos[1], pos[2]});
+	m_Camera2.SetRotation(glm::vec3(rot[0], rot[1], rot[2]));
+	m_Camera2.SetFov(fov);
   }
   void EditorLayer::OnUpdate(float ts) {
 	UpdateCamera(ts);

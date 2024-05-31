@@ -25,5 +25,7 @@ namespace FooGame {
 
 	private:
 	  void UpdateCamera(float ts);
+	  void DrawMeshUI();
+	  void DrawCameraUI();
   };
 }  // namespace FooGame
