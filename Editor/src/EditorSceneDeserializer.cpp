@@ -37,6 +37,7 @@ namespace FooGame {
 	FOO_EDITOR_INFO("Asset {0} loading...", assetName);
 	if (assetJson["format"] == "obj") {
 	  mD.ModelPtr          = AssetLoader::LoadObjModel(modelAbsPath.string());
+	  mD.ModelPtr->Name    = assetJson["name"];
 	  mD.ModelPtr->AssetId = assetId;
 	  for (int i = 0; i < mD.ModelPtr->m_Meshes.size(); i++) {
 		auto& mesh             = mD.ModelPtr->m_Meshes[i];
@@ -56,6 +57,8 @@ namespace FooGame {
 	  }
 	} else if (assetJson["format"] == "glb") {
 	  mD.ModelPtr = AssetLoader::LoadGLTFModel(modelAbsPath.string(), true);
+	  mD.ModelPtr->Name    = assetJson["name"];
+	  mD.ModelPtr->AssetId = assetId;
 	  for (int i = 0; i < mD.ModelPtr->m_Meshes.size(); i++) {
 		auto& mesh             = mD.ModelPtr->m_Meshes[i];
 		mesh.materialData.Name = assetJson["meshes"][i]["material"]["name"];
