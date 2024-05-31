@@ -196,6 +196,7 @@ namespace FooGame {
 		data.IndexBuffer->Release();
 	  }
 	}
+	s_Data.Res.MeshMap.clear();
   }
 
   void Renderer3D::DrawModel(Model* model, const glm::mat4& transform) {
