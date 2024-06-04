@@ -9,6 +9,11 @@ file(GLOB_RECURSE ENGINE_SOURCE "src/Engine/*.cpp" "src/Engine/*.h")
 file(GLOB_RECURSE INPUT_SOURCE "src/Input/*.cpp" "src/Input/*.h")
 
 file(GLOB CAMERA_SOURCE "src/Camera/*.cpp" "src/Camera/*.h")
+file(GLOB CORE_SOURCE 
+	"src/Core/*.cpp" 
+	"src/Core/*.hpp" 
+	"src/Core/Utils/*.cpp" 
+	"src/Core/Utils/*.h")
 
 set(WINDOW_SOURCE "src/Window/Window.h;src/Window/Window.cpp")
 set(GEOMETRY_SOURCE
@@ -42,6 +47,7 @@ set(IMGUI_SRCS
 )
 set(ENGINE_SOURCES
 	"${ENGINE_SOURCE}"
+	"${CORE_SOURCE}"
 	"${IMGUI_SRCS}"
 	"${INPUT_SOURCE}"
 	"${CAMERA_SOURCE}"
