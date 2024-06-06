@@ -71,12 +71,51 @@ namespace ENGINE_NAMESPACE
         auto vkAllocator = instance->GetVkAllocator();
 
         auto logicalDevice = VulkanLogicalDevice::Create(*pDevice, deviceCreateInfo, vkAllocator);
+        // AttachToVulkanDevice(instance, std::move(pDevice), logicalDevice, ci, adapterInfo,
+        //                      ppRenderDevice, ppDeviceContext);
 
         *ppRenderDevice =
             new RenderDevice(this, ci, adapterInfo, instance, logicalDevice, std::move(pDevice));
-        DeviceContextDesc desc{};
+        *ppDeviceContext = new VulkanDeviceContext(*ppRenderDevice, ci);
+    }
 
-        *ppDeviceContext = new VulkanDeviceContext(*ppRenderDevice, ci, desc);
+    void EngineFactory::AttachToVulkanDevice(std::shared_ptr<VulkanInstance> instance,
+                                             std::unique_ptr<VulkanPhysicalDevice> physicalDevice,
+                                             std::shared_ptr<VulkanLogicalDevice> logicalDevice,
+                                             const EngineCreateInfo& engineCI,
+                                             const GraphicsAdapterInfo& adapterInfo,
+                                             RenderDevice** ppDevice,
+                                             VulkanDeviceContext** ppContext)
+    {
+        if (!logicalDevice || !ppDevice || !ppContext)
+        {
+            return;
+        }
+        DeviceContextDesc defaultCtxDesc;
+        const auto numContexts = engineCI.numOfContext > 0 ? engineCI.numOfContext : 1;
+        const auto* const pCtxDesc =
+            engineCI.numOfContext > 0 ? engineCI.pDevCtxInfo : &defaultCtxDesc;
+
+        *ppDevice = nullptr;
+
+        memset(ppContext, 0,
+               sizeof(*ppContext) *
+                   (size_t{engineCI.numOfContext} + size_t{/*deferred context num*/ 0}));
+        try
+        {
+            auto* pRenderDevice = new RenderDevice{
+                this, engineCI, adapterInfo, instance, logicalDevice, std::move(physicalDevice)};
+
+            for (uint32_t ctxIndex = 0; ctxIndex < numContexts; ++ctxIndex)
+            {
+                pRenderDevice->SetImmediateContext(
+                    ctxIndex, new VulkanDeviceContext(pRenderDevice, engineCI));
+                // pDevCtx->SetImmediateContext(ctxIndex, pDevCtx);
+            }
+        }
+        catch (std::runtime_error&)
+        {
+        }
     }
     void EngineFactory::CreateSwapchain(RenderDevice* pRenderDevice, VulkanDeviceContext* pDevCtx,
                                         const SwapchainDescription& sDesc, GLFWwindow* window,

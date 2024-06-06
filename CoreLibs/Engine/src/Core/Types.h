@@ -56,6 +56,10 @@ namespace ENGINE_NAMESPACE
 
         QUEUE_PRIORITY_LAST = QUEUE_PRIORITY_REALTIME
     };
+
+    struct DeviceContextDesc
+    {
+    };
     struct EngineCreateInfo
     {
             uint32_t engineApiVersion = VK_MAKE_VERSION(0, 1, 0);
@@ -67,6 +71,8 @@ namespace ENGINE_NAMESPACE
 
             VkAllocationCallbacks* allocCallback = nullptr;
             bool debugMode                       = true;
+            uint32_t numOfContext                = 1;
+            const DeviceContextDesc* pDevCtxInfo = nullptr;
     };
     struct GraphicsAdapterInfo
     {

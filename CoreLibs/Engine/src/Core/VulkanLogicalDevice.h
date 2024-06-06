@@ -55,7 +55,7 @@ namespace ENGINE_NAMESPACE
     using PipelineCacheWrapper       = DEFINE_VULKAN_OBJECT_WRAPPER(PipelineCache);
 #undef DEFINE_VULKAN_OBJECT_WRAPPER
 
-    class VulkanLogicalDevice : std::enable_shared_from_this<VulkanLogicalDevice>
+    class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDevice>
     {
         public:
             // clang-format off

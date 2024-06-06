@@ -1,4 +1,5 @@
 #include "VulkanLogicalDevice.h"
+#include <memory>
 #include "Utils/VulkanDebug.h"
 #include "Utils/VulkanObjectWrapper.h"
 #include "../Engine/VulkanCheckResult.h"

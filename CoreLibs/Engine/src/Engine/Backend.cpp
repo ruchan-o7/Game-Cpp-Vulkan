@@ -116,15 +116,16 @@ namespace FooGame
     {
         vkDeviceWaitIdle(Api::GetDevice()->GetDevice());
     }
+
+    RenderDevice* pRenderDevice         = nullptr;
+    VulkanDeviceContext* pDeviceContext = nullptr;
+    VulkanSwapchain* pSwapchain         = nullptr;
     void Backend::Init(Window& window)
     {
         FOO_ENGINE_INFO("Initializing renderer backend");
         comps.windowHandle = window.GetWindowHandle();
         auto factory       = EngineFactory::GetInstance();
 
-        RenderDevice* pRenderDevice         = nullptr;
-        VulkanDeviceContext* pDeviceContext = nullptr;
-        VulkanSwapchain* pSwapchain         = nullptr;
         EngineCreateInfo engineCi;
         SwapchainDescription sDesc{};
 

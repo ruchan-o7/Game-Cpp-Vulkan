@@ -235,7 +235,7 @@ namespace ENGINE_NAMESPACE
         m_ImageAcquiredFences.resize(imageCount);
 
         auto logical = pRenderDevice->GetLogicalDevice();
-        for (uint32_t i = 0; imageCount; i++)
+        for (uint32_t i = 0; i < imageCount; i++)
         {
             VkSemaphoreCreateInfo SemaphoreCI = {};
 
@@ -258,6 +258,8 @@ namespace ENGINE_NAMESPACE
     }
     void VulkanSwapchain::InitBuffersAndViews()
     {
+        m_SwapchainImagesInitialized.resize(2, false);
+        m_ImageAcquiredFenceSubmitted.resize(2, false);
     }
 
     void VulkanSwapchain::WaitForImageAcquiredFences()

@@ -1,4 +1,5 @@
 #include "RenderDevice.h"
+#include <cassert>
 namespace ENGINE_NAMESPACE
 {
 
@@ -16,5 +17,10 @@ namespace ENGINE_NAMESPACE
     void RenderDevice::WaitIdle()
     {
         m_LogicalDevice->WaitIdle();
+    }
+
+    void RenderDevice::SetImmediateContext(uint32_t index, VulkanDeviceContext* ctx)
+    {
+        // todo
     }
 }  // namespace ENGINE_NAMESPACE

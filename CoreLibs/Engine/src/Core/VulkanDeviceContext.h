@@ -4,14 +4,11 @@
 namespace ENGINE_NAMESPACE
 {
     class RenderDevice;
-    struct DeviceContextDesc
-    {
-    };
     class VulkanDeviceContext
     {
         public:
             VulkanDeviceContext(RenderDevice* pDevice, const EngineCreateInfo& engineCI,
-                                const DeviceContextDesc& desc);
+                                const DeviceContextDesc& desc = {});
             ~VulkanDeviceContext();
 
         public:
