@@ -27,7 +27,7 @@ namespace FooGame
             DELETE_COPY(Buffer);
 
         public:
-            Buffer(BufferCreateInfo info);
+            Buffer(const BufferCreateInfo& info);
             Buffer(Buffer&& other);
             ~Buffer() = default;
             void Release();

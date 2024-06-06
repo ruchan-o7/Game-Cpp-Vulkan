@@ -34,5 +34,33 @@ namespace ENGINE_NAMESPACE
                 return ADAPTER_VENDOR_UNKNOWN;
         }
     }
+    VkBufferUsageFlags BuToVkBufferUsage(BufferUsage usage)
+    {
+        VkBufferUsageFlags usageFlag{};
+        switch (usage)
+        {
+            case BufferUsage::TRANSFER_DST_INDEX:
+            {
+                usageFlag = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+            }
+            break;
+            case BufferUsage::TRANSFER_SRC:
+            {
+                usageFlag = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            }
+            break;
+            case BufferUsage::TRANSFER_DST:
+            {
+                usageFlag = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            }
+            break;
 
+            case BufferUsage::TRANSFER_DST_VERTEX:
+            {
+                usageFlag = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            }
+            break;
+        }
+        return usageFlag;
+    }
 }  // namespace ENGINE_NAMESPACE

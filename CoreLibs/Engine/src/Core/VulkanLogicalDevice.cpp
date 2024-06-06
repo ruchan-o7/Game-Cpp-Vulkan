@@ -2,7 +2,6 @@
 #include "Utils/VulkanDebug.h"
 #include "Utils/VulkanObjectWrapper.h"
 #include "../Engine/VulkanCheckResult.h"
-#include "vulkan/vulkan_core.h"
 namespace ENGINE_NAMESPACE
 {
     constexpr VkPipelineStageFlags VK_PIPELINE_STAGE_ALL_SHADERS =
@@ -16,6 +15,7 @@ namespace ENGINE_NAMESPACE
         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT |
         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT | VK_PIPELINE_STAGE_HOST_BIT |
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
     std::shared_ptr<VulkanLogicalDevice> VulkanLogicalDevice::Create(
         const VulkanPhysicalDevice& physicalDevice, const VkDeviceCreateInfo& DeviceCI,
         const VkAllocationCallbacks* vkAllocator)

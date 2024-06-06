@@ -1,10 +1,13 @@
 #pragma once
 #include "../Defines.h"
 #include "Types.h"
-#include "VulkanPhysicalDevice.h"
+#include "VulkanSwapchain.h"
 
 namespace ENGINE_NAMESPACE
 {
+    class RenderDevice;
+    class VulkanPhysicalDevice;
+    class VulkanDeviceContext;
     class EngineFactory
     {
         public:
@@ -13,7 +16,11 @@ namespace ENGINE_NAMESPACE
                 static EngineFactory fac;
                 return &fac;
             }
-            void Init(const EngineCreateInfo& ci);
+            void CreateVulkanContexts(const EngineCreateInfo& ci, RenderDevice** ppRenderDevice,
+                                      VulkanDeviceContext** ppDeviceContext);
+            void CreateSwapchain(RenderDevice* pRenderDevice, VulkanDeviceContext* pDevCtx,
+                                 const SwapchainDescription& sDesc, GLFWwindow* window,
+                                 VulkanSwapchain** ppSwapchain);
 
         private:
             EngineCreateInfo m_Ci;

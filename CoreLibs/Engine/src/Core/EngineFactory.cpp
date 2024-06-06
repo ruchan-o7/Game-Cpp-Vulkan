@@ -1,14 +1,22 @@
 #include "EngineFactory.h"
 #include <stdlib.h>
 #include "TypeConversion.h"
+#include "RenderDevice.h"
+#include "VulkanDeviceContext.h"
 #include "VulkanLogicalDevice.h"
+#include "VulkanSwapchain.h"
+#include "src/Log.h"
 #include <Log.h>
+#include <cassert>
+#include <stdexcept>
 namespace ENGINE_NAMESPACE
 {
     static constexpr uint32_t MAX_ADAPTER_QUEUES = 16;
 
     static constexpr uint8_t DEFAULT_QUEUE_ID = 0xFF;
-    void EngineFactory::Init(const EngineCreateInfo& ci)
+    void EngineFactory::CreateVulkanContexts(const EngineCreateInfo& ci,
+                                             RenderDevice** ppRenderDevice,
+                                             VulkanDeviceContext** ppDeviceContext)
     {
         VulkanInstance::CreateInfo instanceCi;
         instanceCi.debugMode            = ci.debugMode;
@@ -22,7 +30,7 @@ namespace ENGINE_NAMESPACE
         auto pDevice = VulkanPhysicalDevice::Create(pCi);
 
         std::vector<const char*> deviceExts;
-        if (instance->IsExtensionEnabled(VK_KHR_SWAPCHAIN_EXTENSION_NAME))
+        if (instance->IsExtensionEnabled(VK_KHR_SURFACE_EXTENSION_NAME))
         {
             deviceExts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
         }
@@ -63,6 +71,36 @@ namespace ENGINE_NAMESPACE
         auto vkAllocator = instance->GetVkAllocator();
 
         auto logicalDevice = VulkanLogicalDevice::Create(*pDevice, deviceCreateInfo, vkAllocator);
+
+        *ppRenderDevice =
+            new RenderDevice(this, ci, adapterInfo, instance, logicalDevice, std::move(pDevice));
+        DeviceContextDesc desc{};
+
+        *ppDeviceContext = new VulkanDeviceContext(*ppRenderDevice, ci, desc);
+    }
+    void EngineFactory::CreateSwapchain(RenderDevice* pRenderDevice, VulkanDeviceContext* pDevCtx,
+                                        const SwapchainDescription& sDesc, GLFWwindow* window,
+                                        VulkanSwapchain** ppSwapchain)
+    {
+        assert(ppSwapchain && "Null pointer provided");
+        if (!ppSwapchain)
+        {
+            return;
+        }
+        *ppSwapchain = nullptr;
+        try
+        {
+            *ppSwapchain = new VulkanSwapchain(sDesc, pRenderDevice, pDevCtx, window);
+        }
+        catch (const std::runtime_error&)
+        {
+            if (*ppSwapchain)
+            {
+                // (*ppSwapchain)->Release();
+                *ppSwapchain = nullptr;
+            }
+            FOO_ENGINE_ERROR("Failed to create swap chain");
+        }
     }
 
     GraphicsAdapterInfo GetPhysicalDeviceGraphicsAdapterInfo(const VulkanPhysicalDevice& pDevice)

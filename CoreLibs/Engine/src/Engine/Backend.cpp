@@ -5,6 +5,7 @@
 #include "../Window/Window.h"
 #include "../Events/ApplicationEvent.h"
 #include "../Core/EngineFactory.h"
+#include "../Core/RenderDevice.h"
 #include <vector>
 #include "Api.h"
 #include "Device.h"
@@ -120,10 +121,18 @@ namespace FooGame
         FOO_ENGINE_INFO("Initializing renderer backend");
         comps.windowHandle = window.GetWindowHandle();
         auto factory       = EngineFactory::GetInstance();
+
+        RenderDevice* pRenderDevice         = nullptr;
+        VulkanDeviceContext* pDeviceContext = nullptr;
+        VulkanSwapchain* pSwapchain         = nullptr;
         EngineCreateInfo engineCi;
-        factory->Init(engineCi);
+        SwapchainDescription sDesc{};
+
+        factory->CreateVulkanContexts(engineCi, &pRenderDevice, &pDeviceContext);
+        factory->CreateSwapchain(pRenderDevice, pDeviceContext, sDesc, window.GetWindowHandle(),
+                                 &pSwapchain);
         // Api::Init(&window);
-        auto device = Api::GetDevice()->GetDevice();
+        auto device = pRenderDevice->GetLogicalDevice()->GetVkDevice();
         int w, h;
         glfwGetFramebufferSize(comps.windowHandle, &w, &h);
         comps.swapchain = SwapchainBuilder()

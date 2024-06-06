@@ -34,6 +34,7 @@ namespace ENGINE_NAMESPACE
             {
                 return shared_from_this();
             }
+            VkInstance GetVkInstance() const { return m_VkInstance; }
             VkAllocationCallbacks* GetVkAllocator() const { return m_pAllocCallback; }
             bool IsLayerAvailable(const char* layer);
             bool IsExtensionAvailable(const std::vector<VkExtensionProperties>& extensions,
