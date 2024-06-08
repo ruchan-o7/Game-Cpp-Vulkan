@@ -25,4 +25,6 @@ public:                         \
 #define BIT(x)           (1 << x)
 #define VS_CODE_DEBUGGER 0
 
+#define NOT_IMPLEMENTED() assert(0 && "Not implemented yet")
+
 }  // namespace Engine

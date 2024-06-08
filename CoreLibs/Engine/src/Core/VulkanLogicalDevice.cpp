@@ -3,6 +3,7 @@
 #include "Utils/VulkanDebug.h"
 #include "Utils/VulkanObjectWrapper.h"
 #include "../Engine/VulkanCheckResult.h"
+#include "vulkan/vulkan_core.h"
 namespace ENGINE_NAMESPACE
 {
     constexpr VkPipelineStageFlags VK_PIPELINE_STAGE_ALL_SHADERS =
@@ -217,7 +218,10 @@ namespace ENGINE_NAMESPACE
         VkDeviceMemory vkDeviceMem = VK_NULL_HANDLE;
 
         auto err = vkAllocateMemory(m_VkDevice, &AllocInfo, m_VkAllocator, &vkDeviceMem);
-        FOO_ENGINE_ERROR("Failed to allocate device memory : {0}", DebugName);
+        if (err != VK_SUCCESS)
+        {
+            FOO_ENGINE_ERROR("Failed to allocate device memory : {0}", DebugName);
+        }
 
         if (*DebugName != 0)
         {

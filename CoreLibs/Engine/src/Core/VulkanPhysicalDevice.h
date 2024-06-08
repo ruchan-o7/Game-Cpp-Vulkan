@@ -40,6 +40,7 @@ namespace ENGINE_NAMESPACE
             }
 
             VkFormatProperties GetPhysicalDeviceFormatProperties(VkFormat imageFormat) const;
+            uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propFlags) const;
 
         private:
             VulkanPhysicalDevice(const VulkanPhysicalDevice::CreateInfo& ci);

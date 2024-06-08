@@ -86,9 +86,8 @@ namespace FooGame
         }
     }
     Buffer::Buffer(const BufferCreateInfo& info)
-        : m_Size(info.size), m_MemoryFlags(info.memoryFlags)
+        : m_Size(info.size), m_MemoryFlags(info.memoryFlags), m_Usage(ParseBufferUsage(info.usage))
     {
-        m_Usage = ParseBufferUsage(info.usage);
         Create();
     }
     void Buffer::CopyTo(Buffer& target, VkDeviceSize size)

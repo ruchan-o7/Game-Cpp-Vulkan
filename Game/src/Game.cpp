@@ -16,12 +16,11 @@ namespace FooGame
         m_Window = new Window();
         m_Window->SetOnEventFunction(BIND_EVENT_FN(Game::OnEvent));
         Backend::Init(*m_Window);
-        Renderer2D::Init();
-        Renderer3D::Init();
+        // Renderer2D::Init();
+        // Renderer3D::Init();
         m_Scenes.emplace_back(new Scene());
     }
-    static void DrawQuads(int amount, const Shared<Texture2D> texture,
-                          float tiling, glm::vec4 tint)
+    static void DrawQuads(int amount, const Shared<Texture2D> texture, float tiling, glm::vec4 tint)
     {
         for (u32 i = 0; i < amount; i++)
         {
@@ -78,15 +77,11 @@ namespace FooGame
     {
         EventDispatcher dispatcher{e};
         dispatcher.Dispatch<KeyPressedEvent>(BIND_EVENT_FN(Game::OnKeyEvent));
-        dispatcher.Dispatch<WindowResizeEvent>(
-            BIND_EVENT_FN(Game::OnWindowResized));
+        dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(Game::OnWindowResized));
         dispatcher.Dispatch<MouseMovedEvent>(BIND_EVENT_FN(Game::OnMouseMoved));
-        dispatcher.Dispatch<MouseScrolledEvent>(
-            BIND_EVENT_FN(Game::OnMouseScroll));
-        dispatcher.Dispatch<MouseButtonPressedEvent>(
-            BIND_EVENT_FN(Game::OnMousePressed));
-        dispatcher.Dispatch<MouseButtonReleasedEvent>(
-            BIND_EVENT_FN(Game::OnMouseRelease));
+        dispatcher.Dispatch<MouseScrolledEvent>(BIND_EVENT_FN(Game::OnMouseScroll));
+        dispatcher.Dispatch<MouseButtonPressedEvent>(BIND_EVENT_FN(Game::OnMousePressed));
+        dispatcher.Dispatch<MouseButtonReleasedEvent>(BIND_EVENT_FN(Game::OnMouseRelease));
     }
 
     bool Game::OnKeyEvent(KeyPressedEvent& key)

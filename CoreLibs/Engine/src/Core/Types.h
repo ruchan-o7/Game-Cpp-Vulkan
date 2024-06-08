@@ -188,13 +188,13 @@ namespace ENGINE_NAMESPACE
                                       RESOURCE_STATE_SHADER_RESOURCE |
                                       RESOURCE_STATE_INDIRECT_ARGUMENT | RESOURCE_STATE_COPY_SOURCE
     };
-    enum class BufferUsage
-    {
-        TRANSFER_SRC,
-        TRANSFER_DST,
-        TRANSFER_DST_VERTEX,
-        TRANSFER_DST_INDEX,
-    };
+    // enum class BufferUsage
+    // {
+    //     TRANSFER_SRC,
+    //     TRANSFER_DST,
+    //     TRANSFER_DST_VERTEX,
+    //     TRANSFER_DST_INDEX,
+    // };
     class VulkanLogicalDevice;
     enum class TextureType
     {
@@ -370,4 +370,21 @@ namespace ENGINE_NAMESPACE
             uint32_t DependencyCount           = 0;
             const SubpassDependencyDesc* pDeps = nullptr;
     };
+    namespace Vulkan
+    {
+        enum class BufferUsage
+        {
+            Vertex               = 1,
+            Index                = 2,
+            Uniform              = 4,
+            TransferDestionation = 8,
+            TransferSource       = 10,
+        };
+        enum class BufferMemoryFlag
+        {
+            CpuVisible,
+            GpuOnly,
+        };
+    };  // namespace Vulkan
+
 }  // namespace ENGINE_NAMESPACE

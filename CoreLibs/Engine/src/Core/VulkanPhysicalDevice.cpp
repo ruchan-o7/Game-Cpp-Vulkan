@@ -1,6 +1,7 @@
 #include "VulkanPhysicalDevice.h"
 
 #include <cassert>
+#include <cstdint>
 #include "Utils/IndexWrapper.h"
 #include <Log.h>
 namespace ENGINE_NAMESPACE
@@ -139,6 +140,20 @@ namespace ENGINE_NAMESPACE
             }
         }
         return InvalidMemoryTypeIndex;
+    }
+    uint32_t VulkanPhysicalDevice::FindMemoryType(uint32_t typeFilter,
+                                                  VkMemoryPropertyFlags propFlags) const
+    {
+        auto props = GetMemoryProperties();
+        for (uint32_t i = 0; i < props.memoryTypeCount; i++)
+        {
+            if ((typeFilter & (1 << i)) &&
+                (props.memoryTypes[i].propertyFlags & propFlags) == propFlags)
+            {
+                return i;
+            }
+        }
+        return 0;
     }
 
     VkFormatProperties VulkanPhysicalDevice::GetPhysicalDeviceFormatProperties(

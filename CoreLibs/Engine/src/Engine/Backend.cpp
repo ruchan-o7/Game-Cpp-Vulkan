@@ -125,6 +125,10 @@ namespace FooGame
         vkDeviceWaitIdle(Api::GetDevice()->GetDevice());
     }
 
+    RenderDevice* Backend::GetRenderDevice()
+    {
+        return pRenderDevice;
+    }
     void Backend::Init(Window& window)
     {
         FOO_ENGINE_INFO("Initializing renderer backend");
@@ -139,13 +143,7 @@ namespace FooGame
                                  &pSwapchain);
         // Api::Init(&window);
         auto device = pRenderDevice->GetLogicalDevice()->GetVkDevice();
-        // int w, h;
-        // glfwGetFramebufferSize(comps.windowHandle, &w, &h);
-        // comps.swapchain = SwapchainBuilder()
-        //                       .SetExtent({static_cast<uint32_t>(w), static_cast<uint32_t>(h)})
-        //                       .Build();
 
-        // comps.deletionQueue.PushFunction([&](VkDevice d) { delete comps.swapchain; });
         RenderPassAttachmentDesc attachments[2];
         attachments[0].SampleCount    = 1;
         attachments[0].LoadOp         = ATTACHMENT_LOAD_OP_CLEAR;

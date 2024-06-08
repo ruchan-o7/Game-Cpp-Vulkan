@@ -6,6 +6,7 @@
 #include "VulkanLogicalDevice.h"
 #include "VulkanSwapchain.h"
 #include "src/Log.h"
+#include "vulkan/vulkan_core.h"
 #include <Log.h>
 #include <cassert>
 #include <stdexcept>
@@ -71,6 +72,8 @@ namespace ENGINE_NAMESPACE
         auto vkAllocator = instance->GetVkAllocator();
 
         auto logicalDevice = VulkanLogicalDevice::Create(*pDevice, deviceCreateInfo, vkAllocator);
+        VkQueue queue;
+        vkGetDeviceQueue(logicalDevice->GetVkDevice(), graphicQueue, 0, &queue);
         // AttachToVulkanDevice(instance, std::move(pDevice), logicalDevice, ci, adapterInfo,
         //                      ppRenderDevice, ppDeviceContext);
 

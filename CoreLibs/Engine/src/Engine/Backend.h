@@ -6,6 +6,7 @@ namespace FooGame
 {
     class Window;
     class WindowResizeEvent;
+    class RenderDevice;
     class Backend
     {
         public:
@@ -32,6 +33,8 @@ namespace FooGame
             static VkFramebuffer GetFramebuffer();
             static VkCommandBuffer GetCurrentCommandbuffer();
             static void BeginRenderpass();
+
+            static RenderDevice* GetRenderDevice();
 
         private:
             static void BeginDrawing_();

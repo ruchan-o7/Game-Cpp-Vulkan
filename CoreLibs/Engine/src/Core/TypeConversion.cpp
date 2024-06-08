@@ -1,6 +1,7 @@
 #include "TypeConversion.h"
 #include <cassert>
 #include "Types.h"
+#include "vulkan/vulkan_core.h"
 #include <Log.h>
 namespace ENGINE_NAMESPACE
 {
@@ -35,35 +36,6 @@ namespace ENGINE_NAMESPACE
             default:
                 return ADAPTER_VENDOR_UNKNOWN;
         }
-    }
-    VkBufferUsageFlags BuToVkBufferUsage(BufferUsage usage)
-    {
-        VkBufferUsageFlags usageFlag{};
-        switch (usage)
-        {
-            case BufferUsage::TRANSFER_DST_INDEX:
-            {
-                usageFlag = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-            }
-            break;
-            case BufferUsage::TRANSFER_SRC:
-            {
-                usageFlag = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-            }
-            break;
-            case BufferUsage::TRANSFER_DST:
-            {
-                usageFlag = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            }
-            break;
-
-            case BufferUsage::TRANSFER_DST_VERTEX:
-            {
-                usageFlag = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            }
-            break;
-        }
-        return usageFlag;
     }
     class TexFormatToVkFormatMapper
     {
@@ -266,6 +238,35 @@ namespace ENGINE_NAMESPACE
             default:
                 FOO_ENGINE_ERROR("Unexpected resource state flag ({0})", static_cast<int>(state));
                 return VK_IMAGE_LAYOUT_UNDEFINED;
+        }
+    }
+
+    VkMemoryPropertyFlags BufMemFlagToVkFlag(Vulkan::BufferMemoryFlag flag)
+    {
+        switch (flag)
+        {
+            case Vulkan::BufferMemoryFlag::CpuVisible:
+                return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            case Vulkan::BufferMemoryFlag::GpuOnly:
+                return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+                break;
+        }
+    }
+
+    VkBufferUsageFlags BuffUsageToVkUsage(Vulkan::BufferUsage usage)
+    {
+        switch (usage)
+        {
+            case Vulkan::BufferUsage::Vertex:
+                return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            case Vulkan::BufferUsage::Index:
+                return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+            case Vulkan::BufferUsage::Uniform:
+            case Vulkan::BufferUsage::TransferDestionation:
+                return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            case Vulkan::BufferUsage::TransferSource:
+                return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+                break;
         }
     }
 }  // namespace ENGINE_NAMESPACE

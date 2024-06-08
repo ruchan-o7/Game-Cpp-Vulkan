@@ -11,33 +11,25 @@ namespace FooGame
     class Device
     {
         public:
-            static Device* CreateDevice(
-                const std::vector<const char*>& layers,
-                const std::vector<const char*>& extensions);
+            static Device* CreateDevice(const std::vector<const char*>& layers,
+                                        const std::vector<const char*>& extensions);
 
         public:
             VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
             uint32_t GetGraphicsFamily() const { return m_GraphicQueueFamily; }
             VkQueue GetPresentQueue() const { return m_PresentQueue; }
-            VkPhysicalDevice GetPhysicalDevice() const
-            {
-                return m_PhysicalDevice;
-            }
+            VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
             VkDevice GetDevice() const { return m_Device; }
             VkPhysicalDeviceProperties GetPhysicalDeviceProperties();
             VkSurfaceCapabilitiesKHR GetSurfaceCaps(VkSurfaceKHR surface);
-            std::vector<VkSurfaceFormatKHR> GetSurfaceFormats(
-                VkSurfaceKHR surface);
-            std::vector<VkPresentModeKHR> GetSurfacePresentModes(
-                VkSurfaceKHR surface);
+            std::vector<VkSurfaceFormatKHR> GetSurfaceFormats(VkSurfaceKHR surface);
+            std::vector<VkPresentModeKHR> GetSurfacePresentModes(VkSurfaceKHR surface);
             VkPhysicalDeviceMemoryProperties GetMemoryProperties();
             VkMemoryRequirements GetMemoryRequirements(VkImage& image);
             VkMemoryRequirements GetMemoryRequirements(VkBuffer& buffer);
-            void AllocateMemory(VkMemoryAllocateInfo& allocInfo,
-                                VkDeviceMemory& memory);
+            void AllocateMemory(VkMemoryAllocateInfo& allocInfo, VkDeviceMemory& memory);
 
-            uint32_t FindMemoryType(uint32_t filter,
-                                    VkMemoryPropertyFlags properties);
+            uint32_t FindMemoryType(uint32_t filter, VkMemoryPropertyFlags properties);
             void WaitIdle();
             void Destroy();
 

@@ -28,6 +28,8 @@ namespace ENGINE_NAMESPACE
             void CreateBuffer(const BuffDesc& buffDesc, const BuffData& pBuffData,
                               VulkanBuffer** ppBuffer);
 
+            void CopyBuffer(VulkanBuffer& source, VulkanBuffer& destination, size_t size);
+
             VkDevice GetVkDevice() const { return m_LogicalDevice->GetVkDevice(); }
             const std::shared_ptr<VulkanLogicalDevice> GetLogicalDevice() const
             {
@@ -57,6 +59,8 @@ namespace ENGINE_NAMESPACE
             std::shared_ptr<VulkanLogicalDevice> m_LogicalDevice;
             std::unique_ptr<VulkanPhysicalDevice> m_PhysicalDevice;
             std::vector<VulkanDeviceContext*> m_pImmediateContexts;
+
+            CommandPoolWrapper m_CommandPool;
     };
 
 }  // namespace ENGINE_NAMESPACE

@@ -1,9 +1,8 @@
 #include "Editor.h"
 #include <Engine.h>
 #include <iostream>
-#include "Core/LayerStack.h"
-#include "Core/EditorLayer.h"
 #include <nlohmann/json.hpp>
+#include "Core/EditorLayer.h"
 #include <Log.h>
 namespace FooGame
 {
@@ -27,7 +26,7 @@ namespace FooGame
             [this](auto&&... args) -> decltype(auto)
             { return Editor::OnEvent(std::forward<decltype(args)>(args)...); });
         Backend::Init(*m_Window);
-        Renderer3D::Init();
+        Renderer3D::Init(Backend::GetRenderDevice());
         m_LayerStack = new LayerStack;
     }
     void Editor::Run()
@@ -68,16 +67,11 @@ namespace FooGame
     {
         EventDispatcher dispatcher{e};
         dispatcher.Dispatch<KeyPressedEvent>(BIND_EVENT_FN(Editor::OnKeyEvent));
-        dispatcher.Dispatch<WindowResizeEvent>(
-            BIND_EVENT_FN(Editor::OnWindowResized));
-        dispatcher.Dispatch<MouseMovedEvent>(
-            BIND_EVENT_FN(Editor::OnMouseMoved));
-        dispatcher.Dispatch<MouseScrolledEvent>(
-            BIND_EVENT_FN(Editor::OnMouseScroll));
-        dispatcher.Dispatch<MouseButtonPressedEvent>(
-            BIND_EVENT_FN(Editor::OnMousePressed));
-        dispatcher.Dispatch<MouseButtonReleasedEvent>(
-            BIND_EVENT_FN(Editor::OnMouseRelease));
+        dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(Editor::OnWindowResized));
+        dispatcher.Dispatch<MouseMovedEvent>(BIND_EVENT_FN(Editor::OnMouseMoved));
+        dispatcher.Dispatch<MouseScrolledEvent>(BIND_EVENT_FN(Editor::OnMouseScroll));
+        dispatcher.Dispatch<MouseButtonPressedEvent>(BIND_EVENT_FN(Editor::OnMousePressed));
+        dispatcher.Dispatch<MouseButtonReleasedEvent>(BIND_EVENT_FN(Editor::OnMouseRelease));
         for (auto& l : *m_LayerStack)
         {
             l->OnEvent(e);

@@ -2,6 +2,7 @@
 #include <cassert>
 #include "TypeConversion.h"
 #include "RenderDevice.h"
+#include "Types.h"
 namespace ENGINE_NAMESPACE
 {
 
@@ -20,71 +21,149 @@ namespace ENGINE_NAMESPACE
         assert(!"No compatible memory type found");
         return ~0u;
     }
-    VulkanBuffer::VulkanBuffer(const BuffDesc& info, const BuffData& data)
-        : m_pRenderDevice(info.pRenderDevice),
-          m_Buffer(nullptr),
-          m_Memory(nullptr),
-          m_Data(nullptr),
-          m_Size(data.Size),
-          m_Usage(info.Usage)
+    VulkanBuffer::VulkanBuffer(const BuffDesc& info, BuffData&& data)
+        : m_Desc(info), m_BufferData(std::move(data)), m_Buffer(nullptr), m_Memory(nullptr)
     {
-        assert(data.Size > 0);
-
-        Create(data);
+        if (m_Desc.Usage == Vulkan::BufferUsage::Uniform)
+        {
+            if (m_Desc.MemoryFlag == Vulkan::BufferMemoryFlag::CpuVisible)
+            {
+                assert("Uniform buffer should cpu visible");
+            }
+        }
+        assert(m_BufferData.Size > 0);
+        Init();
     }
     void VulkanBuffer::Release()
     {
         if (m_Buffer != nullptr)
         {
-            auto lDev = m_pRenderDevice->GetLogicalDevice();
-            lDev->ReleaseVulkanObject(std::move(m_Buffer));
-            lDev->ReleaseVulkanObject(std::move(m_Memory));
+            // auto lDev = m_Desc.pRenderDevice->GetLogicalDevice();
+            m_Buffer.Release();
+            m_Memory.Release();
+            // lDev->ReleaseVulkanObject(std::move(m_Buffer));
+            // lDev->ReleaseVulkanObject(std::move(m_Memory));
         }
     }
-    void VulkanBuffer::Create(const BuffData& data)
+    void VulkanBuffer::Init()
     {
-        auto lDev = m_pRenderDevice->GetLogicalDevice();
-        auto pDev = m_pRenderDevice->GetPhysicalDevice();
+        auto lDev = m_Desc.pRenderDevice->GetLogicalDevice();
+        auto pDev = m_Desc.pRenderDevice->GetPhysicalDevice();
+
+        VkBufferUsageFlags usage           = BuffUsageToVkUsage(m_Desc.Usage);
+        VkMemoryPropertyFlags memPropFlags = BufMemFlagToVkFlag(m_Desc.MemoryFlag);
+
         VkBufferCreateInfo ci{};
         ci.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        ci.size                  = m_BufferData.Size;
+        ci.usage                 = usage;
+        ci.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+        ci.pNext                 = nullptr;
         ci.pQueueFamilyIndices   = nullptr;
         ci.queueFamilyIndexCount = 0;
-        ci.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
-        ci.usage                 = BuToVkBufferUsage(m_Usage);
-        ci.pNext                 = nullptr;
-        ci.size                  = m_Size;
 
-        auto TODO = lDev->CreateBuffer(ci, "buffer");
+        m_Buffer = std::move(lDev->CreateBuffer(ci, m_Desc.name));
 
-        auto memProps = pDev->GetMemoryProperties();
         auto memReqs  = lDev->GetBufferMemoryRequirements(m_Buffer);
+        auto memProps = pDev->GetMemoryProperties();
 
         VkMemoryAllocateInfo allocInfo{};
-        allocInfo.sType          = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memReqs.size;
+        allocInfo.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.allocationSize  = memReqs.size;
+        allocInfo.memoryTypeIndex = m_Desc.pRenderDevice->GetPhysicalDevice()->FindMemoryType(
+            memReqs.memoryTypeBits, memPropFlags);
 
-        uint32_t memIndex = SelectMemoryType(memProps, memReqs.memoryTypeBits, m_MemoryFlags);
-        allocInfo.memoryTypeIndex = memIndex;
+        m_Memory = std::move(lDev->AllocateDeviceMemory(allocInfo));
 
-        VkMemoryAllocateFlagsInfo flagInfo = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO};
-        auto bufferUsage                   = BuToVkBufferUsage(m_Usage);
-
-        if (bufferUsage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
-        {
-            flagInfo.flags      = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
-            flagInfo.deviceMask = 1;
-            allocInfo.pNext     = &flagInfo;
-        }
-        auto TODO2 = lDev->AllocateDeviceMemory(allocInfo);
         lDev->BindBufferMemory(m_Buffer, m_Memory, 0);
-        lDev->MapMemory(m_Memory, 0, m_Size, m_MemoryFlags, &m_Data);
 
-        memcpy(m_Data, data.Data, m_Size);
-
-        if (!(m_MemoryFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
+        MapMemory();
+        if (m_Desc.Usage != Vulkan::BufferUsage::Uniform)
         {
-            lDev->UnmapMemory(m_Memory);
+            memcpy(m_MappedPtr, m_BufferData.Data, m_BufferData.Size);
+
+            UnMapMemory();
+        }
+    }
+    void VulkanBuffer::MapMemory()
+    {
+        VkMemoryPropertyFlags memPropFlags = BufMemFlagToVkFlag(m_Desc.MemoryFlag);
+        m_Desc.pRenderDevice->GetLogicalDevice()->MapMemory(m_Memory, 0, m_BufferData.Size,
+                                                            memPropFlags, &m_MappedPtr);
+    }
+    void VulkanBuffer::UnMapMemory()
+    {
+        if (m_Desc.MemoryFlag == Vulkan::BufferMemoryFlag::GpuOnly)
+        {
+            m_Desc.pRenderDevice->GetLogicalDevice()->UnmapMemory(m_Memory);
+        }
+    }
+    void VulkanBuffer::UpdateData(void* data, size_t size, size_t offset)
+    {
+        assert(size <= m_BufferData.Size);
+        if (m_Desc.MemoryFlag == Vulkan::BufferMemoryFlag::CpuVisible)
+        {
+            memcpy(m_MappedPtr, m_BufferData.Data, m_BufferData.Size);
+        }
+        else
+        {
+            m_Desc.pRenderDevice->GetLogicalDevice()->MapMemory(
+                m_Memory, offset, size, BufMemFlagToVkFlag(m_Desc.MemoryFlag), &data);
+            memcpy(m_MappedPtr, data, size);
+            m_Desc.pRenderDevice->GetLogicalDevice()->UnmapMemory(m_Memory);
+            // vkUnmapMemory(device, m_Memory);
         }
     }
 
+    std::unique_ptr<VulkanBuffer> CreateDynamicBuffer(size_t size, Vulkan::BufferUsage usage)
+    {
+        NOT_IMPLEMENTED();
+        return nullptr;
+    }
+    std::unique_ptr<VulkanBuffer> CreateVertexBuffer(const BuffData& data)
+    {
+        NOT_IMPLEMENTED();
+        return nullptr;
+    }
+    std::unique_ptr<VulkanBuffer> CreateIndexBuffer(const BuffData& data)
+    {
+        NOT_IMPLEMENTED();
+        return nullptr;
+    }
+
+    void VulkanBuffer::CopyTo(VulkanBuffer& destination, size_t size, VkCommandPool commandPool,
+                              VkQueue queue)
+    {
+        auto device = m_Desc.pRenderDevice->GetLogicalDevice()->GetVkDevice();
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandPool        = commandPool;
+        allocInfo.commandBufferCount = 1;
+
+        VkCommandBuffer commandBuffer;
+        vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+        vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+        VkBufferCopy copyRegion{};
+        copyRegion.size = size;
+        vkCmdCopyBuffer(commandBuffer, GetBuffer(), destination.GetBuffer(), 1, &copyRegion);
+
+        vkEndCommandBuffer(commandBuffer);
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers    = &commandBuffer;
+
+        vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(queue);
+
+        vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+    }
 }  // namespace ENGINE_NAMESPACE
