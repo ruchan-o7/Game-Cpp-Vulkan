@@ -60,6 +60,7 @@ namespace FooGame
 
         VK_CALL(vkCreateImageView(device, &viewInfo, nullptr, &imageView));
     }
+
     void CreateImageView(Texture2D& image, VkFormat format, VkImageAspectFlags aspectFlags)
     {
         auto device = Api::GetDevice()->GetDevice();

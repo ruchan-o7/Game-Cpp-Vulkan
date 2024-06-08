@@ -18,7 +18,7 @@ namespace ENGINE_NAMESPACE
             static std::unique_ptr<VulkanPhysicalDevice> Create(
                 const VulkanPhysicalDevice::CreateInfo& ci);
 
-            HardwareQueueIndex FindQueueFamily(VkQueueFlags queueFlag);
+            HardwareQueueIndex FindQueueFamily(VkQueueFlags queueFlag) const;
             bool IsExtensionSupported(const char* ExtensionName) const;
 
             static constexpr uint32_t InvalidMemoryTypeIndex = ~uint32_t{0};

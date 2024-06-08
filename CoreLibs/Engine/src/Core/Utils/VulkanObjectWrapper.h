@@ -31,6 +31,14 @@ namespace ENGINE_NAMESPACE
             {
                 rhs.m_VkObject = nullptr;
             }
+            VulkanObjectWrapper& operator=(VulkanObjectWrapper&& vow) noexcept
+            {
+                Release();
+                this->m_VkObject       = vow.m_VkObject;
+                this->m_pLogicalDevice = std::move(vow.m_pLogicalDevice);
+                vow.m_VkObject         = nullptr;
+                return *this;
+            }
             operator VulkanObjectType() const { return m_VkObject; }
 
             const VulkanObjectType* operator&() const { return &m_VkObject; }

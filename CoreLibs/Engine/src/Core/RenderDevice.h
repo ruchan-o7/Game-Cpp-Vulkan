@@ -1,10 +1,10 @@
 #pragma once
+#include <cstdint>
 #include <memory>
 #include <vector>
 #include "EngineFactory.h"
 #include "Types.h"
 #include "VulkanLogicalDevice.h"
-#include "VulkanDeviceContext.h"
 #include "VulkanInstance.h"
 #include "VulkanPhysicalDevice.h"
 namespace ENGINE_NAMESPACE
@@ -13,6 +13,7 @@ namespace ENGINE_NAMESPACE
     class VulkanBuffer;
     struct BuffData;
     struct BuffDesc;
+    class VulkanRenderPass;
     class RenderDevice
     {
         public:
@@ -38,7 +39,6 @@ namespace ENGINE_NAMESPACE
                 return m_PhysicalDevice->GetVkDeviceHandle();
             }
 
-            void SetImmediateContext(uint32_t index, VulkanDeviceContext* ctx);
             VkInstance GetVkInstance() const { return m_VulkanInstance->GetVkInstance(); }
             size_t GetNumImmediateContexts() const { return m_pImmediateContexts.size(); }
 
@@ -46,7 +46,11 @@ namespace ENGINE_NAMESPACE
             {
                 return m_pImmediateContexts[Ctx];
             }
+            void CreateRenderPass(const RenderPassDesc& desc, VulkanRenderPass** pRenderPass);
+            void CreateFramebuffer(VulkanSwapchain* pSwapchain, VkFramebuffer* pFramebuffer,
+                                   VulkanRenderPass* pRenderPass, uint32_t count = 2);
             void WaitIdle();
+            void IdleGPU();
 
         private:
             std::shared_ptr<VulkanInstance> m_VulkanInstance;

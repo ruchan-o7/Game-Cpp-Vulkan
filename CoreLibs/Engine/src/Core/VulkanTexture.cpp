@@ -2,8 +2,7 @@
 #include <cassert>
 namespace ENGINE_NAMESPACE
 {
-    VulkanTexture::VulkanTexture(const Texture::TextureDescription& desc,
-                                 const Texture::TextureData& data)
+    VulkanTexture::VulkanTexture(const TextureDescription& desc, const TextureData& data)
         : m_Image(nullptr),
           m_Memory(nullptr),
           m_Sampler(nullptr),

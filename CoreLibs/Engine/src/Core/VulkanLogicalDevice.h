@@ -217,5 +217,7 @@ namespace ENGINE_NAMESPACE
             const VkPhysicalDeviceFeatures m_EnabledFeatures;
             std::vector<VkPipelineStageFlags> m_SupportedStagesMask;
             std::vector<VkAccessFlags> m_SupportedAccessMask;
+
+            VkQueue m_GraphicQueue;
     };
 }  // namespace ENGINE_NAMESPACE

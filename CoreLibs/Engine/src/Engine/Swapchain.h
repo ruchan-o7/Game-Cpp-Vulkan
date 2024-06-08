@@ -6,7 +6,7 @@
 struct GLFWwindow;
 namespace FooGame
 {
-
+    // TODO: this swapchain is good enough improve this
     struct SwapchainCreateInfo
     {
             VkExtent2D extent;
@@ -25,18 +25,11 @@ namespace FooGame
             void Init();
             void Destroy();
             VkSwapchainKHR* Get() { return &m_Swapchain; }
-            VkResult AcquireNextImage(VkDevice device, Semaphore& semaphore,
-                                      uint32_t* imageIndex);
+            VkResult AcquireNextImage(VkDevice device, Semaphore& semaphore, uint32_t* imageIndex);
 
             VkFormat GetImageFormat() const { return m_ImageFormat; };
-            VkSurfaceFormatKHR GetSurfaceImageFormat() const
-            {
-                return m_SurfaceFormat;
-            };
-            uint32_t GetImageViewCount() const
-            {
-                return m_SwapchainImageViews.size();
-            };
+            VkSurfaceFormatKHR GetSurfaceImageFormat() const { return m_SurfaceFormat; };
+            uint32_t GetImageViewCount() const { return m_SwapchainImageViews.size(); };
             inline VkImageView GetImageView(uint32_t index) const
             {
                 return m_SwapchainImageViews[index];
@@ -47,7 +40,6 @@ namespace FooGame
             VkFramebuffer GetFrameBuffer(uint32_t imageIndex);
             void CreateFramebuffers();
             void SetRenderpass();
-            void CreateDepthResources();
 
         private:
             VkSwapchainKHR m_Swapchain;
@@ -71,10 +63,8 @@ namespace FooGame
             ~SwapchainBuilder() = default;
 
             SwapchainBuilder& SetExtent(VkExtent2D extent);
-            SwapchainBuilder& SetOldSwapchain(
-                VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE);
-            SwapchainBuilder& SetSurfaceFormat(
-                VkSurfaceFormatKHR surfaceFormat);
+            SwapchainBuilder& SetOldSwapchain(VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE);
+            SwapchainBuilder& SetSurfaceFormat(VkSurfaceFormatKHR surfaceFormat);
             SwapchainBuilder& SetPresentMode(VkPresentModeKHR presentMode);
             Swapchain* Build();
 

@@ -37,13 +37,11 @@ namespace FooGame
     {
         VK_CALL(vkCreateBuffer(GetVkDevice(), &info, 0, &buffer));
     }
-    void Api::AllocateMemory(const VkMemoryAllocateInfo& info,
-                             VkDeviceMemory& mem)
+    void Api::AllocateMemory(const VkMemoryAllocateInfo& info, VkDeviceMemory& mem)
     {
         VK_CALL(vkAllocateMemory(GetVkDevice(), &info, 0, &mem));
     }
-    void Api::BindBufferMemory(VkBuffer& buffer, VkDeviceMemory& mem,
-                               VkDeviceSize deviceSize)
+    void Api::BindBufferMemory(VkBuffer& buffer, VkDeviceMemory& mem, VkDeviceSize deviceSize)
     {
         VK_CALL(vkBindBufferMemory(GetVkDevice(), buffer, mem, deviceSize));
     }
@@ -52,9 +50,8 @@ namespace FooGame
         vkUnmapMemory(GetVkDevice(), mem);
     }
 
-    void Api::CmdCopyBuffer(VkCommandBuffer& cmd, VkBuffer& source,
-                            VkBuffer& target, uint32_t regionCount,
-                            VkBufferCopy& region)
+    void Api::CmdCopyBuffer(VkCommandBuffer& cmd, VkBuffer& source, VkBuffer& target,
+                            uint32_t regionCount, VkBufferCopy& region)
     {
         vkCmdCopyBuffer(cmd, source, target, regionCount, &region);
     }
@@ -75,11 +72,10 @@ namespace FooGame
     {
         return s_Api.surface;
     }
-    VkResult CreateDebugUtilsMessengerEXT(
-        VkInstance instance,
-        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-        const VkAllocationCallbacks* pAllocator,
-        VkDebugUtilsMessengerEXT* pDebugMessenger)
+    VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
+                                          const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+                                          const VkAllocationCallbacks* pAllocator,
+                                          VkDebugUtilsMessengerEXT* pDebugMessenger)
     {
         auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
             instance, "vkCreateDebugUtilsMessengerEXT");
@@ -92,8 +88,7 @@ namespace FooGame
             return VK_ERROR_EXTENSION_NOT_PRESENT;
         }
     }
-    void DestroyDebugUtilsMessengerEXT(VkInstance instance,
-                                       VkDebugUtilsMessengerEXT debugMessenger,
+    void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
                                        const VkAllocationCallbacks* pAllocator)
     {
         auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
@@ -103,8 +98,7 @@ namespace FooGame
             func(instance, debugMessenger, pAllocator);
         }
     }
-    std::vector<const char*> deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
     std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
     Api::~Api()
     {
@@ -122,7 +116,7 @@ namespace FooGame
             appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
 
             VkInstanceCreateInfo createInfo{};
-            createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+            createInfo.sType             = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
             createInfo.pApplicationInfo  = &appInfo;
             createInfo.enabledLayerCount = 0;
             createInfo.pNext             = nullptr;
@@ -130,10 +124,8 @@ namespace FooGame
             uint32_t extensionCount;
             const char** glfwExtensions;
             glfwExtensions = glfwGetRequiredInstanceExtensions(&extensionCount);
-            std::vector<const char*> extensions(
-                glfwExtensions, glfwExtensions + extensionCount);
-            createInfo.enabledExtensionCount =
-                static_cast<uint32_t>(extensions.size());
+            std::vector<const char*> extensions(glfwExtensions, glfwExtensions + extensionCount);
+            createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 
             VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 #ifdef FOO_DEBUG
@@ -142,53 +134,38 @@ namespace FooGame
             createInfo.enabledLayerCount   = validationLayers.size();
             createInfo.ppEnabledLayerNames = validationLayers.data();
 
-            debugCreateInfo.sType =
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-            debugCreateInfo.messageSeverity =
-                VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-            debugCreateInfo.messageType =
-                VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+            debugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+            debugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                                              VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                              VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+            debugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                                          VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                          VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
             debugCreateInfo.pfnUserCallback = debugCallback;
 
-            createInfo.pNext =
-                (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+            createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 #endif
             createInfo.ppEnabledExtensionNames = extensions.data();
-            createInfo.enabledExtensionCount =
-                static_cast<uint32_t>(extensions.size());
+            createInfo.enabledExtensionCount   = static_cast<uint32_t>(extensions.size());
             VK_CALL(vkCreateInstance(&createInfo, nullptr, &s_Api.instance));
-            s_Api.queue.PushFunction(
-                [&](VkDevice d)
-                { vkDestroyInstance(s_Api.instance, nullptr); });
+            s_Api.queue.PushFunction([&](VkDevice d)
+                                     { vkDestroyInstance(s_Api.instance, nullptr); });
 
 #ifdef FOO_DEBUG
-            VK_CALL(CreateDebugUtilsMessengerEXT(s_Api.instance,
-                                                 &debugCreateInfo, nullptr,
+            VK_CALL(CreateDebugUtilsMessengerEXT(s_Api.instance, &debugCreateInfo, nullptr,
                                                  &s_Api.debugMessenger));
             s_Api.queue.PushFunction(
                 [&](VkDevice d)
-                {
-                    DestroyDebugUtilsMessengerEXT(
-                        s_Api.instance, s_Api.debugMessenger, nullptr);
-                });
+                { DestroyDebugUtilsMessengerEXT(s_Api.instance, s_Api.debugMessenger, nullptr); });
 #endif
-            VK_CALL(glfwCreateWindowSurface(s_Api.instance,
-                                            window->GetWindowHandle(), nullptr,
+            VK_CALL(glfwCreateWindowSurface(s_Api.instance, window->GetWindowHandle(), nullptr,
                                             &s_Api.surface));
             s_Api.queue.PushFunction(
-                [&](VkDevice) {
-                    vkDestroySurfaceKHR(s_Api.instance, s_Api.surface, nullptr);
-                });
+                [&](VkDevice) { vkDestroySurfaceKHR(s_Api.instance, s_Api.surface, nullptr); });
         }
         {
-            s_Api.device =
-                Device::CreateDevice(deviceExtensions, validationLayers);
-            s_Api.queue.PushFunction([&](VkDevice d)
-                                     { s_Api.device->Destroy(); });
+            s_Api.device = Device::CreateDevice(deviceExtensions, validationLayers);
+            s_Api.queue.PushFunction([&](VkDevice d) { s_Api.device->Destroy(); });
         }
     }
 
@@ -212,17 +189,15 @@ namespace FooGame
         depthAttachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         depthAttachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-        depthAttachment.finalLayout =
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        depthAttachment.finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         VkAttachmentReference colorAttachmentRef{};
         colorAttachmentRef.attachment = 0;
-        colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorAttachmentRef.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         VkAttachmentReference depthAttachmentRef{};
         depthAttachmentRef.attachment = 1;
-        depthAttachmentRef.layout =
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        depthAttachmentRef.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         VkSubpassDescription subpass{};
         subpass.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -231,35 +206,30 @@ namespace FooGame
         subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
         VkSubpassDependency dependency{};
-        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-        dependency.dstSubpass = 0;
-        dependency.srcStageMask =
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        dependency.srcSubpass   = VK_SUBPASS_EXTERNAL;
+        dependency.dstSubpass   = 0;
+        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
         dependency.srcAccessMask = 0;
-        dependency.dstStageMask =
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                   VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        dependency.dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        dependency.dstAccessMask =
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-        std::array<VkAttachmentDescription, 2> attachments = {colorAttachment,
-                                                              depthAttachment};
+        std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
         VkRenderPassCreateInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        renderPassInfo.attachmentCount =
-            static_cast<uint32_t>(attachments.size());
+        renderPassInfo.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
         renderPassInfo.pAttachments    = attachments.data();
         renderPassInfo.subpassCount    = 1;
         renderPassInfo.pSubpasses      = &subpass;
         renderPassInfo.dependencyCount = 1;
         renderPassInfo.pDependencies   = &dependency;
 
-        VK_CALL(vkCreateRenderPass(s_Api.device->GetDevice(), &renderPassInfo,
-                                   nullptr, &s_Api.renderPass));
-        s_Api.queue.PushFunction(
-            [&](VkDevice d)
-            { vkDestroyRenderPass(d, s_Api.renderPass, nullptr); });
+        VK_CALL(vkCreateRenderPass(s_Api.device->GetDevice(), &renderPassInfo, nullptr,
+                                   &s_Api.renderPass));
+        s_Api.queue.PushFunction([&](VkDevice d)
+                                 { vkDestroyRenderPass(d, s_Api.renderPass, nullptr); });
     }
     void Api::SetViewportAndScissors(VkCommandBuffer cmd, float w, float h)
     {
@@ -272,9 +242,8 @@ namespace FooGame
         viewport.maxDepth = 1.0f;
         vkCmdSetViewport(cmd, 0, 1, &viewport);
         VkRect2D scissor{
-            {                                    0,0                                                 },
-            {static_cast<uint32_t>(viewport.width),
-             static_cast<uint32_t>(viewport.height)}
+            {                                    0,                                      0},
+            {static_cast<uint32_t>(viewport.width), static_cast<uint32_t>(viewport.height)}
         };
         vkCmdSetScissor(cmd, 0, 1, &scissor);
     }

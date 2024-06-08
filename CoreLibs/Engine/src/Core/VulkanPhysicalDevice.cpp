@@ -2,7 +2,6 @@
 
 #include <cassert>
 #include "Utils/IndexWrapper.h"
-#include "VulkanLogicalDevice.h"
 #include <Log.h>
 namespace ENGINE_NAMESPACE
 {
@@ -59,7 +58,7 @@ namespace ENGINE_NAMESPACE
 
         return false;
     }
-    HardwareQueueIndex VulkanPhysicalDevice::FindQueueFamily(VkQueueFlags queueFlag)
+    HardwareQueueIndex VulkanPhysicalDevice::FindQueueFamily(VkQueueFlags queueFlag) const
     {
         VkQueueFlags QueueFlagsOpt = queueFlag;
         if (queueFlag & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT))

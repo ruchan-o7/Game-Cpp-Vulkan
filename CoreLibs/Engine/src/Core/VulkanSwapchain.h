@@ -1,7 +1,10 @@
 #pragma once
+#include <memory>
+#include "Utils/VulkanObjectWrapper.h"
+#include "VulkanLogicalDevice.h"
+#include "vulkan/vulkan_core.h"
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include "VulkanInstance.h"
 
 namespace ENGINE_NAMESPACE
 {
@@ -31,13 +34,17 @@ namespace ENGINE_NAMESPACE
             void Resize(uint32_t newWidth, uint32_t newHeight);
             VkSurfaceKHR GetVkSurface() const { return m_VkSurface; }
             VkSwapchainKHR GetVkSwapchain() const { return m_VkSwapchain; }
+            VkFormat GetImageFormat() const { return m_Desc.VkColorFormat; }
+            VkImageView GetImageView(int index) const { return m_SwapchainImageViews[index]; }
+            VkImageView GetDepthImageView() const { return m_DepthImageView; }
+            VkExtent2D GetExtent() const { return {m_Desc.Width, m_Desc.Height}; }
 
         private:
             void CreateSurface();
             void CreateVkSwapchain();
             void InitBuffersAndViews();
-            VkResult AcquireNextImage(class VulkanDeviceContext* pDeviceContext);
-            void RecreateVkSwapchain(class VulkanDeviceContext* pDeviceContext);
+            VkResult AcquireNextImage(VulkanDeviceContext* pDeviceContext);
+            void RecreateVkSwapchain(VulkanDeviceContext* pDeviceContext);
             void WaitForImageAcquiredFences();
             void ReleaseSwapchainResources(VulkanDeviceContext* pDeviceContext,
                                            bool destroyVkSwapchain = false);
@@ -60,13 +67,22 @@ namespace ENGINE_NAMESPACE
             std::vector<bool> m_SwapchainImagesInitialized;
             std::vector<bool> m_ImageAcquiredFenceSubmitted;
 
+            std::vector<VkImage> m_SwapchainImages;
+            std::vector<ImageViewWrapper> m_SwapchainImageViews;
+
+            ImageWrapper m_DepthImage;
+            ImageViewWrapper m_DepthImageView;
+            DeviceMemoryWrapper m_DepthImageMem;
+
+            // std::vector<FramebufferWrapper> m_FrameBuffers;
+
             uint32_t m_SemaphoreIndex  = 0;
             uint32_t m_BackBufferIndex = 0;
 
             bool m_IsMinimized  = false;
             bool m_VsyncEnabled = true;
 
-            RenderDevice* m_wpRenderDevice;
+            std::shared_ptr<RenderDevice> m_wpRenderDevice;
             VulkanDeviceContext* m_wpDeviceContext;
     };
 }  // namespace ENGINE_NAMESPACE

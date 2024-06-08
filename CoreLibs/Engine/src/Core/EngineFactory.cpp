@@ -108,8 +108,8 @@ namespace ENGINE_NAMESPACE
 
             for (uint32_t ctxIndex = 0; ctxIndex < numContexts; ++ctxIndex)
             {
-                pRenderDevice->SetImmediateContext(
-                    ctxIndex, new VulkanDeviceContext(pRenderDevice, engineCI));
+                // pRenderDevice->SetImmediateContext(
+                //     ctxIndex, new VulkanDeviceContext(pRenderDevice, engineCI));
                 // pDevCtx->SetImmediateContext(ctxIndex, pDevCtx);
             }
         }
