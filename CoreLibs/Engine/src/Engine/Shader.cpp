@@ -26,14 +26,14 @@ namespace FooGame
     }
     Shader::Shader(const struct CreateInfo& ci) : m_Ci{ci}
     {
-        auto code = ReadFile(m_Ci.Path);
+        auto code          = ReadFile(m_Ci.Path);
+        auto logicalDevice = m_Ci.wpLogicalDevice.lock();
 
         VkShaderModuleCreateInfo create_info = {};
         create_info.sType                    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         create_info.codeSize                 = code.size();
         create_info.pCode                    = reinterpret_cast<const uint32_t*>(code.data());
-        m_Module                             = m_Ci.pRenderDevice->CreateShaderModule(create_info);
-        ;
+        m_Module                             = logicalDevice->CreateShaderModule(create_info);
     }
     Shader::~Shader()
     {

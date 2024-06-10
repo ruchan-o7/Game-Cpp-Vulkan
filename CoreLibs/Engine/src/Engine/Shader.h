@@ -15,7 +15,7 @@ namespace FooGame
             {
                     std::string Path;
                     ShaderStage Stage;
-                    class RenderDevice* pRenderDevice;
+                    std::weak_ptr<VulkanLogicalDevice> wpLogicalDevice;
             };
             Shader(const CreateInfo& ci);
             ~Shader();
