@@ -6,6 +6,7 @@
 #include "VulkanBuffer.h"
 #include "../Engine/VulkanCheckResult.h"
 #include "../Engine/Descriptor/DescriptorAllocator.h"
+#include "vulkan/vulkan_core.h"
 namespace ENGINE_NAMESPACE
 {
 
@@ -102,6 +103,17 @@ namespace ENGINE_NAMESPACE
     void RenderDevice::FreeCommandBuffer(VkCommandPool pool, VkCommandBuffer cmdBuffer)
     {
         m_LogicalDevice->FreeCommandBuffer(pool, cmdBuffer);
+    }
+
+    SamplerWrapper RenderDevice::CreateSampler(const VkSamplerCreateInfo& info, const char* name)
+    {
+        return m_LogicalDevice->CreateSampler(info, name);
+    }
+
+    VkQueue RenderDevice::GetGraphicsQueue() const
+    {
+        return m_LogicalDevice->GetQueue(m_PhysicalDevice->FindQueueFamily(VK_QUEUE_GRAPHICS_BIT),
+                                         0);
     }
     void RenderDevice::CopyBuffer(VulkanBuffer& source, VulkanBuffer& destination, size_t size)
     {

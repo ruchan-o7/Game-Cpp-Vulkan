@@ -9,8 +9,9 @@ namespace ENGINE_NAMESPACE
         : m_Info(ci), m_Pipeline(nullptr), m_Layout(nullptr)
     {
         assert(m_Info.ShaderStages.size() != 0 && "Check your pipeline info structure");
+        auto logicalDevice = m_Info.wpLogicalDevice.lock();
 
-        auto device = m_Info.pRenderDevice->GetVkDevice();
+        auto device = logicalDevice->GetVkDevice();
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -92,7 +93,7 @@ namespace ENGINE_NAMESPACE
             pipelineLayoutInfo.pushConstantRangeCount = m_Info.PushConstantCount;
         }
 
-        m_Layout = m_Info.pRenderDevice->CreatePipelineLayout(pipelineLayoutInfo);
+        m_Layout = logicalDevice->CreatePipelineLayout(pipelineLayoutInfo);
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -111,7 +112,7 @@ namespace ENGINE_NAMESPACE
         pipelineInfo.subpass             = 0;
         pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
 
-        m_Pipeline = m_Info.pRenderDevice->CreateGraphicsPipeline(pipelineInfo);
+        m_Pipeline = logicalDevice->CreateGraphicsPipeline(pipelineInfo, nullptr, m_Info.Name);
     }
 #undef CAST
 }  // namespace ENGINE_NAMESPACE

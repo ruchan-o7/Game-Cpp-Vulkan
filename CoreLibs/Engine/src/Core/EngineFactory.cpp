@@ -72,10 +72,6 @@ namespace ENGINE_NAMESPACE
         auto vkAllocator = instance->GetVkAllocator();
 
         auto logicalDevice = VulkanLogicalDevice::Create(*pDevice, deviceCreateInfo, vkAllocator);
-        VkQueue queue;
-        vkGetDeviceQueue(logicalDevice->GetVkDevice(), graphicQueue, 0, &queue);
-        // AttachToVulkanDevice(instance, std::move(pDevice), logicalDevice, ci, adapterInfo,
-        //                      ppRenderDevice, ppDeviceContext);
 
         *ppRenderDevice =
             new RenderDevice(this, ci, adapterInfo, instance, logicalDevice, std::move(pDevice));

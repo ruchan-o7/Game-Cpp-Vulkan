@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include "RenderDevice.h"
 
 namespace ENGINE_NAMESPACE
@@ -14,13 +15,15 @@ namespace ENGINE_NAMESPACE
                     std::vector<VkVertexInputBindingDescription> VertexBindings;
                     std::vector<VkVertexInputAttributeDescription> VertexAttributes;
                     VkDescriptorSetLayout SetLayout;
-                    RenderDevice* pRenderDevice;
+                    // RenderDevice* pRenderDevice;
+                    std::weak_ptr<VulkanLogicalDevice> wpLogicalDevice;
                     VkRenderPass RenderPass;
                     CULL_MODE CullMode         = CULL_MODE_BACK;
                     uint8_t SampleCount        = 1;
                     float LineWidth            = 1.0f;
                     size_t PushConstantSize    = 0;
                     uint32_t PushConstantCount = 0;
+                    const char* Name           = "Graphic pipeline";
             };
             VulkanPipeline(const CreateInfo& ci);
 

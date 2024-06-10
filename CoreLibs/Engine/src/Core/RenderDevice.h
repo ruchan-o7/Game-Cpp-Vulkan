@@ -68,6 +68,8 @@ namespace ENGINE_NAMESPACE
                                                    const char* name = "");
             ShaderModuleWrapper CreateShaderModule(const VkShaderModuleCreateInfo& info,
                                                    const char* name = "");
+            SamplerWrapper CreateSampler(const VkSamplerCreateInfo& info, const char* name = "");
+            VkQueue GetGraphicsQueue() const;
 
         private:
             std::shared_ptr<VulkanInstance> m_VulkanInstance;
