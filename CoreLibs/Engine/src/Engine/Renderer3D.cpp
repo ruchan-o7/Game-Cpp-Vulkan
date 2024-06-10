@@ -5,17 +5,14 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <string>
 #include <unordered_map>
 #include "Buffer.h"
-#include "Device.h"
 #include "Shader.h"
+#include "../Core/VulkanPipeline.h"
 #include "Types/DescriptorData.h"
-#include "Descriptor/DescriptorAllocator.h"
 #include "VulkanCheckResult.h"
 #include "Types/DeletionQueue.h"
 #include "../Core/RenderDevice.h"
-// #include "../Core/RenderDevice.h"
 #include "../Core/VulkanBuffer.h"
 #include "../Camera/PerspectiveCamera.h"
 #include "../Camera/Camera.h"
@@ -23,6 +20,7 @@
 #include "Pipeline.h"
 #include "../Engine/Texture2D.h"
 #include "../Geometry/AssetLoader.h"
+#include "Descriptor/DescriptorAllocator.h"
 #include <Log.h>
 namespace FooGame
 {
@@ -30,7 +28,6 @@ namespace FooGame
 #define FRAG_SHADER          "Assets/Shaders/frag.spv"
 #define MODEL_PATH           "Assets/Model/viking_room.obj"
 #define DEFAULT_TEXTURE_PATH "Assets/Textures/texture.jpg"
-
     struct MeshPushConstants
     {
             glm::vec4 data;
@@ -73,6 +70,13 @@ namespace FooGame
             FrameStatistics FrameData;
             Api api{};
     };
+    struct RendererContext
+    {
+            std::vector<std::unique_ptr<VulkanBuffer>> buffers{MAX_FRAMES_IN_FLIGHT};
+            CommandPoolWrapper CommandPool;
+            std::unique_ptr<VulkanPipeline> pGraphicPipeline;
+    };
+    RendererContext rContext{};
     static RenderData s_Data;
     static bool g_IsInitialized = false;
     void Renderer3D::Init(class RenderDevice* pRenderDevice)
@@ -82,21 +86,21 @@ namespace FooGame
         auto* device    = pRenderDevice->GetVkDevice();  // Api::GetDevice();
         g_IsInitialized = true;
         s_Data.Res.UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-        std::vector<std::unique_ptr<VulkanBuffer>> buffers{2};
 
         for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
             VulkanBuffer::BuffDesc desc{};
             desc.pRenderDevice = pRenderDevice;
-            desc.MemoryFlag    = Vulkan::BufferMemoryFlag::CpuVisible;
-            desc.Usage         = Vulkan::BufferUsage::Uniform;
+            desc.Usage         = Vulkan::BUFFER_USAGE_UNIFORM;
+            desc.MemoryFlag    = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
             desc.name          = "Uniform buffer";
 
             VulkanBuffer::BuffData data{};
             data.Data = {0};
             data.Size = sizeof(UniformBufferObject);
 
-            buffers.push_back(std::make_unique<VulkanBuffer>(desc, std::move(data)));
+            rContext.buffers[i] = std::make_unique<VulkanBuffer>(desc, std::move(data));
+            rContext.buffers[i]->MapMemory();
             // BufferBuilder uBuffBuilder{};
             // uBuffBuilder.SetUsage(BufferUsage::UNIFORM)
             //     .SetInitialSize(sizeof(UniformBufferObject))
@@ -114,7 +118,8 @@ namespace FooGame
                 }
                 s_Data.Res.UniformBuffers.clear();
             });
-
+        // pRenderDevice->InitCommandPool();
+        // pRenderDevice->InitDescriptorPool();
         s_Data.Res.DescriptorAllocatorPool = vke::DescriptorAllocatorPool::Create(device);
         s_Data.Res.deletionQueue.PushFunction([&](VkDevice device)
                                               { delete s_Data.Res.DescriptorAllocatorPool; });
@@ -125,7 +130,7 @@ namespace FooGame
         poolInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         poolInfo.queueFamilyIndex = 0;  // Api::GetDevice()->GetGraphicsFamily();
-        auto cmdPool              = pRenderDevice->GetLogicalDevice()->CreateCommandPool(poolInfo);
+        rContext.CommandPool      = pRenderDevice->GetLogicalDevice()->CreateCommandPool(poolInfo);
         {
             VkDescriptorSetLayoutBinding uboLayoutBinding{};
             uboLayoutBinding.binding            = 0;
@@ -144,6 +149,7 @@ namespace FooGame
             layoutInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
             layoutInfo.bindingCount = ARRAY_COUNT(bindings);
             layoutInfo.pBindings    = bindings;
+            // auto descriptor         = pRenderDevice->CreateDescriptorSetLayout(layoutInfo);
 
             VK_CALL(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr,
                                                 &s_Data.Res.descriptor.SetLayout));
@@ -156,8 +162,8 @@ namespace FooGame
             auto queue = pRenderDevice->GetLogicalDevice()->GetQueue(0, 0);
             VulkanBuffer::BuffDesc stageDesc{};
             stageDesc.pRenderDevice = pRenderDevice;
-            stageDesc.Usage         = Vulkan::BufferUsage::TransferSource;
-            stageDesc.MemoryFlag    = Vulkan::BufferMemoryFlag::CpuVisible;
+            stageDesc.Usage         = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
+            stageDesc.MemoryFlag    = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
             stageDesc.name          = "Test stage";
 
             VulkanBuffer::BuffData stageBufferData{};
@@ -167,47 +173,67 @@ namespace FooGame
 
             VulkanBuffer::BuffDesc vertexDesc{};
             vertexDesc.pRenderDevice = pRenderDevice;
-            vertexDesc.Usage         = Vulkan::BufferUsage::TransferSource;
-            vertexDesc.MemoryFlag    = Vulkan::BufferMemoryFlag::GpuOnly;
-            vertexDesc.name          = "Test stage";
+            vertexDesc.Usage         = Vulkan::BUFFER_USAGE_TRANSFER_DESTINATION_VERTEX;
+            vertexDesc.MemoryFlag    = Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY;
+            vertexDesc.name          = "Vertex buffer";
 
             VulkanBuffer::BuffData vertexData{};
             vertexData.Size = sizeof(int) * 10;
             vertexData.Data = (void*)new int(1);
             VulkanBuffer vbuffer{vertexDesc, std::move(vertexData)};
+            stageBuffer.MapMemory();
+            stageBuffer.UpdateData(vertexData.Data, vertexData.Size);
+            stageBuffer.UnMapMemory();
 
-            stageBuffer.CopyTo(vbuffer, sizeof(int), cmdPool, queue);
+            stageBuffer.CopyTo(vbuffer, sizeof(int), rContext.CommandPool, queue);
 
             delete (int*)stageBufferData.Data;
 
             uint8_t white[] = {255, 255, 255, 255};
-            s_Data.api.DefaultTexture =
-                AssetLoader::LoadFromBuffer(white, sizeof(white), VK_FORMAT_R8G8B8A8_SRGB, 1, 1);
+            // s_Data.api.DefaultTexture =
+            //     AssetLoader::LoadFromBuffer(white, sizeof(white), VK_FORMAT_R8G8B8A8_SRGB, 1, 1);
             s_Data.Res.deletionQueue.PushFunction(
                 [&](VkDevice device) { AssetLoader::DestroyTexture(s_Data.api.DefaultTexture); });
         }
         {
-            PipelineInfo info{};
-            Shader vert{VERT_SHADER, ShaderStage::VERTEX};
-            Shader frag{FRAG_SHADER, ShaderStage::FRAGMENT};
-            info.Shaders                    = std::vector<Shader*>{&vert, &frag};
-            info.VertexAttributeDescriptons = Vertex::GetAttributeDescriptionList();
-            info.VertexBindings             = {Vertex::GetBindingDescription()};
-            info.LineWidth                  = 2.0f;
-            info.cullMode                   = CullMode::BACK;
-            info.multiSampling              = MultiSampling::LEVEL_1;
-            info.DescriptorSetLayout        = s_Data.Res.descriptor.SetLayout;
-            info.pushConstantSize           = sizeof(MeshPushConstants);
-            info.pushConstantCount          = 1;
-
-            s_Data.api.GraphicsPipeline = CreateGraphicsPipeline(info);
-            s_Data.Res.deletionQueue.PushFunction(
-                [&](VkDevice device)
-                {
-                    vkDestroyPipelineLayout(device, s_Data.api.GraphicsPipeline.pipelineLayout,
-                                            nullptr);
-                    vkDestroyPipeline(device, s_Data.api.GraphicsPipeline.pipeline, nullptr);
-                });
+            Shader vert{
+                {VERT_SHADER, ShaderStage::VERTEX, pRenderDevice}
+            };
+            Shader frag{
+                {FRAG_SHADER, ShaderStage::FRAGMENT, pRenderDevice}
+            };
+            VulkanPipeline::CreateInfo ci{};
+            ci.pRenderDevice = pRenderDevice;
+            ci.RenderPass    = Backend::GetRenderPass();
+            ci.ShaderStages.push_back(vert.CreateInfo());
+            ci.ShaderStages.push_back(frag.CreateInfo());
+            ci.PushConstantCount      = 1;
+            ci.PushConstantSize       = sizeof(MeshPushConstants);
+            ci.SetLayout              = s_Data.Res.descriptor.SetLayout;
+            ci.SampleCount            = 1;
+            ci.CullMode               = CULL_MODE_BACK;
+            ci.VertexAttributes       = Vertex::GetAttributeDescriptionList();
+            ci.VertexBindings         = {Vertex::GetBindingDescription()};
+            rContext.pGraphicPipeline = std::unique_ptr<VulkanPipeline>(new VulkanPipeline(ci));
+            // PipelineInfo info{};
+            // info.Shaders                    = std::vector<Shader*>{&vert, &frag};
+            // info.VertexAttributeDescriptons = Vertex::GetAttributeDescriptionList();
+            // info.VertexBindings             = {Vertex::GetBindingDescription()};
+            // info.LineWidth                  = 2.0f;
+            // info.cullMode                   = CullMode::BACK;
+            // info.multiSampling              = MultiSampling::LEVEL_1;
+            // info.DescriptorSetLayout        = s_Data.Res.descriptor.SetLayout;
+            // info.pushConstantSize           = sizeof(MeshPushConstants);
+            // info.pushConstantCount          = 1;
+            //
+            // s_Data.api.GraphicsPipeline = CreateGraphicsPipeline(info);
+            // s_Data.Res.deletionQueue.PushFunction(
+            //     [&](VkDevice device)
+            //     {
+            //         vkDestroyPipelineLayout(device, s_Data.api.GraphicsPipeline.pipelineLayout,
+            //                                 nullptr);
+            //         vkDestroyPipeline(device, s_Data.api.GraphicsPipeline.pipeline, nullptr);
+            //     });
         }
     }
     void Renderer3D::SubmitModel(Model* model)

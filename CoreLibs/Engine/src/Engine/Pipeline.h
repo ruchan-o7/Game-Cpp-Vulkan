@@ -28,8 +28,7 @@ namespace FooGame
     {
             std::vector<Shader*> Shaders;
             std::vector<VkVertexInputBindingDescription> VertexBindings;
-            std::vector<VkVertexInputAttributeDescription>
-                VertexAttributeDescriptons;
+            std::vector<VkVertexInputAttributeDescription> VertexAttributeDescriptons;
             CullMode cullMode;
             float LineWidth = 1.0f;
             MultiSampling multiSampling;

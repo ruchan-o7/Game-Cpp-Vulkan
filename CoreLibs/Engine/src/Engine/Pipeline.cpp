@@ -9,8 +9,7 @@ namespace FooGame
     Pipeline CreateGraphicsPipeline(PipelineInfo info)
 
     {
-        assert(info.Shaders.size() != 0 &&
-               "Check your pipeline info structure");
+        assert(info.Shaders.size() != 0 && "Check your pipeline info structure");
         Pipeline pipeline{};
 
         auto device = Api::GetDevice()->GetDevice();
@@ -21,27 +20,22 @@ namespace FooGame
             shaderStages.push_back(shader->CreateInfo());
         }
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-        vertexInputInfo.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-        vertexInputInfo.vertexBindingDescriptionCount =
-            CAST(info.VertexBindings.size());
-        vertexInputInfo.pVertexBindingDescriptions = info.VertexBindings.data();
+        vertexInputInfo.vertexBindingDescriptionCount = CAST(info.VertexBindings.size());
+        vertexInputInfo.pVertexBindingDescriptions    = info.VertexBindings.data();
 
         vertexInputInfo.vertexAttributeDescriptionCount =
             CAST(info.VertexAttributeDescriptons.size());
-        vertexInputInfo.pVertexAttributeDescriptions =
-            info.VertexAttributeDescriptons.data();
+        vertexInputInfo.pVertexAttributeDescriptions = info.VertexAttributeDescriptons.data();
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-        inputAssembly.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        inputAssembly.sType    = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         inputAssembly.primitiveRestartEnable = VK_FALSE;
 
         VkPipelineViewportStateCreateInfo viewportState{};
-        viewportState.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        viewportState.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
         viewportState.viewportCount = 1;
         viewportState.scissorCount  = 1;
         VkCullModeFlagBits cullMode{};
@@ -59,17 +53,15 @@ namespace FooGame
         }
 
         VkPipelineRasterizationStateCreateInfo rasterizer{};
-        rasterizer.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rasterizer.depthClampEnable        = VK_FALSE;
+        rasterizer.sType            = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        rasterizer.depthClampEnable = VK_FALSE;
         rasterizer.rasterizerDiscardEnable = VK_FALSE;
         rasterizer.polygonMode             = VK_POLYGON_MODE_FILL;
         rasterizer.lineWidth               = info.LineWidth;
         rasterizer.cullMode                = cullMode;
-        rasterizer.frontFace               = cullMode == VK_CULL_MODE_BACK_BIT
-                                                 ? VK_FRONT_FACE_COUNTER_CLOCKWISE
-                                                 : VK_FRONT_FACE_CLOCKWISE;
-        rasterizer.depthBiasEnable         = VK_FALSE;
+        rasterizer.frontFace = cullMode == VK_CULL_MODE_BACK_BIT ? VK_FRONT_FACE_COUNTER_CLOCKWISE
+                                                                 : VK_FRONT_FACE_CLOCKWISE;
+        rasterizer.depthBiasEnable = VK_FALSE;
         VkSampleCountFlagBits sampleCount{};
         switch (info.multiSampling)
         {
@@ -88,29 +80,25 @@ namespace FooGame
         }
 
         VkPipelineMultisampleStateCreateInfo multisampling{};
-        multisampling.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
         multisampling.sampleShadingEnable  = VK_FALSE;
         multisampling.rasterizationSamples = sampleCount;
 
         VkPipelineDepthStencilStateCreateInfo depthStencil{};
-        depthStencil.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencil.depthTestEnable       = VK_TRUE;
-        depthStencil.depthWriteEnable      = VK_TRUE;
-        depthStencil.depthCompareOp        = VK_COMPARE_OP_LESS;
+        depthStencil.sType            = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencil.depthTestEnable  = VK_TRUE;
+        depthStencil.depthWriteEnable = VK_TRUE;
+        depthStencil.depthCompareOp   = VK_COMPARE_OP_LESS;
         depthStencil.depthBoundsTestEnable = VK_FALSE;
         depthStencil.stencilTestEnable     = VK_FALSE;
 
         VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-        colorBlendAttachment.colorWriteMask =
-            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                              VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
         colorBlendAttachment.blendEnable = VK_FALSE;
 
         VkPipelineColorBlendStateCreateInfo colorBlending{};
-        colorBlending.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        colorBlending.sType             = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
         colorBlending.logicOpEnable     = VK_FALSE;
         colorBlending.logicOp           = VK_LOGIC_OP_COPY;
         colorBlending.attachmentCount   = 1;
@@ -120,18 +108,15 @@ namespace FooGame
         colorBlending.blendConstants[2] = 0.0f;
         colorBlending.blendConstants[3] = 0.0f;
 
-        VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT,
-                                          VK_DYNAMIC_STATE_SCISSOR,
+        VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR,
                                           VK_DYNAMIC_STATE_LINE_WIDTH};
         VkPipelineDynamicStateCreateInfo dynamicState{};
-        dynamicState.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        dynamicState.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
         dynamicState.dynamicStateCount = ARRAY_COUNT(dynamicStates);
         dynamicState.pDynamicStates    = dynamicStates;
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutInfo.sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts    = &info.DescriptorSetLayout;
 
@@ -146,10 +131,10 @@ namespace FooGame
             pipelineLayoutInfo.pushConstantRangeCount = info.pushConstantCount;
         }
 
-        VK_CALL(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr,
-                                       &pipeline.pipelineLayout));
+        VK_CALL(
+            vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipeline.pipelineLayout));
         VkGraphicsPipelineCreateInfo pipelineInfo{};
-        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineInfo.stageCount          = 2;
         pipelineInfo.pStages             = shaderStages.data();
         pipelineInfo.pVertexInputState   = &vertexInputInfo;
@@ -165,8 +150,7 @@ namespace FooGame
         pipelineInfo.subpass             = 0;
         pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
 
-        VK_CALL(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1,
-                                          &pipelineInfo, nullptr,
+        VK_CALL(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
                                           &pipeline.pipeline));
         return pipeline;
     }

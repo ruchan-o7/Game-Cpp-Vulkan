@@ -63,8 +63,6 @@ namespace ENGINE_NAMESPACE
         renderPassInfo.pSubpasses      = &subpass;
         renderPassInfo.dependencyCount = 1;
         renderPassInfo.pDependencies   = &dependency;
-        m_pRenderDevice->GetLogicalDevice();
-        m_RenderPass =
-            std::move(m_pRenderDevice->GetLogicalDevice()->CreateRenderPass(renderPassInfo));
+        m_RenderPass = m_pRenderDevice->GetLogicalDevice()->CreateRenderPass(renderPassInfo);
     }
 }  // namespace ENGINE_NAMESPACE

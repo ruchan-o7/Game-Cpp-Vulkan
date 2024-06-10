@@ -7,6 +7,7 @@
 #include "VulkanLogicalDevice.h"
 #include "VulkanInstance.h"
 #include "VulkanPhysicalDevice.h"
+#include "vulkan/vulkan_core.h"
 namespace ENGINE_NAMESPACE
 {
     class VulkanDeviceContext;
@@ -14,6 +15,7 @@ namespace ENGINE_NAMESPACE
     struct BuffData;
     struct BuffDesc;
     class VulkanRenderPass;
+
     class RenderDevice
     {
         public:
@@ -49,18 +51,29 @@ namespace ENGINE_NAMESPACE
                 return m_pImmediateContexts[Ctx];
             }
             void CreateRenderPass(const RenderPassDesc& desc, VulkanRenderPass** pRenderPass);
-            void CreateFramebuffer(VulkanSwapchain* pSwapchain, VkFramebuffer* pFramebuffer,
+            void CreateFramebuffer(VulkanSwapchain* pSwapchain, FramebufferWrapper* pFramebuffer,
                                    VulkanRenderPass* pRenderPass, uint32_t count = 2);
+            CommandPoolWrapper CreateCommandPool(
+                HardwareQueueIndex queueFamilyIndex = HardwareQueueIndex{0});
+            VkCommandBuffer AllocateCommandBuffer(VkCommandBufferAllocateInfo& info,
+                                                  const char* name = "");
+            void FreeCommandBuffer(VkCommandPool pool, VkCommandBuffer cmdBuffer);
+            // void InitDescriptorPool();
+            void InitDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo layout);
             void WaitIdle();
             void IdleGPU();
+            PipelineLayoutWrapper CreatePipelineLayout(const VkPipelineLayoutCreateInfo& layout,
+                                                       const char* name = "");
+            PipelineWrapper CreateGraphicsPipeline(const VkGraphicsPipelineCreateInfo& info,
+                                                   const char* name = "");
+            ShaderModuleWrapper CreateShaderModule(const VkShaderModuleCreateInfo& info,
+                                                   const char* name = "");
 
         private:
             std::shared_ptr<VulkanInstance> m_VulkanInstance;
             std::shared_ptr<VulkanLogicalDevice> m_LogicalDevice;
             std::unique_ptr<VulkanPhysicalDevice> m_PhysicalDevice;
             std::vector<VulkanDeviceContext*> m_pImmediateContexts;
-
-            CommandPoolWrapper m_CommandPool;
     };
 
 }  // namespace ENGINE_NAMESPACE

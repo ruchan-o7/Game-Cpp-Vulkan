@@ -1,10 +1,11 @@
 #include "RenderDevice.h"
 #include <cassert>
+#include "VulkanLogicalDevice.h"
 #include "VulkanRenderpass.h"
 #include "VulkanSwapchain.h"
 #include "VulkanBuffer.h"
 #include "../Engine/VulkanCheckResult.h"
-#include "vulkan/vulkan_core.h"
+#include "../Engine/Descriptor/DescriptorAllocator.h"
 namespace ENGINE_NAMESPACE
 {
 
@@ -39,7 +40,8 @@ namespace ENGINE_NAMESPACE
         *pRenderPass = new VulkanRenderPass(this, desc);
     }
 
-    void RenderDevice::CreateFramebuffer(VulkanSwapchain* pSwapchain, VkFramebuffer* pFramebuffer,
+    void RenderDevice::CreateFramebuffer(VulkanSwapchain* pSwapchain,
+                                         FramebufferWrapper* pFramebuffer,
                                          VulkanRenderPass* pRenderPass, uint32_t count)
     {
         for (size_t i = 0; i < count; i++)
@@ -57,9 +59,49 @@ namespace ENGINE_NAMESPACE
             framebufferInfo.height          = pSwapchain->GetExtent().height;
             framebufferInfo.layers          = 1;
 
-            VK_CALL(vkCreateFramebuffer(m_LogicalDevice->GetVkDevice(), &framebufferInfo, nullptr,
-                                        &pFramebuffer[i]));
+            pFramebuffer[i] = m_LogicalDevice->CreateFramebuffer(framebufferInfo);
         }
+    }
+    CommandPoolWrapper RenderDevice::CreateCommandPool(HardwareQueueIndex queueFamilyIndex)
+    {
+        VkCommandPoolCreateInfo poolInfo{};
+        poolInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        poolInfo.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        poolInfo.queueFamilyIndex = queueFamilyIndex;
+
+        return m_LogicalDevice->CreateCommandPool(poolInfo, "command pool");
+    }
+
+    PipelineLayoutWrapper RenderDevice::CreatePipelineLayout(
+        const VkPipelineLayoutCreateInfo& layout, const char* name)
+    {
+        return m_LogicalDevice->CreatePipelineLayout(layout);
+    }
+    PipelineWrapper RenderDevice::CreateGraphicsPipeline(const VkGraphicsPipelineCreateInfo& info,
+                                                         const char* name)
+    {
+        return m_LogicalDevice->CreateGraphicsPipeline(info, nullptr, name);
+    }
+
+    ShaderModuleWrapper RenderDevice::CreateShaderModule(const VkShaderModuleCreateInfo& info,
+                                                         const char* name)
+    {
+        return m_LogicalDevice->CreateShaderModule(info, name);
+    }
+    // void RenderDevice::InitDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo layout)
+    // {
+    //     m_DescriptorSetLayout = m_LogicalDevice->CreateDescriptorSetLayout(layout);
+    // }
+
+    VkCommandBuffer RenderDevice::AllocateCommandBuffer(VkCommandBufferAllocateInfo& info,
+                                                        const char* name)
+    {
+        return m_LogicalDevice->AllocateVkCommandBuffer(info, nullptr);
+    }
+
+    void RenderDevice::FreeCommandBuffer(VkCommandPool pool, VkCommandBuffer cmdBuffer)
+    {
+        m_LogicalDevice->FreeCommandBuffer(pool, cmdBuffer);
     }
     void RenderDevice::CopyBuffer(VulkanBuffer& source, VulkanBuffer& destination, size_t size)
     {

@@ -3,6 +3,7 @@
 #include "TypeConversion.h"
 #include "RenderDevice.h"
 #include "Types.h"
+#include "vulkan/vulkan_core.h"
 namespace ENGINE_NAMESPACE
 {
 
@@ -24,9 +25,9 @@ namespace ENGINE_NAMESPACE
     VulkanBuffer::VulkanBuffer(const BuffDesc& info, BuffData&& data)
         : m_Desc(info), m_BufferData(std::move(data)), m_Buffer(nullptr), m_Memory(nullptr)
     {
-        if (m_Desc.Usage == Vulkan::BufferUsage::Uniform)
+        if (m_Desc.Usage == Vulkan::BUFFER_USAGE_UNIFORM)
         {
-            if (m_Desc.MemoryFlag == Vulkan::BufferMemoryFlag::CpuVisible)
+            if (m_Desc.MemoryFlag == Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE)
             {
                 assert("Uniform buffer should cpu visible");
             }
@@ -50,13 +51,12 @@ namespace ENGINE_NAMESPACE
         auto lDev = m_Desc.pRenderDevice->GetLogicalDevice();
         auto pDev = m_Desc.pRenderDevice->GetPhysicalDevice();
 
-        VkBufferUsageFlags usage           = BuffUsageToVkUsage(m_Desc.Usage);
-        VkMemoryPropertyFlags memPropFlags = BufMemFlagToVkFlag(m_Desc.MemoryFlag);
+        VkBufferUsageFlags usage           = m_Desc.Usage;  // BuffUsageToVkUsage(m_Desc.Usage);
 
         VkBufferCreateInfo ci{};
         ci.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         ci.size                  = m_BufferData.Size;
-        ci.usage                 = usage;
+        ci.usage                 = m_Desc.Usage;
         ci.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
         ci.pNext                 = nullptr;
         ci.pQueueFamilyIndices   = nullptr;
@@ -71,29 +71,22 @@ namespace ENGINE_NAMESPACE
         allocInfo.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize  = memReqs.size;
         allocInfo.memoryTypeIndex = m_Desc.pRenderDevice->GetPhysicalDevice()->FindMemoryType(
-            memReqs.memoryTypeBits, memPropFlags);
+            memReqs.memoryTypeBits, m_Desc.MemoryFlag);
 
         m_Memory = std::move(lDev->AllocateDeviceMemory(allocInfo));
 
         lDev->BindBufferMemory(m_Buffer, m_Memory, 0);
 
-        MapMemory();
-        if (m_Desc.Usage != Vulkan::BufferUsage::Uniform)
-        {
-            memcpy(m_MappedPtr, m_BufferData.Data, m_BufferData.Size);
-
-            UnMapMemory();
-        }
+     
     }
     void VulkanBuffer::MapMemory()
     {
-        VkMemoryPropertyFlags memPropFlags = BufMemFlagToVkFlag(m_Desc.MemoryFlag);
         m_Desc.pRenderDevice->GetLogicalDevice()->MapMemory(m_Memory, 0, m_BufferData.Size,
-                                                            memPropFlags, &m_MappedPtr);
+                                                            0, &m_MappedPtr);
     }
     void VulkanBuffer::UnMapMemory()
     {
-        if (m_Desc.MemoryFlag == Vulkan::BufferMemoryFlag::GpuOnly)
+        if (m_Desc.MemoryFlag == Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY)
         {
             m_Desc.pRenderDevice->GetLogicalDevice()->UnmapMemory(m_Memory);
         }
@@ -101,27 +94,42 @@ namespace ENGINE_NAMESPACE
     void VulkanBuffer::UpdateData(void* data, size_t size, size_t offset)
     {
         assert(size <= m_BufferData.Size);
-        if (m_Desc.MemoryFlag == Vulkan::BufferMemoryFlag::CpuVisible)
+        if (m_Desc.MemoryFlag == Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE)
         {
             memcpy(m_MappedPtr, m_BufferData.Data, m_BufferData.Size);
         }
         else
         {
-            m_Desc.pRenderDevice->GetLogicalDevice()->MapMemory(
-                m_Memory, offset, size, BufMemFlagToVkFlag(m_Desc.MemoryFlag), &data);
+            m_Desc.pRenderDevice->GetLogicalDevice()->MapMemory(m_Memory, offset, size,
+                                                                (m_Desc.MemoryFlag), &data);
             memcpy(m_MappedPtr, data, size);
             m_Desc.pRenderDevice->GetLogicalDevice()->UnmapMemory(m_Memory);
             // vkUnmapMemory(device, m_Memory);
         }
     }
 
-    std::unique_ptr<VulkanBuffer> CreateDynamicBuffer(size_t size, Vulkan::BufferUsage usage)
+    std::unique_ptr<VulkanBuffer> CreateDynamicBuffer(size_t size, Vulkan::BUFFER_USAGE usage)
     {
         NOT_IMPLEMENTED();
         return nullptr;
     }
-    std::unique_ptr<VulkanBuffer> CreateVertexBuffer(const BuffData& data)
+    std::unique_ptr<VulkanBuffer> CreateVertexBuffer(VulkanBuffer::BuffData& data,
+                                                     RenderDevice* pRenderDevice,
+                                                     const char* name = "Vertex buffer")
     {
+        // size_t size = data.Size;
+        // VulkanBuffer::BuffDesc stageDesc{};
+        // stageDesc.name          = "Stage buffer";
+        // stageDesc.Usage         = Vulkan::BUFFER_USAGE::TransferSource;
+        // stageDesc.MemoryFlag    = Vulkan::BUFFER_MEMORY_FLAG::CpuVisible;
+        // stageDesc.pRenderDevice = pRenderDevice;
+        // VulkanBuffer stageBuffer{stageDesc, std::move(data)};
+        //
+        // VulkanBuffer::BuffDesc vertexBufferDesc{};
+        // vertexBufferDesc.name          = name;
+        // vertexBufferDesc.Usage         = Vulkan::BUFFER_USAGE::TransferSource;
+        // vertexBufferDesc.MemoryFlag    = Vulkan::BUFFER_MEMORY_FLAG::CpuVisible;
+        // vertexBufferDesc.pRenderDevice = pRenderDevice;
         NOT_IMPLEMENTED();
         return nullptr;
     }

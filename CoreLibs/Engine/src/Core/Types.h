@@ -372,19 +372,30 @@ namespace ENGINE_NAMESPACE
     };
     namespace Vulkan
     {
-        enum class BufferUsage
+        enum BUFFER_USAGE : uint32_t
         {
-            Vertex               = 1,
-            Index                = 2,
-            Uniform              = 4,
-            TransferDestionation = 8,
-            TransferSource       = 10,
+            BUFFER_USAGE_TRANSFER_SOURCE      = 0x00000001,
+            BUFFER_USAGE_TRANSFER_DESTINATION = 0x00000002,
+            BUFFER_USAGE_UNIFORM              = 0x00000010,
+            BUFFER_USAGE_INDEX                = 0x00000040,
+            BUFFER_USAGE_VERTEX               = 0x00000080,
+            BUFFER_USAGE_TRANSFER_DESTINATION_VERTEX =
+                BUFFER_USAGE_TRANSFER_DESTINATION | BUFFER_USAGE_VERTEX,
+
+            BUFFER_USAGE_TRANSFER_DESTINATION_INDEX =
+                BUFFER_USAGE_TRANSFER_DESTINATION | BUFFER_USAGE_INDEX,
         };
-        enum class BufferMemoryFlag
+        enum BUFFER_MEMORY_FLAG
         {
-            CpuVisible,
-            GpuOnly,
+            BUFFER_MEMORY_FLAG_GPU_ONLY    = 0x00000001,
+            BUFFER_MEMORY_FLAG_CPU_VISIBLE = 0x00000002 | 0x00000004,
         };
     };  // namespace Vulkan
+    enum CULL_MODE
+    {
+        CULL_MODE_FRONT          = 0x00000001,
+        CULL_MODE_BACK           = 0x00000002,
+        CULL_MODE_FRONT_AND_BACK = 0x00000004,
+    };
 
 }  // namespace ENGINE_NAMESPACE

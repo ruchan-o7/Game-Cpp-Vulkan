@@ -16,6 +16,5 @@ namespace ENGINE_NAMESPACE
 
     VkImageLayout RsToImageLayout(RESOURCE_STATE state);
 
-    VkMemoryPropertyFlags BufMemFlagToVkFlag(Vulkan::BufferMemoryFlag flag);
-    VkBufferUsageFlags BuffUsageToVkUsage(Vulkan::BufferUsage usage);
+    // VkBufferUsageFlags BuffUsageToVkUsage(Vulkan::BufferUsage usage);
 }  // namespace ENGINE_NAMESPACE

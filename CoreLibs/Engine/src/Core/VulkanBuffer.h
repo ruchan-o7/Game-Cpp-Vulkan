@@ -15,8 +15,8 @@ namespace ENGINE_NAMESPACE
             struct BuffDesc
             {
                     const char* name = nullptr;
-                    Vulkan::BufferUsage Usage;
-                    Vulkan::BufferMemoryFlag MemoryFlag;
+                    Vulkan::BUFFER_USAGE Usage;
+                    Vulkan::BUFFER_MEMORY_FLAG MemoryFlag;
                     RenderDevice* pRenderDevice;
             };
 
@@ -26,8 +26,10 @@ namespace ENGINE_NAMESPACE
                     void* Data  = nullptr;
             };
             static std::unique_ptr<VulkanBuffer> CreateDynamicBuffer(size_t size,
-                                                                     Vulkan::BufferUsage usage);
-            static std::unique_ptr<VulkanBuffer> CreateVertexBuffer(const BuffData& data);
+                                                                     Vulkan::BUFFER_USAGE usage);
+            static std::unique_ptr<VulkanBuffer> CreateVertexBuffer(
+                VulkanBuffer::BuffData& data, RenderDevice* pRenderDevice,
+                const char* name = "Vertex buffer");
             static std::unique_ptr<VulkanBuffer> CreateIndexBuffer(const BuffData& data);
 
             VulkanBuffer(const BuffDesc& info, BuffData&& data);

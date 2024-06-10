@@ -241,32 +241,22 @@ namespace ENGINE_NAMESPACE
         }
     }
 
-    VkMemoryPropertyFlags BufMemFlagToVkFlag(Vulkan::BufferMemoryFlag flag)
-    {
-        switch (flag)
-        {
-            case Vulkan::BufferMemoryFlag::CpuVisible:
-                return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-            case Vulkan::BufferMemoryFlag::GpuOnly:
-                return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-                break;
-        }
-    }
-
-    VkBufferUsageFlags BuffUsageToVkUsage(Vulkan::BufferUsage usage)
-    {
-        switch (usage)
-        {
-            case Vulkan::BufferUsage::Vertex:
-                return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            case Vulkan::BufferUsage::Index:
-                return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-            case Vulkan::BufferUsage::Uniform:
-            case Vulkan::BufferUsage::TransferDestionation:
-                return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            case Vulkan::BufferUsage::TransferSource:
-                return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-                break;
-        }
-    }
+    // VkBufferUsageFlags BuffUsageToVkUsage(Vulkan::BufferUsage usage)
+    // {
+    //     switch (usage)
+    //     {
+    //         case Vulkan::BufferUsage::VERTEX:
+    //             return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    //         case Vulkan::BufferUsage::INDEX:
+    //             return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    //         case Vulkan::BufferUsage::UNIFORM:
+    //             return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    //             ;
+    //         case Vulkan::BufferUsage::TRANSFER_DESTINATION:
+    //             return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    //         case Vulkan::BufferUsage::TRANSFER_SOURCE:
+    //             return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    //             break;
+    //     }
+    // }
 }  // namespace ENGINE_NAMESPACE

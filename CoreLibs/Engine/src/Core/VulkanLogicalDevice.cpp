@@ -271,7 +271,10 @@ namespace ENGINE_NAMESPACE
 
         auto err = vkCreateGraphicsPipelines(m_VkDevice, cache, 1, &PipelineCI, m_VkAllocator,
                                              &vkPipeline);
+                                             if(err != VK_SUCCESS){
+
         FOO_ENGINE_ERROR("Failed to create graphics pipeline : {0}", DebugName);
+                                             }
 
         if (*DebugName != 0)
         {

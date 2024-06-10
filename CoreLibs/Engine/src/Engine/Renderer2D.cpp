@@ -172,19 +172,19 @@ namespace FooGame
 
         // Create graphics pipeline
         {
-            Shader vert{VERT_PATH, ShaderStage::VERTEX};
-            Shader frag{FRAG_PATH, ShaderStage::FRAGMENT};
-            PipelineInfo info{};
-            info.Shaders = {&vert, &frag};
+            // Shader vert{VERT_PATH, ShaderStage::VERTEX};
+            // Shader frag{FRAG_PATH, ShaderStage::FRAGMENT};
+            // PipelineInfo info{};
+            // info.Shaders = {&vert, &frag};
 
-            info.VertexAttributeDescriptons =
-                QuadVertex::GetAttributeDescriptionList();
-            info.VertexBindings      = {QuadVertex::GetBindingDescription()};
-            info.LineWidth           = 2.0f;
-            info.cullMode            = CullMode::BACK;
-            info.multiSampling       = MultiSampling::LEVEL_1;
-            info.DescriptorSetLayout = s_Data.resources.descriptor.SetLayout;
-            s_Data.api.pipeline      = CreateGraphicsPipeline(info);
+            // info.VertexAttributeDescriptons =
+            //     QuadVertex::GetAttributeDescriptionList();
+            // info.VertexBindings      = {QuadVertex::GetBindingDescription()};
+            // info.LineWidth           = 2.0f;
+            // info.cullMode            = CullMode::BACK;
+            // info.multiSampling       = MultiSampling::LEVEL_1;
+            // info.DescriptorSetLayout = s_Data.resources.descriptor.SetLayout;
+            // s_Data.api.pipeline      = CreateGraphicsPipeline(info);
         }
 
         g_IsInitialized = true;

@@ -13,6 +13,7 @@
 #include "../Core/VulkanRenderpass.h"
 #include <vulkan/vulkan.h>
 #include "Types/DeletionQueue.h"
+#include "vulkan/vulkan_core.h"
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <backends/imgui_impl_glfw.h>
@@ -44,14 +45,21 @@ namespace FooGame
             Command command;
             DeletionQueue deletionQueue;
     };
+    struct BackendContext
+    {
+            RenderDevice* pRenderDevice         = nullptr;
+            VulkanDeviceContext* pDeviceContext = nullptr;
+            VulkanSwapchain* pSwapchain         = nullptr;
+            VulkanRenderPass* pRenderPass       = nullptr;
+            EngineCreateInfo engineCi;
+            SwapchainDescription sDesc{};
+            std::vector<FramebufferWrapper> FrameBuffers;
+            CommandPoolWrapper commandPool;
+            std::vector<VkCommandBuffer> commandBuffers;
+    };
+    BackendContext bContext{};
     FrameStatistics frameData{};
     EngineComponents comps{};
-
-    RenderDevice* pRenderDevice         = nullptr;
-    VulkanDeviceContext* pDeviceContext = nullptr;
-    VulkanSwapchain* pSwapchain         = nullptr;
-    VulkanRenderPass* pRenderPass       = nullptr;
-    std::vector<VkFramebuffer> m_Framebuffers;
 
     uint32_t Backend::GetCurrentFrame()
     {
@@ -73,10 +81,13 @@ namespace FooGame
             abort();
         }
     }
-
+    VkRenderPass Backend::GetRenderPass()
+    {
+        return bContext.pRenderPass->GetRenderPass();
+    }
     VkFormat Backend::GetSwapchainImageFormat()
     {
-        return pSwapchain->GetImageFormat();
+        return bContext.pSwapchain->GetImageFormat();
         // return comps.swapchain->GetImageFormat();
     }
     ImGui_ImplVulkanH_Window g_MainWindowData;
@@ -90,7 +101,8 @@ namespace FooGame
         allocInfo.commandBufferCount = 1;
 
         VkCommandBuffer commandBuffer{};
-        vkAllocateCommandBuffers(Api::GetDevice()->GetDevice(), &allocInfo, &commandBuffer);
+        auto cmd = bContext.pRenderDevice->AllocateCommandBuffer(allocInfo);
+        // vkAllocateCommandBuffers(Api::GetDevice()->GetDevice(), &allocInfo, &commandBuffer);
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -114,20 +126,22 @@ namespace FooGame
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers    = &commandBuffer;
 
-        vkQueueSubmit(Api::GetDevice()->GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-        vkQueueWaitIdle(Api::GetDevice()->GetGraphicsQueue());
+        vkQueueSubmit(0, 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(0);
 
-        vkFreeCommandBuffers(Api::GetDevice()->GetDevice(), comps.command.commandPool, 1,
-                             &commandBuffer);
+        bContext.pRenderDevice->FreeCommandBuffer(bContext.commandPool, commandBuffer);
+        // vkFreeCommandBuffers(Api::GetDevice()->GetDevice(), comps.command.commandPool, 1,
+        //                      &commandBuffer);
     }
     void Backend::WaitIdle()
     {
-        vkDeviceWaitIdle(Api::GetDevice()->GetDevice());
+        bContext.pRenderDevice->WaitIdle();
+        // vkDeviceWaitIdle(Api::GetDevice()->GetDevice());
     }
 
     RenderDevice* Backend::GetRenderDevice()
     {
-        return pRenderDevice;
+        return bContext.pRenderDevice;
     }
     void Backend::Init(Window& window)
     {
@@ -135,14 +149,11 @@ namespace FooGame
         comps.windowHandle = window.GetWindowHandle();
         auto factory       = EngineFactory::GetInstance();
 
-        EngineCreateInfo engineCi;
-        SwapchainDescription sDesc{};
-
-        factory->CreateVulkanContexts(engineCi, &pRenderDevice, &pDeviceContext);
-        factory->CreateSwapchain(pRenderDevice, pDeviceContext, sDesc, window.GetWindowHandle(),
-                                 &pSwapchain);
-        // Api::Init(&window);
-        auto device = pRenderDevice->GetLogicalDevice()->GetVkDevice();
+        factory->CreateVulkanContexts(bContext.engineCi, &bContext.pRenderDevice,
+                                      &bContext.pDeviceContext);
+        factory->CreateSwapchain(bContext.pRenderDevice, bContext.pDeviceContext, bContext.sDesc,
+                                 window.GetWindowHandle(), &bContext.pSwapchain);
+        auto device = bContext.pRenderDevice->GetLogicalDevice()->GetVkDevice();
 
         RenderPassAttachmentDesc attachments[2];
         attachments[0].SampleCount    = 1;
@@ -180,9 +191,11 @@ namespace FooGame
         desc.pAttachments    = attachments;
         desc.SubpassCount    = 1;
         desc.pSubpassDesc    = subpasses;
-        pRenderDevice->CreateRenderPass(desc, &pRenderPass);
-        m_Framebuffers.resize(2);
-        pRenderDevice->CreateFramebuffer(pSwapchain, m_Framebuffers.data(), pRenderPass);
+        bContext.pRenderDevice->CreateRenderPass(desc, &bContext.pRenderPass);
+
+        bContext.FrameBuffers.resize(2);
+        bContext.pRenderDevice->CreateFramebuffer(bContext.pSwapchain, bContext.FrameBuffers.data(),
+                                                  bContext.pRenderPass);
 
         {
             VkCommandPoolCreateInfo poolInfo{};
@@ -190,21 +203,24 @@ namespace FooGame
             poolInfo.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
             poolInfo.queueFamilyIndex = 0;  // Api::GetDevice()->GetGraphicsFamily();
 
-            VK_CALL(vkCreateCommandPool(device, &poolInfo, nullptr, &comps.command.commandPool));
+            bContext.commandPool = bContext.pRenderDevice->CreateCommandPool();
+
             comps.deletionQueue.PushFunction(
                 [&](VkDevice d) { vkDestroyCommandPool(d, comps.command.commandPool, nullptr); });
         }
-
-        // comps.swapchain->CreateFramebuffers();
         {
-            comps.command.commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+            bContext.commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
             VkCommandBufferAllocateInfo allocInfo{};
             allocInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-            allocInfo.commandPool        = comps.command.commandPool;
+            allocInfo.commandPool        = bContext.commandPool;
             allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-            allocInfo.commandBufferCount = (uint32_t)comps.command.commandBuffers.size();
-            VK_CALL(
-                vkAllocateCommandBuffers(device, &allocInfo, comps.command.commandBuffers.data()));
+            allocInfo.commandBufferCount = (uint32_t)bContext.commandBuffers.size();
+
+            for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+            {
+                bContext.commandBuffers[i] =
+                    bContext.pRenderDevice->AllocateCommandBuffer(allocInfo);
+            }
         }
         {
             comps.imageAvailableSemaphores.clear();
@@ -260,7 +276,7 @@ namespace FooGame
     }
     VkExtent2D Backend::GetSwapchainExtent()
     {
-        return pSwapchain->GetExtent();
+        return bContext.pSwapchain->GetExtent();
         // return comps.swapchain->GetExtent();
     }
     void Backend::EndDrawing()
@@ -293,7 +309,7 @@ namespace FooGame
     }
     VkFramebuffer Backend::GetFramebuffer()
     {
-        return m_Framebuffers[frameData.imageIndex];
+        return bContext.FrameBuffers[frameData.imageIndex];
         // return comps.swapchain->GetFrameBuffer(frameData.imageIndex);
     }
 
@@ -301,13 +317,11 @@ namespace FooGame
     {
         auto cb = comps.command.commandBuffers[frameData.currentFrame];
         VkRenderPassBeginInfo renderPassInfo{};
-        renderPassInfo.sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.renderPass  = Api::GetRenderpass();
-        renderPassInfo.framebuffer = m_Framebuffers
-            [frameData.imageIndex];  // comps.swapchain->GetFrameBuffer(frameData.imageIndex);
+        renderPassInfo.sType      = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = bContext.pRenderPass->GetRenderPass();  // Api::GetRenderpass();
+        renderPassInfo.framebuffer       = bContext.FrameBuffers[frameData.imageIndex];
         renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent =
-            pSwapchain->GetExtent();  // comps.swapchain->GetExtent();
+        renderPassInfo.renderArea.extent = bContext.pSwapchain->GetExtent();
 
         VkClearValue clearColor[2]     = {};
         clearColor[0]                  = {0.2f, 0.3f, 0.1f, 1.0f};
@@ -338,7 +352,7 @@ namespace FooGame
         auto cb = comps.command.commandBuffers[frameData.currentFrame];
         vkCmdEndRenderPass(cb);
         VK_CALL(vkEndCommandBuffer(cb));
-        pSwapchain->Present(frameData.currentFrame);
+        bContext.pSwapchain->Present(frameData.currentFrame);
         // VkSemaphore waitSemaphores[] = {
         //     comps.imageAvailableSemaphores[frameData.currentFrame].Get()};
         // VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -400,11 +414,9 @@ namespace FooGame
     }
     void Backend::RecreateSwapchain()
     {
-        Api::WaitIdle();
-        pSwapchain->Resize(frameData.fbWidth, frameData.fbHeight);
-        // comps.swapchain->Recreate(
-        //     {static_cast<uint32_t>(frameData.fbWidth),
-        //     static_cast<uint32_t>(frameData.fbHeight)});
+        bContext.pRenderDevice->WaitIdle();
+        // Api::WaitIdle();
+        bContext.pSwapchain->Resize(frameData.fbWidth, frameData.fbHeight);
     }
     void Backend::UpdateUniformData(UniformBufferObject ubo)
     {
@@ -413,7 +425,7 @@ namespace FooGame
     }
     void Backend::InitImgui()
     {
-        auto device                       = pRenderDevice->GetVkDevice();  // Api::GetDevice();
+        auto device                       = bContext.pRenderDevice->GetVkDevice();
         VkDescriptorPoolSize pool_sizes[] = {
             {               VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
             {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
@@ -435,29 +447,29 @@ namespace FooGame
         pool_info.poolSizeCount              = ARRAY_COUNT(pool_sizes);
         pool_info.pPoolSizes                 = pool_sizes;
 
-        VK_CALL(vkCreateDescriptorPool(pRenderDevice->GetVkDevice(), &pool_info, nullptr,
+        VK_CALL(vkCreateDescriptorPool(bContext.pRenderDevice->GetVkDevice(), &pool_info, nullptr,
                                        &g_ImguiPool));
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io     = ImGui::GetIO();
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         ImGui::StyleColorsDark();
 
         ImGui_ImplGlfw_InitForVulkan(comps.windowHandle, false);
 
-        auto queueProps = pRenderDevice->GetPhysicalDevice()->GetQueueProperties();
+        auto queueProps = bContext.pRenderDevice->GetPhysicalDevice()->GetQueueProperties();
 
-        auto graphics = pRenderDevice->GetPhysicalDevice()->FindQueueFamily(VK_QUEUE_GRAPHICS_BIT);
+        auto graphics =
+            bContext.pRenderDevice->GetPhysicalDevice()->FindQueueFamily(VK_QUEUE_GRAPHICS_BIT);
 
         ImGui_ImplVulkan_InitInfo init_info = {};
-        init_info.Instance = pRenderDevice->GetVkInstance();  // Api::GetInstance();
-        init_info.PhysicalDevice =
-            pRenderDevice->GetVkPhysicalDevice();                  // device->GetPhysicalDevice();
-        init_info.Device          = pRenderDevice->GetVkDevice();  // device->GetDevice();
-        init_info.Queue           = pRenderDevice->GetLogicalDevice()->GetQueue(0, graphics);
-        init_info.QueueFamily     = graphics;
+        init_info.Instance                  = bContext.pRenderDevice->GetVkInstance();
+        init_info.PhysicalDevice            = bContext.pRenderDevice->GetVkPhysicalDevice();
+        init_info.Device                    = bContext.pRenderDevice->GetVkDevice();
+        init_info.Queue       = bContext.pRenderDevice->GetLogicalDevice()->GetQueue(0, graphics);
+        init_info.QueueFamily = graphics;
         init_info.DescriptorPool  = g_ImguiPool;
-        init_info.RenderPass      = pRenderPass->GetRenderPass();  // Api::GetRenderpass();
+        init_info.RenderPass      = bContext.pRenderPass->GetRenderPass();
         init_info.Subpass         = 0;
         init_info.MinImageCount   = 2;
         init_info.ImageCount      = 2;
@@ -470,10 +482,10 @@ namespace FooGame
 
     void Backend::Shutdown()
     {
-        auto device = Api::GetDevice()->GetDevice();
-        Api::WaitIdle();
-        comps.deletionQueue.Flush(device);
-
-        Api::Shutdown();
+        // auto device = Api::GetDevice()->GetDevice();
+        // Api::WaitIdle();
+        // comps.deletionQueue.Flush(device);
+        //
+        // Api::Shutdown();
     }
 }  // namespace FooGame

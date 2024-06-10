@@ -1,10 +1,7 @@
 #include "Shader.h"
-#include "Api.h"
 #include <fstream>
 #include <iostream>
-#include "Device.h"
-#include "src/Log.h"
-#include "vulkan/vulkan_core.h"
+#include <Log.h>
 namespace FooGame
 {
     static std::vector<char> ReadFile(const std::string& file_path)
@@ -27,35 +24,24 @@ namespace FooGame
 
         return buffer;
     }
-    Shader::Shader(const std::string& path, ShaderStage stage)
-        : m_Stage(stage), m_Path(path)
+    Shader::Shader(const struct CreateInfo& ci) : m_Ci{ci}
     {
-        auto code = ReadFile(m_Path);
+        auto code = ReadFile(m_Ci.Path);
 
         VkShaderModuleCreateInfo create_info = {};
-        create_info.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        create_info.codeSize = code.size();
-        create_info.pCode    = reinterpret_cast<const uint32_t*>(code.data());
-
-        VkShaderModule shaderModule;
-
-        if (vkCreateShaderModule(Api::GetDevice()->GetDevice(), &create_info,
-                                 nullptr, &m_Module) != VK_SUCCESS)
-        {
-            std::cerr << "Failed to load shader module of " << m_Path << '\n';
-        }
-    }
-    VkShaderModule Shader::GetModule() const
-    {
-        return m_Module;
+        create_info.sType                    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        create_info.codeSize                 = code.size();
+        create_info.pCode                    = reinterpret_cast<const uint32_t*>(code.data());
+        m_Module                             = m_Ci.pRenderDevice->CreateShaderModule(create_info);
+        ;
     }
     Shader::~Shader()
     {
-        vkDestroyShaderModule(Api::GetDevice()->GetDevice(), m_Module, nullptr);
+        m_Module.Release();
     }
     VkShaderStageFlagBits Shader::GetType()
     {
-        switch (m_Stage)
+        switch (m_Ci.Stage)
         {
             case ShaderStage::VERTEX:
                 return VK_SHADER_STAGE_VERTEX_BIT;

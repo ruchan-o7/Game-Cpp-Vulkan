@@ -1,5 +1,5 @@
 #pragma once
-#include <vulkan/vulkan.h>
+#include "../Core/RenderDevice.h"
 #include <string>
 namespace FooGame
 {
@@ -11,16 +11,21 @@ namespace FooGame
     class Shader
     {
         public:
-            Shader(const std::string& path, ShaderStage stage);
+            struct CreateInfo
+            {
+                    std::string Path;
+                    ShaderStage Stage;
+                    class RenderDevice* pRenderDevice;
+            };
+            Shader(const CreateInfo& ci);
             ~Shader();
-            VkShaderModule GetModule() const;
-            ShaderStage GetShaderStage() const { return m_Stage; };
+            VkShaderModule GetModule() const { return m_Module; };
+            ShaderStage GetShaderStage() const { return m_Ci.Stage; };
             VkShaderStageFlagBits GetType();
             VkPipelineShaderStageCreateInfo CreateInfo();
 
         private:
-            ShaderStage m_Stage;
-            std::string m_Path;
-            VkShaderModule m_Module;
+            struct CreateInfo m_Ci;
+            ShaderModuleWrapper m_Module;
     };
 }  // namespace FooGame
