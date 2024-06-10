@@ -90,16 +90,17 @@ namespace FooGame
         for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
             VulkanBuffer::BuffDesc desc{};
-            desc.pRenderDevice = pRenderDevice;
-            desc.Usage         = Vulkan::BUFFER_USAGE_UNIFORM;
-            desc.MemoryFlag    = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
-            desc.name          = "Uniform buffer";
+            desc.pRenderDevice  = pRenderDevice;
+            desc.pLogicalDevice = pRenderDevice->GetLogicalDevice();
+            desc.Usage          = Vulkan::BUFFER_USAGE_UNIFORM;
+            desc.MemoryFlag     = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
+            desc.name           = "Uniform buffer";
 
             VulkanBuffer::BuffData data{};
             data.Data = {0};
             data.Size = sizeof(UniformBufferObject);
 
-            rContext.buffers[i] = std::make_unique<VulkanBuffer>(desc, std::move(data));
+            rContext.buffers[i] = std::make_unique<VulkanBuffer>(desc, data);
             rContext.buffers[i]->MapMemory();
             // BufferBuilder uBuffBuilder{};
             // uBuffBuilder.SetUsage(BufferUsage::UNIFORM)
@@ -161,26 +162,28 @@ namespace FooGame
         {
             auto queue = pRenderDevice->GetLogicalDevice()->GetQueue(0, 0);
             VulkanBuffer::BuffDesc stageDesc{};
-            stageDesc.pRenderDevice = pRenderDevice;
-            stageDesc.Usage         = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
-            stageDesc.MemoryFlag    = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
-            stageDesc.name          = "Test stage";
+            stageDesc.pRenderDevice  = pRenderDevice;
+            stageDesc.pLogicalDevice = pRenderDevice->GetLogicalDevice();
+            stageDesc.Usage          = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
+            stageDesc.MemoryFlag     = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
+            stageDesc.name           = "Test stage";
 
             VulkanBuffer::BuffData stageBufferData{};
             stageBufferData.Size = sizeof(int) * 10;
             stageBufferData.Data = (void*)new int(1);
-            VulkanBuffer stageBuffer{stageDesc, std::move(stageBufferData)};
+            VulkanBuffer stageBuffer{stageDesc, stageBufferData};
 
             VulkanBuffer::BuffDesc vertexDesc{};
-            vertexDesc.pRenderDevice = pRenderDevice;
-            vertexDesc.Usage         = Vulkan::BUFFER_USAGE_TRANSFER_DESTINATION_VERTEX;
-            vertexDesc.MemoryFlag    = Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY;
-            vertexDesc.name          = "Vertex buffer";
+            vertexDesc.pRenderDevice  = pRenderDevice;
+            vertexDesc.pLogicalDevice = pRenderDevice->GetLogicalDevice();
+            vertexDesc.Usage          = Vulkan::BUFFER_USAGE_TRANSFER_DESTINATION_VERTEX;
+            vertexDesc.MemoryFlag     = Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY;
+            vertexDesc.name           = "Vertex buffer";
 
             VulkanBuffer::BuffData vertexData{};
             vertexData.Size = sizeof(int) * 10;
             vertexData.Data = (void*)new int(1);
-            VulkanBuffer vbuffer{vertexDesc, std::move(vertexData)};
+            VulkanBuffer vbuffer{vertexDesc, vertexData};
             stageBuffer.MapMemory();
             stageBuffer.UpdateData(vertexData.Data, vertexData.Size);
             stageBuffer.UnMapMemory();
@@ -197,14 +200,13 @@ namespace FooGame
         }
         {
             Shader vert{
-                {VERT_SHADER, ShaderStage::VERTEX, pRenderDevice}
+                {VERT_SHADER, ShaderStage::VERTEX, pRenderDevice->GetLogicalDevice()}
             };
             Shader frag{
-                {FRAG_SHADER, ShaderStage::FRAGMENT, pRenderDevice}
+                {FRAG_SHADER, ShaderStage::FRAGMENT, pRenderDevice->GetLogicalDevice()}
             };
             VulkanPipeline::CreateInfo ci{};
-            ci.pRenderDevice = pRenderDevice;
-            ci.RenderPass    = Backend::GetRenderPass();
+            ci.RenderPass = Backend::GetRenderPass();
             ci.ShaderStages.push_back(vert.CreateInfo());
             ci.ShaderStages.push_back(frag.CreateInfo());
             ci.PushConstantCount      = 1;
@@ -215,25 +217,6 @@ namespace FooGame
             ci.VertexAttributes       = Vertex::GetAttributeDescriptionList();
             ci.VertexBindings         = {Vertex::GetBindingDescription()};
             rContext.pGraphicPipeline = std::unique_ptr<VulkanPipeline>(new VulkanPipeline(ci));
-            // PipelineInfo info{};
-            // info.Shaders                    = std::vector<Shader*>{&vert, &frag};
-            // info.VertexAttributeDescriptons = Vertex::GetAttributeDescriptionList();
-            // info.VertexBindings             = {Vertex::GetBindingDescription()};
-            // info.LineWidth                  = 2.0f;
-            // info.cullMode                   = CullMode::BACK;
-            // info.multiSampling              = MultiSampling::LEVEL_1;
-            // info.DescriptorSetLayout        = s_Data.Res.descriptor.SetLayout;
-            // info.pushConstantSize           = sizeof(MeshPushConstants);
-            // info.pushConstantCount          = 1;
-            //
-            // s_Data.api.GraphicsPipeline = CreateGraphicsPipeline(info);
-            // s_Data.Res.deletionQueue.PushFunction(
-            //     [&](VkDevice device)
-            //     {
-            //         vkDestroyPipelineLayout(device, s_Data.api.GraphicsPipeline.pipelineLayout,
-            //                                 nullptr);
-            //         vkDestroyPipeline(device, s_Data.api.GraphicsPipeline.pipeline, nullptr);
-            //     });
         }
     }
     void Renderer3D::SubmitModel(Model* model)

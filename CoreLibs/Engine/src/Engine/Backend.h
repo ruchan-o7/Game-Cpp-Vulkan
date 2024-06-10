@@ -7,6 +7,8 @@ namespace FooGame
     class Window;
     class WindowResizeEvent;
     class RenderDevice;
+    class VulkanBuffer;
+    class VulkanTexture;
     class Backend
     {
         public:
@@ -35,6 +37,10 @@ namespace FooGame
             static void BeginRenderpass();
 
             static RenderDevice* GetRenderDevice();
+
+            static void TransitionImageLayout(class VulkanImage* image, VkFormat format,
+                                              VkImageLayout oldLayout, VkImageLayout newLayout);
+            static void CopyBufferToImage(VulkanBuffer& source, VulkanTexture& destination);
 
         private:
             static void BeginDrawing_();
