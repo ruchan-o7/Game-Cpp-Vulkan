@@ -10,16 +10,18 @@
 #include "../Geometry/Mesh.h"
 #include "../Geometry/Model.h"
 #include "Vertex.h"
-#include <Log.h>
 #include "../Engine/Api.h"
 #include "../Engine/Buffer.h"
 #include "../Engine/Texture2D.h"
-#include "src/Log.h"
 #include "tiny_gltf.h"
 #include <stb_image.h>
 #include <tiny_obj_loader.h>
 #include "../Engine/Device.h"
 #include "../Engine/VulkanCheckResult.h"
+#include "../Core/VulkanBuffer.h"
+#include "../Core/RenderDevice.h"
+#include "../Core/VulkanTexture.h"
+#include "../Engine/Backend.h"
 #include "vulkan/vulkan_core.h"
 namespace FooGame
 {
@@ -55,6 +57,7 @@ namespace FooGame
     }
     void AssetLoader::DestroyTexture(Texture2D& t)
     {
+        NOT_IMPLEMENTED();
         if (!t.Image)
         {
             return;
@@ -72,18 +75,58 @@ namespace FooGame
     Texture2D AssetLoader::LoadFromFile(const std::string& path)
 
     {
+        auto* pRenderDevice = Backend::GetRenderDevice();
+
         Texture2D image{};
-        image.Path     = path;
-        Device* device = Api::GetDevice();
+        image.Path = path;
+        // Device* device = Api::GetDevice();
+        auto VkDevice              = pRenderDevice->GetVkDevice();
+        const auto* physicalDevice = pRenderDevice->GetPhysicalDevice();
         int32_t texWidth, texHeight, texChannels;
         stbi_uc* pixels =
             stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-        VkDeviceSize imageSize = texWidth * texHeight * 4;
+        size_t imageSize = texWidth * texHeight * 4;
         if (!pixels)
         {
             FOO_ENGINE_ERROR("Coult not load image : {0}", path);
             return image;
         }
+
+        VulkanBuffer::BuffDesc stageDesc{};
+        stageDesc.pRenderDevice = pRenderDevice;
+        stageDesc.Usage         = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
+        stageDesc.MemoryFlag    = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
+        stageDesc.name          = std::string("Stage buffer: " + path).c_str();
+
+        VulkanBuffer::BuffData stageData{};
+        stageData.Size = imageSize;
+        stageData.Data = pixels;
+
+        VulkanBuffer stageBuffer{stageDesc, stageData};
+
+        VulkanTexture::CreateInfo ci{};
+        ci.pRenderDevice = pRenderDevice;
+        ci.MaxAnisotropy = physicalDevice->GetDeviceProperties().limits.maxSamplerAnisotropy;
+        ci.Name          = "test texture";
+        ci.AspectFlags   = VK_IMAGE_ASPECT_COLOR_BIT;
+        ci.Format        = VK_FORMAT_R8G8B8A8_SRGB;
+        ci.MemoryPropertiesFlags = Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY;
+        ci.Tiling                = VK_IMAGE_TILING_LINEAR;
+        ci.UsageFlags            = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+        ci.Extent = {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)};
+
+        VulkanTexture vTexture{ci};
+        auto vkImage = vTexture.GetImage();
+
+        Backend::TransitionImageLayout(vkImage.get(), VK_FORMAT_R8G8B8A8_SRGB,
+                                       VK_IMAGE_LAYOUT_UNDEFINED,
+                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+        Backend::CopyBufferToImage(stageBuffer, vTexture);
+        Backend::TransitionImageLayout(vkImage.get(), VK_FORMAT_R8G8B8A8_SRGB,
+                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
         BufferBuilder staginfBufBuilder{};
         staginfBufBuilder.SetUsage(BufferUsage::TRANSFER_SRC)
             .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
@@ -93,6 +136,7 @@ namespace FooGame
         stagingBuffer.Allocate();
         stagingBuffer.SetData(imageSize, pixels);
         stagingBuffer.Bind();
+
         stbi_image_free(pixels);
 
         image.Width  = texWidth;
@@ -110,8 +154,8 @@ namespace FooGame
         TransitionImageLayout(&image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         CreateImageView(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
-        VkPhysicalDeviceProperties properties{};
-        vkGetPhysicalDeviceProperties(device->GetPhysicalDevice(), &properties);
+
+        VkPhysicalDeviceProperties properties = physicalDevice->GetDeviceProperties();
 
         VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -129,7 +173,7 @@ namespace FooGame
         samplerInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
         stagingBuffer.Release();
-        VK_CALL(vkCreateSampler(device->GetDevice(), &samplerInfo, nullptr, &image.Sampler));
+        VK_CALL(vkCreateSampler(VkDevice, &samplerInfo, nullptr, &image.Sampler));
         image.Descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         image.Descriptor.imageView   = image.ImageView;
         image.Descriptor.sampler     = image.Sampler;
