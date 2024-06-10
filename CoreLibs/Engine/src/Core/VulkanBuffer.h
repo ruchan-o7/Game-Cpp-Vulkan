@@ -12,30 +12,32 @@ namespace ENGINE_NAMESPACE
             DELETE_COPY(VulkanBuffer);
 
         public:
-            struct BuffDesc
-            {
-                    const char* name = nullptr;
-                    Vulkan::BUFFER_USAGE Usage;
-                    Vulkan::BUFFER_MEMORY_FLAG MemoryFlag;
-                    RenderDevice* pRenderDevice;
-                    std::weak_ptr<VulkanLogicalDevice> pLogicalDevice;
-            };
-
             struct BuffData
             {
                     size_t Size = 0;
                     void* Data  = nullptr;
             };
+            struct BuffDesc
+            {
+                    const char* Name = nullptr;
+                    Vulkan::BUFFER_USAGE Usage;
+                    Vulkan::BUFFER_MEMORY_FLAG MemoryFlag;
+                    RenderDevice* pRenderDevice;
+                    BuffData BufferData;
+                    std::weak_ptr<VulkanLogicalDevice> pLogicalDevice;
+            };
+
             static std::unique_ptr<VulkanBuffer> CreateDynamicBuffer(size_t size,
                                                                      Vulkan::BUFFER_USAGE usage);
             static std::unique_ptr<VulkanBuffer> CreateVertexBuffer(
-                VulkanBuffer::BuffData& data, RenderDevice* pRenderDevice,
-                const char* name = "Vertex buffer");
-            static std::unique_ptr<VulkanBuffer> CreateIndexBuffer(const BuffData& data);
+                const VulkanBuffer::BuffDesc& info);
+            static std::unique_ptr<VulkanBuffer> CreateIndexBuffer(
+                const VulkanBuffer::BuffDesc& info);
 
-            VulkanBuffer(const BuffDesc& info, const BuffData& data);
+            VulkanBuffer(const BuffDesc& info);
 
             VulkanBuffer(VulkanBuffer&& other);
+            ~VulkanBuffer() = default;  // TODO Implement this
 
             void UpdateData(void* data, size_t size, size_t offset = 0);
             void CopyTo(VulkanBuffer& destination, size_t size, VkCommandPool commandPool,
@@ -55,7 +57,6 @@ namespace ENGINE_NAMESPACE
             friend class RenderDevice;
             friend class VulkanDeviceContext;
             BuffDesc m_Desc;
-            BuffData m_BufferData;
 
             BufferWrapper m_Buffer;
             DeviceMemoryWrapper m_Memory;

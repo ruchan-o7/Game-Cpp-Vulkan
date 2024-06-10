@@ -2,7 +2,8 @@
 #include <cassert>
 #include "RenderDevice.h"
 #include "Types.h"
-#include "vulkan/vulkan_core.h"
+#include "../Engine/Backend.h"
+#include "VulkanTexture.h"
 namespace ENGINE_NAMESPACE
 {
 
@@ -21,8 +22,8 @@ namespace ENGINE_NAMESPACE
         assert(!"No compatible memory type found");
         return ~0u;
     }
-    VulkanBuffer::VulkanBuffer(const BuffDesc& info, const BuffData& data)
-        : m_Desc(info), m_BufferData(data), m_Buffer(nullptr), m_Memory(nullptr)
+    VulkanBuffer::VulkanBuffer(const BuffDesc& info)
+        : m_Desc(info), m_Buffer(nullptr), m_Memory(nullptr)
     {
         if (m_Desc.Usage == Vulkan::BUFFER_USAGE_UNIFORM)
         {
@@ -31,7 +32,7 @@ namespace ENGINE_NAMESPACE
                 assert("Uniform buffer should cpu visible");
             }
         }
-        assert(m_BufferData.Size > 0);
+        assert(m_Desc.BufferData.Size > 0);
         Init();
     }
     void VulkanBuffer::Release()
@@ -54,14 +55,14 @@ namespace ENGINE_NAMESPACE
 
         VkBufferCreateInfo ci{};
         ci.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        ci.size                  = m_BufferData.Size;
+        ci.size                  = m_Desc.BufferData.Size;
         ci.usage                 = m_Desc.Usage;
         ci.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
         ci.pNext                 = nullptr;
         ci.pQueueFamilyIndices   = nullptr;
         ci.queueFamilyIndexCount = 0;
 
-        m_Buffer = std::move(lDev->CreateBuffer(ci, m_Desc.name));
+        m_Buffer = std::move(lDev->CreateBuffer(ci, m_Desc.Name));
 
         auto memReqs  = lDev->GetBufferMemoryRequirements(m_Buffer);
         auto memProps = pDev->GetMemoryProperties();
@@ -79,7 +80,7 @@ namespace ENGINE_NAMESPACE
     void VulkanBuffer::MapMemory()
     {
         auto device = m_Desc.pLogicalDevice.lock();
-        device->MapMemory(m_Memory, 0, m_BufferData.Size, 0, &m_MappedPtr);
+        device->MapMemory(m_Memory, 0, m_Desc.BufferData.Size, 0, &m_MappedPtr);
     }
     void VulkanBuffer::UnMapMemory()
     {
@@ -91,10 +92,10 @@ namespace ENGINE_NAMESPACE
     }
     void VulkanBuffer::UpdateData(void* data, size_t size, size_t offset)
     {
-        assert(size <= m_BufferData.Size);
+        assert(size <= m_Desc.BufferData.Size);
         if (m_Desc.MemoryFlag == Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE)
         {
-            memcpy(m_MappedPtr, m_BufferData.Data, m_BufferData.Size);
+            memcpy(m_MappedPtr, m_Desc.BufferData.Data, m_Desc.BufferData.Size);
         }
         else
         {
@@ -102,39 +103,86 @@ namespace ENGINE_NAMESPACE
             device->MapMemory(m_Memory, offset, size, (m_Desc.MemoryFlag), &data);
             memcpy(m_MappedPtr, data, size);
             device->UnmapMemory(m_Memory);
-            // vkUnmapMemory(device, m_Memory);
         }
     }
 
-    std::unique_ptr<VulkanBuffer> CreateDynamicBuffer(size_t size, Vulkan::BUFFER_USAGE usage)
+    std::unique_ptr<VulkanBuffer> VulkanBuffer::CreateDynamicBuffer(size_t size,
+                                                                    Vulkan::BUFFER_USAGE usage)
     {
         NOT_IMPLEMENTED();
         return nullptr;
     }
-    std::unique_ptr<VulkanBuffer> CreateVertexBuffer(VulkanBuffer::BuffData& data,
-                                                     RenderDevice* pRenderDevice,
-                                                     const char* name = "Vertex buffer")
+    std::unique_ptr<VulkanBuffer> VulkanBuffer::CreateVertexBuffer(
+        const VulkanBuffer::BuffDesc& info)
     {
-        // size_t size = data.Size;
-        // VulkanBuffer::BuffDesc stageDesc{};
-        // stageDesc.name          = "Stage buffer";
-        // stageDesc.Usage         = Vulkan::BUFFER_USAGE::TransferSource;
-        // stageDesc.MemoryFlag    = Vulkan::BUFFER_MEMORY_FLAG::CpuVisible;
-        // stageDesc.pRenderDevice = pRenderDevice;
-        // VulkanBuffer stageBuffer{stageDesc, std::move(data)};
-        //
-        // VulkanBuffer::BuffDesc vertexBufferDesc{};
-        // vertexBufferDesc.name          = name;
-        // vertexBufferDesc.Usage         = Vulkan::BUFFER_USAGE::TransferSource;
-        // vertexBufferDesc.MemoryFlag    = Vulkan::BUFFER_MEMORY_FLAG::CpuVisible;
-        // vertexBufferDesc.pRenderDevice = pRenderDevice;
-        NOT_IMPLEMENTED();
-        return nullptr;
+        auto device = info.pLogicalDevice.lock();
+        VulkanBuffer::BuffDesc stageDesc{};
+        stageDesc.pRenderDevice   = info.pRenderDevice;
+        stageDesc.pLogicalDevice  = info.pLogicalDevice;
+        stageDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
+        stageDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
+        stageDesc.Name            = "Vertex buffer stage";
+        stageDesc.BufferData.Data = info.BufferData.Data;
+        stageDesc.BufferData.Size = info.BufferData.Size;
+        VulkanBuffer stageBuffer{stageDesc};
+
+        VulkanBuffer::BuffDesc vertexBufferDesc{};
+        vertexBufferDesc.pRenderDevice   = info.pRenderDevice;
+        vertexBufferDesc.pLogicalDevice  = info.pLogicalDevice;
+        vertexBufferDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_DESTINATION_VERTEX;
+        vertexBufferDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY;
+        vertexBufferDesc.Name            = info.Name;  // "Vertex buffer";
+        vertexBufferDesc.BufferData.Data = info.BufferData.Data;
+        vertexBufferDesc.BufferData.Size = info.BufferData.Size;
+        VulkanBuffer* vertexBuffer       = new VulkanBuffer{vertexBufferDesc};
+
+        stageBuffer.MapMemory();
+        stageBuffer.UpdateData(info.BufferData.Data, info.BufferData.Size);
+        stageBuffer.UnMapMemory();
+
+        {
+            // TODO GOOD Refactoring needs asap;
+            stageBuffer.CopyTo(*vertexBuffer, info.BufferData.Size, Backend::GetCommandPool(),
+                               device->GetQueue(0, 0));
+        }
+
+        return std::unique_ptr<VulkanBuffer>(vertexBuffer);
     }
-    std::unique_ptr<VulkanBuffer> CreateIndexBuffer(const BuffData& data)
+    std::unique_ptr<VulkanBuffer> VulkanBuffer::CreateIndexBuffer(
+        const VulkanBuffer::BuffDesc& info)
     {
-        NOT_IMPLEMENTED();
-        return nullptr;
+        auto device = info.pLogicalDevice.lock();
+        VulkanBuffer::BuffDesc stageDesc{};
+        stageDesc.pRenderDevice   = info.pRenderDevice;
+        stageDesc.pLogicalDevice  = info.pLogicalDevice;
+        stageDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
+        stageDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
+        stageDesc.Name            = "Index buffer stage";
+        stageDesc.BufferData.Data = info.BufferData.Data;
+        stageDesc.BufferData.Size = info.BufferData.Size;
+        VulkanBuffer stageBuffer{stageDesc};
+
+        VulkanBuffer::BuffDesc vertexBufferDesc{};
+        vertexBufferDesc.pRenderDevice   = info.pRenderDevice;
+        vertexBufferDesc.pLogicalDevice  = info.pLogicalDevice;
+        vertexBufferDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_DESTINATION_INDEX;
+        vertexBufferDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY;
+        vertexBufferDesc.Name            = info.Name;  // "Vertex buffer";
+        vertexBufferDesc.BufferData.Data = info.BufferData.Data;
+        vertexBufferDesc.BufferData.Size = info.BufferData.Size;
+        VulkanBuffer* vertexBuffer       = new VulkanBuffer{vertexBufferDesc};
+
+        stageBuffer.MapMemory();
+        stageBuffer.UpdateData(info.BufferData.Data, info.BufferData.Size);
+        stageBuffer.UnMapMemory();
+
+        {
+            // TODO GOOD Refactoring needs asap;
+            stageBuffer.CopyTo(*vertexBuffer, info.BufferData.Size, Backend::GetCommandPool(),
+                               device->GetQueue(0, 0));
+        }
+
+        return std::unique_ptr<VulkanBuffer>(vertexBuffer);
     }
 
     void VulkanBuffer::CopyTo(VulkanBuffer& destination, size_t size, VkCommandPool commandPool,
