@@ -1,21 +1,10 @@
 #include "VulkanTexture.h"
 #include "RenderDevice.h"
-#include <cassert>
+#include "VulkanBuffer.h"
 namespace ENGINE_NAMESPACE
 {
-    VulkanTexture::VulkanTexture(const TextureDescription& desc, const TextureData& data)
-        : m_Image(nullptr),
-          m_Memory(nullptr),
-          m_Sampler(nullptr),
-          m_ImageView(nullptr),
-          m_pLogicalDevice(data.LogicalDevice),
-          m_Size(data.Size),
-          m_pTextureData(data.Data)
-    {
-        assert(0 && "NOT IMPLEMENTED YET");
-    }
 
-    ImageView::ImageView(const ImageViewDesc& desc) : m_Desc(desc)
+    VulkanImageView::VulkanImageView(const ImageViewDesc& desc) : m_Desc(desc)
     {
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -30,7 +19,7 @@ namespace ENGINE_NAMESPACE
         m_Desc.pLogicalDevice->CreateImageView(viewInfo, m_Desc.Name);
     }
 
-    Image::Image(const ImageDesc& desc) : m_Desc(desc)
+    VulkanImage::VulkanImage(const ImageDesc& desc) : m_Desc(desc)
     {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -61,5 +50,44 @@ namespace ENGINE_NAMESPACE
             allocInfo, "ImageMemory");
 
         m_Desc.pRenderDevice->GetLogicalDevice()->BindImageMemory(m_Image, m_ImageMemory, 0);
+    }
+    VulkanTexture::VulkanTexture(VulkanTexture::CreateInfo& info)
+        : m_Info(info)  //, m_Image(nullptr), m_ImageView(nullptr)
+    {
+        VulkanImage::ImageDesc imageDesc{};
+        imageDesc.Extent                = m_Info.Extent;
+        imageDesc.Format                = m_Info.Format;
+        imageDesc.Tiling                = m_Info.Tiling;
+        imageDesc.Usage                 = m_Info.UsageFlags;
+        imageDesc.MemoryPropertiesFlags = m_Info.MemoryPropertiesFlags;
+        imageDesc.pRenderDevice         = m_Info.pRenderDevice;
+        auto pI                         = new VulkanImage(imageDesc);
+        m_Image                         = std::shared_ptr<VulkanImage>(pI);
+
+        VulkanImageView::ImageViewDesc imageViewDesc{};
+        imageViewDesc.Image          = m_Image->GetImageHandle();
+        imageViewDesc.Format         = m_Info.Format;
+        imageViewDesc.Aspects        = m_Info.AspectFlags;
+        imageViewDesc.Name           = m_Info.Name;
+        imageViewDesc.pLogicalDevice = m_Info.pRenderDevice->GetLogicalDevice();
+        auto pIv                     = new VulkanImageView(imageViewDesc);
+        m_ImageView                  = std::shared_ptr<VulkanImageView>(pIv);
+
+        VkSamplerCreateInfo samplerInfo{};
+        samplerInfo.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerInfo.magFilter               = VK_FILTER_LINEAR;
+        samplerInfo.minFilter               = VK_FILTER_LINEAR;
+        samplerInfo.addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerInfo.anisotropyEnable        = VK_TRUE;
+        samplerInfo.maxAnisotropy           = m_Info.MaxAnisotropy;
+        samplerInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        samplerInfo.unnormalizedCoordinates = VK_FALSE;
+        samplerInfo.compareEnable           = VK_FALSE;
+        samplerInfo.compareOp               = VK_COMPARE_OP_ALWAYS;
+        samplerInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+
+        m_Sampler = m_Info.pRenderDevice->CreateSampler(samplerInfo);
     }
 }  // namespace ENGINE_NAMESPACE

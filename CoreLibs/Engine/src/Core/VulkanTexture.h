@@ -3,33 +3,12 @@
 #include "VulkanLogicalDevice.h"
 #include "Types.h"
 #include "Utils/VulkanObjectWrapper.h"
-#include "vulkan/vulkan_core.h"
 namespace ENGINE_NAMESPACE
 {
-    class VulkanTexture
+    class VulkanImage
     {
-        public:
-            VulkanTexture(const TextureDescription& desc, const TextureData& data);
+            DELETE_COPY(VulkanImage);
 
-            void Create();
-            VkImage GetVkImage() const { return m_Image; }
-            VkSampler GetSampler() const { return m_Sampler; }
-
-            void TransitionImageLayout();
-
-        private:
-            ImageWrapper m_Image;
-            ImageViewWrapper m_ImageView;
-            DeviceMemoryWrapper m_Memory;
-            SamplerWrapper m_Sampler;
-
-            std::shared_ptr<VulkanLogicalDevice> m_pLogicalDevice;
-
-            size_t m_Size;
-            void* m_pTextureData;
-    };
-    class Image
-    {
         public:
             struct ImageDesc
             {
@@ -40,15 +19,18 @@ namespace ENGINE_NAMESPACE
                     VkMemoryPropertyFlags MemoryPropertiesFlags;
                     class RenderDevice* pRenderDevice;
             };
-            Image(const ImageDesc& desc);
+            VulkanImage(const ImageDesc& desc);
+            VkImage GetImageHandle() const { return m_Image; }
 
         private:
             ImageDesc m_Desc;
             ImageWrapper m_Image;
             DeviceMemoryWrapper m_ImageMemory;
     };
-    class ImageView
+    class VulkanImageView
     {
+            DELETE_COPY(VulkanImageView);
+
         public:
             struct ImageViewDesc
             {
@@ -58,11 +40,42 @@ namespace ENGINE_NAMESPACE
                     std::shared_ptr<VulkanLogicalDevice> pLogicalDevice;
                     const char* Name = "Image View";
             };
-            ImageView(const ImageViewDesc& desc);
+            VulkanImageView(const ImageViewDesc& desc);
 
         private:
             ImageViewWrapper m_ImageView;
             ImageViewDesc m_Desc;
+    };
+
+    class VulkanTexture
+    {
+            DELETE_COPY(VulkanTexture);
+
+        public:
+            struct CreateInfo
+            {
+                    VkExtent2D Extent;
+                    VkFormat Format;
+                    VkImageTiling Tiling;
+                    VkImageUsageFlags UsageFlags;
+                    VkImageAspectFlagBits AspectFlags;
+                    VkMemoryPropertyFlags MemoryPropertiesFlags;
+                    class RenderDevice* pRenderDevice;
+                    const char* Name    = "Default Texture";
+                    float MaxAnisotropy = 1.0f;
+            };
+
+        public:
+            VulkanTexture(VulkanTexture::CreateInfo& info);
+            std::shared_ptr<VulkanImage> GetImage() const { return m_Image; }
+            VkImageAspectFlagBits GetAspect() const { return m_Info.AspectFlags; }
+            VkExtent2D GetExtent() const { return m_Info.Extent; }
+
+        private:
+            std::shared_ptr<VulkanImage> m_Image;
+            std::shared_ptr<VulkanImageView> m_ImageView;
+            SamplerWrapper m_Sampler;
+            VulkanTexture::CreateInfo& m_Info;
     };
 
 }  // namespace ENGINE_NAMESPACE
