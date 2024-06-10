@@ -18,6 +18,7 @@ namespace ENGINE_NAMESPACE
                     Vulkan::BUFFER_USAGE Usage;
                     Vulkan::BUFFER_MEMORY_FLAG MemoryFlag;
                     RenderDevice* pRenderDevice;
+                    std::weak_ptr<VulkanLogicalDevice> pLogicalDevice;
             };
 
             struct BuffData
@@ -32,7 +33,7 @@ namespace ENGINE_NAMESPACE
                 const char* name = "Vertex buffer");
             static std::unique_ptr<VulkanBuffer> CreateIndexBuffer(const BuffData& data);
 
-            VulkanBuffer(const BuffDesc& info, BuffData&& data);
+            VulkanBuffer(const BuffDesc& info, const BuffData& data);
 
             VulkanBuffer(VulkanBuffer&& other);
 

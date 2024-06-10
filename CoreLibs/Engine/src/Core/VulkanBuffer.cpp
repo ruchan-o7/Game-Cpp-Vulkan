@@ -1,6 +1,5 @@
 #include "VulkanBuffer.h"
 #include <cassert>
-#include "TypeConversion.h"
 #include "RenderDevice.h"
 #include "Types.h"
 #include "vulkan/vulkan_core.h"
@@ -22,8 +21,8 @@ namespace ENGINE_NAMESPACE
         assert(!"No compatible memory type found");
         return ~0u;
     }
-    VulkanBuffer::VulkanBuffer(const BuffDesc& info, BuffData&& data)
-        : m_Desc(info), m_BufferData(std::move(data)), m_Buffer(nullptr), m_Memory(nullptr)
+    VulkanBuffer::VulkanBuffer(const BuffDesc& info, const BuffData& data)
+        : m_Desc(info), m_BufferData(data), m_Buffer(nullptr), m_Memory(nullptr)
     {
         if (m_Desc.Usage == Vulkan::BUFFER_USAGE_UNIFORM)
         {
@@ -48,10 +47,10 @@ namespace ENGINE_NAMESPACE
     }
     void VulkanBuffer::Init()
     {
-        auto lDev = m_Desc.pRenderDevice->GetLogicalDevice();
+        auto lDev = m_Desc.pLogicalDevice.lock();
         auto pDev = m_Desc.pRenderDevice->GetPhysicalDevice();
 
-        VkBufferUsageFlags usage           = m_Desc.Usage;  // BuffUsageToVkUsage(m_Desc.Usage);
+        VkBufferUsageFlags usage = m_Desc.Usage;  // BuffUsageToVkUsage(m_Desc.Usage);
 
         VkBufferCreateInfo ci{};
         ci.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -76,19 +75,18 @@ namespace ENGINE_NAMESPACE
         m_Memory = std::move(lDev->AllocateDeviceMemory(allocInfo));
 
         lDev->BindBufferMemory(m_Buffer, m_Memory, 0);
-
-     
     }
     void VulkanBuffer::MapMemory()
     {
-        m_Desc.pRenderDevice->GetLogicalDevice()->MapMemory(m_Memory, 0, m_BufferData.Size,
-                                                            0, &m_MappedPtr);
+        auto device = m_Desc.pLogicalDevice.lock();
+        device->MapMemory(m_Memory, 0, m_BufferData.Size, 0, &m_MappedPtr);
     }
     void VulkanBuffer::UnMapMemory()
     {
         if (m_Desc.MemoryFlag == Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY)
         {
-            m_Desc.pRenderDevice->GetLogicalDevice()->UnmapMemory(m_Memory);
+            auto device = m_Desc.pLogicalDevice.lock();
+            device->UnmapMemory(m_Memory);
         }
     }
     void VulkanBuffer::UpdateData(void* data, size_t size, size_t offset)
@@ -100,10 +98,10 @@ namespace ENGINE_NAMESPACE
         }
         else
         {
-            m_Desc.pRenderDevice->GetLogicalDevice()->MapMemory(m_Memory, offset, size,
-                                                                (m_Desc.MemoryFlag), &data);
+            auto device = m_Desc.pLogicalDevice.lock();
+            device->MapMemory(m_Memory, offset, size, (m_Desc.MemoryFlag), &data);
             memcpy(m_MappedPtr, data, size);
-            m_Desc.pRenderDevice->GetLogicalDevice()->UnmapMemory(m_Memory);
+            device->UnmapMemory(m_Memory);
             // vkUnmapMemory(device, m_Memory);
         }
     }
