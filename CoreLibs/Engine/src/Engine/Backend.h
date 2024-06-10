@@ -2,6 +2,7 @@
 
 #include "Api.h"
 #include "Sync.h"
+#include "vulkan/vulkan_core.h"
 namespace FooGame
 {
     class Window;
@@ -35,6 +36,7 @@ namespace FooGame
             static VkFramebuffer GetFramebuffer();
             static VkCommandBuffer GetCurrentCommandbuffer();
             static void BeginRenderpass();
+            static VkCommandPool GetCommandPool();
 
             static RenderDevice* GetRenderDevice();
 
