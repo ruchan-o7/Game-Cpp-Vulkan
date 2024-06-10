@@ -11,8 +11,7 @@ namespace FooGame
 {
 
 #define SCENE_JSON "Assets/Scenes/Prototype/scene.json"
-    EditorLayer::EditorLayer(const CommandLineArgs& args)
-        : Layer("Editor Layer"), m_Args(args)
+    EditorLayer::EditorLayer(const CommandLineArgs& args) : Layer("Editor Layer"), m_Args(args)
     {
         FOO_EDITOR_INFO("Editor layer Created");
     }
@@ -46,17 +45,45 @@ namespace FooGame
                 indexSize  += mesh.m_Indices.size() * sizeof(uint32_t);
             }
         }
-        FOO_EDITOR_INFO("Will allocate {0} of kbytes for vertices",
-                        (double)vertexSize / 1024.0);
-        FOO_EDITOR_INFO("Will allocate {0} of kbytes for indices",
-                        (double)indexSize / 1024.0);
+        FOO_EDITOR_INFO("Will allocate {0} of kbytes for vertices", (double)vertexSize / 1024.0);
+        FOO_EDITOR_INFO("Will allocate {0} of kbytes for indices", (double)indexSize / 1024.0);
 
+        struct MeshDrawAttributes
+        {
+                uint32_t VertexCountToDraw = 0;
+                uint32_t InstanceCount     = 0;
+                uint32_t FirstIndex        = 0;
+                uint32_t VertexOffset      = 0;
+                uint32_t FirstInstance     = 0;
+        };
+        size_t TotalBytesToAllocateVertex = 0;
+        size_t TotalVertexCount           = 0;
+        size_t TotalBytesToAllocateIndex  = 0;
+        std::vector<MeshDrawAttributes> meshDrawAttr;
+        for (size_t i = 0; i < m_EditorScene->MeshDatas.size(); i++)
+        {
+            auto& meshData = m_EditorScene->MeshDatas[i];
+            auto& meshes   = meshData.ModelPtr->GetMeshes();
+            for (size_t j = 0; j < meshes.size(); j++)
+            {
+                auto& mesh                  = meshes[j];
+                TotalVertexCount           += mesh.m_Vertices.size();
+                TotalBytesToAllocateVertex += sizeof(Vertex) * mesh.m_Vertices.size();
+                TotalBytesToAllocateIndex  += mesh.m_Indices.size();
+
+                MeshDrawAttributes attr{};
+                attr.VertexCountToDraw = mesh.m_Vertices.size();
+                attr.InstanceCount     = 1;
+                attr.FirstIndex        = i + j;
+                attr.VertexOffset      = 0;
+                meshDrawAttr.push_back(attr);
+            }
+        }
         for (auto& meshData : m_EditorScene->MeshDatas)
         {
             Renderer3D::SubmitModel(meshData.ModelPtr.get());
         }
-        m_Camera2.setPerspective(60.0f, (float)1600.0f / (float)900.0f, 0.1f,
-                                 512.0f);
+        m_Camera2.setPerspective(60.0f, (float)1600.0f / (float)900.0f, 0.1f, 512.0f);
         m_Camera2.SetRotation(glm::vec3(-12.0f, 159.0f, 0.0f));
         m_Camera2.SetTranslatin(glm::vec3(0.0f, 0.5f, 0.5f));
         m_Camera2.MovementSpeed = 0.1f;
@@ -101,8 +128,7 @@ namespace FooGame
                         mD.Transform.Translation.y,
                         mD.Transform.Translation.z,
                     };
-                    ImGui::DragFloat3("Position", pos, 0.005, -FLT_MAX,
-                                      +FLT_MAX);
+                    ImGui::DragFloat3("Position", pos, 0.005, -FLT_MAX, +FLT_MAX);
                     ImGui::TreePop();
                     mD.Transform.Translation = glm::vec3{
                         pos[0],
@@ -118,8 +144,7 @@ namespace FooGame
                         mD.Transform.Scale.z,
                     };
 
-                    ImGui::DragFloat3("Scale", scale, 0.005, -FLT_MAX,
-                                      +FLT_MAX);
+                    ImGui::DragFloat3("Scale", scale, 0.005, -FLT_MAX, +FLT_MAX);
                     ImGui::TreePop();
                     mD.Transform.Scale = glm::vec3{
                         scale[0],
@@ -134,8 +159,7 @@ namespace FooGame
                         mD.Transform.Rotation.y,
                         mD.Transform.Rotation.z,
                     };
-                    ImGui::DragFloat3("Rotation", rot, 0.005, -FLT_MAX,
-                                      +FLT_MAX);
+                    ImGui::DragFloat3("Rotation", rot, 0.005, -FLT_MAX, +FLT_MAX);
                     ImGui::TreePop();
                     mD.Transform.Rotation = glm::vec3{
                         rot[0],
@@ -165,10 +189,8 @@ namespace FooGame
             m_Camera2.Front.z,
         };
 
-        ImGui::DragFloat("Movement Speed", &m_Camera2.MovementSpeed, 0.1f, 0.1f,
-                         5.0f);
-        ImGui::DragFloat("Rotation Speed", &m_Camera2.RotationSpeed, 0.1f, 0.1f,
-                         5.0f);
+        ImGui::DragFloat("Movement Speed", &m_Camera2.MovementSpeed, 0.1f, 0.1f, 5.0f);
+        ImGui::DragFloat("Rotation Speed", &m_Camera2.RotationSpeed, 0.1f, 0.1f, 5.0f);
         ImGui::Checkbox("Flip y", &m_Camera2.flipY);
         ImGui::DragFloat("Fov", &fov, 0.1f, 0.1f, 179.0f);
         ImGui::DragFloat3("Position", pos, 0.1f, -1000.0f, 1000.0f);
@@ -189,8 +211,7 @@ namespace FooGame
         Renderer3D::BeginScene(m_Camera2);
         for (auto& meshData : m_EditorScene->MeshDatas)
         {
-            Renderer3D::DrawModel(meshData.ModelPtr.get(),
-                                  meshData.Transform());
+            Renderer3D::DrawModel(meshData.ModelPtr.get(), meshData.Transform());
         }
         Renderer3D::EndScene();
         Renderer3D::EndDraw();
@@ -198,8 +219,7 @@ namespace FooGame
     void EditorLayer::OnEvent(Event& e)
     {
         EventDispatcher dispatcher(e);
-        dispatcher.Dispatch<MouseMovedEvent>(
-            BIND_EVENT_FN(EditorLayer::OnMouseMoved));
+        dispatcher.Dispatch<MouseMovedEvent>(BIND_EVENT_FN(EditorLayer::OnMouseMoved));
     }
     bool EditorLayer::OnMousePressed(MouseButtonPressedEvent& event)
     {
@@ -210,12 +230,12 @@ namespace FooGame
         if (Input::IsMouseButtonDown(MouseButton::Right))
         {
             Input::SetCursorMode(CursorMode::Locked);
-            int32_t dx = (int32_t)m_Camera2.LastMouseState.x - event.GetX();
-            int32_t dy = (int32_t)m_Camera2.LastMouseState.y - event.GetY();
+            int32_t dx                 = (int32_t)m_Camera2.LastMouseState.x - event.GetX();
+            int32_t dy                 = (int32_t)m_Camera2.LastMouseState.y - event.GetY();
             m_Camera2.LastMouseState.x = dx;
             m_Camera2.LastMouseState.y = dy;
-            m_Camera2.Rotate(glm::vec3(dy * m_Camera2.RotationSpeed,
-                                       -dx * m_Camera2.RotationSpeed, 0.0f));
+            m_Camera2.Rotate(
+                glm::vec3(dy * m_Camera2.RotationSpeed, -dx * m_Camera2.RotationSpeed, 0.0f));
         }
         else
         {
@@ -245,10 +265,8 @@ namespace FooGame
 
         if (Input::IsMouseButtonDown(MouseButton::Right))
         {
-            const glm::vec2& mouse{Input::GetMousePosition().x,
-                                   Input::GetMousePosition().y};
-            glm::vec2 delta =
-                (mouse - m_Camera.m_InitialMousePosition) * 0.003f;
+            const glm::vec2& mouse{Input::GetMousePosition().x, Input::GetMousePosition().y};
+            glm::vec2 delta                 = (mouse - m_Camera.m_InitialMousePosition) * 0.003f;
             m_Camera.m_InitialMousePosition = mouse;
             m_Camera.Rotate(delta);
         }
