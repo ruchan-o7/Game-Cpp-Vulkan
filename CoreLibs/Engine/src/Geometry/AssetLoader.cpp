@@ -93,16 +93,15 @@ namespace FooGame
         }
 
         VulkanBuffer::BuffDesc stageDesc{};
-        stageDesc.pRenderDevice = pRenderDevice;
-        stageDesc.Usage         = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
-        stageDesc.MemoryFlag    = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
-        stageDesc.name          = std::string("Stage buffer: " + path).c_str();
+        stageDesc.pRenderDevice   = pRenderDevice;
+        stageDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
+        stageDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
+        stageDesc.Name            = std::string("Stage buffer: " + path).c_str();
+        stageDesc.pLogicalDevice  = pRenderDevice->GetLogicalDevice();
+        stageDesc.BufferData.Data = pixels;
+        stageDesc.BufferData.Size = imageSize;
 
-        VulkanBuffer::BuffData stageData{};
-        stageData.Size = imageSize;
-        stageData.Data = pixels;
-
-        VulkanBuffer stageBuffer{stageDesc, stageData};
+        VulkanBuffer stageBuffer{stageDesc};
 
         VulkanTexture::CreateInfo ci{};
         ci.pRenderDevice = pRenderDevice;
@@ -126,6 +125,7 @@ namespace FooGame
         Backend::TransitionImageLayout(vkImage.get(), VK_FORMAT_R8G8B8A8_SRGB,
                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        return {};
 
         BufferBuilder staginfBufBuilder{};
         staginfBufBuilder.SetUsage(BufferUsage::TRANSFER_SRC)
@@ -337,10 +337,11 @@ namespace FooGame
                     imageBuffer = &gltfImage.image[0];
                     imageSize   = gltfImage.image.size();
                 }
-
-                auto tex = LoadFromBuffer(imageBuffer, imageSize, VK_FORMAT_R8G8B8A8_UNORM,
-                                          gltfImage.width, gltfImage.height);
-                images.push_back({tex});
+                /* TODO
+                                auto tex = LoadFromBuffer(imageBuffer, imageSize,
+                   VK_FORMAT_R8G8B8A8_UNORM, gltfImage.width, gltfImage.height);
+                                images.push_back({tex});
+                                */
                 if (deleteBuffer)
                 {
                     delete[] imageBuffer;

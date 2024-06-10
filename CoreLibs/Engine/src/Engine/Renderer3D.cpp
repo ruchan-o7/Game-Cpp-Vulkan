@@ -21,6 +21,7 @@
 #include "../Engine/Texture2D.h"
 #include "../Geometry/AssetLoader.h"
 #include "Descriptor/DescriptorAllocator.h"
+#include "vulkan/vulkan_core.h"
 #include <Log.h>
 namespace FooGame
 {
@@ -39,6 +40,13 @@ namespace FooGame
             Buffer* IndexBuffer  = nullptr;
             Mesh* PtrMesh        = nullptr;
     };
+
+    struct MeshDrawData2
+    {
+            std::unique_ptr<VulkanBuffer> VertexBuffer = nullptr;
+            std::unique_ptr<VulkanBuffer> IndexBuffer  = nullptr;
+            Mesh* PtrMesh                              = nullptr;
+    };
     struct StaticMeshContainer
     {
             std::vector<std::unique_ptr<Buffer>> VertexBuffer;
@@ -52,6 +60,7 @@ namespace FooGame
             struct Resources
             {
                     std::unordered_map<uint32_t, MeshDrawData> MeshMap;
+                    std::unordered_map<uint32_t, MeshDrawData2> MeshMap2;
                     uint32_t FreeIndex = 0;
                     std::vector<Buffer*> UniformBuffers;
                     std::shared_ptr<Model> DefaultModel = nullptr;
@@ -90,25 +99,16 @@ namespace FooGame
         for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
             VulkanBuffer::BuffDesc desc{};
-            desc.pRenderDevice  = pRenderDevice;
-            desc.pLogicalDevice = pRenderDevice->GetLogicalDevice();
-            desc.Usage          = Vulkan::BUFFER_USAGE_UNIFORM;
-            desc.MemoryFlag     = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
-            desc.name           = "Uniform buffer";
+            desc.pRenderDevice   = pRenderDevice;
+            desc.pLogicalDevice  = pRenderDevice->GetLogicalDevice();
+            desc.Usage           = Vulkan::BUFFER_USAGE_UNIFORM;
+            desc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
+            desc.Name            = "Uniform buffer";
+            desc.BufferData.Data = {0};
+            desc.BufferData.Size = sizeof(UniformBufferObject);
 
-            VulkanBuffer::BuffData data{};
-            data.Data = {0};
-            data.Size = sizeof(UniformBufferObject);
-
-            rContext.buffers[i] = std::make_unique<VulkanBuffer>(desc, data);
+            rContext.buffers[i] = std::make_unique<VulkanBuffer>(desc);
             rContext.buffers[i]->MapMemory();
-            // BufferBuilder uBuffBuilder{};
-            // uBuffBuilder.SetUsage(BufferUsage::UNIFORM)
-            //     .SetInitialSize(sizeof(UniformBufferObject))
-            //     .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-            //                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-            // s_Data.Res.UniformBuffers[i] =
-            //     CreateDynamicBuffer(sizeof(UniformBufferObject), BufferUsage::UNIFORM);
         }
         s_Data.Res.deletionQueue.PushFunction(
             [&](VkDevice device)
@@ -119,8 +119,6 @@ namespace FooGame
                 }
                 s_Data.Res.UniformBuffers.clear();
             });
-        // pRenderDevice->InitCommandPool();
-        // pRenderDevice->InitDescriptorPool();
         s_Data.Res.DescriptorAllocatorPool = vke::DescriptorAllocatorPool::Create(device);
         s_Data.Res.deletionQueue.PushFunction([&](VkDevice device)
                                               { delete s_Data.Res.DescriptorAllocatorPool; });
@@ -160,39 +158,8 @@ namespace FooGame
                 });
         }
         {
-            auto queue = pRenderDevice->GetLogicalDevice()->GetQueue(0, 0);
-            VulkanBuffer::BuffDesc stageDesc{};
-            stageDesc.pRenderDevice  = pRenderDevice;
-            stageDesc.pLogicalDevice = pRenderDevice->GetLogicalDevice();
-            stageDesc.Usage          = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
-            stageDesc.MemoryFlag     = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
-            stageDesc.name           = "Test stage";
+            auto queue = pRenderDevice->GetGraphicsQueue();
 
-            VulkanBuffer::BuffData stageBufferData{};
-            stageBufferData.Size = sizeof(int) * 10;
-            stageBufferData.Data = (void*)new int(1);
-            VulkanBuffer stageBuffer{stageDesc, stageBufferData};
-
-            VulkanBuffer::BuffDesc vertexDesc{};
-            vertexDesc.pRenderDevice  = pRenderDevice;
-            vertexDesc.pLogicalDevice = pRenderDevice->GetLogicalDevice();
-            vertexDesc.Usage          = Vulkan::BUFFER_USAGE_TRANSFER_DESTINATION_VERTEX;
-            vertexDesc.MemoryFlag     = Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY;
-            vertexDesc.name           = "Vertex buffer";
-
-            VulkanBuffer::BuffData vertexData{};
-            vertexData.Size = sizeof(int) * 10;
-            vertexData.Data = (void*)new int(1);
-            VulkanBuffer vbuffer{vertexDesc, vertexData};
-            stageBuffer.MapMemory();
-            stageBuffer.UpdateData(vertexData.Data, vertexData.Size);
-            stageBuffer.UnMapMemory();
-
-            stageBuffer.CopyTo(vbuffer, sizeof(int), rContext.CommandPool, queue);
-
-            delete (int*)stageBufferData.Data;
-
-            uint8_t white[] = {255, 255, 255, 255};
             // s_Data.api.DefaultTexture =
             //     AssetLoader::LoadFromBuffer(white, sizeof(white), VK_FORMAT_R8G8B8A8_SRGB, 1, 1);
             s_Data.Res.deletionQueue.PushFunction(
@@ -213,14 +180,22 @@ namespace FooGame
             ci.PushConstantSize       = sizeof(MeshPushConstants);
             ci.SetLayout              = s_Data.Res.descriptor.SetLayout;
             ci.SampleCount            = 1;
+            ci.wpLogicalDevice        = pRenderDevice->GetLogicalDevice();
             ci.CullMode               = CULL_MODE_BACK;
             ci.VertexAttributes       = Vertex::GetAttributeDescriptionList();
             ci.VertexBindings         = {Vertex::GetBindingDescription()};
-            rContext.pGraphicPipeline = std::unique_ptr<VulkanPipeline>(new VulkanPipeline(ci));
+            rContext.pGraphicPipeline = std::make_unique<VulkanPipeline>(ci);
         }
+    }
+
+    VkCommandPool Backend::GetCommandPool()
+    {
+        return rContext.CommandPool;
     }
     void Renderer3D::SubmitModel(Model* model)
     {
+        // vkCmdDrawIndexed(cmd, indexCount, instanceCount, firstIndex, vertexOffset,
+        // firstInstance);
         for (auto& mesh : model->GetMeshes())
         {
             SubmitMesh(&mesh);
@@ -261,12 +236,34 @@ namespace FooGame
     }
     void Renderer3D::SubmitMesh(Mesh* mesh)
     {
-        s_Data.Res.MeshMap[s_Data.Res.FreeIndex] = {
-            CreateVertexBuffer(mesh->m_Vertices),
-            mesh->m_Indices.size() == 0 ? nullptr : CreateIndexBuffer(mesh->m_Indices), mesh};
+        VulkanBuffer::BuffDesc vInfo{};
+        vInfo.pRenderDevice   = Backend::GetRenderDevice();
+        vInfo.pLogicalDevice  = vInfo.pRenderDevice->GetLogicalDevice();
+        vInfo.BufferData.Data = mesh->m_Vertices.data();
+        vInfo.BufferData.Size = mesh->m_Vertices.size();
+        vInfo.Name            = "Mesh vb";
+        auto vb               = VulkanBuffer::CreateVertexBuffer(vInfo);
+
+        std::unique_ptr<VulkanBuffer> ib;
+        if (mesh->m_Indices.size() != 0)
+        {
+            VulkanBuffer::BuffDesc iInfo{};
+            iInfo.pRenderDevice   = Backend::GetRenderDevice();
+            iInfo.pLogicalDevice  = iInfo.pRenderDevice->GetLogicalDevice();
+            iInfo.BufferData.Data = mesh->m_Indices.data();
+            iInfo.BufferData.Size = mesh->m_Indices.size();
+            iInfo.Name            = "Mesh ib";
+            ib                    = VulkanBuffer::CreateIndexBuffer(iInfo);
+        }
+
+        s_Data.Res.MeshMap2[s_Data.Res.FreeIndex] = {std::move(vb), std::move(ib), mesh};
+        // s_Data.Res.MeshMap[s_Data.Res.FreeIndex] = {
+        //     CreateVertexBuffer(mesh->m_Vertices),
+        //     mesh->m_Indices.size() == 0 ? nullptr : CreateIndexBuffer(mesh->m_Indices), mesh};
+
         mesh->RenderId = s_Data.Res.FreeIndex;
         s_Data.Res.FreeIndex++;
-    }
+    }  // namespace FooGame
     void Renderer3D::ClearBuffers()
     {
         for (auto& [index, data] : s_Data.Res.MeshMap)
