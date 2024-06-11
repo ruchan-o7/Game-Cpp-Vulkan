@@ -31,7 +31,7 @@ namespace ENGINE_NAMESPACE
             ~VulkanSwapchain();
 
         public:
-            void Present(uint32_t syncInterval,VkCommandBuffer& cmd);
+            void Present(uint32_t syncInterval, VkCommandBuffer& cmd);
             void Resize(uint32_t newWidth, uint32_t newHeight);
             VkSurfaceKHR GetVkSurface() const { return m_VkSurface; }
             VkSwapchainKHR GetVkSwapchain() const { return m_VkSwapchain; }
@@ -41,6 +41,12 @@ namespace ENGINE_NAMESPACE
             VkExtent2D GetExtent() const { return {m_Desc.Width, m_Desc.Height}; }
             uint32_t GetBackBufferIndex() const { return m_BackBufferIndex; }
             void ResetFences(uint32_t index);
+
+            VkResult QueuePresent(VkQueue presentQueue, uint32_t currentFrame);
+            VkResult QueueSubmit(VkQueue graphicsQueue, uint32_t currentFrame,
+                                 VkCommandBuffer& commandBuffer);
+            VkResult AcquireNextImage(uint32_t* imageIndex, uint32_t currentFrame);
+            void ReCreate();
 
         private:
             void CreateSurface();
@@ -81,7 +87,7 @@ namespace ENGINE_NAMESPACE
 
             uint32_t m_SemaphoreIndex  = 0;
             uint32_t m_BackBufferIndex = 0;
-            uint32_t m_SyncInterval = 0;
+            uint32_t m_SyncInterval    = 0;
 
             bool m_IsMinimized  = false;
             bool m_VsyncEnabled = true;

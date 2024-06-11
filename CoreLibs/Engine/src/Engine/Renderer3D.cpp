@@ -259,13 +259,13 @@ namespace FooGame
         auto currentFrame = Backend::GetCurrentFrame();
         auto cmd          = Backend::GetCurrentCommandbuffer();
         auto extent       = Backend::GetSwapchainExtent();
+        BindPipeline(cmd);
 
         const auto& meshes = model->GetMeshes();
         for (uint32_t i = 0; i < meshes.size(); i++)
         {
             const auto& mesh = meshes[i];
             auto& modelRes   = s_Data.Res.MeshMap2[mesh.RenderId];
-            BindPipeline(cmd);
 
             VkViewport viewport{};
             viewport.x        = 0;

@@ -13,6 +13,7 @@
 #include "Api.h"
 #include "../Core/VulkanRenderpass.h"
 #include "Types/DeletionQueue.h"
+#include "src/Log.h"
 #include "vulkan/vulkan_core.h"
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -310,7 +311,7 @@ namespace FooGame
 
     void Backend::BeginRenderpass()
     {
-        auto cb =GetCurrentCommandbuffer();
+        auto cb = GetCurrentCommandbuffer();
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass        = bContext.pRenderPass->GetRenderPass();
@@ -349,25 +350,31 @@ namespace FooGame
         auto cb = GetCurrentCommandbuffer();
         ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cb);
-        
         vkCmdEndRenderPass(cb);
         VK_CALL(vkEndCommandBuffer(cb));
-
-        bContext.pSwapchain->Present(frameData.currentFrame,cb);
-        frameData.currentFrame = (frameData.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-        bContext.pSwapchain->ResetFences(frameData.currentFrame);
-        cb = GetCurrentCommandbuffer();
-
-        ResetCommandBuffer(cb);
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        VK_CALL(vkBeginCommandBuffer(cb, &beginInfo));
-        BeginRenderpass();
+        VkResult res;
+        res = bContext.pSwapchain->QueueSubmit(bContext.pRenderDevice->GetGraphicsQueue(),
+                                               frameData.currentFrame, cb);
+        if (res != VK_SUCCESS)
         {
-            ImGui_ImplVulkan_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
-            ImGui::NewFrame();
+            FOO_ENGINE_ERROR("Failed to submit draw command buffer");
         }
+
+        res = bContext.pSwapchain->QueuePresent(bContext.pRenderDevice->GetGraphicsQueue(),
+                                                frameData.currentFrame);
+        if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR)
+        {
+            bContext.pSwapchain->ReCreate();
+        }
+        else if (res != VK_SUCCESS)
+        {
+            FOO_ENGINE_ERROR("Failed to present swap chain");
+        }
+
+        frameData.currentFrame = (frameData.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
+        bContext.pSwapchain->AcquireNextImage(&frameData.imageIndex, frameData.currentFrame);
+        BeginDrawing_();
     }
     void Backend::WaitFence(Fence& fence)
     {
