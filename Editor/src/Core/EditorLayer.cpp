@@ -60,6 +60,7 @@ namespace FooGame
         size_t TotalVertexCount           = 0;
         size_t TotalBytesToAllocateIndex  = 0;
         std::vector<MeshDrawAttributes> meshDrawAttr;
+        size_t offset = 0;
         for (size_t i = 0; i < m_EditorScene->MeshDatas.size(); i++)
         {
             auto& meshData = m_EditorScene->MeshDatas[i];
@@ -75,7 +76,8 @@ namespace FooGame
                 attr.VertexCountToDraw = mesh.m_Vertices.size();
                 attr.InstanceCount     = 1;
                 attr.FirstIndex        = i + j;
-                attr.VertexOffset      = 0;
+                attr.VertexOffset      = offset;
+                offset += attr.VertexCountToDraw;
                 meshDrawAttr.push_back(attr);
             }
         }
