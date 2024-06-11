@@ -282,9 +282,6 @@ namespace FooGame
         EndSingleTimeCommands(cmd);
     }
 
-    void Backend::BeginDrawing()
-    {
-    }
     VkExtent2D Backend::GetSwapchainExtent()
     {
         return bContext.pSwapchain->GetExtent();
@@ -294,19 +291,9 @@ namespace FooGame
         Submit();
     }
 
-    bool Backend::AcquireNextImage(uint32_t& imageIndex)
-    {
-        return true;
-    }
-
-    void Backend::ResetCommandBuffer(VkCommandBuffer& buf, VkCommandBufferResetFlags flags)
-    {
-        vkResetCommandBuffer(buf, flags);
-    }
     VkFramebuffer Backend::GetFramebuffer()
     {
         return bContext.FrameBuffers[bContext.pSwapchain->GetBackBufferIndex()];
-        return bContext.FrameBuffers[frameData.imageIndex];
     }
 
     void Backend::BeginRenderpass()
@@ -375,18 +362,6 @@ namespace FooGame
 
         bContext.pSwapchain->AcquireNextImage(&frameData.imageIndex, frameData.currentFrame);
         BeginDrawing_();
-    }
-    void Backend::WaitFence(Fence& fence)
-    {
-        fence.Wait();
-    }
-    void Backend::RecreateSwapchain()
-    {
-        // bContext.pRenderDevice->WaitIdle();
-        // bContext.pSwapchain->Resize(frameData.fbWidth, frameData.fbHeight);
-    }
-    void Backend::UpdateUniformData(UniformBufferObject& ubo)
-    {
     }
     void Backend::InitImgui()
     {

@@ -39,7 +39,6 @@ namespace FooGame
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 continue;
             }
-            Backend::BeginDrawing();
 
             for (auto& l : *m_LayerStack)
             {

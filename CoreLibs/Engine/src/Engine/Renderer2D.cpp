@@ -1,7 +1,7 @@
 #include "Renderer2D.h"
 #include "../Geometry/QuadVertex.h"
 #include "Device.h"
-#include "Shader.h"
+#include "Types/GraphicTypes.h"
 #include "Types/DescriptorData.h"
 #include "Buffer.h"
 #include "Backend.h"
@@ -78,15 +78,12 @@ namespace FooGame
             s_Data.resources.IndexBuffer = CreateIndexBuffer(quadIndices);
             quadIndices.clear();
             s_Data.frameData.QuadVertexPositions[0] = {-1.0f, 1.0f, 0.0f, 1.0f};
-            s_Data.frameData.QuadVertexPositions[1] = {-1.0f, -1.0f, 0.0f,
-                                                       1.0f};
+            s_Data.frameData.QuadVertexPositions[1] = {-1.0f, -1.0f, 0.0f, 1.0f};
             s_Data.frameData.QuadVertexPositions[2] = {1.0f, -1.0f, 0.0f, 1.0f};
             s_Data.frameData.QuadVertexPositions[3] = {1.0f, 1.0f, 0.0f, 1.0f};
             s_Data.resources.VertexBuffer           = CreateDynamicBuffer(
-                sizeof(QuadVertex) * Renderer2DData::MaxIndices,
-                BufferUsage::VERTEX);
-            s_Data.frameData.QuadVertexBufferBase =
-                new QuadVertex[s_Data.MaxVertices];
+                sizeof(QuadVertex) * Renderer2DData::MaxIndices, BufferUsage::VERTEX);
+            s_Data.frameData.QuadVertexBufferBase = new QuadVertex[s_Data.MaxVertices];
         }
         {
             s_Data.resources.UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -98,74 +95,67 @@ namespace FooGame
                     .SetInitialSize(sizeof(UniformBufferObject))
                     .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-                s_Data.resources.UniformBuffers[i] = CreateDynamicBuffer(
-                    sizeof(UniformBufferObject), BufferUsage::UNIFORM);
+                s_Data.resources.UniformBuffers[i] =
+                    CreateDynamicBuffer(sizeof(UniformBufferObject), BufferUsage::UNIFORM);
             }
         }
         {
             VkDescriptorPoolSize poolSizes[1] = {};
-            poolSizes[0].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            poolSizes[0].descriptorCount = MAX_FRAMES_IN_FLIGHT;
+            poolSizes[0].type                 = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            poolSizes[0].descriptorCount      = MAX_FRAMES_IN_FLIGHT;
 
             VkDescriptorPoolCreateInfo poolInfo{};
-            poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+            poolInfo.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
             poolInfo.poolSizeCount = ARRAY_COUNT(poolSizes);
             poolInfo.pPoolSizes    = poolSizes;
             poolInfo.maxSets       = MAX_FRAMES_IN_FLIGHT;
-            VK_CALL(vkCreateDescriptorPool(device->GetDevice(), &poolInfo,
-                                           nullptr,
+            VK_CALL(vkCreateDescriptorPool(device->GetDevice(), &poolInfo, nullptr,
                                            &s_Data.resources.descriptor.pool));
         }
         {
             VkDescriptorSetLayoutBinding uboLayoutBinding{};
-            uboLayoutBinding.binding         = 0;
-            uboLayoutBinding.descriptorCount = 1;
-            uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            uboLayoutBinding.pImmutableSamplers = nullptr;
-            uboLayoutBinding.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
+            uboLayoutBinding.binding                 = 0;
+            uboLayoutBinding.descriptorCount         = 1;
+            uboLayoutBinding.descriptorType          = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            uboLayoutBinding.pImmutableSamplers      = nullptr;
+            uboLayoutBinding.stageFlags              = VK_SHADER_STAGE_VERTEX_BIT;
             VkDescriptorSetLayoutBinding bindings[1] = {uboLayoutBinding};
             VkDescriptorSetLayoutCreateInfo layoutInfo{};
-            layoutInfo.sType =
-                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            layoutInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
             layoutInfo.bindingCount = ARRAY_COUNT(bindings);
             layoutInfo.pBindings    = bindings;
 
-            VK_CALL(vkCreateDescriptorSetLayout(
-                device->GetDevice(), &layoutInfo, nullptr,
-                &s_Data.resources.descriptor.SetLayout));
-            std::vector<VkDescriptorSetLayout> layouts(
-                MAX_FRAMES_IN_FLIGHT, s_Data.resources.descriptor.SetLayout);
+            VK_CALL(vkCreateDescriptorSetLayout(device->GetDevice(), &layoutInfo, nullptr,
+                                                &s_Data.resources.descriptor.SetLayout));
+            std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT,
+                                                       s_Data.resources.descriptor.SetLayout);
             VkDescriptorSetAllocateInfo allocInfo{};
-            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocInfo.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             allocInfo.descriptorPool     = s_Data.resources.descriptor.pool;
             allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
             allocInfo.pSetLayouts        = layouts.data();
 
-            VK_CALL(vkAllocateDescriptorSets(device->GetDevice(), &allocInfo,
-                                             s_Data.resources.set));
+            VK_CALL(
+                vkAllocateDescriptorSets(device->GetDevice(), &allocInfo, s_Data.resources.set));
         }
         {
             for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
                 VkDescriptorBufferInfo bufferInfo{};
-                bufferInfo.buffer =
-                    *s_Data.resources.UniformBuffers[i]->GetBuffer();
+                bufferInfo.buffer = *s_Data.resources.UniformBuffers[i]->GetBuffer();
                 bufferInfo.offset = 0;
                 bufferInfo.range  = sizeof(UniformBufferObject);
 
                 VkWriteDescriptorSet descriptorWrites[1] = {};
-                descriptorWrites[0].sType =
-                    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                descriptorWrites[0].dstSet          = s_Data.resources.set[i];
-                descriptorWrites[0].dstBinding      = 0;
-                descriptorWrites[0].dstArrayElement = 0;
-                descriptorWrites[0].descriptorType =
-                    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                descriptorWrites[0].descriptorCount = 1;
-                descriptorWrites[0].pBufferInfo     = &bufferInfo;
+                descriptorWrites[0].sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrites[0].dstSet               = s_Data.resources.set[i];
+                descriptorWrites[0].dstBinding           = 0;
+                descriptorWrites[0].dstArrayElement      = 0;
+                descriptorWrites[0].descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                descriptorWrites[0].descriptorCount      = 1;
+                descriptorWrites[0].pBufferInfo          = &bufferInfo;
 
-                vkUpdateDescriptorSets(device->GetDevice(),
-                                       ARRAY_COUNT(descriptorWrites),
+                vkUpdateDescriptorSets(device->GetDevice(), ARRAY_COUNT(descriptorWrites),
                                        descriptorWrites, 0, nullptr);
             }
         }
@@ -209,8 +199,7 @@ namespace FooGame
     }
     void Renderer2D::UpdateUniformData(UniformBufferObject ubd)
     {
-        s_Data.resources.UniformBuffers[Backend::GetCurrentFrame()]->SetData(
-            sizeof(ubd), &ubd);
+        s_Data.resources.UniformBuffers[Backend::GetCurrentFrame()]->SetData(sizeof(ubd), &ubd);
     }
 
     void Renderer2D::EndScene()
@@ -226,15 +215,13 @@ namespace FooGame
     void Renderer2D::DrawQuad(const glm::vec3& position, const glm::vec2& size,
                               const glm::vec4& color)
     {
-        glm::mat4 transform =
-            glm::translate(glm::mat4(1.0f), position) *
-            glm::scale(glm::mat4(1.0f), {size.x, size.y, 1.0f});
+        glm::mat4 transform = glm::translate(glm::mat4(1.0f), position) *
+                              glm::scale(glm::mat4(1.0f), {size.x, size.y, 1.0f});
 
         DrawQuad(transform, color);
     }
 
-    void Renderer2D::DrawQuad(const glm::mat4& transform,
-                              const glm::vec4& color)
+    void Renderer2D::DrawQuad(const glm::mat4& transform, const glm::vec4& color)
     {
         constexpr size_t quadVertexCount    = 4;
         constexpr glm::vec2 textureCoords[] = {
@@ -252,9 +239,8 @@ namespace FooGame
         {
             s_Data.frameData.QuadVertexBufferPtr->Position =
                 transform * s_Data.frameData.QuadVertexPositions[i];
-            s_Data.frameData.QuadVertexBufferPtr->Color =
-                glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-            s_Data.frameData.QuadVertexBufferPtr->TexCoord = textureCoords[i];
+            s_Data.frameData.QuadVertexBufferPtr->Color        = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
+            s_Data.frameData.QuadVertexBufferPtr->TexCoord     = textureCoords[i];
             s_Data.frameData.QuadVertexBufferPtr->TilingFactor = 0.5f;
             s_Data.frameData.QuadVertexBufferPtr++;
         }
@@ -263,24 +249,21 @@ namespace FooGame
     }
 
     void Renderer2D::DrawQuad(const glm::vec2& position, const glm::vec2& size,
-                              const std::shared_ptr<Texture2D>& texture,
-                              float tilingFactor, const glm::vec4& tintColor)
+                              const std::shared_ptr<Texture2D>& texture, float tilingFactor,
+                              const glm::vec4& tintColor)
     {
-        DrawQuad({position.x, position.y, 0.0f}, size, texture, tilingFactor,
-                 tintColor);
+        DrawQuad({position.x, position.y, 0.0f}, size, texture, tilingFactor, tintColor);
     }
     void Renderer2D::DrawQuad(const glm::vec3& position, const glm::vec2& size,
-                              const std::shared_ptr<Texture2D>& texture,
-                              float tilingFactor, const glm::vec4& tintColor)
+                              const std::shared_ptr<Texture2D>& texture, float tilingFactor,
+                              const glm::vec4& tintColor)
     {
-        glm::mat4 transform =
-            glm::translate(glm::mat4(1.0f), position) *
-            glm::scale(glm::mat4(1.0f), {size.x, size.y, 1.0f});
+        glm::mat4 transform = glm::translate(glm::mat4(1.0f), position) *
+                              glm::scale(glm::mat4(1.0f), {size.x, size.y, 1.0f});
 
         DrawQuad(transform, texture, tilingFactor, tintColor);
     }
-    void Renderer2D::DrawQuad(const glm::mat4& transform,
-                              const std::shared_ptr<Texture2D>& texture,
+    void Renderer2D::DrawQuad(const glm::mat4& transform, const std::shared_ptr<Texture2D>& texture,
                               float tilingFactor, const glm::vec4& tintColor)
     {
         constexpr size_t quadVertexCount    = 4;
@@ -325,9 +308,9 @@ namespace FooGame
         {
             s_Data.frameData.QuadVertexBufferPtr->Position =
                 transform * s_Data.frameData.QuadVertexPositions[i];
-            s_Data.frameData.QuadVertexBufferPtr->Color    = tintColor;
-            s_Data.frameData.QuadVertexBufferPtr->TexCoord = textureCoords[i];
-            s_Data.frameData.QuadVertexBufferPtr->TexIndex = textureIndex;
+            s_Data.frameData.QuadVertexBufferPtr->Color        = tintColor;
+            s_Data.frameData.QuadVertexBufferPtr->TexCoord     = textureCoords[i];
+            s_Data.frameData.QuadVertexBufferPtr->TexIndex     = textureIndex;
             s_Data.frameData.QuadVertexBufferPtr->TilingFactor = tilingFactor;
             // s_Data.frameData.QuadVertexBufferPtr->EntityID     = entityID;
             s_Data.frameData.QuadVertexBufferPtr++;
@@ -345,9 +328,8 @@ namespace FooGame
 
     void Renderer2D::StartBatch()
     {
-        s_Data.frameData.QuadIndexCount = 0;
-        s_Data.frameData.QuadVertexBufferPtr =
-            s_Data.frameData.QuadVertexBufferBase;
+        s_Data.frameData.QuadIndexCount      = 0;
+        s_Data.frameData.QuadVertexBufferPtr = s_Data.frameData.QuadVertexBufferBase;
     }
     void Renderer2D::BeginRecording(VkCommandBuffer cb)
     {
@@ -357,9 +339,8 @@ namespace FooGame
     }
     void Renderer2D::BeginDraw()
     {
-        s_Data.frameData.QuadIndexCount = 0;
-        s_Data.frameData.QuadVertexBufferPtr =
-            s_Data.frameData.QuadVertexBufferBase;
+        s_Data.frameData.QuadIndexCount      = 0;
+        s_Data.frameData.QuadVertexBufferPtr = s_Data.frameData.QuadVertexBufferBase;
     }
     void Renderer2D::EndDraw()
     {
@@ -376,9 +357,8 @@ namespace FooGame
 
         Api::SetViewportAndScissors(cmd, extent.width, extent.height);
         // bind vertexbuffers
-        VkBuffer vertexBuffers[] = {
-            *s_Data.resources.VertexBuffer->GetBuffer()};
-        VkDeviceSize offsets[] = {0};
+        VkBuffer vertexBuffers[] = {*s_Data.resources.VertexBuffer->GetBuffer()};
+        VkDeviceSize offsets[]   = {0};
         vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
 
         // bind index buffers
@@ -388,25 +368,21 @@ namespace FooGame
         BindDescriptorSets(cmd, s_Data.api.pipeline);
         if (s_Data.frameData.QuadIndexCount)
         {
-            uint32_t dataSize =
-                (uint32_t)((uint8_t*)s_Data.frameData.QuadVertexBufferPtr -
-                           (uint8_t*)s_Data.frameData.QuadVertexBufferBase);
-            s_Data.resources.VertexBuffer->SetData(
-                dataSize, s_Data.frameData.QuadVertexBufferBase);
+            uint32_t dataSize = (uint32_t)((uint8_t*)s_Data.frameData.QuadVertexBufferPtr -
+                                           (uint8_t*)s_Data.frameData.QuadVertexBufferBase);
+            s_Data.resources.VertexBuffer->SetData(dataSize, s_Data.frameData.QuadVertexBufferBase);
             vkCmdDrawIndexed(cmd, s_Data.frameData.QuadIndexCount, 2, 0, 0, 0);
             s_Data.frameData.DrawCall++;
         }
     }
     void Renderer2D::BindDescriptorSets(VkCommandBuffer cmd, Pipeline& pipeline,
-                                        VkPipelineBindPoint bindPoint,
-                                        uint32_t firstSet, uint32_t dSetCount,
-                                        uint32_t dynamicOffsetCount,
+                                        VkPipelineBindPoint bindPoint, uint32_t firstSet,
+                                        uint32_t dSetCount, uint32_t dynamicOffsetCount,
                                         uint32_t* dynamicOffsets)
     {
-        vkCmdBindDescriptorSets(
-            cmd, bindPoint, pipeline.pipelineLayout, firstSet, dSetCount,
-            &s_Data.resources.set[Backend::GetCurrentFrame()],
-            dynamicOffsetCount, dynamicOffsets);
+        vkCmdBindDescriptorSets(cmd, bindPoint, pipeline.pipelineLayout, firstSet, dSetCount,
+                                &s_Data.resources.set[Backend::GetCurrentFrame()],
+                                dynamicOffsetCount, dynamicOffsets);
     }
     void Renderer2D::ResetStats()
     {
@@ -414,8 +390,7 @@ namespace FooGame
     }
     void Renderer2D::BindPipeline(VkCommandBuffer cmd)
     {
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          s_Data.api.pipeline.pipeline);
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Data.api.pipeline.pipeline);
     }
 
     Renderer2D::Statistics Renderer2D::GetStats()
@@ -436,8 +411,7 @@ namespace FooGame
             delete ub;
         }
         s_Data.resources.UniformBuffers.clear();
-        vkDestroyPipelineLayout(device, s_Data.api.pipeline.pipelineLayout,
-                                nullptr);
+        vkDestroyPipelineLayout(device, s_Data.api.pipeline.pipelineLayout, nullptr);
         vkDestroyPipeline(device, s_Data.api.pipeline.pipeline, nullptr);
         vkDestroySampler(device, s_Data.api.TextureSampler, nullptr);
         // DestroyImage(s_Data.frameData.DefaultTexture.get());

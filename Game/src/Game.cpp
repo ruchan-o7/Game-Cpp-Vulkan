@@ -50,7 +50,6 @@ namespace FooGame
                 l->OnUpdate(currentTime);
             }
 
-            Backend::BeginDrawing();
             for (auto& l : m_Scenes)
             {
                 l->RenderScene3D(&m_Camera);
