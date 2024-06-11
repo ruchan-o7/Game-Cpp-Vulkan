@@ -3,9 +3,12 @@
 #include "VulkanDeviceContext.h"
 #include "RenderDevice.h"
 #include "VulkanLogicalDevice.h"
+#include "../Engine/Backend.h"
+#include "src/Log.h"
 #include "vulkan/vulkan_core.h"
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <stdexcept>
 
 namespace ENGINE_NAMESPACE
@@ -26,8 +29,53 @@ namespace ENGINE_NAMESPACE
         auto res = AcquireNextImage(pDeviceContext);
         (void)res;
     }
-    void VulkanSwapchain::Present(uint32_t syncInterval)
+    void VulkanSwapchain::Present(uint32_t syncInterval,VkCommandBuffer& cmd)
     {
+
+        VkSemaphore waitSemaphores[] = {m_ImageAvailableSemaphores[syncInterval]};
+        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.waitSemaphoreCount = 1;
+        submitInfo.pWaitSemaphores    = waitSemaphores;
+        submitInfo.pWaitDstStageMask  = waitStages;
+
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &cmd;
+
+        VkSemaphore signalSemaphores[] = {m_RenderFinishedSemaphores[syncInterval]};
+        submitInfo.signalSemaphoreCount = 1;
+        submitInfo.pSignalSemaphores    = signalSemaphores;
+
+        auto err =
+            vkQueueSubmit(m_wpRenderDevice->GetGraphicsQueue(), 1, &submitInfo,
+                          m_InFlightFences[syncInterval]);
+
+        VkPresentInfoKHR presentInfo{};
+        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores    = signalSemaphores;
+
+        VkSwapchainKHR swapChains[] = {m_VkSwapchain};
+        presentInfo.swapchainCount  = 1;
+        presentInfo.pSwapchains     = swapChains;
+
+        presentInfo.pImageIndices = &(m_BackBufferIndex);
+
+        err = vkQueuePresentKHR(m_wpRenderDevice->GetGraphicsQueue(),&presentInfo);
+
+        if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
+        {
+            RecreateVkSwapchain(m_wpDeviceContext);
+        }
+        else if (err != VK_SUCCESS)
+        {
+            FOO_ENGINE_CRITICAL("Failed to presenet swap chain images");            
+        }
+        AcquireNextImage(m_wpDeviceContext);
+
+        /*
         assert((syncInterval == 0 || syncInterval == 1) &&
                "Vulkan only supports 1 and 0 for sync interval");
         auto pDeviceContext = m_wpDeviceContext;
@@ -38,33 +86,50 @@ namespace ENGINE_NAMESPACE
             FOO_ENGINE_ERROR("Device context has been released");
             return;
         }
-        pCtx->Flush();
+        // pCtx->Flush();
         if (!m_IsMinimized)
         {
+            syncInterval = Backend::GetCurrentFrame();
+            VkSemaphore waitSemaphores[]      = {m_ImageAvailableSemaphores[syncInterval]};
+            VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+            VkCommandBuffer commandBuffers[]  = {Backend::GetCurrentCommandbuffer()};
+            VkSemaphore signalSemaphores[]    = {m_RenderFinishedSemaphores[syncInterval]};
+            VkResult result                   = VK_SUCCESS;
+
+            VkSubmitInfo submitInfo{};
+            submitInfo.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            submitInfo.waitSemaphoreCount   = 1;
+            submitInfo.pWaitSemaphores      = waitSemaphores;
+            submitInfo.pWaitDstStageMask    = waitStages;
+            submitInfo.commandBufferCount   = 1;
+            submitInfo.pCommandBuffers      = commandBuffers;
+            submitInfo.signalSemaphoreCount = 1;
+            submitInfo.pSignalSemaphores    = signalSemaphores;
+
+            result = vkQueueSubmit(pRD->GetGraphicsQueue(), 1, &submitInfo,
+                                   m_InFlightFences[syncInterval]);
+
             VkPresentInfoKHR presentInfo{};
-            presentInfo.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-            presentInfo.pNext              = nullptr;
+            presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+            presentInfo.pNext = nullptr;
+
             presentInfo.waitSemaphoreCount = 1;
+            presentInfo.pWaitSemaphores    = signalSemaphores;
 
-            VkSemaphore waitSemaphores[] = {m_DrawCompleteSemaphores[m_SemaphoreIndex]};
-            presentInfo.pWaitSemaphores  = waitSemaphores;
-            presentInfo.swapchainCount   = 1;
-            presentInfo.pSwapchains      = &m_VkSwapchain;
-            presentInfo.pImageIndices    = &m_BackBufferIndex;
+            presentInfo.swapchainCount = 1;
+            presentInfo.pSwapchains    = &m_VkSwapchain;
 
-            VkResult result      = VK_SUCCESS;
-            presentInfo.pResults = &result;
+            presentInfo.pImageIndices = &syncInterval;
 
-            result = vkQueuePresentKHR(pRD->GetLogicalDevice()->GetQueue(0, 0), &presentInfo);
+            result = vkQueuePresentKHR(pRD->GetGraphicsQueue(), &presentInfo);
             if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
             {
                 RecreateVkSwapchain(pCtx);
             }
-            else
+            else if (result != VK_SUCCESS)
             {
                 FOO_ENGINE_ERROR("Present failed");
             }
-            pCtx->FinishFrame();
             if (!m_IsMinimized)
             {
                 ++m_SemaphoreIndex;
@@ -72,10 +137,11 @@ namespace ENGINE_NAMESPACE
                 {
                     m_SemaphoreIndex = 0;
                 }
+                vkWaitForFences(pRD->GetVkDevice(), 1, &m_InFlightFences[syncInterval], VK_TRUE, 3);
                 bool enableVsync = syncInterval != 0;
                 auto res         = (m_VsyncEnabled == enableVsync) ? AcquireNextImage(pCtx)
                                                                    : VK_ERROR_OUT_OF_DATE_KHR;
-                if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR)
+                if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR)
                 {
                     m_VsyncEnabled = enableVsync;
                     RecreateVkSwapchain(pCtx);
@@ -86,10 +152,20 @@ namespace ENGINE_NAMESPACE
 
                     res = AcquireNextImage(pCtx);
                 }
-                assert(res == VK_SUCCESS && "Failed to acquire next swap chain");
+                if (res != VK_SUCCESS)
+                {
+                    FOO_ENGINE_ERROR("Failed to acquire next swap chain");
+                }
+                vkResetFences(pRD->GetVkDevice(), 1, &m_InFlightFences[m_BackBufferIndex]);
             }
         }
+        */
     }
+            void VulkanSwapchain::ResetFences(uint32_t index){
+        vkResetFences(m_wpRenderDevice->GetVkDevice(), 1, &m_InFlightFences[index]);
+
+            }
+
     void VulkanSwapchain::RecreateVkSwapchain(VulkanDeviceContext* pDeviceContext)
     {
         ReleaseSwapchainResources(pDeviceContext, false);
@@ -183,16 +259,15 @@ namespace ENGINE_NAMESPACE
                 }
             }
         }
-        auto oldSwapchain = m_VkSwapchain;
+        auto oldSwapchain    = m_VkSwapchain;
+        m_Desc.VkColorFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
         VkSwapchainCreateInfoKHR swapchainCreate{};
-        swapchainCreate.sType   = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        swapchainCreate.surface = m_VkSurface;
-        swapchainCreate.minImageCount =
-            surfCapabilities.minImageCount;  // TODO: this can be trouble
+        swapchainCreate.sType         = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+        swapchainCreate.surface       = m_VkSurface;
+        swapchainCreate.minImageCount = surfCapabilities.minImageCount;
+        swapchainCreate.imageFormat   = m_Desc.VkColorFormat;
 
-        m_Desc.VkColorFormat        = VK_FORMAT_R8G8B8A8_UNORM;
-        swapchainCreate.imageFormat = m_Desc.VkColorFormat;
         if (surfCapabilities.maxImageCount > 0 &&
             swapchainCreate.minImageCount > surfCapabilities.maxImageCount)
         {
@@ -226,9 +301,9 @@ namespace ENGINE_NAMESPACE
         {
             m_Desc.BufferCount = imageCount;
         }
-        m_ImageAcquiredSemaphores.resize(imageCount);
-        m_DrawCompleteSemaphores.resize(imageCount);
-        m_ImageAcquiredFences.resize(imageCount);
+        m_ImageAvailableSemaphores.resize(imageCount);
+        m_RenderFinishedSemaphores.resize(imageCount);
+        m_InFlightFences.resize(imageCount);
 
         auto logical = pRenderDevice->GetLogicalDevice();
         for (uint32_t i = 0; i < imageCount; i++)
@@ -240,16 +315,16 @@ namespace ENGINE_NAMESPACE
             SemaphoreCI.flags = 0;  // reserved for future use
 
             vkCreateSemaphore(logical->GetVkDevice(), &SemaphoreCI, nullptr,
-                              &m_ImageAcquiredSemaphores[i]);
+                              &m_ImageAvailableSemaphores[i]);
             vkCreateSemaphore(logical->GetVkDevice(), &SemaphoreCI, nullptr,
-                              &m_DrawCompleteSemaphores[i]);
+                              &m_RenderFinishedSemaphores[i]);
 
             VkFenceCreateInfo FenceCI = {};
 
             FenceCI.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
             FenceCI.pNext = nullptr;
             FenceCI.flags = 0;
-            vkCreateFence(logical->GetVkDevice(), &FenceCI, nullptr, &m_ImageAcquiredFences[i]);
+            vkCreateFence(logical->GetVkDevice(), &FenceCI, nullptr, &m_InFlightFences[i]);
         }
     }
     void VulkanSwapchain::InitBuffersAndViews()
@@ -281,12 +356,8 @@ namespace ENGINE_NAMESPACE
             viewInfo.subresourceRange.levelCount     = 1;
             viewInfo.subresourceRange.baseArrayLayer = 0;
             viewInfo.subresourceRange.layerCount     = 1;
-            m_SwapchainImageViews[i] = std::move(lDevice->CreateImageView(viewInfo));
-            // m_SwapchainImageViews[i] =
-            //     m_wpRenderDevice->GetLogicalDevice()->CreateImageView(viewInfo, "Swapchain");
-            // CreateImageView(m_SwapchainImages[i], m_SwapchainImageViews[i], m_Desc.VkColorFormat,
-            //                 VK_IMAGE_ASPECT_COLOR_BIT);
-            // m_wpRenderDevice->CreateTexture(desc,swapchainImages[i],)
+
+            m_SwapchainImageViews[i] = lDevice->CreateImageView(viewInfo);
         }
         VkFormat depthFormat = VK_FORMAT_D32_SFLOAT;
         VkImageCreateInfo imageInfo{};
@@ -304,8 +375,7 @@ namespace ENGINE_NAMESPACE
         imageInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
 
-        m_DepthImage = std::move(lDevice->CreateImage(imageInfo));
-        // err          = vkCreateImage(logicalVkDev, &imageInfo, nullptr, &m_DepthImage);
+        m_DepthImage = lDevice->CreateImage(imageInfo);
 
         VkMemoryRequirements memRequirements =
             m_wpRenderDevice->GetLogicalDevice()->GetImageMemoryRequirements(m_DepthImage);
@@ -330,11 +400,10 @@ namespace ENGINE_NAMESPACE
         allocInfo.memoryTypeIndex = m_wpRenderDevice->GetPhysicalDevice()->GetMemoryTypeIndex(
             memRequirements.memoryTypeBits, filter);
 
-        m_DepthImageMem = std::move(lDevice->AllocateDeviceMemory(allocInfo));
-        // err             = vkAllocateMemory(logicalVkDev, &allocInfo, nullptr, &m_DepthImageMem);
+        m_DepthImageMem = lDevice->AllocateDeviceMemory(allocInfo);
         assert(err == VK_SUCCESS);
+
         lDevice->BindImageMemory(m_DepthImage, m_DepthImageMem, 0);
-        // err = vkBindImageMemory(logicalVkDev, m_DepthImage, m_DepthImageMem, 0);
         assert(err == VK_SUCCESS);
 
         VkImageViewCreateInfo viewInfo{};
@@ -348,22 +417,19 @@ namespace ENGINE_NAMESPACE
         viewInfo.subresourceRange.baseArrayLayer = 0;
         viewInfo.subresourceRange.layerCount     = 1;
 
-        m_DepthImageView = std::move(lDevice->CreateImageView(viewInfo));
+        m_DepthImageView = lDevice->CreateImageView(viewInfo);
 
-        // err = vkCreateImageView(logicalVkDev, &viewInfo, nullptr, &m_DepthImageView);
         assert(err == VK_SUCCESS);
-
-        // m_FrameBuffers.resize(imageCount);
     }
 
     void VulkanSwapchain::WaitForImageAcquiredFences()
     {
         const auto& LogicalDevice = m_wpRenderDevice->GetLogicalDevice();
-        for (size_t i = 0; i < m_ImageAcquiredFences.size(); ++i)
+        for (size_t i = 0; i < m_InFlightFences.size(); ++i)
         {
             if (m_ImageAcquiredFenceSubmitted[i])
             {
-                VkFence vkFence = m_ImageAcquiredFences[i];
+                VkFence vkFence = m_InFlightFences[i];
                 if (LogicalDevice->GetFenceStatus(vkFence) == VK_NOT_READY)
                 {
                     LogicalDevice->WaitForFences(1, &vkFence, VK_TRUE, UINT64_MAX);
@@ -414,42 +480,50 @@ namespace ENGINE_NAMESPACE
     }
     VkResult VulkanSwapchain::AcquireNextImage(class VulkanDeviceContext* pDeviceContext)
     {
-        auto pRenderDevice   = m_wpRenderDevice;
-        const auto pDeviceVk = pRenderDevice->GetLogicalDevice();
-        auto oldestSubmittedImageFenceIndex =
-            (m_SemaphoreIndex + 1u) % static_cast<uint32_t>(m_ImageAcquiredFenceSubmitted.size());
-        if (m_ImageAcquiredFenceSubmitted[oldestSubmittedImageFenceIndex])
-        {
-            VkFence oldestSubmittedFence = m_ImageAcquiredFences[oldestSubmittedImageFenceIndex];
-            if (pDeviceVk->GetFenceStatus(oldestSubmittedFence) == VK_NOT_READY)
-            {
-                auto res = pDeviceVk->WaitForFences(1, &oldestSubmittedFence, VK_TRUE, UINT64_MAX);
-                assert(res == VK_SUCCESS);
-                (void)res;
-            }
-            pDeviceVk->ResetFence(oldestSubmittedFence);
-            m_ImageAcquiredFenceSubmitted[oldestSubmittedImageFenceIndex] = false;
-        }
+        auto err =  vkAcquireNextImageKHR(
+            m_wpDeviceContext->GetVkDevice()->GetVkDevice(),m_VkSwapchain,UINT8_MAX,
+            m_ImageAvailableSemaphores[m_SyncInterval],0,
+            &m_BackBufferIndex);
+            return  err;
 
-        VkFence imageAcquiredFence         = m_ImageAcquiredFences[m_SemaphoreIndex];
-        VkSemaphore imageAcquiredSemaphore = m_ImageAcquiredSemaphores[m_SemaphoreIndex];
 
-        auto res =
-            vkAcquireNextImageKHR(pDeviceVk->GetVkDevice(), m_VkSwapchain, UINT64_MAX,
-                                  imageAcquiredSemaphore, imageAcquiredFence, &m_BackBufferIndex);
-        m_ImageAcquiredFenceSubmitted[m_SemaphoreIndex] = (res == VK_SUCCESS);
+        // auto pRenderDevice   = m_wpRenderDevice;
+        // const auto pDeviceVk = pRenderDevice->GetLogicalDevice();
+        // vkWaitForFences(pDeviceVk->GetVkDevice(), 1, &m_InFlightFences[m_BackBufferIndex], VK_TRUE, UINT8_MAX);
+        // // auto oldestSubmittedImageFenceIndex =
+        // //     (m_SemaphoreIndex + 1u) % static_cast<uint32_t>(m_ImageAcquiredFenceSubmitted.size());
+        // // if (m_ImageAcquiredFenceSubmitted[oldestSubmittedImageFenceIndex])
+        // // {
+        // //     VkFence oldestSubmittedFence = m_InFlightFences[oldestSubmittedImageFenceIndex];
+        // //     if (pDeviceVk->GetFenceStatus(oldestSubmittedFence) == VK_NOT_READY)
+        // //     {
+        // //         auto res = pDeviceVk->WaitForFences(1, &oldestSubmittedFence, VK_TRUE, UINT64_MAX);
+        // //         assert(res == VK_SUCCESS);
+        // //         (void)res;
+        // //     }
+        // //     pDeviceVk->ResetFence(oldestSubmittedFence);
+        // //     m_ImageAcquiredFenceSubmitted[oldestSubmittedImageFenceIndex] = false;
+        // // }
 
-        if (res == VK_SUCCESS)
-        {
-            pDeviceContext->AddWaitSemaphore(
-                &m_ImageAcquiredSemaphores[m_SemaphoreIndex],
-                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT);
-            if (!m_SwapchainImagesInitialized[m_BackBufferIndex])
-            {
-                // TODO
-            }
-        }
-        return res;
+
+        // auto res =
+        //     vkAcquireNextImageKHR(pDeviceVk->GetVkDevice(), m_VkSwapchain, UINT64_MAX,
+        //                           m_ImageAvailableSemaphores[m_BackBufferIndex], VK_NULL_HANDLE, &m_BackBufferIndex);
+        // m_ImageAcquiredFenceSubmitted[m_SemaphoreIndex] = (res == VK_SUCCESS);
+
+        // if (res == VK_SUCCESS)
+        // {
+        //     pDeviceContext->AddWaitSemaphore(
+        //         &m_ImageAvailableSemaphores[m_SemaphoreIndex],
+        //         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT);
+        //     if (!m_SwapchainImagesInitialized[m_BackBufferIndex])
+        //     {
+        //         m_SwapchainImagesInitialized[m_BackBufferIndex] = true;
+        //         // TODO
+        //     }
+        // }
+        // vkResetFences(pDeviceVk->GetVkDevice(), 1, &m_InFlightFences[m_BackBufferIndex]);
+
     }
 
     void VulkanSwapchain::CreateSurface()
@@ -476,8 +550,8 @@ namespace ENGINE_NAMESPACE
         }
         if (pDeviceContext != nullptr)
         {
-            pDeviceContext->Flush();
-            bool renderTargetsReset = false;
+            // pDeviceContext->Flush();
+            // bool renderTargetsReset = false;
         }
         pDeviceContext->IdleGPU();
         WaitForImageAcquiredFences();
@@ -485,9 +559,9 @@ namespace ENGINE_NAMESPACE
         m_SwapchainImagesInitialized.clear();
         m_ImageAcquiredFenceSubmitted.clear();
 
-        m_ImageAcquiredSemaphores.clear();
-        m_DrawCompleteSemaphores.clear();
-        m_ImageAcquiredFences.clear();
+        m_ImageAvailableSemaphores.clear();
+        m_RenderFinishedSemaphores.clear();
+        m_InFlightFences.clear();
         m_SemaphoreIndex = 0;
 
         if (destroyVkSwapchain)

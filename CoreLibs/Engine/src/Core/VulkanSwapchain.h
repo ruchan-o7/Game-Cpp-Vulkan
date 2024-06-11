@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <memory>
 #include "Utils/VulkanObjectWrapper.h"
 #include "VulkanLogicalDevice.h"
@@ -30,7 +31,7 @@ namespace ENGINE_NAMESPACE
             ~VulkanSwapchain();
 
         public:
-            void Present(uint32_t syncInterval);
+            void Present(uint32_t syncInterval,VkCommandBuffer& cmd);
             void Resize(uint32_t newWidth, uint32_t newHeight);
             VkSurfaceKHR GetVkSurface() const { return m_VkSurface; }
             VkSwapchainKHR GetVkSwapchain() const { return m_VkSwapchain; }
@@ -38,6 +39,8 @@ namespace ENGINE_NAMESPACE
             VkImageView GetImageView(int index) const { return m_SwapchainImageViews[index]; }
             VkImageView GetDepthImageView() const { return m_DepthImageView; }
             VkExtent2D GetExtent() const { return {m_Desc.Width, m_Desc.Height}; }
+            uint32_t GetBackBufferIndex() const { return m_BackBufferIndex; }
+            void ResetFences(uint32_t index);
 
         private:
             void CreateSurface();
@@ -60,9 +63,9 @@ namespace ENGINE_NAMESPACE
 
             uint32_t m_DesiredBufferCount = 2;
 
-            std::vector<VkSemaphore> m_ImageAcquiredSemaphores;
-            std::vector<VkSemaphore> m_DrawCompleteSemaphores;
-            std::vector<VkFence> m_ImageAcquiredFences;
+            std::vector<VkSemaphore> m_ImageAvailableSemaphores;
+            std::vector<VkSemaphore> m_RenderFinishedSemaphores;
+            std::vector<VkFence> m_InFlightFences;
 
             std::vector<bool> m_SwapchainImagesInitialized;
             std::vector<bool> m_ImageAcquiredFenceSubmitted;
@@ -78,6 +81,7 @@ namespace ENGINE_NAMESPACE
 
             uint32_t m_SemaphoreIndex  = 0;
             uint32_t m_BackBufferIndex = 0;
+            uint32_t m_SyncInterval = 0;
 
             bool m_IsMinimized  = false;
             bool m_VsyncEnabled = true;
