@@ -24,7 +24,6 @@ namespace ENGINE_NAMESPACE
                     Vulkan::BUFFER_MEMORY_FLAG MemoryFlag;
                     RenderDevice* pRenderDevice;
                     BuffData BufferData;
-                    std::weak_ptr<VulkanLogicalDevice> pLogicalDevice;
             };
 
             static std::unique_ptr<VulkanBuffer> CreateDynamicBuffer(size_t size,

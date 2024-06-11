@@ -3,7 +3,6 @@
 #include "RenderDevice.h"
 #include "Types.h"
 #include "../Engine/Backend.h"
-#include "VulkanTexture.h"
 namespace ENGINE_NAMESPACE
 {
 
@@ -48,8 +47,8 @@ namespace ENGINE_NAMESPACE
     }
     void VulkanBuffer::Init()
     {
-        auto lDev = m_Desc.pLogicalDevice.lock();
         auto pDev = m_Desc.pRenderDevice->GetPhysicalDevice();
+        auto lDev = m_Desc.pRenderDevice->GetLogicalDevice();
 
         VkBufferUsageFlags usage = m_Desc.Usage;  // BuffUsageToVkUsage(m_Desc.Usage);
 
@@ -79,14 +78,14 @@ namespace ENGINE_NAMESPACE
     }
     void VulkanBuffer::MapMemory()
     {
-        auto device = m_Desc.pLogicalDevice.lock();
+        auto device = m_Desc.pRenderDevice->GetLogicalDevice();
         device->MapMemory(m_Memory, 0, m_Desc.BufferData.Size, 0, &m_MappedPtr);
     }
     void VulkanBuffer::UnMapMemory()
     {
         if (m_Desc.MemoryFlag == Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY)
         {
-            auto device = m_Desc.pLogicalDevice.lock();
+            auto device = m_Desc.pRenderDevice->GetLogicalDevice();
             device->UnmapMemory(m_Memory);
         }
     }
@@ -95,11 +94,11 @@ namespace ENGINE_NAMESPACE
         assert(size <= m_Desc.BufferData.Size);
         if (m_Desc.MemoryFlag == Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE)
         {
-            memcpy(m_MappedPtr, m_Desc.BufferData.Data, m_Desc.BufferData.Size);
+            memcpy(m_MappedPtr, data, size);
         }
         else
         {
-            auto device = m_Desc.pLogicalDevice.lock();
+            auto device = m_Desc.pRenderDevice->GetLogicalDevice();
             device->MapMemory(m_Memory, offset, size, (m_Desc.MemoryFlag), &data);
             memcpy(m_MappedPtr, data, size);
             device->UnmapMemory(m_Memory);
@@ -115,10 +114,9 @@ namespace ENGINE_NAMESPACE
     std::unique_ptr<VulkanBuffer> VulkanBuffer::CreateVertexBuffer(
         const VulkanBuffer::BuffDesc& info)
     {
-        auto device = info.pLogicalDevice.lock();
+        auto device = info.pRenderDevice->GetLogicalDevice();
         VulkanBuffer::BuffDesc stageDesc{};
         stageDesc.pRenderDevice   = info.pRenderDevice;
-        stageDesc.pLogicalDevice  = info.pLogicalDevice;
         stageDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
         stageDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
         stageDesc.Name            = "Vertex buffer stage";
@@ -128,7 +126,6 @@ namespace ENGINE_NAMESPACE
 
         VulkanBuffer::BuffDesc vertexBufferDesc{};
         vertexBufferDesc.pRenderDevice   = info.pRenderDevice;
-        vertexBufferDesc.pLogicalDevice  = info.pLogicalDevice;
         vertexBufferDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_DESTINATION_VERTEX;
         vertexBufferDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY;
         vertexBufferDesc.Name            = info.Name;  // "Vertex buffer";
@@ -151,10 +148,9 @@ namespace ENGINE_NAMESPACE
     std::unique_ptr<VulkanBuffer> VulkanBuffer::CreateIndexBuffer(
         const VulkanBuffer::BuffDesc& info)
     {
-        auto device = info.pLogicalDevice.lock();
+        auto device = info.pRenderDevice->GetLogicalDevice();
         VulkanBuffer::BuffDesc stageDesc{};
         stageDesc.pRenderDevice   = info.pRenderDevice;
-        stageDesc.pLogicalDevice  = info.pLogicalDevice;
         stageDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
         stageDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
         stageDesc.Name            = "Index buffer stage";
@@ -164,7 +160,6 @@ namespace ENGINE_NAMESPACE
 
         VulkanBuffer::BuffDesc vertexBufferDesc{};
         vertexBufferDesc.pRenderDevice   = info.pRenderDevice;
-        vertexBufferDesc.pLogicalDevice  = info.pLogicalDevice;
         vertexBufferDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_DESTINATION_INDEX;
         vertexBufferDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY;
         vertexBufferDesc.Name            = info.Name;  // "Vertex buffer";
