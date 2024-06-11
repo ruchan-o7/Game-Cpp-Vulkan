@@ -2,7 +2,7 @@
 
 #include "Api.h"
 #include "Sync.h"
-#include "vulkan/vulkan_core.h"
+#include "Types/GraphicTypes.h"
 namespace FooGame
 {
     class Window;
@@ -20,7 +20,6 @@ namespace FooGame
             static void WaitFence(Fence& fence);
             static void WaitIdle();
             static void Shutdown();
-            static void UpdateUniformData(UniformBufferObject ubo);
             static void ResetCommandBuffer(VkCommandBuffer& buf,
                                            VkCommandBufferResetFlags flags = 0);
             static VkCommandBuffer BeginSingleTimeCommands();
@@ -45,6 +44,7 @@ namespace FooGame
             static void CopyBufferToImage(VulkanBuffer& source, VulkanTexture& destination);
 
         private:
+            static void UpdateUniformData(UniformBufferObject& ubo);
             static void BeginDrawing_();
             static void Submit();
             static void InitImgui();
