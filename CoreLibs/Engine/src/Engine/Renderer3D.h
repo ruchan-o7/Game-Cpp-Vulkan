@@ -1,7 +1,6 @@
 #pragma once
-#include "../Engine/Api.h"
-#include "../Engine/Pipeline.h"
 #include "../Geometry/Model.h"
+#include "../Engine/Types/GraphicTypes.h"
 namespace FooGame
 {
 
@@ -38,14 +37,15 @@ namespace FooGame
 
         private:
             static void BindPipeline(VkCommandBuffer cmd);
-            static void UpdateUniformData(UniformBufferObject ubd);
+            static void UpdateUniformData(UniformBufferObject& ubd);
             static void BindDescriptorSets(
                 VkCommandBuffer cmd, const Texture2D& texture, VkDescriptorSet& set,
-                Pipeline& pipeLine, VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+                VkPipelineLayout layout,
+                VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
                 uint32_t firstSet = 0, uint32_t dSetCount = 1, uint32_t dynamicOffsetCount = 0,
                 uint32_t* dynamicOffsets = nullptr);
             static void BindDescriptorSets(
-                VkCommandBuffer cmd, Mesh& mesh, Pipeline& pipeLine,
+                VkCommandBuffer cmd, Mesh& mesh, VkPipelineLayout layout,
                 VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
                 uint32_t firstSet = 0, uint32_t dSetCount = 1, uint32_t dynamicOffsetCount = 0,
                 uint32_t* dynamicOffsets = nullptr);
