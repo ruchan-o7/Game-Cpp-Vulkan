@@ -2,13 +2,15 @@
 #include "../Defines.h"
 #include "../Engine/Api.h"
 #include "../Engine/VulkanCheckResult.h"
-#include "vulkan/vulkan_core.h"
+#include "../Engine/Backend.h"
+#include "../Core/RenderDevice.h"
 namespace FooGame
 {
 
     static void CreateLayout(VkDescriptorSetLayout& layout)
     {
-        auto device = Api::GetVkDevice();
+        auto device = Backend::GetRenderDevice()->GetVkDevice();  // Api::GetVkDevice();
+        // auto device = Api::GetVkDevice();
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding            = 0;
         uboLayoutBinding.descriptorCount    = 1;
@@ -32,11 +34,11 @@ namespace FooGame
     Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
         : m_Vertices(vertices), m_Indices(indices)
     {
-        // CreateLayout(m_Layout);
+        CreateLayout(m_Layout);
     }
     Mesh::Mesh()
     {
-        // CreateLayout(m_Layout);
+        CreateLayout(m_Layout);
     }
     Mesh::~Mesh()
     {
@@ -44,14 +46,15 @@ namespace FooGame
         m_Indices.clear();
         if (m_Layout)
         {
-            auto device = Api::GetVkDevice();
+            auto device = Backend::GetRenderDevice()->GetVkDevice();  // Api::GetVkDevice();
+            // auto device = Api::GetVkDevice();
             vkDestroyDescriptorSetLayout(device, m_Layout, nullptr);
         }
     }
     Mesh::Mesh(std::vector<Vertex>&& vertices, std::vector<uint32_t>&& indices)
         : m_Vertices(std::move(vertices)), m_Indices(std::move(indices))
     {
-        // CreateLayout(m_Layout);
+        CreateLayout(m_Layout);
     }
     Mesh::Mesh(Mesh&& other)
     {
