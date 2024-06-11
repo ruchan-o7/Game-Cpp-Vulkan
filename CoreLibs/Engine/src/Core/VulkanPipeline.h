@@ -26,6 +26,9 @@ namespace ENGINE_NAMESPACE
                     const char* Name           = "Graphic pipeline";
             };
             VulkanPipeline(const CreateInfo& ci);
+            VkPipelineLayout GetLayout() const { return m_Layout; }
+            VkPipeline GetPipeline() const { return m_Pipeline; }
+            // ~VulkanPipeline();
 
         private:
             CreateInfo m_Info;
