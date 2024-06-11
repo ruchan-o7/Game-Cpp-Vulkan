@@ -22,7 +22,6 @@
 #include "../Core/RenderDevice.h"
 #include "../Core/VulkanTexture.h"
 #include "../Engine/Backend.h"
-#include "vulkan/vulkan_core.h"
 namespace FooGame
 {
     static bool ReadFile(tinygltf::TinyGLTF& context, tinygltf::Model& input,
@@ -97,7 +96,6 @@ namespace FooGame
         stageDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
         stageDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
         stageDesc.Name            = std::string("Stage buffer: " + path).c_str();
-        stageDesc.pLogicalDevice  = pRenderDevice->GetLogicalDevice();
         stageDesc.BufferData.Data = pixels;
         stageDesc.BufferData.Size = imageSize;
 
@@ -337,11 +335,10 @@ namespace FooGame
                     imageBuffer = &gltfImage.image[0];
                     imageSize   = gltfImage.image.size();
                 }
-                /* TODO
-                                auto tex = LoadFromBuffer(imageBuffer, imageSize,
-                   VK_FORMAT_R8G8B8A8_UNORM, gltfImage.width, gltfImage.height);
-                                images.push_back({tex});
-                                */
+                // TODO Update this with new texture
+                // auto tex = LoadFromBuffer(imageBuffer, imageSize, VK_FORMAT_R8G8B8A8_UNORM,
+                //                           gltfImage.width, gltfImage.height);
+                // images.push_back({tex});
                 if (deleteBuffer)
                 {
                     delete[] imageBuffer;
