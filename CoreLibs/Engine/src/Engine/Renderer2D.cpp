@@ -3,7 +3,6 @@
 #include "Device.h"
 #include "Types/GraphicTypes.h"
 #include "Types/DescriptorData.h"
-#include "Buffer.h"
 #include "Backend.h"
 #include <cstring>
 #include "VulkanCheckResult.h"
@@ -12,13 +11,8 @@
 namespace FooGame
 {
 
-#if VS_CODE_DEBUGGER
-#define VERT_PATH "../../../Assets/Shaders/QuadShaderVert.spv"
-#define FRAG_PATH "../../../Assets/Shaders/QuadShaderFrag.spv"
-#else
-#define VERT_PATH "../../Assets/Shaders/QuadShaderVert.spv"
-#define FRAG_PATH "../../Assets/Shaders/QuadShaderFrag.spv"
-#endif
+#define VERT_PATH "Assets/Shaders/QuadShaderVert.spv"
+#define FRAG_PATH "Assets/Shaders/QuadShaderFrag.spv"
     struct Renderer2DData
     {
             static const uint32_t MaxQuads    = 20000;
@@ -26,9 +20,9 @@ namespace FooGame
             static const uint32_t MaxIndices  = MaxQuads * 6;
             struct Resources
             {
-                    Buffer* VertexBuffer = nullptr;
-                    Buffer* IndexBuffer  = nullptr;
-                    std::vector<Buffer*> UniformBuffers;
+                    // Buffer* VertexBuffer = nullptr;
+                    // Buffer* IndexBuffer  = nullptr;
+                    // std::vector<Buffer*> UniformBuffers;
                     VkDescriptorSet set[3];
                     DescriptorData descriptor;
             };
@@ -75,28 +69,28 @@ namespace FooGame
                 offset             += 4;
             }
 
-            s_Data.resources.IndexBuffer = CreateIndexBuffer(quadIndices);
+            // s_Data.resources.IndexBuffer = CreateIndexBuffer(quadIndices);
             quadIndices.clear();
             s_Data.frameData.QuadVertexPositions[0] = {-1.0f, 1.0f, 0.0f, 1.0f};
             s_Data.frameData.QuadVertexPositions[1] = {-1.0f, -1.0f, 0.0f, 1.0f};
             s_Data.frameData.QuadVertexPositions[2] = {1.0f, -1.0f, 0.0f, 1.0f};
             s_Data.frameData.QuadVertexPositions[3] = {1.0f, 1.0f, 0.0f, 1.0f};
-            s_Data.resources.VertexBuffer           = CreateDynamicBuffer(
-                sizeof(QuadVertex) * Renderer2DData::MaxIndices, BufferUsage::VERTEX);
-            s_Data.frameData.QuadVertexBufferBase = new QuadVertex[s_Data.MaxVertices];
+            // s_Data.resources.VertexBuffer           = CreateDynamicBuffer(
+            //     sizeof(QuadVertex) * Renderer2DData::MaxIndices, BufferUsage::VERTEX);
+            // s_Data.frameData.QuadVertexBufferBase = new QuadVertex[s_Data.MaxVertices];
         }
         {
-            s_Data.resources.UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+            // s_Data.resources.UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
             for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
-                BufferBuilder uBuffBuilder{};
-                uBuffBuilder.SetUsage(BufferUsage::UNIFORM)
-                    .SetInitialSize(sizeof(UniformBufferObject))
-                    .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-                s_Data.resources.UniformBuffers[i] =
-                    CreateDynamicBuffer(sizeof(UniformBufferObject), BufferUsage::UNIFORM);
+                // BufferBuilder uBuffBuilder{};
+                // uBuffBuilder.SetUsage(BufferUsage::UNIFORM)
+                //     .SetInitialSize(sizeof(UniformBufferObject))
+                //     .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                //                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                // s_Data.resources.UniformBuffers[i] =
+                //     CreateDynamicBuffer(sizeof(UniformBufferObject), BufferUsage::UNIFORM);
             }
         }
         {
@@ -142,7 +136,7 @@ namespace FooGame
             for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
             {
                 VkDescriptorBufferInfo bufferInfo{};
-                bufferInfo.buffer = *s_Data.resources.UniformBuffers[i]->GetBuffer();
+                // bufferInfo.buffer = *s_Data.resources.UniformBuffers[i]->GetBuffer();
                 bufferInfo.offset = 0;
                 bufferInfo.range  = sizeof(UniformBufferObject);
 
@@ -199,7 +193,7 @@ namespace FooGame
     }
     void Renderer2D::UpdateUniformData(UniformBufferObject ubd)
     {
-        s_Data.resources.UniformBuffers[Backend::GetCurrentFrame()]->SetData(sizeof(ubd), &ubd);
+        // s_Data.resources.UniformBuffers[Backend::GetCurrentFrame()]->SetData(sizeof(ubd), &ubd);
     }
 
     void Renderer2D::EndScene()
@@ -357,20 +351,21 @@ namespace FooGame
 
         Api::SetViewportAndScissors(cmd, extent.width, extent.height);
         // bind vertexbuffers
-        VkBuffer vertexBuffers[] = {*s_Data.resources.VertexBuffer->GetBuffer()};
-        VkDeviceSize offsets[]   = {0};
-        vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
+        // VkBuffer vertexBuffers[] = {*s_Data.resources.VertexBuffer->GetBuffer()};
+        VkDeviceSize offsets[] = {0};
+        // vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
 
         // bind index buffers
-        vkCmdBindIndexBuffer(cmd, *s_Data.resources.IndexBuffer->GetBuffer(), 0,
-                             VK_INDEX_TYPE_UINT32);
+        // vkCmdBindIndexBuffer(cmd, *s_Data.resources.IndexBuffer->GetBuffer(), 0,
+        //                      VK_INDEX_TYPE_UINT32);
         // bind descriptorsets
         BindDescriptorSets(cmd, s_Data.api.pipeline);
         if (s_Data.frameData.QuadIndexCount)
         {
             uint32_t dataSize = (uint32_t)((uint8_t*)s_Data.frameData.QuadVertexBufferPtr -
                                            (uint8_t*)s_Data.frameData.QuadVertexBufferBase);
-            s_Data.resources.VertexBuffer->SetData(dataSize, s_Data.frameData.QuadVertexBufferBase);
+            // s_Data.resources.VertexBuffer->SetData(dataSize,
+            // s_Data.frameData.QuadVertexBufferBase);
             vkCmdDrawIndexed(cmd, s_Data.frameData.QuadIndexCount, 2, 0, 0, 0);
             s_Data.frameData.DrawCall++;
         }
@@ -400,21 +395,21 @@ namespace FooGame
 
     void Renderer2D::Shutdown()
     {
-        auto device = Api::GetDevice()->GetDevice();
-        s_Data.resources.IndexBuffer->Release();
-        delete s_Data.resources.IndexBuffer;
-        s_Data.resources.VertexBuffer->Release();
-        delete s_Data.resources.VertexBuffer;
-        for (auto& ub : s_Data.resources.UniformBuffers)
-        {
-            ub->Release();
-            delete ub;
-        }
-        s_Data.resources.UniformBuffers.clear();
-        vkDestroyPipelineLayout(device, s_Data.api.pipeline.pipelineLayout, nullptr);
-        vkDestroyPipeline(device, s_Data.api.pipeline.pipeline, nullptr);
-        vkDestroySampler(device, s_Data.api.TextureSampler, nullptr);
-        // DestroyImage(s_Data.frameData.DefaultTexture.get());
-        delete[] s_Data.frameData.QuadVertexBufferBase;
+        // auto device = Api::GetDevice()->GetDevice();
+        // s_Data.resources.IndexBuffer->Release();
+        // delete s_Data.resources.IndexBuffer;
+        // s_Data.resources.VertexBuffer->Release();
+        // delete s_Data.resources.VertexBuffer;
+        // for (auto& ub : s_Data.resources.UniformBuffers)
+        // {
+        //     ub->Release();
+        //     delete ub;
+        // }
+        // s_Data.resources.UniformBuffers.clear();
+        // vkDestroyPipelineLayout(device, s_Data.api.pipeline.pipelineLayout, nullptr);
+        // vkDestroyPipeline(device, s_Data.api.pipeline.pipeline, nullptr);
+        // vkDestroySampler(device, s_Data.api.TextureSampler, nullptr);
+        // // DestroyImage(s_Data.frameData.DefaultTexture.get());
+        // delete[] s_Data.frameData.QuadVertexBufferBase;
     }
 }  // namespace FooGame

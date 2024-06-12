@@ -26,5 +26,8 @@ public:                         \
 #define VS_CODE_DEBUGGER 0
 
 #define NOT_IMPLEMENTED() assert(0 && "Not implemented yet")
+#define DEPRECATED()                                                               \
+    FOO_ENGINE_CRITICAL("This function deprecated: {0}, {1}", __FILE__, __LINE__); \
+    assert(0)
 
 }  // namespace Engine

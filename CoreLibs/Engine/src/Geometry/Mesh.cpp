@@ -1,6 +1,5 @@
 #include "Mesh.h"
 #include "../Defines.h"
-#include "../Engine/Api.h"
 #include "../Engine/VulkanCheckResult.h"
 #include "../Engine/Backend.h"
 #include "../Core/RenderDevice.h"
@@ -62,15 +61,15 @@ namespace FooGame
         m_Indices        = std::move(other.m_Indices);
         m_DescriptorSets = std::move(other.m_DescriptorSets);
         m_Layout         = std::move(other.m_Layout);
-        m_Texture        = std::move(other.m_Texture);
-        MeshPrimitives   = std::move(other.MeshPrimitives);
-        materialData     = std::move(other.materialData);
-        RenderId         = other.RenderId;
+        // m_Texture        = std::move(other.m_Texture);
+        MeshPrimitives = std::move(other.MeshPrimitives);
+        materialData   = std::move(other.materialData);
+        RenderId       = other.RenderId;
         other.m_Vertices.clear();
         other.m_Indices.clear();
         other.m_DescriptorSets.clear();
-        other.m_Layout       = nullptr;
-        other.m_Texture      = nullptr;
+        other.m_Layout = nullptr;
+        // other.m_Texture      = nullptr;
         other.MeshPrimitives = {};
         other.materialData   = {};
         other.RenderId       = -1;

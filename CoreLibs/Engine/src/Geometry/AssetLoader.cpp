@@ -10,14 +10,9 @@
 #include "../Geometry/Mesh.h"
 #include "../Geometry/Model.h"
 #include "Vertex.h"
-#include "../Engine/Api.h"
-#include "../Engine/Buffer.h"
-#include "../Engine/Texture2D.h"
 #include "tiny_gltf.h"
 #include <stb_image.h>
 #include <tiny_obj_loader.h>
-#include "../Engine/Device.h"
-#include "../Engine/VulkanCheckResult.h"
 #include "../Core/VulkanBuffer.h"
 #include "../Core/RenderDevice.h"
 #include "../Core/VulkanTexture.h"
@@ -54,31 +49,11 @@ namespace FooGame
         }
         return ret;
     }
-    void AssetLoader::DestroyTexture(Texture2D& t)
-    {
-        NOT_IMPLEMENTED();
-        if (!t.Image)
-        {
-            return;
-        }
-        auto device = Api::GetVkDevice();
-        vkDestroyImage(device, t.Image, nullptr);
-        vkDestroyImageView(device, t.ImageView, nullptr);
-        vkFreeMemory(device, t.ImageMemory, nullptr);
-        if (t.Sampler)
-        {
-            vkDestroySampler(device, t.Sampler, nullptr);
-        }
-    }
 
-    Texture2D AssetLoader::LoadFromFile(const std::string& path)
-
+    std::unique_ptr<VulkanTexture> LoadTextureFromFile(const std::string& path)
     {
         auto* pRenderDevice = Backend::GetRenderDevice();
 
-        Texture2D image{};
-        image.Path = path;
-        // Device* device = Api::GetDevice();
         auto VkDevice              = pRenderDevice->GetVkDevice();
         const auto* physicalDevice = pRenderDevice->GetPhysicalDevice();
         int32_t texWidth, texHeight, texChannels;
@@ -88,16 +63,46 @@ namespace FooGame
         if (!pixels)
         {
             FOO_ENGINE_ERROR("Coult not load image : {0}", path);
-            return image;
+            return nullptr;
         }
+        auto t = AssetLoader::LoadTexture(pixels, imageSize, texWidth, texHeight);
+        stbi_image_free(pixels);
+        return t;
+    }
+
+    std::unique_ptr<VulkanTexture> AssetLoader::LoadTexture(const std::string& path)
+    {
+        auto* pRenderDevice = Backend::GetRenderDevice();
+
+        auto VkDevice              = pRenderDevice->GetVkDevice();
+        const auto* physicalDevice = pRenderDevice->GetPhysicalDevice();
+        int32_t texWidth, texHeight, texChannels;
+        stbi_uc* pixels =
+            stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+        size_t imageSize = texWidth * texHeight * 4;
+        if (!pixels)
+        {
+            FOO_ENGINE_ERROR("Coult not load image : {0}", path);
+            return nullptr;
+        }
+        auto t = AssetLoader::LoadTexture(pixels, imageSize, texWidth, texHeight);
+        stbi_image_free(pixels);
+        return t;
+    }
+    std::unique_ptr<VulkanTexture> AssetLoader::LoadTexture(void* pixels, size_t size,
+                                                            int32_t width, int32_t height)
+    {
+        auto* pRenderDevice        = Backend::GetRenderDevice();
+        auto VkDevice              = pRenderDevice->GetVkDevice();
+        const auto* physicalDevice = pRenderDevice->GetPhysicalDevice();
 
         VulkanBuffer::BuffDesc stageDesc{};
         stageDesc.pRenderDevice   = pRenderDevice;
         stageDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
         stageDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
-        stageDesc.Name            = std::string("Stage buffer: " + path).c_str();
+        stageDesc.Name            = std::string("Stage buffer for texture:  ").c_str();
         stageDesc.BufferData.Data = pixels;
-        stageDesc.BufferData.Size = imageSize;
+        stageDesc.BufferData.Size = size;
 
         VulkanBuffer stageBuffer{stageDesc};
 
@@ -110,129 +115,20 @@ namespace FooGame
         ci.MemoryPropertiesFlags = Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY;
         ci.Tiling                = VK_IMAGE_TILING_LINEAR;
         ci.UsageFlags            = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-        ci.Extent = {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)};
+        ci.Extent                = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
-        VulkanTexture vTexture{ci};
-        auto vkImage = vTexture.GetImage();
+        auto* vTexture = new VulkanTexture{ci};
+        auto vkImage   = vTexture->GetImage();
 
         Backend::TransitionImageLayout(vkImage.get(), VK_FORMAT_R8G8B8A8_SRGB,
                                        VK_IMAGE_LAYOUT_UNDEFINED,
                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-        Backend::CopyBufferToImage(stageBuffer, vTexture);
+        Backend::CopyBufferToImage(stageBuffer, *vTexture);
         Backend::TransitionImageLayout(vkImage.get(), VK_FORMAT_R8G8B8A8_SRGB,
                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        return {};
-
-        BufferBuilder staginfBufBuilder{};
-        staginfBufBuilder.SetUsage(BufferUsage::TRANSFER_SRC)
-            .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-            .SetInitialSize(imageSize);
-        Buffer stagingBuffer = staginfBufBuilder.Build();
-        stagingBuffer.Allocate();
-        stagingBuffer.SetData(imageSize, pixels);
-        stagingBuffer.Bind();
-
-        stbi_image_free(pixels);
-
-        image.Width  = texWidth;
-        image.Height = texHeight;
-
-        CreateImage(image, {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)},
-                    VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-        TransitionImageLayout(&image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
-                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        stagingBuffer.CopyToImage(image);
-
-        TransitionImageLayout(&image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        CreateImageView(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
-
-        VkPhysicalDeviceProperties properties = physicalDevice->GetDeviceProperties();
-
-        VkSamplerCreateInfo samplerInfo{};
-        samplerInfo.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerInfo.magFilter               = VK_FILTER_LINEAR;
-        samplerInfo.minFilter               = VK_FILTER_LINEAR;
-        samplerInfo.addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.anisotropyEnable        = VK_TRUE;
-        samplerInfo.maxAnisotropy           = properties.limits.maxSamplerAnisotropy;
-        samplerInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        samplerInfo.unnormalizedCoordinates = VK_FALSE;
-        samplerInfo.compareEnable           = VK_FALSE;
-        samplerInfo.compareOp               = VK_COMPARE_OP_ALWAYS;
-        samplerInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-
-        stagingBuffer.Release();
-        VK_CALL(vkCreateSampler(VkDevice, &samplerInfo, nullptr, &image.Sampler));
-        image.Descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        image.Descriptor.imageView   = image.ImageView;
-        image.Descriptor.sampler     = image.Sampler;
-        return std::move(image);
-    }
-    Texture2D AssetLoader::LoadFromBuffer(void* buffer, size_t size, VkFormat format, int32_t width,
-                                          int32_t height)
-    {
-        assert(buffer != nullptr);
-        assert(size > 0);
-        Device* device = Api::GetDevice();
-        Texture2D image{};
-        BufferBuilder staginfBufBuilder{};
-        staginfBufBuilder.SetUsage(BufferUsage::TRANSFER_SRC)
-            .SetMemoryFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-            .SetInitialSize(size);
-        Buffer stagingBuffer = staginfBufBuilder.Build();
-        stagingBuffer.Allocate();
-        stagingBuffer.SetData(size, buffer);
-        stagingBuffer.Bind();
-
-        image.Width  = width;
-        image.Height = height;
-
-        CreateImage(image, {static_cast<uint32_t>(width), static_cast<uint32_t>(height)}, format,
-                    VK_IMAGE_TILING_OPTIMAL,
-                    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-        TransitionImageLayout(&image, format, VK_IMAGE_LAYOUT_UNDEFINED,
-                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        stagingBuffer.CopyToImage(image);
-
-        TransitionImageLayout(&image, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        CreateImageView(image, format, VK_IMAGE_ASPECT_COLOR_BIT);
-        VkPhysicalDeviceProperties properties{};
-        vkGetPhysicalDeviceProperties(device->GetPhysicalDevice(), &properties);
-
-        VkSamplerCreateInfo samplerInfo{};
-        samplerInfo.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerInfo.magFilter               = VK_FILTER_LINEAR;
-        samplerInfo.minFilter               = VK_FILTER_LINEAR;
-        samplerInfo.addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerInfo.anisotropyEnable        = VK_TRUE;
-        samplerInfo.maxAnisotropy           = properties.limits.maxSamplerAnisotropy;
-        samplerInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        samplerInfo.unnormalizedCoordinates = VK_FALSE;
-        samplerInfo.compareEnable           = VK_FALSE;
-        samplerInfo.compareOp               = VK_COMPARE_OP_ALWAYS;
-        samplerInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-
-        stagingBuffer.Release();
-        VK_CALL(vkCreateSampler(device->GetDevice(), &samplerInfo, nullptr, &image.Sampler));
-        image.Descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        image.Descriptor.imageView   = image.ImageView;
-        image.Descriptor.sampler     = image.Sampler;
-        return image;
+        return std::unique_ptr<VulkanTexture>(vTexture);
     }
 
     std::unique_ptr<Model> AssetLoader::LoadObjModel(const std::string& path)
@@ -300,7 +196,8 @@ namespace FooGame
         tinygltf::Model gltfInput;
         tinygltf::TinyGLTF gltfContext;
         std::vector<Mesh> meshes;
-        std::vector<Texture2D> images;
+        // std::vector<Texture2D> images;
+        std::vector<std::unique_ptr<VulkanTexture>> vulkanTextures;
         std::vector<uint32_t> textureIndices;
 
         if (!ReadFile(gltfContext, gltfInput, path, isGlb))
@@ -335,10 +232,8 @@ namespace FooGame
                     imageBuffer = &gltfImage.image[0];
                     imageSize   = gltfImage.image.size();
                 }
-                // TODO Update this with new texture
-                // auto tex = LoadFromBuffer(imageBuffer, imageSize, VK_FORMAT_R8G8B8A8_UNORM,
-                //                           gltfImage.width, gltfImage.height);
-                // images.push_back({tex});
+                vulkanTextures.push_back(std::move(
+                    LoadTexture((void*)imageBuffer, imageSize, gltfImage.width, gltfImage.height)));
                 if (deleteBuffer)
                 {
                     delete[] imageBuffer;
@@ -481,7 +376,7 @@ namespace FooGame
             }
         }
         auto model            = std::make_unique<Model>(std::move(meshes));
-        model->images         = images;
+        model->Textures       = std::move(vulkanTextures);
         model->textureIndices = textureIndices;
         return std::move(model);
     }

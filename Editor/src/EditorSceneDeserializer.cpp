@@ -6,6 +6,7 @@
 #include <Core.h>
 #include <nlohmann/json.hpp>
 #include "nlohmann/json_fwd.hpp"
+#include "src/Geometry/AssetLoader.h"
 #include <Log.h>
 #include <Engine.h>
 #include <tiny_obj_loader.h>
@@ -57,8 +58,10 @@ namespace FooGame
             for (const auto& img : assetJson["textures"])
             {
                 auto textureAbsPath = assetJsonAbsPath.parent_path() / img["path"];
-                auto texture        = AssetLoader::LoadFromFile(textureAbsPath.string());
-                mD.ModelPtr->images.push_back({texture});
+                auto tex            =std::move( AssetLoader::LoadTexture(textureAbsPath.string()));
+                mD.ModelPtr->Textures.push_back(std::move(tex));
+                // auto texture = AssetLoader::LoadFromFile(textureAbsPath.string());
+                // mD.ModelPtr->images.push_back({texture});
             }
         }
         else if (assetJson["format"] == "glb")
@@ -102,12 +105,12 @@ namespace FooGame
             uint32_t assetId = asset["id"];
 
             auto assetJsonAbsPath = sceneBasePath.parent_path() / path(asset["path"]);
-            MeshData meshData{std::move(ProcessSingleAsset(assetJsonAbsPath, assetId))};
 
-            scene->MeshDatas.push_back(std::move(meshData));
+            scene->MeshDatas.push_back(std::move(ProcessSingleAsset(assetJsonAbsPath, assetId)));
         }
         FOO_EDITOR_INFO("Scene data loaded successfully");
         stream.close();
+        return scene;
         return std::move(scene);
     }
 

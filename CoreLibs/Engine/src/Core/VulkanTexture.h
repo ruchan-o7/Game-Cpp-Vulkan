@@ -41,6 +41,7 @@ namespace ENGINE_NAMESPACE
                     const char* Name = "Image View";
             };
             VulkanImageView(const ImageViewDesc& desc);
+            VkImageView GetView() const { return m_ImageView; }
 
         private:
             ImageViewWrapper m_ImageView;
@@ -56,7 +57,7 @@ namespace ENGINE_NAMESPACE
             {
                     VkExtent2D Extent;
                     VkFormat Format;
-                    VkImageTiling Tiling;
+                    VkImageTiling Tiling = VK_IMAGE_TILING_OPTIMAL;
                     VkImageUsageFlags UsageFlags;
                     VkImageAspectFlagBits AspectFlags;
                     VkMemoryPropertyFlags MemoryPropertiesFlags;
@@ -70,6 +71,9 @@ namespace ENGINE_NAMESPACE
             std::shared_ptr<VulkanImage> GetImage() const { return m_Image; }
             VkImageAspectFlagBits GetAspect() const { return m_Info.AspectFlags; }
             VkExtent2D GetExtent() const { return m_Info.Extent; }
+
+        public:
+            VkDescriptorImageInfo DescriptorInfo;
 
         private:
             std::shared_ptr<VulkanImage> m_Image;

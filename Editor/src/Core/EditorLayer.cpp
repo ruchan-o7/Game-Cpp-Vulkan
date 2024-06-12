@@ -4,8 +4,6 @@
 #include "EditorSceneDeserializer.h"
 #include "glm/fwd.hpp"
 #include "imgui.h"
-#include "src/Geometry/AssetLoader.h"
-#include "src/Input/KeyCodes.h"
 #include <Log.h>
 namespace FooGame
 {
@@ -73,11 +71,11 @@ namespace FooGame
                 TotalBytesToAllocateIndex  += mesh.m_Indices.size();
 
                 MeshDrawAttributes attr{};
-                attr.VertexCountToDraw = mesh.m_Vertices.size();
-                attr.InstanceCount     = 1;
-                attr.FirstIndex        = i + j;
-                attr.VertexOffset      = offset;
-                offset += attr.VertexCountToDraw;
+                attr.VertexCountToDraw  = mesh.m_Vertices.size();
+                attr.InstanceCount      = 1;
+                attr.FirstIndex         = i + j;
+                attr.VertexOffset       = offset;
+                offset                 += attr.VertexCountToDraw;
                 meshDrawAttr.push_back(attr);
             }
         }
@@ -94,20 +92,20 @@ namespace FooGame
     }
     void EditorLayer::OnDetach()
     {
-        for (auto& tex : m_EditorScene->Textures)
-        {
-            AssetLoader::DestroyTexture(*tex.get());
-        }
-        m_EditorScene->Textures.shrink_to_fit();
-        for (auto& md : m_EditorScene->MeshDatas)
-        {
-            for (size_t i = 0; i < md.ModelPtr->images.size(); i++)
-            {
-                AssetLoader::DestroyTexture(md.ModelPtr->images[i]);
-            }
-            md.ModelPtr->images.shrink_to_fit();
-        }
-
+        // for (auto& tex : m_EditorScene->Textures)
+        // {
+        //     AssetLoader::DestroyTexture(*tex.get());
+        // }
+        // m_EditorScene->Textures.shrink_to_fit();
+        // for (auto& md : m_EditorScene->MeshDatas)
+        // {
+        //     for (size_t i = 0; i < md.ModelPtr->images.size(); i++)
+        //     {
+        //         AssetLoader::DestroyTexture(md.ModelPtr->images[i]);
+        //     }
+        //     md.ModelPtr->images.shrink_to_fit();
+        // }
+        //
         Renderer3D::ClearBuffers();
     }
     void EditorLayer::OnImGuiRender()

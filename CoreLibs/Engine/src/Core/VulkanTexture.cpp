@@ -16,7 +16,7 @@ namespace ENGINE_NAMESPACE
         viewInfo.subresourceRange.levelCount     = 1;
         viewInfo.subresourceRange.baseArrayLayer = 0;
         viewInfo.subresourceRange.layerCount     = 1;
-        m_Desc.pLogicalDevice->CreateImageView(viewInfo, m_Desc.Name);
+        m_ImageView =  m_Desc.pLogicalDevice->CreateImageView(viewInfo, m_Desc.Name);
     }
 
     VulkanImage::VulkanImage(const ImageDesc& desc) : m_Desc(desc)
@@ -89,5 +89,9 @@ namespace ENGINE_NAMESPACE
         samplerInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
         m_Sampler = m_Info.pRenderDevice->CreateSampler(samplerInfo);
+
+        DescriptorInfo.sampler     = m_Sampler;
+        DescriptorInfo.imageView   = m_ImageView->GetView();
+        DescriptorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }
 }  // namespace ENGINE_NAMESPACE
