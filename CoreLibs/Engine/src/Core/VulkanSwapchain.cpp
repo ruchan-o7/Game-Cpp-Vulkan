@@ -26,52 +26,6 @@ namespace ENGINE_NAMESPACE
         CreateSurface();
         CreateVkSwapchain();
         InitBuffersAndViews();
-        // auto res = AcquireNextImage();
-        // (void)res;
-    }
-    void VulkanSwapchain::Present(uint32_t syncInterval, VkCommandBuffer& cmd)
-    {
-        VkSemaphore waitSemaphores[]      = {m_ImageAvailableSemaphores[syncInterval]};
-        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores    = waitSemaphores;
-        submitInfo.pWaitDstStageMask  = waitStages;
-
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers    = &cmd;
-
-        VkSemaphore signalSemaphores[]  = {m_RenderFinishedSemaphores[syncInterval]};
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores    = signalSemaphores;
-
-        auto err = vkQueueSubmit(m_wpRenderDevice->GetGraphicsQueue(), 1, &submitInfo,
-                                 m_InFlightFences[syncInterval]);
-
-        VkPresentInfoKHR presentInfo{};
-        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores    = signalSemaphores;
-
-        VkSwapchainKHR swapChains[] = {m_VkSwapchain};
-        presentInfo.swapchainCount  = 1;
-        presentInfo.pSwapchains     = swapChains;
-
-        presentInfo.pImageIndices = &(m_CurrentFrame);
-
-        err = vkQueuePresentKHR(m_wpRenderDevice->GetGraphicsQueue(), &presentInfo);
-
-        if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
-        {
-            RecreateVkSwapchain(m_wpDeviceContext);
-        }
-        else if (err != VK_SUCCESS)
-        {
-            FOO_ENGINE_CRITICAL("Failed to presenet swap chain images");
-        }
-        // AcquireNextImage(m_wpDeviceContext);
     }
 
     void VulkanSwapchain::ReCreate()
@@ -102,10 +56,14 @@ namespace ENGINE_NAMESPACE
         auto device = m_wpRenderDevice->GetVkDevice();
         // TODO Blocks execution in first
         VkResult result =
-            vkWaitForFences(device, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT32_MAX);
-        result = vkAcquireNextImageKHR(device, m_VkSwapchain, UINT32_MAX,
+            vkWaitForFences(device, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT16_MAX);
+        result = vkAcquireNextImageKHR(device, m_VkSwapchain, UINT16_MAX,
                                        m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE,
                                        &m_ImageIndex);
+        if (result != VK_SUCCESS)
+        {
+            FOO_ENGINE_ERROR("Result is not succes");
+        }
         if (result == VK_ERROR_OUT_OF_DATE_KHR)
         {
             ReCreate();
@@ -327,8 +285,6 @@ namespace ENGINE_NAMESPACE
     {
         auto logicalVkDev = m_wpRenderDevice->GetVkDevice();
         auto& lDevice     = m_wpRenderDevice->GetLogicalDevice();
-        m_SwapchainImagesInitialized.resize(2, false);
-        m_ImageAcquiredFenceSubmitted.resize(2, false);
 
         uint32_t imageCount = m_Desc.BufferCount;
 
@@ -414,6 +370,7 @@ namespace ENGINE_NAMESPACE
         viewInfo.subresourceRange.layerCount     = 1;
 
         m_DepthImageView = lDevice->CreateImageView(viewInfo);
+        m_FrameBuffers.resize(m_Desc.BufferCount);
 
         assert(err == VK_SUCCESS);
     }
@@ -423,13 +380,10 @@ namespace ENGINE_NAMESPACE
         const auto& LogicalDevice = m_wpRenderDevice->GetLogicalDevice();
         for (size_t i = 0; i < m_InFlightFences.size(); ++i)
         {
-            if (m_ImageAcquiredFenceSubmitted[i])
+            VkFence vkFence = m_InFlightFences[i];
+            if (LogicalDevice->GetFenceStatus(vkFence) == VK_NOT_READY)
             {
-                VkFence vkFence = m_InFlightFences[i];
-                if (LogicalDevice->GetFenceStatus(vkFence) == VK_NOT_READY)
-                {
-                    LogicalDevice->WaitForFences(1, &vkFence, VK_TRUE, UINT64_MAX);
-                }
+                LogicalDevice->WaitForFences(1, &vkFence, VK_TRUE, UINT64_MAX);
             }
         }
     }
@@ -503,16 +457,12 @@ namespace ENGINE_NAMESPACE
             // pDeviceContext->Flush();
             // bool renderTargetsReset = false;
         }
-        pDeviceContext->IdleGPU();
+        m_wpRenderDevice->IdleGPU();
         WaitForImageAcquiredFences();
-
-        m_SwapchainImagesInitialized.clear();
-        m_ImageAcquiredFenceSubmitted.clear();
 
         m_ImageAvailableSemaphores.clear();
         m_RenderFinishedSemaphores.clear();
         m_InFlightFences.clear();
-        m_SemaphoreIndex = 0;
 
         if (destroyVkSwapchain)
         {

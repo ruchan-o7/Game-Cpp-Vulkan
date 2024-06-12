@@ -20,14 +20,8 @@ namespace FooGame
 
     struct Foo : public ScriptableEntity
     {
-            void OnCreate() override
-            {
-                std::cout << "Script Created " << std::endl;
-            }
-            void OnDestroy() override
-            {
-                std::cout << "Script Destroy " << std::endl;
-            }
+            void OnCreate() override { std::cout << "Script Created " << std::endl; }
+            void OnDestroy() override { std::cout << "Script Destroy " << std::endl; }
             void Hello()
             {
                 if (index <= 10)
@@ -43,13 +37,6 @@ namespace FooGame
     {
         auto e = CreateEntity();
         glm::mat4{1.0f};
-        // auto model = LoadModel(MODEL_PATH);
-        // model->GetMeshes()[0].SetTexture(
-        //     AssetLoader::LoadFromFilePtr(MODEL_TEXTURE));
-        // auto& comp = e.AddComponent<MeshRendererComponent>(std::move(model));
-        // e.AddComponent<ScriptComponent>().Bind<Foo>();
-        // Renderer3D::SubmitModel(comp.PtrModel.get());
-        // auto transform = comp.PtrModel->Transform;
     }
 
     Scene::~Scene()
@@ -57,9 +44,8 @@ namespace FooGame
     }
 
     template <typename... Component>
-    static void CopyComponent(
-        entt::registry& dst, entt::registry& src,
-        const std::unordered_map<UUID, entt::entity>& enttMap)
+    static void CopyComponent(entt::registry& dst, entt::registry& src,
+                              const std::unordered_map<UUID, entt::entity>& enttMap)
     {
         (
             [&]()
@@ -67,8 +53,7 @@ namespace FooGame
                 auto view = src.view<Component>();
                 for (auto srcEntity : view)
                 {
-                    entt::entity dstEntity =
-                        enttMap.at(src.get<IDComponent>(srcEntity).ID);
+                    entt::entity dstEntity = enttMap.at(src.get<IDComponent>(srcEntity).ID);
 
                     auto& srcComponent = src.get<Component>(srcEntity);
                     dst.emplace_or_replace<Component>(dstEntity, srcComponent);
@@ -78,9 +63,9 @@ namespace FooGame
     }
 
     template <typename... Component>
-    static void CopyComponent(
-        ComponentGroup<Component...>, entt::registry& dst, entt::registry& src,
-        const std::unordered_map<UUID, entt::entity>& enttMap)
+    static void CopyComponent(ComponentGroup<Component...>, entt::registry& dst,
+                              entt::registry& src,
+                              const std::unordered_map<UUID, entt::entity>& enttMap)
     {
         CopyComponent<Component...>(dst, src, enttMap);
     }
@@ -93,16 +78,14 @@ namespace FooGame
             {
                 if (src.HasComponent<Component>())
                 {
-                    dst.AddOrReplaceComponent<Component>(
-                        src.GetComponent<Component>());
+                    dst.AddOrReplaceComponent<Component>(src.GetComponent<Component>());
                 }
             }(),
             ...);
     }
 
     template <typename... Component>
-    static void CopyComponentIfExists(ComponentGroup<Component...>, Entity dst,
-                                      Entity src)
+    static void CopyComponentIfExists(ComponentGroup<Component...>, Entity dst, Entity src)
     {
         CopyComponentIfExists<Component...>(dst, src);
     }
@@ -129,8 +112,7 @@ namespace FooGame
         }
 
         // Copy components (except IDComponent and TagComponent)
-        CopyComponent(AllComponents{}, dstSceneRegistry, srcSceneRegistry,
-                      enttMap);
+        CopyComponent(AllComponents{}, dstSceneRegistry, srcSceneRegistry, enttMap);
 
         return newScene;
     }
@@ -207,17 +189,17 @@ namespace FooGame
 
     void Scene::RenderScene3D(PerspectiveCamera* camera)
     {
-        camera->RecalculateViewMatrix();
-        Renderer3D::BeginScene(*camera);
-        m_Registry.view<TransformComponent, MeshRendererComponent>().each(
-            [=](auto transform, auto& comp)
-            {
-                for (auto& id : comp.PtrModel->GetIds())
-                {
-                    Renderer3D::DrawModel(id, transform.GetTransform());
-                }
-            });
-        Renderer3D::EndScene();
+        // camera->RecalculateViewMatrix();
+        // Renderer3D::BeginScene(*camera);
+        // m_Registry.view<TransformComponent, MeshRendererComponent>().each(
+        //     [=](auto transform, auto& comp)
+        //     {
+        //         for (auto& id : comp.PtrModel->GetIds())
+        //         {
+        //             Renderer3D::DrawModel(id, transform.GetTransform());
+        //         }
+        //     });
+        // Renderer3D::EndScene();
     }
     void Scene::RenderScene2D(OrthographicCamera* camera)
     {
@@ -262,25 +244,22 @@ namespace FooGame
     }
 
     template <>
-    void Scene::OnComponentAdded<IDComponent>(Entity entity,
-                                              IDComponent& component)
+    void Scene::OnComponentAdded<IDComponent>(Entity entity, IDComponent& component)
     {
     }
 
     template <>
-    void Scene::OnComponentAdded<TransformComponent>(
-        Entity entity, TransformComponent& component)
+    void Scene::OnComponentAdded<TransformComponent>(Entity entity, TransformComponent& component)
     {
     }
 
     template <>
-    void Scene::OnComponentAdded<ScriptComponent>(Entity entity,
-                                                  ScriptComponent& component)
+    void Scene::OnComponentAdded<ScriptComponent>(Entity entity, ScriptComponent& component)
     {
     }
     template <>
-    void Scene::OnComponentAdded<MeshRendererComponent>(
-        Entity entity, MeshRendererComponent& component)
+    void Scene::OnComponentAdded<MeshRendererComponent>(Entity entity,
+                                                        MeshRendererComponent& component)
     {
     }
     std::unique_ptr<Scene> LoadSceneFromJson(std::ifstream& stream)

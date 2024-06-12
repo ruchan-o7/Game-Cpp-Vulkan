@@ -37,7 +37,6 @@ namespace ENGINE_NAMESPACE
             ~VulkanSwapchain();
 
         public:
-            void Present(uint32_t syncInterval, VkCommandBuffer& cmd);
             void Resize(uint32_t newWidth, uint32_t newHeight);
             VkSurfaceKHR GetVkSurface() const { return m_VkSurface; }
             VkSwapchainKHR GetVkSwapchain() const { return m_VkSwapchain; }
@@ -57,7 +56,6 @@ namespace ENGINE_NAMESPACE
             void CreateSurface();
             void CreateVkSwapchain();
             void InitBuffersAndViews();
-            // VkResult AcquireNextImage(VulkanDeviceContext* pDeviceContext);
             void RecreateVkSwapchain(VulkanDeviceContext* pDeviceContext);
             void WaitForImageAcquiredFences();
             void ReleaseSwapchainResources(VulkanDeviceContext* pDeviceContext,
@@ -78,22 +76,17 @@ namespace ENGINE_NAMESPACE
             std::vector<VkSemaphore> m_RenderFinishedSemaphores;
             std::vector<VkFence> m_InFlightFences;
 
-            std::vector<bool> m_SwapchainImagesInitialized;
-            std::vector<bool> m_ImageAcquiredFenceSubmitted;
-
             std::vector<VkImage> m_SwapchainImages;
             std::vector<ImageViewWrapper> m_SwapchainImageViews;
+
+            std::vector<FramebufferWrapper> m_FrameBuffers;
 
             ImageWrapper m_DepthImage;
             ImageViewWrapper m_DepthImageView;
             DeviceMemoryWrapper m_DepthImageMem;
 
-            // std::vector<FramebufferWrapper> m_FrameBuffers;
-
-            uint32_t m_SemaphoreIndex = 0;
-            uint32_t m_CurrentFrame   = 0;
-            uint32_t m_ImageIndex     = 0;
-            uint32_t m_SyncInterval   = 0;
+            uint32_t m_CurrentFrame = 0;
+            uint32_t m_ImageIndex   = 0;
 
             bool m_IsMinimized  = false;
             bool m_VsyncEnabled = true;
