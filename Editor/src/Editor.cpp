@@ -2,7 +2,7 @@
 #include <Engine.h>
 #include <iostream>
 #include <nlohmann/json.hpp>
-#include "Core/EditorLayer.h"
+#include "Layer/EditorLayer.h"
 #include <Log.h>
 namespace FooGame
 {
@@ -39,7 +39,7 @@ namespace FooGame
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 continue;
             }
-
+            Backend::BeginDrawing();
             for (auto& l : *m_LayerStack)
             {
                 l->OnUpdate(0.2f);

@@ -1,8 +1,8 @@
 #pragma once
 #include <Engine.h>
-#include "Core/Layer.h"
+#include "Layer/Layer.h"
+#include "Layer/LayerStack.h"
 #include "Core/CommandLineArgs.h"
-#include "Core/LayerStack.h"
 namespace FooGame
 {
     class Window;

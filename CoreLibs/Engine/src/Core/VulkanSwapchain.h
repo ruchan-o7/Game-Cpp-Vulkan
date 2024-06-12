@@ -11,6 +11,12 @@ namespace ENGINE_NAMESPACE
 {
     class VulkanDeviceContext;
     class RenderDevice;
+    struct ImageAcquireResult
+    {
+            VkResult Result;
+            uint32_t ImageIndex;
+    };
+
     struct SwapchainDescription
     {
             uint32_t Width, Height;
@@ -39,20 +45,19 @@ namespace ENGINE_NAMESPACE
             VkImageView GetImageView(int index) const { return m_SwapchainImageViews[index]; }
             VkImageView GetDepthImageView() const { return m_DepthImageView; }
             VkExtent2D GetExtent() const { return {m_Desc.Width, m_Desc.Height}; }
-            uint32_t GetBackBufferIndex() const { return m_BackBufferIndex; }
-            void ResetFences(uint32_t index);
+            uint32_t GetBackBufferIndex() const { return m_CurrentFrame; }
 
-            VkResult QueuePresent(VkQueue presentQueue, uint32_t currentFrame);
+            ImageAcquireResult QueuePresent(VkQueue presentQueue);
             VkResult QueueSubmit(VkQueue graphicsQueue, uint32_t currentFrame,
                                  VkCommandBuffer& commandBuffer);
-            VkResult AcquireNextImage(uint32_t* imageIndex, uint32_t currentFrame);
+            ImageAcquireResult AcquireNextImage();
             void ReCreate();
 
         private:
             void CreateSurface();
             void CreateVkSwapchain();
             void InitBuffersAndViews();
-            VkResult AcquireNextImage(VulkanDeviceContext* pDeviceContext);
+            // VkResult AcquireNextImage(VulkanDeviceContext* pDeviceContext);
             void RecreateVkSwapchain(VulkanDeviceContext* pDeviceContext);
             void WaitForImageAcquiredFences();
             void ReleaseSwapchainResources(VulkanDeviceContext* pDeviceContext,
@@ -85,9 +90,10 @@ namespace ENGINE_NAMESPACE
 
             // std::vector<FramebufferWrapper> m_FrameBuffers;
 
-            uint32_t m_SemaphoreIndex  = 0;
-            uint32_t m_BackBufferIndex = 0;
-            uint32_t m_SyncInterval    = 0;
+            uint32_t m_SemaphoreIndex = 0;
+            uint32_t m_CurrentFrame   = 0;
+            uint32_t m_ImageIndex     = 0;
+            uint32_t m_SyncInterval   = 0;
 
             bool m_IsMinimized  = false;
             bool m_VsyncEnabled = true;

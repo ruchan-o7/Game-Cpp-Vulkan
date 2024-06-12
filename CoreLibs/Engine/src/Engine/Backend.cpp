@@ -212,8 +212,41 @@ namespace FooGame
 
                 vkDestroyDescriptorPool(d, g_ImguiPool, nullptr);
             });
+    }
 
-        BeginDrawing_();
+    void Backend::BeginDrawing()
+    {
+        auto res = bContext.pSwapchain->AcquireNextImage();
+        if (res.Result != VK_SUCCESS)
+        {
+            FOO_ENGINE_ERROR("Failed to acquire next image");
+        }
+        frameData.imageIndex = res.ImageIndex;
+        auto cb              = GetCurrentCommandbuffer();
+
+        vkResetCommandBuffer(cb, 0);
+        VkCommandBufferBeginInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        auto err   = vkBeginCommandBuffer(cb, &info);
+
+        VkRenderPassBeginInfo renderPassInfo{};
+        renderPassInfo.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass        = bContext.pRenderPass->GetRenderPass();
+        renderPassInfo.framebuffer       = bContext.FrameBuffers[frameData.imageIndex];
+        renderPassInfo.renderArea.offset = {0, 0};
+        renderPassInfo.renderArea.extent = bContext.pSwapchain->GetExtent();
+
+        VkClearValue clearColor[2]     = {};
+        clearColor[0]                  = {0.2f, 0.3f, 0.1f, 1.0f};
+        clearColor[1]                  = {1.0f, 0};
+        renderPassInfo.clearValueCount = ARRAY_COUNT(clearColor);
+        renderPassInfo.pClearValues    = clearColor;
+
+        vkCmdBeginRenderPass(cb, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
     }
     Backend::~Backend()
     {
@@ -314,20 +347,6 @@ namespace FooGame
 
         vkCmdBeginRenderPass(cb, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
-    void Backend::BeginDrawing_()
-    {
-        auto cb = GetCurrentCommandbuffer();
-        vkResetCommandBuffer(cb, 0);
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-        VK_CALL(vkBeginCommandBuffer(cb, &beginInfo));
-        BeginRenderpass();
-
-        ImGui_ImplVulkan_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-    }
     VkCommandBuffer Backend::GetCurrentCommandbuffer()
     {
         return bContext.commandBuffers[frameData.currentFrame];
@@ -342,26 +361,18 @@ namespace FooGame
         VkResult res;
         res = bContext.pSwapchain->QueueSubmit(bContext.pRenderDevice->GetGraphicsQueue(),
                                                frameData.currentFrame, cb);
+
         if (res != VK_SUCCESS)
         {
             FOO_ENGINE_ERROR("Failed to submit draw command buffer");
         }
 
-        res = bContext.pSwapchain->QueuePresent(bContext.pRenderDevice->GetGraphicsQueue(),
-                                                frameData.currentFrame);
-        if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR)
-        {
-            bContext.pSwapchain->ReCreate();
-        }
-        else if (res != VK_SUCCESS)
+        auto result = bContext.pSwapchain->QueuePresent(bContext.pRenderDevice->GetGraphicsQueue());
+        if (result.Result != VK_SUCCESS)
         {
             FOO_ENGINE_ERROR("Failed to present swap chain");
         }
-
-        frameData.currentFrame = (frameData.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
-        bContext.pSwapchain->AcquireNextImage(&frameData.imageIndex, frameData.currentFrame);
-        BeginDrawing_();
+        frameData.currentFrame = result.ImageIndex;
     }
     void Backend::InitImgui()
     {

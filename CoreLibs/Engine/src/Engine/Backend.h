@@ -36,9 +36,9 @@ namespace FooGame
             static void TransitionImageLayout(class VulkanImage* image, VkFormat format,
                                               VkImageLayout oldLayout, VkImageLayout newLayout);
             static void CopyBufferToImage(VulkanBuffer& source, VulkanTexture& destination);
+            static void BeginDrawing();
 
         private:
-            static void BeginDrawing_();
             static void Submit();
             static void InitImgui();
     };

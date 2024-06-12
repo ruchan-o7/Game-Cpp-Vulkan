@@ -216,20 +216,22 @@ namespace FooGame
     }
     void Renderer3D::SubmitMesh(Mesh* mesh)
     {
+        size_t vertexSize = sizeof(mesh->m_Vertices[0])*mesh->m_Vertices.size();
         VulkanBuffer::BuffDesc vInfo{};
         vInfo.pRenderDevice   = Backend::GetRenderDevice();
         vInfo.BufferData.Data = mesh->m_Vertices.data();
-        vInfo.BufferData.Size = mesh->m_Vertices.size();
+        vInfo.BufferData.Size = vertexSize;
         vInfo.Name            = "Mesh vb";
         auto vb               = VulkanBuffer::CreateVertexBuffer(vInfo);
 
         std::unique_ptr<VulkanBuffer> ib;
         if (mesh->m_Indices.size() != 0)
         {
+        size_t indicesSize = sizeof(mesh->m_Indices[0])*mesh->m_Indices.size();
             VulkanBuffer::BuffDesc iInfo{};
             iInfo.pRenderDevice   = Backend::GetRenderDevice();
             iInfo.BufferData.Data = mesh->m_Indices.data();
-            iInfo.BufferData.Size = mesh->m_Indices.size();
+            iInfo.BufferData.Size = indicesSize;//mesh->m_Indices.size();
             iInfo.Name            = "Mesh ib";
             ib                    = VulkanBuffer::CreateIndexBuffer(iInfo);
         }

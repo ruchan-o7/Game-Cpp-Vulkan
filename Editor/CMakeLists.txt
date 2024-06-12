@@ -4,14 +4,12 @@ project(Editor
 
 message("----------")
 message("Configuring ${PROJECT_NAME}")
-
+set(LAYER_SOURCES 
+	"src/Layer/EditorLayer.cpp"
+	"src/Layer/Layer.cpp"
+	"src/Layer/LayerStack.cpp"
+)
 set(EDITOR_SOURCES
-	"src/Core/LayerStack.cpp"
-	"src/Core/LayerStack.h"
-	"src/Core/EditorLayer.h"
-	"src/Core/EditorLayer.cpp"
-	"src/Core/Layer.h"
-	"src/Core/Layer.cpp"
 	"src/Editor.h"
 	"src/Editor.cpp"
 	"src/EditorScene.h"
@@ -20,7 +18,7 @@ set(EDITOR_SOURCES
 	"src/EditorSceneDeserializer.cpp"
 	"src/main.cpp"
 )
-add_executable("${PROJECT_NAME}" "${EDITOR_SOURCES}")
+add_executable("${PROJECT_NAME}" "${EDITOR_SOURCES};${LAYER_SOURCES}")
 
 target_include_directories("${PROJECT_NAME}" PUBLIC
 	"${ENTT_INCLUDE_DIR}"
