@@ -5,6 +5,7 @@
 #include "Types/DescriptorData.h"
 #include "Backend.h"
 #include <cstring>
+#include "Api.h"
 #include "VulkanCheckResult.h"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
@@ -20,9 +21,6 @@ namespace FooGame
             static const uint32_t MaxIndices  = MaxQuads * 6;
             struct Resources
             {
-                    // Buffer* VertexBuffer = nullptr;
-                    // Buffer* IndexBuffer  = nullptr;
-                    // std::vector<Buffer*> UniformBuffers;
                     VkDescriptorSet set[3];
                     DescriptorData descriptor;
             };

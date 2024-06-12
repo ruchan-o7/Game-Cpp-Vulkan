@@ -13,7 +13,7 @@
 #include "Api.h"
 #include "../Core/VulkanRenderpass.h"
 #include "Types/DeletionQueue.h"
-#include "src/Log.h"
+#include "spdlog/fmt/fmt.h"
 #include "vulkan/vulkan_core.h"
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -46,6 +46,7 @@ namespace FooGame
             SwapchainDescription sDesc{};
             std::vector<FramebufferWrapper> FrameBuffers;
             CommandPoolWrapper commandPool;
+            std::unique_ptr<vke::DescriptorAllocatorPool> DescriptorAllocatorPool;
             std::vector<VkCommandBuffer> commandBuffers;
     };
     BackendContext bContext{};
@@ -72,17 +73,12 @@ namespace FooGame
             abort();
         }
     }
+    ImGui_ImplVulkanH_Window g_MainWindowData;
+    static VkDescriptorPool g_ImguiPool = nullptr;
     VkRenderPass Backend::GetRenderPass()
     {
         return bContext.pRenderPass->GetRenderPass();
     }
-    VkFormat Backend::GetSwapchainImageFormat()
-    {
-        return bContext.pSwapchain->GetImageFormat();
-        // return comps.swapchain->GetImageFormat();
-    }
-    ImGui_ImplVulkanH_Window g_MainWindowData;
-    static VkDescriptorPool g_ImguiPool = nullptr;
     VkCommandBuffer Backend::BeginSingleTimeCommands()
     {
         VkCommandBufferAllocateInfo allocInfo{};
@@ -128,6 +124,12 @@ namespace FooGame
     RenderDevice* Backend::GetRenderDevice()
     {
         return bContext.pRenderDevice;
+    }
+    void RecreateFramebuffer()
+    {
+        bContext.FrameBuffers.resize(2);
+        bContext.pRenderDevice->CreateFramebuffer(bContext.pSwapchain, bContext.FrameBuffers.data(),
+                                                  bContext.pRenderPass);
     }
     void Backend::Init(Window& window)
     {
@@ -178,7 +180,7 @@ namespace FooGame
         desc.SubpassCount    = 1;
         desc.pSubpassDesc    = subpasses;
         bContext.pRenderDevice->CreateRenderPass(desc, &bContext.pRenderPass);
-
+        RecreateFramebuffer();
         bContext.FrameBuffers.resize(2);
         bContext.pRenderDevice->CreateFramebuffer(bContext.pSwapchain, bContext.FrameBuffers.data(),
                                                   bContext.pRenderPass);
@@ -196,6 +198,13 @@ namespace FooGame
         allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = (uint32_t)bContext.commandBuffers.size();
 
+        bContext.DescriptorAllocatorPool = std::unique_ptr<vke::DescriptorAllocatorPool>(
+            vke::DescriptorAllocatorPool::Create(bContext.pRenderDevice->GetVkDevice()));
+        bContext.DescriptorAllocatorPool->SetPoolSizeMultiplier(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                                2);
+        bContext.DescriptorAllocatorPool->SetPoolSizeMultiplier(VK_DESCRIPTOR_TYPE_SAMPLER, 2);
+        bContext.DescriptorAllocatorPool->SetPoolSizeMultiplier(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                                                                2);
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
             bContext.commandBuffers[i] = bContext.pRenderDevice->AllocateCommandBuffer(allocInfo);
@@ -217,7 +226,11 @@ namespace FooGame
     void Backend::BeginDrawing()
     {
         auto res = bContext.pSwapchain->AcquireNextImage();
-        if (res.Result != VK_SUCCESS)
+        if (res.Result == VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            RecreateFramebuffer();
+        }
+        else if (res.Result != VK_SUCCESS)
         {
             FOO_ENGINE_ERROR("Failed to acquire next image");
         }
@@ -248,10 +261,7 @@ namespace FooGame
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
     }
-    Backend::~Backend()
-    {
-        Shutdown();
-    }
+
     void Backend::CopyBufferToImage(VulkanBuffer& source, VulkanTexture& destination)
     {
         auto cmd = BeginSingleTimeCommands();
@@ -351,8 +361,15 @@ namespace FooGame
     {
         return bContext.commandBuffers[frameData.currentFrame];
     }
+
+    vke::DescriptorAllocatorHandle Backend::GetAllocatorHandle()
+    {
+        return bContext.DescriptorAllocatorPool->GetAllocator();
+    }
     void Backend::Submit()
     {
+        bContext.DescriptorAllocatorPool->GetAllocator();
+        bContext.DescriptorAllocatorPool->Flip();
         auto cb = GetCurrentCommandbuffer();
         ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cb);
@@ -368,7 +385,11 @@ namespace FooGame
         }
 
         auto result = bContext.pSwapchain->QueuePresent(bContext.pRenderDevice->GetGraphicsQueue());
-        if (result.Result != VK_SUCCESS)
+        if (result.Result == VK_ERROR_OUT_OF_DATE_KHR || result.Result == VK_SUBOPTIMAL_KHR)
+        {
+            RecreateFramebuffer();
+        }
+        else if (result.Result != VK_SUCCESS)
         {
             FOO_ENGINE_ERROR("Failed to present swap chain");
         }
@@ -430,8 +451,81 @@ namespace FooGame
         ImGui_ImplVulkan_Init(&init_info);
         ImGui_ImplVulkan_CreateFontsTexture();
     }
+    VkCommandPool Backend::GetCommandPool()
+    {
+        return bContext.commandPool;
+    }
+
+    void Backend::CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& info,
+                                            VkDescriptorSetLayout& layout)
+    {
+        VK_CALL(vkCreateDescriptorSetLayout(bContext.pRenderDevice->GetVkDevice(), &info, nullptr,
+                                            &layout));
+    }
+    void Backend::BindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, VkBuffer* buffer,
+                                    size_t* offsets)
+    {
+        vkCmdBindVertexBuffers(GetCurrentCommandbuffer(), firstBinding, bindingCount, buffer,
+                               offsets);
+    }
+    void Backend::BindIndexBuffers(VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType)
+    {
+        vkCmdBindIndexBuffer(GetCurrentCommandbuffer(), buffer, offset, indexType);
+    }
+    void Backend::DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
+                              int32_t vertexOffset, uint32_t firstInstance)
+    {
+        vkCmdDrawIndexed(GetCurrentCommandbuffer(), indexCount, instanceCount, firstIndex,
+                         vertexOffset, firstInstance);
+    }
+    void Backend::Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
+                       uint32_t firstInstance)
+    {
+        vkCmdDraw(GetCurrentCommandbuffer(), vertexCount, instanceCount, firstVertex,
+                  firstInstance);
+    }
+
+    void Backend::BindGraphicPipeline(const VkPipeline& pipeline)
+    {
+        vkCmdBindPipeline(GetCurrentCommandbuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    }
+    void Backend::SetViewport(const VkViewport& viewport)
+    {
+        vkCmdSetViewport(GetCurrentCommandbuffer(), 0, 1, &viewport);
+    }
+    void Backend::SetScissor(const VkRect2D& scissor)
+    {
+        vkCmdSetScissor(GetCurrentCommandbuffer(), 0, 1, &scissor);
+    }
+    void Backend::PushConstant(const VkPipelineLayout& layout, VkShaderStageFlags stage,
+                               uint32_t offset, uint32_t size, const void* data)
+    {
+        vkCmdPushConstants(GetCurrentCommandbuffer(), layout, stage, offset, size, data);
+    }
+    void Backend::UpdateDescriptorSets(int32_t descriptorWriteCount,
+                                       const VkWriteDescriptorSet* pDescriptorWrites,
+                                       int32_t descriptorCopyCount,
+                                       const VkCopyDescriptorSet* pDescriptorCopies)
+    {
+        vkUpdateDescriptorSets(bContext.pRenderDevice->GetVkDevice(), descriptorWriteCount,
+                               pDescriptorWrites, descriptorCopyCount, pDescriptorCopies);
+    }
+    void Backend::BindGraphicPipelineDescriptorSets(VkPipelineLayout layout, uint32_t firstSet,
+                                                    uint32_t descriptorSetCount,
+                                                    const VkDescriptorSet* pDescriptorSets,
+                                                    uint32_t dynamicOffsetCount,
+                                                    const uint32_t* pDynamicOffsets)
+    {
+        vkCmdBindDescriptorSets(GetCurrentCommandbuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, layout,
+                                firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount,
+                                pDynamicOffsets);
+    }
 
     void Backend::Shutdown()
     {
+    }
+    Backend::~Backend()
+    {
+        Shutdown();
     }
 }  // namespace FooGame

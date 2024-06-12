@@ -17,7 +17,7 @@
 #include "../Camera/Camera.h"
 #include <imgui.h>
 #include "Pipeline.h"
-#include "Descriptor/DescriptorAllocator.h"
+#include "vulkan/vulkan_core.h"
 #include <Log.h>
 namespace FooGame
 {
@@ -30,12 +30,6 @@ namespace FooGame
             glm::vec4 data;
             glm::mat4 renderMatrix;
     };
-    // struct MeshDrawData
-    // {
-    //         Buffer* VertexBuffer = nullptr;
-    //         Buffer* IndexBuffer  = nullptr;
-    //         Mesh* PtrMesh        = nullptr;
-    // };
 
     struct MeshDrawData2
     {
@@ -60,7 +54,7 @@ namespace FooGame
                     uint32_t FreeIndex                  = 0;
                     std::shared_ptr<Model> DefaultModel = nullptr;
                     DescriptorData descriptor;
-                    vke::DescriptorAllocatorPool* DescriptorAllocatorPool;
+                    // vke::DescriptorAllocatorPool* DescriptorAllocatorPool;
                     DeletionQueue deletionQueue;
             };
 
@@ -76,7 +70,7 @@ namespace FooGame
     struct RendererContext
     {
             std::vector<std::unique_ptr<VulkanBuffer>> buffers{MAX_FRAMES_IN_FLIGHT};
-            CommandPoolWrapper CommandPool;
+            // CommandPoolWrapper CommandPool;
             std::unique_ptr<VulkanPipeline> pGraphicPipeline;
     };
     RendererContext rContext{};
@@ -102,16 +96,6 @@ namespace FooGame
             rContext.buffers[i] = std::move(std::make_unique<VulkanBuffer>(desc));
             rContext.buffers[i]->MapMemory();
         }
-        s_Data.Res.DescriptorAllocatorPool = vke::DescriptorAllocatorPool::Create(device);
-        s_Data.Res.DescriptorAllocatorPool->SetPoolSizeMultiplier(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                                  MAX_FRAMES_IN_FLIGHT);
-        s_Data.Res.deletionQueue.PushFunction([&](VkDevice device)
-                                              { delete s_Data.Res.DescriptorAllocatorPool; });
-        VkCommandPoolCreateInfo poolInfo{};
-        poolInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        poolInfo.queueFamilyIndex = 0;
-        rContext.CommandPool      = pRenderDevice->GetLogicalDevice()->CreateCommandPool(poolInfo);
         {
             VkDescriptorSetLayoutBinding uboLayoutBinding{};
             uboLayoutBinding.binding            = 0;
@@ -130,21 +114,14 @@ namespace FooGame
             layoutInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
             layoutInfo.bindingCount = ARRAY_COUNT(bindings);
             layoutInfo.pBindings    = bindings;
+            Backend::CreateDescriptorSetLayout(layoutInfo, s_Data.Res.descriptor.SetLayout);
 
-            VK_CALL(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr,
-                                                &s_Data.Res.descriptor.SetLayout));
             s_Data.Res.deletionQueue.PushFunction(
                 [&](VkDevice device) {
                     vkDestroyDescriptorSetLayout(device, s_Data.Res.descriptor.SetLayout, nullptr);
                 });
         }
-        {
-            auto queue = pRenderDevice->GetGraphicsQueue();
 
-            // s_Data.Res.deletionQueue.PushFunction(
-            //     [&](VkDevice device) { AssetLoader::DestroyTexture(s_Data.api.DefaultTexture);
-            //     });
-        }
         {
             auto logicalDevice = pRenderDevice->GetLogicalDevice();
             Shader vert{
@@ -169,10 +146,6 @@ namespace FooGame
         }
     }
 
-    VkCommandPool Backend::GetCommandPool()
-    {
-        return rContext.CommandPool;
-    }
     void Renderer3D::SubmitModel(Model* model)
     {
         for (auto& mesh : model->GetMeshes())
@@ -189,8 +162,6 @@ namespace FooGame
     }
     void Renderer3D::EndDraw()
     {
-        s_Data.Res.DescriptorAllocatorPool->Flip();
-
         s_Data.FrameData.DrawCall    = 0;
         s_Data.FrameData.VertexCount = 0;
         s_Data.FrameData.IndexCount  = 0;
@@ -216,7 +187,7 @@ namespace FooGame
     }
     void Renderer3D::SubmitMesh(Mesh* mesh)
     {
-        size_t vertexSize = sizeof(mesh->m_Vertices[0])*mesh->m_Vertices.size();
+        size_t vertexSize = sizeof(mesh->m_Vertices[0]) * mesh->m_Vertices.size();
         VulkanBuffer::BuffDesc vInfo{};
         vInfo.pRenderDevice   = Backend::GetRenderDevice();
         vInfo.BufferData.Data = mesh->m_Vertices.data();
@@ -227,11 +198,11 @@ namespace FooGame
         std::unique_ptr<VulkanBuffer> ib;
         if (mesh->m_Indices.size() != 0)
         {
-        size_t indicesSize = sizeof(mesh->m_Indices[0])*mesh->m_Indices.size();
+            size_t indicesSize = sizeof(mesh->m_Indices[0]) * mesh->m_Indices.size();
             VulkanBuffer::BuffDesc iInfo{};
             iInfo.pRenderDevice   = Backend::GetRenderDevice();
             iInfo.BufferData.Data = mesh->m_Indices.data();
-            iInfo.BufferData.Size = indicesSize;//mesh->m_Indices.size();
+            iInfo.BufferData.Size = indicesSize;
             iInfo.Name            = "Mesh ib";
             ib                    = VulkanBuffer::CreateIndexBuffer(iInfo);
         }
@@ -243,15 +214,6 @@ namespace FooGame
     }
     void Renderer3D::ClearBuffers()
     {
-        // for (auto& [index, data] : s_Data.Res.MeshMap)
-        // {
-        //     data.VertexBuffer->Release();
-        //     if (data.IndexBuffer)
-        //     {
-        //         data.IndexBuffer->Release();
-        //     }
-        // }
-        // s_Data.Res.MeshMap.clear();
     }
 
     void Renderer3D::DrawModel(Model* model, const glm::mat4& transform)
@@ -276,22 +238,22 @@ namespace FooGame
             viewport.height   = extent.height;
             viewport.minDepth = 0.0f;
             viewport.maxDepth = 1.0f;
-            vkCmdSetViewport(cmd, 0, 1, &viewport);
+            Backend::SetViewport(viewport);
             VkRect2D scissor{
                 {                                    0,                                      0},
                 {static_cast<uint32_t>(viewport.width), static_cast<uint32_t>(viewport.height)}
             };
-            vkCmdSetScissor(cmd, 0, 1, &scissor);
+            Backend::SetScissor(scissor);
 
             VkBuffer vertexBuffers[] = {modelRes.VertexBuffer->GetBuffer()};
             VkDeviceSize offsets[]   = {0};
             MeshPushConstants push{};
             push.renderMatrix = transform;
-            auto allocator    = s_Data.Res.DescriptorAllocatorPool->GetAllocator();
+            auto allocator    = Backend::GetAllocatorHandle();
             auto& currentSet  = *modelRes.PtrMesh->GetSet(currentFrame);
             allocator.Allocate(modelRes.PtrMesh->GetLayout(), currentSet);
-            vkCmdPushConstants(cmd, rContext.pGraphicPipeline->GetLayout(),
-                               VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants), &push);
+            Backend::PushConstant(rContext.pGraphicPipeline->GetLayout(),
+                                  VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants), &push);
             {
                 VkDescriptorBufferInfo descriptorBufferInfo{};
                 descriptorBufferInfo.buffer = rContext.buffers[currentFrame]->GetBuffer();
@@ -320,184 +282,31 @@ namespace FooGame
                     imageSet.pImageInfo      = &image->DescriptorInfo;
                     descriptorWrites.push_back(imageSet);
                 }
-                vkUpdateDescriptorSets(device, descriptorWrites.size(), descriptorWrites.data(), 0,
-                                       nullptr);
+                Backend::UpdateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0,
+                                              nullptr);
                 VkDescriptorSet sets[] = {currentSet};
-                vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                        rContext.pGraphicPipeline->GetLayout(), 0, 1, sets, 0,
-                                        nullptr);
+                Backend::BindGraphicPipelineDescriptorSets(rContext.pGraphicPipeline->GetLayout(),
+                                                           0, 1, sets, 0, nullptr);
             }
-            vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
+            Backend::BindVertexBuffers(0, 1, vertexBuffers, offsets);
             if (modelRes.IndexBuffer)
             {
-                vkCmdBindIndexBuffer(cmd, modelRes.IndexBuffer->GetBuffer(), 0,
-                                     VK_INDEX_TYPE_UINT32);
-                vkCmdDrawIndexed(cmd, modelRes.PtrMesh->m_Indices.size(), 1, 0, 0, 0);
+                Backend::BindIndexBuffers(modelRes.IndexBuffer->GetBuffer(), 0,
+                                          VK_INDEX_TYPE_UINT32);
+                Backend::DrawIndexed(modelRes.PtrMesh->m_Indices.size(), 1, 0, 0, 0);
             }
             else
             {
-                vkCmdDraw(cmd, mesh.m_Vertices.size(), 1, 0, 0);
+                Backend::Draw(mesh.m_Vertices.size(), 1, 0, 0);
             }
-            // BindDescriptorSets(cmd, *modelRes.PtrMesh,
-            //                    s_Data.api.GraphicsPipeline);
             s_Data.FrameData.DrawCall++;
             s_Data.FrameData.VertexCount += modelRes.PtrMesh->m_Vertices.size();
             s_Data.FrameData.IndexCount  += modelRes.PtrMesh->m_Indices.size();
         }
     }
-    void Renderer3D::DrawModel(uint32_t id, const glm::mat4& transform)
-    {
-        auto currentFrame = Backend::GetCurrentFrame();
-        auto cmd          = Backend::GetCurrentCommandbuffer();
-        auto extent       = Backend::GetSwapchainExtent();
-
-        BindPipeline(cmd);
-
-        auto& modelRes = s_Data.Res.MeshMap2[id];
-
-        Api::SetViewportAndScissors(cmd, extent.width, extent.height);
-        VkBuffer vertexBuffers[] = {modelRes.VertexBuffer->GetBuffer()};
-        VkDeviceSize offsets[]   = {0};
-        MeshPushConstants push{};
-        push.renderMatrix = transform;
-        auto allocator    = s_Data.Res.DescriptorAllocatorPool->GetAllocator();
-        allocator.Allocate(modelRes.PtrMesh->GetLayout(), *modelRes.PtrMesh->GetSet(currentFrame));
-        vkCmdPushConstants(cmd, rContext.pGraphicPipeline->GetLayout(), VK_SHADER_STAGE_VERTEX_BIT,
-                           0, sizeof(MeshPushConstants), &push);
-        vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
-        if (modelRes.IndexBuffer)
-        {
-            vkCmdBindIndexBuffer(cmd, modelRes.IndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
-        }
-        BindDescriptorSets(cmd, *modelRes.PtrMesh, rContext.pGraphicPipeline->GetLayout());
-        vkCmdDrawIndexed(cmd, modelRes.PtrMesh->m_Indices.size(), 1, 0, 0, 0);
-        s_Data.FrameData.DrawCall++;
-        s_Data.FrameData.VertexCount += modelRes.PtrMesh->m_Vertices.size();
-        s_Data.FrameData.IndexCount  += modelRes.PtrMesh->m_Indices.size();
-    }
-    // void Renderer3D::DrawMesh(uint32_t id, const glm::mat4& transform, const Texture2D& texture)
-    // {
-    //     auto currentFrame = Backend::GetCurrentFrame();
-    //     auto cmd          = Backend::GetCurrentCommandbuffer();
-    //
-    //     BindPipeline(cmd);
-    //
-    //     auto& modelRes = s_Data.Res.MeshMap[id];
-    //
-    //     auto extent = Backend::GetSwapchainExtent();
-    //     Api::SetViewportAndScissors(cmd, extent.width, extent.height);
-    //     VkBuffer vertexBuffers[] = {*modelRes.VertexBuffer->GetBuffer()};
-    //     VkDeviceSize offsets[]   = {0};
-    //     MeshPushConstants push{};
-    //     push.renderMatrix = transform;
-    //     auto allocator    = s_Data.Res.DescriptorAllocatorPool->GetAllocator();
-    //     allocator.Allocate(modelRes.PtrMesh->GetLayout(),
-    //                        modelRes.PtrMesh->m_DescriptorSets[currentFrame]);
-    //     vkCmdPushConstants(cmd, rContext.pGraphicPipeline->GetLayout(),
-    //     VK_SHADER_STAGE_VERTEX_BIT,
-    //                        0, sizeof(MeshPushConstants), &push);
-    //     vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
-    //     if (modelRes.IndexBuffer)
-    //     {
-    //         vkCmdBindIndexBuffer(cmd, *modelRes.IndexBuffer->GetBuffer(), 0,
-    //         VK_INDEX_TYPE_UINT32);
-    //     }
-    //     BindDescriptorSets(cmd, texture, *modelRes.PtrMesh->GetSet(currentFrame),
-    //                        rContext.pGraphicPipeline->GetLayout());
-    //     if (modelRes.IndexBuffer)
-    //     {
-    //         vkCmdDrawIndexed(cmd, modelRes.PtrMesh->m_Indices.size(), 1, 0, 0, 0);
-    //     }
-    //     else
-    //     {
-    //         vkCmdDraw(cmd, modelRes.PtrMesh->m_Vertices.size(), 1, 0, 0);
-    //     }
-    //     s_Data.FrameData.DrawCall++;
-    //     s_Data.FrameData.VertexCount += modelRes.PtrMesh->m_Vertices.size();
-    //     s_Data.FrameData.IndexCount  += modelRes.PtrMesh->m_Indices.size();
-    // }
-    // void Renderer3D::BindDescriptorSets(VkCommandBuffer cmd, const Texture2D& texture,
-    //                                     VkDescriptorSet& set, VkPipelineLayout pipeline,
-    //                                     VkPipelineBindPoint bindPoint, uint32_t firstSet,
-    //                                     uint32_t dSetCount, uint32_t dynamicOffsetCount,
-    //                                     uint32_t* dynamicOffsets)
-    // {
-    //     auto currentFrame = Backend::GetCurrentFrame();
-    //     VkDescriptorBufferInfo bufferInfo{};
-    //     bufferInfo.buffer = rContext.buffers[currentFrame]->GetBuffer();
-    //     bufferInfo.offset = 0;
-    //     bufferInfo.range  = sizeof(UniformBufferObject);
-    //
-    //     VkWriteDescriptorSet descriptorWrites[2] = {};
-    //     descriptorWrites[0].sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    //     descriptorWrites[0].dstSet               = set;
-    //     descriptorWrites[0].dstBinding           = 0;
-    //     descriptorWrites[0].dstArrayElement      = 0;
-    //     descriptorWrites[0].descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    //     descriptorWrites[0].descriptorCount      = 1;
-    //     descriptorWrites[0].pBufferInfo          = &bufferInfo;
-    //
-    //     VkDescriptorImageInfo imageInfo{};
-    //     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    //     imageInfo.imageView   = texture.ImageView;
-    //     imageInfo.sampler     = texture.Sampler;
-    //
-    //     descriptorWrites[1].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    //     descriptorWrites[1].dstSet          = set;
-    //     descriptorWrites[1].dstBinding      = 1;
-    //     descriptorWrites[1].dstArrayElement = 0;
-    //     descriptorWrites[1].descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    //     descriptorWrites[1].descriptorCount = 1;
-    //     descriptorWrites[1].pImageInfo      = &texture.Descriptor;
-    //
-    //     vkUpdateDescriptorSets(Api::GetVkDevice(), ARRAY_COUNT(descriptorWrites),
-    //     descriptorWrites,
-    //                            0, nullptr);
-    //     VkDescriptorSet sets[] = {set};
-    //     vkCmdBindDescriptorSets(cmd, bindPoint, pipeline, 0, 1, sets, 0, nullptr);
-    // }
-    void Renderer3D::BindDescriptorSets(VkCommandBuffer cmd, Mesh& mesh, VkPipelineLayout pipeline,
-                                        VkPipelineBindPoint bindPoint, uint32_t firstSet,
-                                        uint32_t dSetCount, uint32_t dynamicOffsetCount,
-                                        uint32_t* dynamicOffsets)
-    {
-        auto currentFrame = Backend::GetCurrentFrame();
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = rContext.buffers[currentFrame]->GetBuffer();
-        bufferInfo.offset = 0;
-        bufferInfo.range  = sizeof(UniformBufferObject);
-
-        VkWriteDescriptorSet descriptorWrites[2] = {};
-        descriptorWrites[0].sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[0].dstSet               = *mesh.GetSet(currentFrame);
-        descriptorWrites[0].dstBinding           = 0;
-        descriptorWrites[0].dstArrayElement      = 0;
-        descriptorWrites[0].descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrites[0].descriptorCount      = 1;
-        descriptorWrites[0].pBufferInfo          = &bufferInfo;
-
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        // imageInfo.imageView   = mesh.m_Texture->ImageView;
-        // imageInfo.sampler     = mesh.m_Texture->Sampler;
-
-        descriptorWrites[1].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[1].dstSet          = *mesh.GetSet(currentFrame);
-        descriptorWrites[1].dstBinding      = 1;
-        descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[1].descriptorCount = 1;
-        descriptorWrites[1].pImageInfo      = &imageInfo;
-
-        vkUpdateDescriptorSets(Api::GetVkDevice(), ARRAY_COUNT(descriptorWrites), descriptorWrites,
-                               0, nullptr);
-        vkCmdBindDescriptorSets(cmd, bindPoint, pipeline, 0, 1, mesh.GetSet(currentFrame), 0,
-                                nullptr);
-    }
     void Renderer3D::BindPipeline(VkCommandBuffer cmd)
     {
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          rContext.pGraphicPipeline->GetPipeline());
+        Backend::BindGraphicPipeline(rContext.pGraphicPipeline->GetPipeline());
     }
 
     void Renderer3D::Shutdown()
