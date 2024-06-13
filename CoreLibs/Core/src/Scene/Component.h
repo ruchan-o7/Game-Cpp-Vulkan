@@ -45,10 +45,10 @@ namespace FooGame
     };
     struct MeshRendererComponent
     {
-            Shared<Model> PtrModel;
+            std::string ModelName;
             MeshRendererComponent()                             = default;
             MeshRendererComponent(const MeshRendererComponent&) = default;
-            MeshRendererComponent(std::shared_ptr<Model> model) : PtrModel(model) {}
+            MeshRendererComponent(std::string name) : ModelName(name) {}
     };
     class ScriptableEntity;
 

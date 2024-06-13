@@ -7,13 +7,25 @@
 				"tag": "Viking"
 			},
 			"transformComponent": {
-				"translation": [ 0.0, 0.0, 0.0 ],
-				"rotation": [ 0.0, 0.0, 0.0 ],
-				"scale": [ 1.0, 1.0, 1.0 ]
+				"translation": [
+					0.0,
+					0.0,
+					0.0
+				],
+				"rotation": [
+					0.0,
+					0.0,
+					0.0
+				],
+				"scale": [
+					1.0,
+					1.0,
+					1.0
+				]
 			},
 			"meshComponent": {
-				"modelPath": "Models/viking_room.obj",
-				"diffuseTexture": "Textures/viking_room.png"
+				"modelPath": "Models\\viking_room.obj",
+				"diffuseTexture": "Textures\\viking_room.png"
 			}
 		}
 	]

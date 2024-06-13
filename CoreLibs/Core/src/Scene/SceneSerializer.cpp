@@ -4,7 +4,8 @@
 #include <fstream>
 #include <json.hpp>
 #include "Entity.h"
-#include "src/Scene/Component.h"
+#include "../Core/AssetManager.h"
+#include "../Scene/Component.h"
 namespace FooGame
 {
     using json = nlohmann::json;
@@ -14,9 +15,10 @@ namespace FooGame
     }
     void SceneSerializer::Serialize(const std::string& path)
     {
-        auto cwd = std::filesystem::current_path();
-        cwd.append(path);
-        auto sceneBasePath = std::filesystem::canonical(cwd);
+        auto cwd       = std::filesystem::current_path();
+        auto assetPath = cwd / "Assets";
+
+        auto sceneBasePath = cwd / path;
 
         std::ifstream is(sceneBasePath);
         json sceneJson;
@@ -68,7 +70,21 @@ namespace FooGame
                 auto meshComponent = entity["meshComponent"];
                 if (!meshComponent.empty())
                 {
-                    auto& mc = deserializedEntity.AddComponent<MeshRendererComponent>();
+                    auto& mc            = deserializedEntity.AddComponent<MeshRendererComponent>();
+                    auto modelPath      = std::filesystem::path(meshComponent["modelPath"]);
+                    auto diffuseTexture = std::filesystem::path(meshComponent["diffuseTexture"]);
+                    if (!diffuseTexture.empty())
+                    {
+                        auto p = (assetPath / diffuseTexture);
+                        AssetManager::LoadTexture(p.string(), p.filename().string());
+                    }
+                    auto modelExtension = modelPath.extension();
+                    if (modelExtension.string() == ".obj")
+                    {
+                        auto p = (assetPath / modelPath);
+                        AssetManager::LoadObjModel(p.string(), p.filename().string());
+                        mc.ModelName = p.filename().string();
+                    }
                 }
             }
         }

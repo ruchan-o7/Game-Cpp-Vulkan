@@ -6,6 +6,7 @@
 #include "glm/fwd.hpp"
 #include <memory>
 #include "../Engine/Engine/Renderer2D.h"
+#include "src/Engine/Engine/Renderer3D.h"
 #include <nlohmann/json.hpp>
 namespace FooGame
 {
@@ -187,19 +188,11 @@ namespace FooGame
         return {};
     }
 
-    void Scene::RenderScene3D(PerspectiveCamera* camera)
+    void Scene::RenderScene3D(Camera* camera)
     {
-        // camera->RecalculateViewMatrix();
-        // Renderer3D::BeginScene(*camera);
-        // m_Registry.view<TransformComponent, MeshRendererComponent>().each(
-        //     [=](auto transform, auto& comp)
-        //     {
-        //         for (auto& id : comp.PtrModel->GetIds())
-        //         {
-        //             Renderer3D::DrawModel(id, transform.GetTransform());
-        //         }
-        //     });
-        // Renderer3D::EndScene();
+        m_Registry.view<TransformComponent, MeshRendererComponent>().each(
+            [=](auto& transform, auto& comp)
+            { Renderer3D::DrawModel(comp.ModelName, transform.GetTransform()); });
     }
     void Scene::RenderScene2D(OrthographicCamera* camera)
     {

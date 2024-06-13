@@ -41,7 +41,7 @@ namespace FooGame
             {
                 return m_Registry.view<Components...>();
             }
-            void RenderScene3D(PerspectiveCamera* camera);
+            void RenderScene3D(Camera* camera);
             void RenderScene2D(OrthographicCamera* camera);
             void IMGUI();
 
