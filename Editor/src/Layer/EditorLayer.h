@@ -1,6 +1,6 @@
 #pragma once
-#include "EditorScene.h"
 #include "Layer.h"
+#include <Core.h>
 #include "../Core/CommandLineArgs.h"
 
 namespace FooGame
@@ -19,12 +19,12 @@ namespace FooGame
         private:
             PerspectiveCamera m_Camera;
             Camera m_Camera2;
-            std::unique_ptr<EditorScene> m_EditorScene;
+            std::unique_ptr<Scene> m_Scene;
             CommandLineArgs m_Args;
-            bool OnMouseMoved(MouseMovedEvent& event);
-            bool OnMousePressed(MouseButtonPressedEvent& event);
 
         private:
+            bool OnMouseMoved(MouseMovedEvent& event);
+            bool OnMousePressed(MouseButtonPressedEvent& event);
             void UpdateCamera(float ts);
             void DrawMeshUI();
             void DrawCameraUI();

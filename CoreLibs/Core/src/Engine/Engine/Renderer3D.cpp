@@ -17,6 +17,7 @@
 #include "../Camera/Camera.h"
 #include <imgui.h>
 #include "Pipeline.h"
+#include "src/Core/AssetManager.h"
 #include "vulkan/vulkan_core.h"
 #include <Log.h>
 namespace FooGame
@@ -146,6 +147,12 @@ namespace FooGame
         }
     }
 
+    void Renderer3D::SubmitModel(const std::string& name)
+    {
+        auto model = AssetManager::GetModel(name);
+        assert(model != nullptr);
+        SubmitModel(model.get());
+    }
     void Renderer3D::SubmitModel(Model* model)
     {
         for (auto& mesh : model->GetMeshes())
@@ -216,6 +223,12 @@ namespace FooGame
     {
     }
 
+    void Renderer3D::DrawModel(const std::string& name, const glm::mat4& transform)
+    {
+        auto model = AssetManager::GetModel(name);
+        assert(model != nullptr);
+        DrawModel(model.get(), transform);
+    }
     void Renderer3D::DrawModel(Model* model, const glm::mat4& transform)
     {
         auto currentFrame = Backend::GetCurrentFrame();

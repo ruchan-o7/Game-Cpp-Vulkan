@@ -88,7 +88,6 @@ namespace FooGame
         stageBuffer.MapMemory();
         stageBuffer.UpdateData(pixels, size);
         stageBuffer.UnMapMemory();
-        
 
         VulkanTexture::CreateInfo ci{};
         ci.pRenderDevice = pRenderDevice;
@@ -181,7 +180,7 @@ namespace FooGame
         tinygltf::TinyGLTF gltfContext;
         std::vector<Mesh> meshes;
         // std::vector<Texture2D> images;
-        std::vector<std::unique_ptr<VulkanTexture>> vulkanTextures;
+        std::vector<std::shared_ptr<VulkanTexture>> vulkanTextures;
         std::vector<uint32_t> textureIndices;
 
         if (!ReadFile(gltfContext, gltfInput, path, isGlb))
@@ -359,8 +358,8 @@ namespace FooGame
                 }
             }
         }
-        auto model            = std::make_unique<Model>(std::move(meshes));
-        model->Textures       = std::move(vulkanTextures);
+        auto model = std::make_unique<Model>(std::move(meshes));
+        // model->Textures       = vulkanTextures;
         model->textureIndices = textureIndices;
         return std::move(model);
     }

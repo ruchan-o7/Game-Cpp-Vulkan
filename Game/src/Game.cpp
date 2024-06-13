@@ -51,7 +51,7 @@ namespace FooGame
 
             for (auto& l : m_Scenes)
             {
-                l->RenderScene3D(&m_Camera);
+                // l->RenderScene3D(&m_Camera);
                 // l->OnRender();
                 l->IMGUI();
             }

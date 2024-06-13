@@ -19,7 +19,7 @@ namespace FooGame
 
             std::vector<Mesh> m_Meshes;
             // std::vector<Texture2D> images;
-            std::vector<std::unique_ptr<VulkanTexture>> Textures;
+            std::vector<std::shared_ptr<VulkanTexture>> Textures;
             std::vector<uint32_t> textureIndices;
             std::vector<uint32_t> m_Ids;
             uint32_t AssetId;

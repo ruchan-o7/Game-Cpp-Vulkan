@@ -1,92 +1,37 @@
-#include <vector>
-#include <Core.h>
 #include "EditorLayer.h"
 #include "glm/fwd.hpp"
 #include "imgui.h"
+#include "src/Engine/Engine/Renderer3D.h"
+#include "src/Scene/Component.h"
 #include "src/Scene/SceneSerializer.h"
+#include <memory>
 #include <Core.h>
 #include <Log.h>
 namespace FooGame
 {
 
 #define SCENE_JSON "Assets/Scenes/Prototype/scene.json"
-    EditorLayer::EditorLayer(const CommandLineArgs& args) : Layer("Editor Layer"), m_Args(args)
+    EditorLayer::EditorLayer(const CommandLineArgs& args)
+        : Layer("Editor Layer"), m_Args(args), m_Scene(std::make_unique<Scene>())
     {
         FOO_EDITOR_INFO("Editor layer Created");
     }
     void EditorLayer::OnAttach()
     {
         FOO_EDITOR_INFO("Reading scene data");
-#ifdef FOO_DEBUG
-        Scene* scene = new Scene();
-        SceneSerializer serializer(scene);
+        SceneSerializer serializer(m_Scene.get());
         serializer.Serialize("Assets/Scenes/Prototype2/Scene.json");
-        // EditorSceneDeserializer serializer;
-        // m_EditorScene = std::move(serializer.DeSerialize(SCENE_JSON));
-#else
-        if (m_Args.count > 1)
+
+        auto mv = m_Scene->GetAllEntitiesWith<MeshRendererComponent>().each();
+        for (auto [entity, comp] : mv)
         {
-            std::cout << m_Args.argv[1] << std::endl;
-            std::ifstream f{m_Args.argv[1]};
-            json data = json::parse(f);
-            f.close();
+            Renderer3D::SubmitModel(comp.ModelName);
         }
 
-#endif
-        size_t vertexSize = 0;
-        size_t indexSize  = 0;
-        FOO_EDITOR_INFO("Scene : {0}", m_EditorScene->Name);
-        FOO_EDITOR_INFO("Textures size : {0}", m_EditorScene->Textures.size());
-        FOO_EDITOR_INFO("Mesh size : {0}", m_EditorScene->MeshDatas.size());
-        for (int i = 0; i < m_EditorScene->MeshDatas.size(); i++)
-        {
-            auto& mData = m_EditorScene->MeshDatas[i];
-            for (const auto& mesh : mData.ModelPtr->GetMeshes())
-            {
-                vertexSize += mesh.m_Vertices.size() * sizeof(Vertex);
-                indexSize  += mesh.m_Indices.size() * sizeof(uint32_t);
-            }
-        }
-        FOO_EDITOR_INFO("Will allocate {0} of kbytes for vertices", (double)vertexSize / 1024.0);
-        FOO_EDITOR_INFO("Will allocate {0} of kbytes for indices", (double)indexSize / 1024.0);
-
-        struct MeshDrawAttributes
-        {
-                uint32_t VertexCountToDraw = 0;
-                uint32_t InstanceCount     = 0;
-                uint32_t FirstIndex        = 0;
-                uint32_t VertexOffset      = 0;
-                uint32_t FirstInstance     = 0;
-        };
-        size_t TotalBytesToAllocateVertex = 0;
-        size_t TotalVertexCount           = 0;
-        size_t TotalBytesToAllocateIndex  = 0;
-        std::vector<MeshDrawAttributes> meshDrawAttr;
-        size_t offset = 0;
-        for (size_t i = 0; i < m_EditorScene->MeshDatas.size(); i++)
-        {
-            auto& meshData = m_EditorScene->MeshDatas[i];
-            auto& meshes   = meshData.ModelPtr->GetMeshes();
-            for (size_t j = 0; j < meshes.size(); j++)
-            {
-                auto& mesh                  = meshes[j];
-                TotalVertexCount           += mesh.m_Vertices.size();
-                TotalBytesToAllocateVertex += sizeof(Vertex) * mesh.m_Vertices.size();
-                TotalBytesToAllocateIndex  += mesh.m_Indices.size();
-
-                MeshDrawAttributes attr{};
-                attr.VertexCountToDraw  = mesh.m_Vertices.size();
-                attr.InstanceCount      = 1;
-                attr.FirstIndex         = i + j;
-                attr.VertexOffset       = offset;
-                offset                 += attr.VertexCountToDraw;
-                meshDrawAttr.push_back(attr);
-            }
-        }
-        for (auto& meshData : m_EditorScene->MeshDatas)
-        {
-            Renderer3D::SubmitModel(meshData.ModelPtr.get());
-        }
+        // for (auto& meshData : m_EditorScene->MeshDatas)
+        // {
+        //     Renderer3D::SubmitModel(meshData.ModelPtr.get());
+        // }
         m_Camera2.setPerspective(60.0f, (float)1600.0f / (float)900.0f, 0.1f, 512.0f);
         m_Camera2.SetRotation(glm::vec3(-12.0f, 159.0f, 0.0f));
         m_Camera2.SetTranslatin(glm::vec3(0.0f, 0.5f, 0.5f));
@@ -119,62 +64,62 @@ namespace FooGame
     }
     void EditorLayer::DrawMeshUI()
     {
-        for (int i = 0; i < m_EditorScene->MeshDatas.size(); i++)
-        {
-            auto& mD = m_EditorScene->MeshDatas[i];
-            if (ImGui::TreeNode("Models", "%s", mD.ModelPtr->Name.c_str()))
-            {
-                ImGui::PushID(i);
-                if (ImGui::TreeNode("Position"))
-                {
-                    float pos[3] = {
-                        mD.Transform.Translation.x,
-                        mD.Transform.Translation.y,
-                        mD.Transform.Translation.z,
-                    };
-                    ImGui::DragFloat3("Position", pos, 0.005, -FLT_MAX, +FLT_MAX);
-                    ImGui::TreePop();
-                    mD.Transform.Translation = glm::vec3{
-                        pos[0],
-                        pos[1],
-                        pos[2],
-                    };
-                }
-                if (ImGui::TreeNode("Scale"))
-                {
-                    float scale[3] = {
-                        mD.Transform.Scale.x,
-                        mD.Transform.Scale.y,
-                        mD.Transform.Scale.z,
-                    };
-
-                    ImGui::DragFloat3("Scale", scale, 0.005, -FLT_MAX, +FLT_MAX);
-                    ImGui::TreePop();
-                    mD.Transform.Scale = glm::vec3{
-                        scale[0],
-                        scale[1],
-                        scale[2],
-                    };
-                }
-                if (ImGui::TreeNode("Rotation"))
-                {
-                    float rot[3] = {
-                        mD.Transform.Rotation.x,
-                        mD.Transform.Rotation.y,
-                        mD.Transform.Rotation.z,
-                    };
-                    ImGui::DragFloat3("Rotation", rot, 0.005, -FLT_MAX, +FLT_MAX);
-                    ImGui::TreePop();
-                    mD.Transform.Rotation = glm::vec3{
-                        rot[0],
-                        rot[1],
-                        rot[2],
-                    };
-                }
-                ImGui::PopID();
-                ImGui::TreePop();
-            }
-        }
+        // for (int i = 0; i < m_EditorScene->MeshDatas.size(); i++)
+        // {
+        //     auto& mD = m_EditorScene->MeshDatas[i];
+        //     if (ImGui::TreeNode("Models", "%s", mD.ModelPtr->Name.c_str()))
+        //     {
+        //         ImGui::PushID(i);
+        //         if (ImGui::TreeNode("Position"))
+        //         {
+        //             float pos[3] = {
+        //                 mD.Transform.Translation.x,
+        //                 mD.Transform.Translation.y,
+        //                 mD.Transform.Translation.z,
+        //             };
+        //             ImGui::DragFloat3("Position", pos, 0.005, -FLT_MAX, +FLT_MAX);
+        //             ImGui::TreePop();
+        //             mD.Transform.Translation = glm::vec3{
+        //                 pos[0],
+        //                 pos[1],
+        //                 pos[2],
+        //             };
+        //         }
+        //         if (ImGui::TreeNode("Scale"))
+        //         {
+        //             float scale[3] = {
+        //                 mD.Transform.Scale.x,
+        //                 mD.Transform.Scale.y,
+        //                 mD.Transform.Scale.z,
+        //             };
+        //
+        //             ImGui::DragFloat3("Scale", scale, 0.005, -FLT_MAX, +FLT_MAX);
+        //             ImGui::TreePop();
+        //             mD.Transform.Scale = glm::vec3{
+        //                 scale[0],
+        //                 scale[1],
+        //                 scale[2],
+        //             };
+        //         }
+        //         if (ImGui::TreeNode("Rotation"))
+        //         {
+        //             float rot[3] = {
+        //                 mD.Transform.Rotation.x,
+        //                 mD.Transform.Rotation.y,
+        //                 mD.Transform.Rotation.z,
+        //             };
+        //             ImGui::DragFloat3("Rotation", rot, 0.005, -FLT_MAX, +FLT_MAX);
+        //             ImGui::TreePop();
+        //             mD.Transform.Rotation = glm::vec3{
+        //                 rot[0],
+        //                 rot[1],
+        //                 rot[2],
+        //             };
+        //         }
+        //         ImGui::PopID();
+        //         ImGui::TreePop();
+        //     }
+        // }
     }
     void EditorLayer::DrawCameraUI()
     {
@@ -213,10 +158,12 @@ namespace FooGame
 
         Renderer3D::BeginDraw();
         Renderer3D::BeginScene(m_Camera2);
-        for (auto& meshData : m_EditorScene->MeshDatas)
-        {
-            Renderer3D::DrawModel(meshData.ModelPtr.get(), meshData.Transform());
-        }
+        m_Scene->OnUpdate(ts);
+        m_Scene->RenderScene3D(&m_Camera2);
+        // for (auto& meshData : m_EditorScene->MeshDatas)
+        // {
+        //     Renderer3D::DrawModel(meshData.ModelPtr.get(), meshData.Transform());
+        // }
         Renderer3D::EndScene();
         Renderer3D::EndDraw();
     }
