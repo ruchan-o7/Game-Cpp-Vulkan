@@ -25,7 +25,6 @@ namespace FooGame
 
             static bool OnWindowResized(WindowResizeEvent& event);
             static uint32_t GetCurrentFrame();
-            static uint32_t GetImageIndex();
             static VkExtent2D GetSwapchainExtent();
             static VkRenderPass GetRenderPass();
             static VkFramebuffer GetFramebuffer();

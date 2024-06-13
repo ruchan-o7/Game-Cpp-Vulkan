@@ -58,7 +58,7 @@ namespace FooGame
             for (const auto& img : assetJson["textures"])
             {
                 auto textureAbsPath = assetJsonAbsPath.parent_path() / img["path"];
-                auto tex            =std::move( AssetLoader::LoadTexture(textureAbsPath.string()));
+                auto tex            = std::move(AssetLoader::LoadTexture(textureAbsPath.string()));
                 mD.ModelPtr->Textures.push_back(std::move(tex));
                 // auto texture = AssetLoader::LoadFromFile(textureAbsPath.string());
                 // mD.ModelPtr->images.push_back({texture});
@@ -71,14 +71,15 @@ namespace FooGame
             mD.ModelPtr->AssetId = assetId;
             for (int i = 0; i < mD.ModelPtr->m_Meshes.size(); i++)
             {
-                auto& mesh             = mD.ModelPtr->m_Meshes[i];
-                mesh.materialData.Name = assetJson["meshes"][i]["material"]["name"];
-                mesh.materialData.BaseColorTextureIndex =
-                    assetJson["meshes"][i]["material"]["baseColorTextureIndex"];
-                mesh.materialData.NormalTextureIndex =
-                    assetJson["meshes"][i]["material"]["normalColorTextureIndex"];
+                auto& mesh     = mD.ModelPtr->m_Meshes[i];
+                auto& material = assetJson["meshes"][i]["material"];
+
+                mesh.materialData.Name = material["name"];
+
+                mesh.materialData.BaseColorTextureIndex = material["baseColorTextureIndex"];
+                mesh.materialData.NormalTextureIndex    = material["normalColorTextureIndex"];
                 mesh.materialData.MetallicRoughnessIndex =
-                    assetJson["meshes"][i]["material"]["metallicRoughnessTextureIndex"];
+                    material["metallicRoughnessTextureIndex"];
             }
         }
         ss.close();

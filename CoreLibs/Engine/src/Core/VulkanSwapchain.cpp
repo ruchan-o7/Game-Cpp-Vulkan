@@ -56,8 +56,9 @@ namespace ENGINE_NAMESPACE
         auto device = m_wpRenderDevice->GetVkDevice();
         // TODO Blocks execution in first
         VkResult result =
-            vkWaitForFences(device, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT16_MAX);
-        result = vkAcquireNextImageKHR(device, m_VkSwapchain, UINT16_MAX,
+            vkWaitForFences(device, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT32_MAX);
+
+        result = vkAcquireNextImageKHR(device, m_VkSwapchain, UINT32_MAX,
                                        m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE,
                                        &m_ImageIndex);
         if (result != VK_SUCCESS)
@@ -72,12 +73,12 @@ namespace ENGINE_NAMESPACE
         vkResetFences(device, 1, &m_InFlightFences[m_CurrentFrame]);
         return {result, m_ImageIndex};
     }
-    VkResult VulkanSwapchain::QueueSubmit(VkQueue graphicsQueue, uint32_t currentFrame,
-                                          VkCommandBuffer& commandBuffer)
+    VkResult VulkanSwapchain::QueueSubmit(VkQueue graphicsQueue, VkCommandBuffer& commandBuffer)
     {
         VkSemaphore waitSemaphores[]      = {m_ImageAvailableSemaphores[m_CurrentFrame]};
         VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         VkSemaphore signalSemaphores[]    = {m_RenderFinishedSemaphores[m_CurrentFrame]};
+
         VkSubmitInfo submitInfo{};
         submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.waitSemaphoreCount = 1;
@@ -277,7 +278,7 @@ namespace ENGINE_NAMESPACE
 
             FenceCI.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
             FenceCI.pNext = nullptr;
-            FenceCI.flags = 0;
+            FenceCI.flags = VK_FENCE_CREATE_SIGNALED_BIT;
             vkCreateFence(logical->GetVkDevice(), &FenceCI, nullptr, &m_InFlightFences[i]);
         }
     }

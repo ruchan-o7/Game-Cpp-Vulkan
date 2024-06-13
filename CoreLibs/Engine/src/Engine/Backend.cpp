@@ -57,10 +57,6 @@ namespace FooGame
     {
         return frameData.currentFrame;
     }
-    uint32_t Backend::GetImageIndex()
-    {
-        return frameData.imageIndex;
-    }
     static void check_vk_result(VkResult err)
     {
         if (err == 0)
@@ -179,6 +175,7 @@ namespace FooGame
         desc.pAttachments    = attachments;
         desc.SubpassCount    = 1;
         desc.pSubpassDesc    = subpasses;
+
         bContext.pRenderDevice->CreateRenderPass(desc, &bContext.pRenderPass);
         RecreateFramebuffer();
         bContext.FrameBuffers.resize(2);
@@ -198,6 +195,11 @@ namespace FooGame
         allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = (uint32_t)bContext.commandBuffers.size();
 
+        for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        {
+            bContext.commandBuffers[i] = bContext.pRenderDevice->AllocateCommandBuffer(allocInfo);
+        }
+
         bContext.DescriptorAllocatorPool = std::unique_ptr<vke::DescriptorAllocatorPool>(
             vke::DescriptorAllocatorPool::Create(bContext.pRenderDevice->GetVkDevice()));
         bContext.DescriptorAllocatorPool->SetPoolSizeMultiplier(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -205,11 +207,6 @@ namespace FooGame
         bContext.DescriptorAllocatorPool->SetPoolSizeMultiplier(VK_DESCRIPTOR_TYPE_SAMPLER, 2);
         bContext.DescriptorAllocatorPool->SetPoolSizeMultiplier(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
                                                                 2);
-        for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            bContext.commandBuffers[i] = bContext.pRenderDevice->AllocateCommandBuffer(allocInfo);
-        }
-
         InitImgui();
 
         comps.deletionQueue.PushFunction(
@@ -376,8 +373,8 @@ namespace FooGame
         vkCmdEndRenderPass(cb);
         VK_CALL(vkEndCommandBuffer(cb));
         VkResult res;
-        res = bContext.pSwapchain->QueueSubmit(bContext.pRenderDevice->GetGraphicsQueue(),
-                                               frameData.currentFrame, cb);
+
+        res = bContext.pSwapchain->QueueSubmit(bContext.pRenderDevice->GetGraphicsQueue(), cb);
 
         if (res != VK_SUCCESS)
         {

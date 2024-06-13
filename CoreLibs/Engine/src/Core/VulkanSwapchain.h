@@ -47,8 +47,7 @@ namespace ENGINE_NAMESPACE
             uint32_t GetBackBufferIndex() const { return m_CurrentFrame; }
 
             ImageAcquireResult QueuePresent(VkQueue presentQueue);
-            VkResult QueueSubmit(VkQueue graphicsQueue, uint32_t currentFrame,
-                                 VkCommandBuffer& commandBuffer);
+            VkResult QueueSubmit(VkQueue graphicsQueue, VkCommandBuffer& commandBuffer);
             ImageAcquireResult AcquireNextImage();
             void ReCreate();
 
