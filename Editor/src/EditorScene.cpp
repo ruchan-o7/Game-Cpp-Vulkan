@@ -1,5 +1,5 @@
-#include <Engine.h>
 #include "EditorScene.h"
+
 #include <Log.h>
 namespace FooGame
 {

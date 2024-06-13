@@ -1,9 +1,10 @@
 #include "Editor.h"
-#include <Engine.h>
+#include <Core.h>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include "Layer/EditorLayer.h"
 #include <Log.h>
+#include <imgui.h>
 namespace FooGame
 {
     Editor::Editor(CommandLineArgs args) : m_Window(nullptr)

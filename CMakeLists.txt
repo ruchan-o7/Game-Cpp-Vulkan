@@ -43,7 +43,7 @@ set(IMGUI_SRC_DIR "${EXTERNAL_DIR}/imgui")
 set(TINY_OBJ_LOADER_INCLUDE_DIR "${EXTERNAL_DIR}/tiny_obj_loader")
 set(TINYGLTF_INCLUDE_DIR "${EXTERNAL_DIR}/tinygltf")
 
-set(ENGINE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/CoreLibs/Engine")
+# set(ENGINE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/CoreLibs/Engine")
 set(CORE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/CoreLibs/Core")
 set(LOG_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/CoreLibs/Log")
 
@@ -53,5 +53,5 @@ add_subdirectory(Game)
 add_subdirectory(Editor)
 
 set_property(TARGET "Log" PROPERTY FOLDER "CoreLibs")
-set_property(TARGET "Engine" PROPERTY FOLDER "CoreLibs")
+# set_property(TARGET "Engine" PROPERTY FOLDER "CoreLibs")
 set_property(TARGET "Core" PROPERTY FOLDER "CoreLibs")

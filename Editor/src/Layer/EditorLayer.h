@@ -2,7 +2,6 @@
 #include "EditorScene.h"
 #include "Layer.h"
 #include "../Core/CommandLineArgs.h"
-#include <Engine.h>
 
 namespace FooGame
 {

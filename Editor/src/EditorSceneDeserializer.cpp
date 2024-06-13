@@ -5,10 +5,8 @@
 #include <memory>
 #include <Core.h>
 #include <nlohmann/json.hpp>
-#include "nlohmann/json_fwd.hpp"
-#include "src/Geometry/AssetLoader.h"
 #include <Log.h>
-#include <Engine.h>
+#include <Core.h>
 #include <tiny_obj_loader.h>
 namespace FooGame
 {
