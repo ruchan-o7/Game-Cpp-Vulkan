@@ -34,6 +34,9 @@ namespace ENGINE_NAMESPACE
         assert(m_Desc.BufferData.Size > 0);
         Init();
     }
+    VulkanBuffer::~VulkanBuffer(){
+        Release();
+    }
     void VulkanBuffer::Release()
     {
         if (m_Buffer != nullptr)

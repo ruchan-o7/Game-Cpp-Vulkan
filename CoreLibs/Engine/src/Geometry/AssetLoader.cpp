@@ -85,6 +85,10 @@ namespace FooGame
         stageDesc.BufferData.Size = size;
 
         VulkanBuffer stageBuffer{stageDesc};
+        stageBuffer.MapMemory();
+        stageBuffer.UpdateData(pixels, size);
+        stageBuffer.UnMapMemory();
+        
 
         VulkanTexture::CreateInfo ci{};
         ci.pRenderDevice = pRenderDevice;
