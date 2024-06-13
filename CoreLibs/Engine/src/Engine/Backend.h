@@ -3,7 +3,6 @@
 // #include "Api.h"
 #include "../Core/RenderDevice.h"
 #include "Descriptor/DescriptorAllocator.h"
-#include "vulkan/vulkan_core.h"
 namespace FooGame
 {
     class Window;

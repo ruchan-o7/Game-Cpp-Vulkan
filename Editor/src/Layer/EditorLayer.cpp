@@ -4,6 +4,8 @@
 #include "EditorSceneDeserializer.h"
 #include "glm/fwd.hpp"
 #include "imgui.h"
+#include "src/Scene/SceneSerializer.h"
+#include <Core.h>
 #include <Log.h>
 namespace FooGame
 {
@@ -17,8 +19,11 @@ namespace FooGame
     {
         FOO_EDITOR_INFO("Reading scene data");
 #ifdef FOO_DEBUG
-        EditorSceneDeserializer serializer;
-        m_EditorScene = std::move(serializer.DeSerialize(SCENE_JSON));
+        Scene* scene = new Scene();
+        SceneSerializer serializer(scene);
+        serializer.Serialize("Assets/Scenes/Prototype2/Scene.json");
+        // EditorSceneDeserializer serializer;
+        // m_EditorScene = std::move(serializer.DeSerialize(SCENE_JSON));
 #else
         if (m_Args.count > 1)
         {

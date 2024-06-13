@@ -13,8 +13,6 @@
 #include "Api.h"
 #include "../Core/VulkanRenderpass.h"
 #include "Types/DeletionQueue.h"
-#include "spdlog/fmt/fmt.h"
-#include "vulkan/vulkan_core.h"
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <backends/imgui_impl_glfw.h>

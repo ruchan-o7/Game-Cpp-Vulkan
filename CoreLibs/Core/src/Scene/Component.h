@@ -16,6 +16,14 @@ namespace FooGame
             IDComponent()                   = default;
             IDComponent(const IDComponent&) = default;
     };
+    struct TagComponent
+    {
+            std::string Tag;
+
+            TagComponent()                    = default;
+            TagComponent(const TagComponent&) = default;
+            TagComponent(const std::string& tag) : Tag(tag) {}
+    };
 
     struct TransformComponent
     {
@@ -25,10 +33,7 @@ namespace FooGame
 
             TransformComponent()                          = default;
             TransformComponent(const TransformComponent&) = default;
-            TransformComponent(const glm::vec3& translation)
-                : Translation(translation)
-            {
-            }
+            TransformComponent(const glm::vec3& translation) : Translation(translation) {}
             glm::mat4 operator()() { return GetTransform(); }
             glm::mat4 GetTransform() const
             {
@@ -43,10 +48,7 @@ namespace FooGame
             Shared<Model> PtrModel;
             MeshRendererComponent()                             = default;
             MeshRendererComponent(const MeshRendererComponent&) = default;
-            MeshRendererComponent(std::shared_ptr<Model> model)
-                : PtrModel(model)
-            {
-            }
+            MeshRendererComponent(std::shared_ptr<Model> model) : PtrModel(model) {}
     };
     class ScriptableEntity;
 
@@ -60,9 +62,8 @@ namespace FooGame
             template <typename T>
             void Bind()
             {
-                InstantiateScript = []()
-                { return static_cast<ScriptableEntity*>(new T()); };
-                DestroyScript = [](ScriptComponent* nsc)
+                InstantiateScript = []() { return static_cast<ScriptableEntity*>(new T()); };
+                DestroyScript     = [](ScriptComponent* nsc)
                 {
                     delete nsc->Instance;
                     nsc->Instance = nullptr;
@@ -75,6 +76,5 @@ namespace FooGame
     };
 
     using AllComponents =
-        ComponentGroup<TransformComponent, MeshRendererComponent,
-                       ScriptComponent>;
+        ComponentGroup<TransformComponent, MeshRendererComponent, ScriptComponent>;
 }  // namespace FooGame

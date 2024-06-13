@@ -18,6 +18,8 @@ set(CORE_SOURCES
 
 	"src/Scene/Component.h"
 	"src/Scene/ScriptableEntity.h"
+	"src/Scene/SceneSerializer.h"
+	"src/Scene/SceneSerializer.cpp"
 	"src/Scene/Scene.h"
 	"src/Scene/Scene.cpp"
 	"src/Scene/Entity.h"

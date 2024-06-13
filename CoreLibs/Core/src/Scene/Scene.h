@@ -17,10 +17,8 @@ namespace FooGame
 
             static std::shared_ptr<Scene> Copy(std::shared_ptr<Scene> other);
 
-            [[nodiscard]] Entity CreateEntity(
-                const std::string& name = std::string());
-            Entity CreateEntityWithUUID(
-                UUID uuid, const std::string& name = std::string());
+            [[nodiscard]] Entity CreateEntity(const std::string& name = std::string());
+            Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
             void DestroyEntity(Entity entity);
 
             void OnUpdate(float ts);
@@ -59,9 +57,10 @@ namespace FooGame
             int m_StepFrames = 0;
 
             std::unordered_map<UUID, entt::entity> m_EntityMap;
+            std::string m_Name;
 
             friend class Entity;
-            // friend class SceneSerializer;
+            friend class SceneSerializer;
             // friend class SceneHierarchyPanel;
     };
     std::unique_ptr<Scene> LoadSceneFromJson(std::ifstream& stream);
