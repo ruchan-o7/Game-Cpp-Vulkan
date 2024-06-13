@@ -50,26 +50,6 @@ namespace FooGame
         return ret;
     }
 
-    std::unique_ptr<VulkanTexture> LoadTextureFromFile(const std::string& path)
-    {
-        auto* pRenderDevice = Backend::GetRenderDevice();
-
-        auto VkDevice              = pRenderDevice->GetVkDevice();
-        const auto* physicalDevice = pRenderDevice->GetPhysicalDevice();
-        int32_t texWidth, texHeight, texChannels;
-        stbi_uc* pixels =
-            stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-        size_t imageSize = texWidth * texHeight * 4;
-        if (!pixels)
-        {
-            FOO_ENGINE_ERROR("Coult not load image : {0}", path);
-            return nullptr;
-        }
-        auto t = AssetLoader::LoadTexture(pixels, imageSize, texWidth, texHeight);
-        stbi_image_free(pixels);
-        return t;
-    }
-
     std::unique_ptr<VulkanTexture> AssetLoader::LoadTexture(const std::string& path)
     {
         auto* pRenderDevice = Backend::GetRenderDevice();
