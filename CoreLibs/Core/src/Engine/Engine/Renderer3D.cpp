@@ -9,7 +9,6 @@
 #include "Shader.h"
 #include "../Core/VulkanPipeline.h"
 #include "Types/DescriptorData.h"
-#include "VulkanCheckResult.h"
 #include "Types/DeletionQueue.h"
 #include "../Core/RenderDevice.h"
 #include "../Core/VulkanBuffer.h"
@@ -70,8 +69,7 @@ namespace FooGame
     };
     struct RendererContext
     {
-            std::vector<std::unique_ptr<VulkanBuffer>> buffers{MAX_FRAMES_IN_FLIGHT};
-            // CommandPoolWrapper CommandPool;
+            std::vector<std::unique_ptr<VulkanBuffer>> uniformBuffers{MAX_FRAMES_IN_FLIGHT};
             std::unique_ptr<VulkanPipeline> pGraphicPipeline;
     };
     RendererContext rContext{};
@@ -94,8 +92,8 @@ namespace FooGame
             desc.BufferData.Data = {0};
             desc.BufferData.Size = sizeof(UniformBufferObject);
 
-            rContext.buffers[i] = std::move(std::make_unique<VulkanBuffer>(desc));
-            rContext.buffers[i]->MapMemory();
+            rContext.uniformBuffers[i] = std::move(std::make_unique<VulkanBuffer>(desc));
+            rContext.uniformBuffers[i]->MapMemory();
         }
         {
             VkDescriptorSetLayoutBinding uboLayoutBinding{};
@@ -160,9 +158,6 @@ namespace FooGame
             SubmitMesh(&mesh);
         }
     }
-    void Renderer3D::BeginDraw()
-    {
-    }
     FrameStatistics Renderer3D::GetStats()
     {
         return s_Data.FrameData;
@@ -189,9 +184,6 @@ namespace FooGame
         UpdateUniformData(ubd);
     }
 
-    void Renderer3D::EndScene()
-    {
-    }
     void Renderer3D::SubmitMesh(Mesh* mesh)
     {
         size_t vertexSize = sizeof(mesh->m_Vertices[0]) * mesh->m_Vertices.size();
@@ -269,7 +261,7 @@ namespace FooGame
             allocator.Allocate(modelRes.PtrMesh->GetLayout(), currentSet);
 
             VkDescriptorBufferInfo descriptorBufferInfo{};
-            descriptorBufferInfo.buffer = rContext.buffers[currentFrame]->GetBuffer();
+            descriptorBufferInfo.buffer = rContext.uniformBuffers[currentFrame]->GetBuffer();
             descriptorBufferInfo.offset = 0;
             descriptorBufferInfo.range  = sizeof(UniformBufferObject);
             std::vector<VkWriteDescriptorSet> descriptorWrites;
@@ -359,7 +351,7 @@ namespace FooGame
                                   VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants), &push);
             {
                 VkDescriptorBufferInfo descriptorBufferInfo{};
-                descriptorBufferInfo.buffer = rContext.buffers[currentFrame]->GetBuffer();
+                descriptorBufferInfo.buffer = rContext.uniformBuffers[currentFrame]->GetBuffer();
                 descriptorBufferInfo.offset = 0;
                 descriptorBufferInfo.range  = sizeof(UniformBufferObject);
                 std::vector<VkWriteDescriptorSet> descriptorWrites;
@@ -427,7 +419,7 @@ namespace FooGame
     }
     void Renderer3D::UpdateUniformData(UniformBufferObject& ubd)
     {
-        rContext.buffers[Backend::GetCurrentFrame()]->UpdateData(&ubd, sizeof(ubd));
+        rContext.uniformBuffers[Backend::GetCurrentFrame()]->UpdateData(&ubd, sizeof(ubd));
     }
 
 }  // namespace FooGame

@@ -17,11 +17,9 @@ namespace FooGame
     {
         public:
             static void Init(class RenderDevice* pRenderDevice);
-            static void BeginDraw();
             static void EndDraw();
             static void BeginScene(const PerspectiveCamera& camera);
             static void BeginScene(const Camera& camera);
-            static void EndScene();
             static void Shutdown();
             static void ClearBuffers();
             static FrameStatistics GetStats();
