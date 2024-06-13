@@ -80,5 +80,5 @@ namespace FooGame
     };
 
     using AllComponents =
-        ComponentGroup<TransformComponent, MeshRendererComponent, ScriptComponent>;
+        ComponentGroup<TransformComponent, TagComponent, MeshRendererComponent, ScriptComponent>;
 }  // namespace FooGame

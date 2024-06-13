@@ -172,8 +172,8 @@ namespace FooGame
 
     Entity Scene::DuplicateEntity(Entity entity)
     {
-        // std::string name = entity.GetName();
-        Entity newEntity = CreateEntity("name");
+        std::string name = entity.GetName();
+        Entity newEntity = CreateEntity(name);
         CopyComponentIfExists(AllComponents{}, newEntity, entity);
         return newEntity;
     }
@@ -188,19 +188,12 @@ namespace FooGame
         return {};
     }
 
-    void Scene::RenderScene3D(Camera* camera)
+    void Scene::RenderScene()
     {
         m_Registry.view<TransformComponent, MeshRendererComponent>().each(
             [=](auto& transform, auto& comp) {
                 Renderer3D::DrawModel(comp.ModelName, comp.MaterialName, transform.GetTransform());
             });
-    }
-    void Scene::RenderScene2D(OrthographicCamera* camera)
-    {
-        Renderer2D::BeginScene(*camera);
-        m_Registry.view<TransformComponent, MeshRendererComponent>().each(
-            [=](auto transform, auto& comp) {});
-        Renderer2D::EndScene();
     }
     void Scene::IMGUI()
     {
@@ -239,6 +232,10 @@ namespace FooGame
 
     template <>
     void Scene::OnComponentAdded<IDComponent>(Entity entity, IDComponent& component)
+    {
+    }
+    template <>
+    void Scene::OnComponentAdded<TagComponent>(Entity entity, TagComponent& component)
     {
     }
 

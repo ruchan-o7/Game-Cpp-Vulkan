@@ -40,14 +40,18 @@ namespace FooGame
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
                 continue;
             }
-            Backend::BeginDrawing();
             for (auto& l : *m_LayerStack)
             {
                 l->OnUpdate(0.2f);
             }
+            Backend::BeginDrawing();
             for (auto& l : *m_LayerStack)
             {
                 l->OnImGuiRender();
+            }
+            for (auto& l : *m_LayerStack)
+            {
+                l->OnRender();
             }
             ImGui::Begin("Statistics");
             {

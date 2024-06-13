@@ -12,6 +12,7 @@ namespace FooGame
 
             void OnAttach() override;
             void OnDetach() override;
+            void OnRender() override;
             void OnUpdate(float ts) override;
             void OnImGuiRender() override;
             void OnEvent(Event& event) override;
@@ -26,7 +27,6 @@ namespace FooGame
             bool OnMouseMoved(MouseMovedEvent& event);
             bool OnMousePressed(MouseButtonPressedEvent& event);
             void UpdateCamera(float ts);
-            void DrawMeshUI();
             void DrawCameraUI();
     };
 }  // namespace FooGame

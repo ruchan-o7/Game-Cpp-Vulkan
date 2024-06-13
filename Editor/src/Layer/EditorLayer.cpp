@@ -4,6 +4,7 @@
 #include "src/Engine/Engine/Renderer3D.h"
 #include "src/Scene/Component.h"
 #include "src/Scene/SceneSerializer.h"
+#include <cstdint>
 #include <memory>
 #include <Core.h>
 #include <Log.h>
@@ -28,10 +29,6 @@ namespace FooGame
             Renderer3D::SubmitModel(comp.ModelName);
         }
 
-        // for (auto& meshData : m_EditorScene->MeshDatas)
-        // {
-        //     Renderer3D::SubmitModel(meshData.ModelPtr.get());
-        // }
         m_Camera2.setPerspective(60.0f, (float)1600.0f / (float)900.0f, 0.1f, 512.0f);
         m_Camera2.SetRotation(glm::vec3(-12.0f, 159.0f, 0.0f));
         m_Camera2.SetTranslatin(glm::vec3(0.0f, 0.5f, 0.5f));
@@ -41,85 +38,32 @@ namespace FooGame
     }
     void EditorLayer::OnDetach()
     {
-        // for (auto& tex : m_EditorScene->Textures)
-        // {
-        //     AssetLoader::DestroyTexture(*tex.get());
-        // }
-        // m_EditorScene->Textures.shrink_to_fit();
-        // for (auto& md : m_EditorScene->MeshDatas)
-        // {
-        //     for (size_t i = 0; i < md.ModelPtr->images.size(); i++)
-        //     {
-        //         AssetLoader::DestroyTexture(md.ModelPtr->images[i]);
-        //     }
-        //     md.ModelPtr->images.shrink_to_fit();
-        // }
-        //
         Renderer3D::ClearBuffers();
     }
     void EditorLayer::OnImGuiRender()
     {
-        DrawMeshUI();
         DrawCameraUI();
-    }
-    void EditorLayer::DrawMeshUI()
-    {
-        // for (int i = 0; i < m_EditorScene->MeshDatas.size(); i++)
-        // {
-        //     auto& mD = m_EditorScene->MeshDatas[i];
-        //     if (ImGui::TreeNode("Models", "%s", mD.ModelPtr->Name.c_str()))
-        //     {
-        //         ImGui::PushID(i);
-        //         if (ImGui::TreeNode("Position"))
-        //         {
-        //             float pos[3] = {
-        //                 mD.Transform.Translation.x,
-        //                 mD.Transform.Translation.y,
-        //                 mD.Transform.Translation.z,
-        //             };
-        //             ImGui::DragFloat3("Position", pos, 0.005, -FLT_MAX, +FLT_MAX);
-        //             ImGui::TreePop();
-        //             mD.Transform.Translation = glm::vec3{
-        //                 pos[0],
-        //                 pos[1],
-        //                 pos[2],
-        //             };
-        //         }
-        //         if (ImGui::TreeNode("Scale"))
-        //         {
-        //             float scale[3] = {
-        //                 mD.Transform.Scale.x,
-        //                 mD.Transform.Scale.y,
-        //                 mD.Transform.Scale.z,
-        //             };
-        //
-        //             ImGui::DragFloat3("Scale", scale, 0.005, -FLT_MAX, +FLT_MAX);
-        //             ImGui::TreePop();
-        //             mD.Transform.Scale = glm::vec3{
-        //                 scale[0],
-        //                 scale[1],
-        //                 scale[2],
-        //             };
-        //         }
-        //         if (ImGui::TreeNode("Rotation"))
-        //         {
-        //             float rot[3] = {
-        //                 mD.Transform.Rotation.x,
-        //                 mD.Transform.Rotation.y,
-        //                 mD.Transform.Rotation.z,
-        //             };
-        //             ImGui::DragFloat3("Rotation", rot, 0.005, -FLT_MAX, +FLT_MAX);
-        //             ImGui::TreePop();
-        //             mD.Transform.Rotation = glm::vec3{
-        //                 rot[0],
-        //                 rot[1],
-        //                 rot[2],
-        //             };
-        //         }
-        //         ImGui::PopID();
-        //         ImGui::TreePop();
-        //     }
-        // }
+        auto Float3 = [&](const std::string& name, glm::vec3& vec)
+        {
+            float val[3] = {vec.x, vec.y, vec.z};
+
+            ImGui::DragFloat3(name.c_str(), val, 0.01f, -100.0f, 100.0f);
+            vec.x = val[0];
+            vec.y = val[1];
+            vec.z = val[2];
+        };
+        ImGui::Begin("Entities");
+        int i   = 0;
+        auto mv = m_Scene->GetAllEntitiesWith<TransformComponent>().each();
+        for (auto [entity, transform] : mv)
+        {
+            ImGui::PushID(i);
+            Float3("Position", transform.Translation);
+            ImGui::PopID();
+            i++;
+        }
+        i = 0;
+        ImGui::End();
     }
     void EditorLayer::DrawCameraUI()
     {
@@ -152,20 +96,22 @@ namespace FooGame
         m_Camera2.SetRotation(glm::vec3(rot[0], rot[1], rot[2]));
         m_Camera2.SetFov(fov);
     }
+    void EditorLayer::OnRender()
+    {
+        Renderer3D::BeginScene(m_Camera2);
+        m_Scene->RenderScene();
+        auto stats = Renderer3D::GetStats();
+        ImGui::Begin("3d scene stats");
+        ImGui::Text("Draw calls %i", stats.DrawCall);
+        ImGui::Text("Vertex count %llu", stats.VertexCount);
+        ImGui::Text("Index count %llu", stats.IndexCount);
+        ImGui::End();
+        Renderer3D::EndDraw();
+    }
     void EditorLayer::OnUpdate(float ts)
     {
-        UpdateCamera(ts);
-
-        Renderer3D::BeginDraw();
-        Renderer3D::BeginScene(m_Camera2);
         m_Scene->OnUpdate(ts);
-        m_Scene->RenderScene3D(&m_Camera2);
-        // for (auto& meshData : m_EditorScene->MeshDatas)
-        // {
-        //     Renderer3D::DrawModel(meshData.ModelPtr.get(), meshData.Transform());
-        // }
-        Renderer3D::EndScene();
-        Renderer3D::EndDraw();
+        UpdateCamera(ts);
     }
     void EditorLayer::OnEvent(Event& e)
     {
