@@ -1,0 +1,20 @@
+{
+	"name": "Prototype scene",
+	"entities": [
+		{
+			"id": 3263328598497060330,
+			"tagComponent": {
+				"tag": "Viking"
+			},
+			"transformComponent": {
+				"translation": [ 0.0, 0.0, 0.0 ],
+				"rotation": [ 0.0, 0.0, 0.0 ],
+				"scale": [ 1.0, 1.0, 1.0 ]
+			},
+			"meshComponent": {
+				"modelPath": "Models/viking_room.obj",
+				"diffuseTexture": "Textures/viking_room.png"
+			}
+		}
+	]
+}
