@@ -223,11 +223,101 @@ namespace FooGame
     {
     }
 
-    void Renderer3D::DrawModel(const std::string& name, const glm::mat4& transform)
+    void Renderer3D::DrawModel(const std::string& name, std::string& materialName,
+                               const glm::mat4& transform)
     {
+        assert(!name.empty());
         auto model = AssetManager::GetModel(name);
         assert(model != nullptr);
-        DrawModel(model.get(), transform);
+
+        assert(!materialName.empty());
+
+        auto currentFrame = Backend::GetCurrentFrame();
+        auto cmd          = Backend::GetCurrentCommandbuffer();
+        auto extent       = Backend::GetSwapchainExtent();
+        auto device       = Backend::GetRenderDevice()->GetVkDevice();
+
+        BindPipeline(cmd);
+        const auto& material  = AssetManager::GetMaterial(materialName);
+        const auto& albedoMap = AssetManager::GetTexture(material.AlbedoMap);
+        assert(albedoMap != nullptr);
+
+        VkViewport viewport{};
+        viewport.x        = 0;
+        viewport.y        = 0;
+        viewport.width    = extent.width;
+        viewport.height   = extent.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        Backend::SetViewport(viewport);
+
+        VkRect2D scissor{};
+        scissor.extent = {static_cast<uint32_t>(viewport.width),
+                          static_cast<uint32_t>(viewport.height)};
+        scissor.offset = {0, 0};
+        Backend::SetScissor(scissor);
+
+        MeshPushConstants push{};
+        push.renderMatrix = transform;
+        Backend::PushConstant(rContext.pGraphicPipeline->GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+                              sizeof(MeshPushConstants), &push);
+        auto allocator = Backend::GetAllocatorHandle();
+        for (const auto& mesh : model->GetMeshes())
+        {
+            auto& modelRes   = s_Data.Res.MeshMap2[mesh.RenderId];
+            auto& currentSet = *modelRes.PtrMesh->GetSet(currentFrame);
+            allocator.Allocate(modelRes.PtrMesh->GetLayout(), currentSet);
+
+            VkDescriptorBufferInfo descriptorBufferInfo{};
+            descriptorBufferInfo.buffer = rContext.buffers[currentFrame]->GetBuffer();
+            descriptorBufferInfo.offset = 0;
+            descriptorBufferInfo.range  = sizeof(UniformBufferObject);
+            std::vector<VkWriteDescriptorSet> descriptorWrites;
+            VkWriteDescriptorSet uniformSet{};
+
+            uniformSet.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            uniformSet.dstSet          = currentSet;
+            uniformSet.dstBinding      = 0;
+            uniformSet.dstArrayElement = 0;
+            uniformSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            uniformSet.descriptorCount = 1;
+            uniformSet.pBufferInfo     = &descriptorBufferInfo;
+            descriptorWrites.push_back(uniformSet);
+
+            VkWriteDescriptorSet albedoSet{};
+            albedoSet.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            albedoSet.dstSet          = currentSet;
+            albedoSet.dstBinding      = 1;
+            albedoSet.dstArrayElement = 0;
+            albedoSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            albedoSet.descriptorCount = 1;
+            albedoSet.pImageInfo      = &albedoMap->DescriptorInfo;
+            descriptorWrites.push_back(albedoSet);
+
+            Backend::UpdateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0,
+                                          nullptr);
+            VkDescriptorSet sets[] = {currentSet};
+            Backend::BindGraphicPipelineDescriptorSets(rContext.pGraphicPipeline->GetLayout(), 0, 1,
+                                                       sets, 0, nullptr);
+
+            VkBuffer vertexBuffers[] = {modelRes.VertexBuffer->GetBuffer()};
+            VkDeviceSize offsets[]   = {0};
+
+            Backend::BindVertexBuffers(0, 1, vertexBuffers, offsets);
+            if (modelRes.IndexBuffer)
+            {
+                Backend::BindIndexBuffers(modelRes.IndexBuffer->GetBuffer(), 0,
+                                          VK_INDEX_TYPE_UINT32);
+                Backend::DrawIndexed(modelRes.PtrMesh->m_Indices.size(), 1, 0, 0, 0);
+            }
+            else
+            {
+                Backend::Draw(mesh.m_Vertices.size(), 1, 0, 0);
+            }
+            s_Data.FrameData.DrawCall++;
+            s_Data.FrameData.VertexCount += modelRes.PtrMesh->m_Vertices.size();
+            s_Data.FrameData.IndexCount  += modelRes.PtrMesh->m_Indices.size();
+        }
     }
     void Renderer3D::DrawModel(Model* model, const glm::mat4& transform)
     {

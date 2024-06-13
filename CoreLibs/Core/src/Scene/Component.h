@@ -46,9 +46,13 @@ namespace FooGame
     struct MeshRendererComponent
     {
             std::string ModelName;
+            std::string MaterialName;
             MeshRendererComponent()                             = default;
             MeshRendererComponent(const MeshRendererComponent&) = default;
-            MeshRendererComponent(std::string name) : ModelName(name) {}
+            MeshRendererComponent(std::string name, std::string materialName)
+                : ModelName(name), MaterialName(materialName)
+            {
+            }
     };
     class ScriptableEntity;
 

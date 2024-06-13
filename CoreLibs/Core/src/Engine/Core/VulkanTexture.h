@@ -68,6 +68,7 @@ namespace ENGINE_NAMESPACE
 
         public:
             VulkanTexture(VulkanTexture::CreateInfo& info);
+
             std::shared_ptr<VulkanImage> GetImage() const { return m_Image; }
             VkImageAspectFlagBits GetAspect() const { return m_Info.AspectFlags; }
             VkExtent2D GetExtent() const { return m_Info.Extent; }

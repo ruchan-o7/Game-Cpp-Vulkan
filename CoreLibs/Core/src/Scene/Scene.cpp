@@ -191,8 +191,9 @@ namespace FooGame
     void Scene::RenderScene3D(Camera* camera)
     {
         m_Registry.view<TransformComponent, MeshRendererComponent>().each(
-            [=](auto& transform, auto& comp)
-            { Renderer3D::DrawModel(comp.ModelName, transform.GetTransform()); });
+            [=](auto& transform, auto& comp) {
+                Renderer3D::DrawModel(comp.ModelName, comp.MaterialName, transform.GetTransform());
+            });
     }
     void Scene::RenderScene2D(OrthographicCamera* camera)
     {

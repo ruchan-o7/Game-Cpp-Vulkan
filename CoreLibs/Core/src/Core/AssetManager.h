@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "../Engine/Geometry/Material.h"
 
 namespace FooGame
 {
@@ -14,9 +15,11 @@ namespace FooGame
             static void LoadTexture(const std::string& name, void* pixels, size_t size,
                                     int32_t width, int32_t height);
             static void LoadTexture(const std::string& path, const std::string& name);
+            static void AddMaterial(const Material2& material);
 
         public:
             static std::shared_ptr<Model> GetModel(const std::string& name);
+            static Material2 GetMaterial(const std::string& name);
             static std::shared_ptr<VulkanTexture> GetTexture(const std::string& name);
     };
 }  // namespace FooGame

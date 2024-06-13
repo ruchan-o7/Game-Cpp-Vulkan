@@ -14,6 +14,7 @@ namespace FooGame
     using ModelName = std::string;
     std::unordered_map<ModelName, std::shared_ptr<Model>> s_ModelMap;
     std::unordered_map<ModelName, std::shared_ptr<VulkanTexture>> s_TextureMap;
+    std::unordered_map<std::string, Material2> s_MaterialMap;
 
     static bool ReadFile(tinygltf::TinyGLTF& context, tinygltf::Model& input,
                          const std::string& path, bool isGlb);
@@ -115,7 +116,7 @@ namespace FooGame
         stageDesc.pRenderDevice   = pRenderDevice;
         stageDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
         stageDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
-        stageDesc.Name            = std::string("Stage buffer for texture:  ").c_str();
+        stageDesc.Name            = (std::string("Stage buffer for texture: ") + name).c_str();
         stageDesc.BufferData.Data = pixels;
         stageDesc.BufferData.Size = size;
 
@@ -127,7 +128,7 @@ namespace FooGame
         VulkanTexture::CreateInfo ci{};
         ci.pRenderDevice = pRenderDevice;
         ci.MaxAnisotropy = physicalDevice->GetDeviceProperties().limits.maxSamplerAnisotropy;
-        ci.Name          = "test texture";
+        ci.Name          = name.c_str();
         ci.AspectFlags   = VK_IMAGE_ASPECT_COLOR_BIT;
         ci.Format        = VK_FORMAT_R8G8B8A8_SRGB;
         ci.MemoryPropertiesFlags = Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY;
@@ -148,11 +149,24 @@ namespace FooGame
                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         s_TextureMap[name] = std::shared_ptr<VulkanTexture>(vTexture);
     }
+    void AssetManager::AddMaterial(const Material2& material)
+    {
+        if (!s_MaterialMap[material.Name].Name.empty())
+        {
+            FOO_ENGINE_WARN("Material {0} is already loaded, skipping", material.Name);
+            return;
+        }
+        s_MaterialMap[material.Name] = material;
+    }
+    Material2 AssetManager::GetMaterial(const std::string& name)
+    {
+        return s_MaterialMap[name];
+    }
     void AssetManager::LoadGLTFModel(const std::string& path, const std::string& name, bool isGlb)
     {
         if (s_ModelMap[name])
         {
-            FOO_ENGINE_WARN("Model {0} is already loaded");
+            FOO_ENGINE_WARN("Model {0} is already loaded", name);
             return;
         }
 

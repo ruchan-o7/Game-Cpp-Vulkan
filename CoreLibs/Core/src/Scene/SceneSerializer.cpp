@@ -3,9 +3,11 @@
 #include <filesystem>
 #include <fstream>
 #include <json.hpp>
+#include <streambuf>
 #include "Entity.h"
 #include "../Core/AssetManager.h"
 #include "../Scene/Component.h"
+#include "../Engine/Geometry/Material.h"
 namespace FooGame
 {
     using json = nlohmann::json;
@@ -41,6 +43,20 @@ namespace FooGame
 
         m_pScene->m_Name = sceneJson["name"];
         FOO_CORE_TRACE("Scene: {0} deserializing", m_pScene->m_Name);
+        auto materials = sceneJson["materials"];
+        if (!materials.empty())
+        {
+            for (auto& m : materials)
+            {
+                Material2 mat{};
+                mat.Name      = m["name"];
+                mat.AlbedoMap = std::filesystem::path(m["albedo"]).filename().string();
+                AssetManager::AddMaterial(mat);
+                auto texPath = assetPath / std::filesystem::path(m["albedo"]);
+
+                AssetManager::LoadTexture(texPath.string(), texPath.filename().string());
+            }
+        }
         auto entities = sceneJson["entities"];
         if (!entities.empty())
         {
@@ -70,19 +86,27 @@ namespace FooGame
                 auto meshComponent = entity["meshComponent"];
                 if (!meshComponent.empty())
                 {
-                    auto& mc            = deserializedEntity.AddComponent<MeshRendererComponent>();
-                    auto modelPath      = std::filesystem::path(meshComponent["modelPath"]);
-                    auto diffuseTexture = std::filesystem::path(meshComponent["diffuseTexture"]);
-                    if (!diffuseTexture.empty())
-                    {
-                        auto p = (assetPath / diffuseTexture);
-                        AssetManager::LoadTexture(p.string(), p.filename().string());
-                    }
-                    auto modelExtension = modelPath.extension();
-                    if (modelExtension.string() == ".obj")
+                    auto& mc        = deserializedEntity.AddComponent<MeshRendererComponent>();
+                    auto modelPath  = std::filesystem::path(meshComponent["modelPath"]);
+                    mc.MaterialName = meshComponent["material"];
+
+                    auto modelExtension = modelPath.extension().string();
+                    if (modelExtension == ".obj")
                     {
                         auto p = (assetPath / modelPath);
                         AssetManager::LoadObjModel(p.string(), p.filename().string());
+                        mc.ModelName = p.filename().string();
+                    }
+                    else if (modelExtension == ".glb")
+                    {
+                        auto p = (assetPath / modelPath);
+                        AssetManager::LoadGLTFModel(p.string(), p.filename().string(), true);
+                        mc.ModelName = p.filename().string();
+                    }
+                    else if (modelExtension == ".gltf")
+                    {
+                        auto p = (assetPath / modelPath);
+                        AssetManager::LoadGLTFModel(p.string(), p.filename().string(), false);
                         mc.ModelName = p.filename().string();
                     }
                 }
