@@ -32,7 +32,10 @@
 			"meshComponent": {
 				"modelPath": "Models\\viking_room.obj",
 				"material": "Viking material"
-			}
+			},
+			"scriptComponent": [
+				"Rotate"
+			]
 		},
 		{
 			"id": 3263328598297060330,
