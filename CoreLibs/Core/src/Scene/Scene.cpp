@@ -139,7 +139,6 @@ namespace FooGame
                 m_Registry.view<ScriptComponent>().each(
                     [=](auto entity, auto& nsc)
                     {
-                        // TODO: Move to Scene::OnScenePlay
                         if (!nsc.Instance)
                         {
                             nsc.Instance           = nsc.InstantiateScript();

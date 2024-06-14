@@ -62,7 +62,10 @@
 			"meshComponent": {
 				"modelPath": "Models\\Avocado.obj",
 				"material": "Viking material"
-			}
+			},
+			"scriptComponent": [
+				"ScaleYoink"
+			]
 		}
 	]
 }

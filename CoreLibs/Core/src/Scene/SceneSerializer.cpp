@@ -8,6 +8,7 @@
 #include "../Scene/Component.h"
 #include "../Engine/Geometry/Material.h"
 #include "../Scripts/Rotate.h"
+#include "src/Scripts/ScaleYoink.h"
 namespace FooGame
 {
     using json = nlohmann::json;
@@ -120,6 +121,10 @@ namespace FooGame
                         if (sname == "Rotate")
                         {
                             sc.Bind<RotateScript>();
+                        }
+                        else if (sname == "ScaleYoink")
+                        {
+                            sc.Bind<ScaleYoink>();
                         }
                         else
                         {
