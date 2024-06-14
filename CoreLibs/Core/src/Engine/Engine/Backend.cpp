@@ -10,7 +10,6 @@
 #include "../Core/VulkanBuffer.h"
 #include "../Core/VulkanCommandBuffer.h"
 #include <vector>
-#include "Api.h"
 #include "../Core/VulkanRenderpass.h"
 #include "Types/DeletionQueue.h"
 #include "vulkan/vulkan_core.h"
@@ -187,14 +186,14 @@ namespace FooGame
         poolInfo.queueFamilyIndex = 0;
         bContext.commandPool      = bContext.pRenderDevice->CreateCommandPool();
 
-        bContext.commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+        bContext.commandBuffers.resize(2);
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.commandPool        = bContext.commandPool;
         allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = (uint32_t)bContext.commandBuffers.size();
 
-        for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        for (int i = 0; i < 2; i++)
         {
             bContext.commandBuffers[i] = bContext.pRenderDevice->AllocateCommandBuffer(allocInfo);
         }

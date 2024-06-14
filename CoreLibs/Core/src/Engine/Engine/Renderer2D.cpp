@@ -1,11 +1,9 @@
 #include "Renderer2D.h"
 #include "../Geometry/QuadVertex.h"
-#include "Device.h"
 #include "Types/GraphicTypes.h"
 #include "Types/DescriptorData.h"
 #include "Backend.h"
 #include <cstring>
-#include "Api.h"
 #include "VulkanCheckResult.h"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
@@ -39,7 +37,7 @@ namespace FooGame
             Renderer2D::Statistics Stats;
             struct Api
             {
-                    Pipeline pipeline;
+                    // Pipeline pipeline;
                     VkSampler TextureSampler;
             };
             Api api{};
@@ -50,7 +48,7 @@ namespace FooGame
     {
         assert(g_IsInitialized == false && "Do not init twice!");
 
-        auto* device = Api::GetDevice();
+        auto* device = Backend::GetRenderDevice()->GetVkDevice();  // Api::GetDevice();
         // create and populate buffers
         {
             uint32_t offset = 0;
@@ -78,9 +76,9 @@ namespace FooGame
             // s_Data.frameData.QuadVertexBufferBase = new QuadVertex[s_Data.MaxVertices];
         }
         {
-            // s_Data.resources.UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+            // s_Data.resources.UniformBuffers.resize(2);
 
-            for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+            for (uint32_t i = 0; i < 2; i++)
             {
                 // BufferBuilder uBuffBuilder{};
                 // uBuffBuilder.SetUsage(BufferUsage::UNIFORM)
@@ -94,14 +92,14 @@ namespace FooGame
         {
             VkDescriptorPoolSize poolSizes[1] = {};
             poolSizes[0].type                 = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            poolSizes[0].descriptorCount      = MAX_FRAMES_IN_FLIGHT;
+            poolSizes[0].descriptorCount      = 2;
 
             VkDescriptorPoolCreateInfo poolInfo{};
             poolInfo.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
             poolInfo.poolSizeCount = ARRAY_COUNT(poolSizes);
             poolInfo.pPoolSizes    = poolSizes;
-            poolInfo.maxSets       = MAX_FRAMES_IN_FLIGHT;
-            VK_CALL(vkCreateDescriptorPool(device->GetDevice(), &poolInfo, nullptr,
+            poolInfo.maxSets       = 2;
+            VK_CALL(vkCreateDescriptorPool(device, &poolInfo, nullptr,
                                            &s_Data.resources.descriptor.pool));
         }
         {
@@ -117,21 +115,19 @@ namespace FooGame
             layoutInfo.bindingCount = ARRAY_COUNT(bindings);
             layoutInfo.pBindings    = bindings;
 
-            VK_CALL(vkCreateDescriptorSetLayout(device->GetDevice(), &layoutInfo, nullptr,
+            VK_CALL(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr,
                                                 &s_Data.resources.descriptor.SetLayout));
-            std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT,
-                                                       s_Data.resources.descriptor.SetLayout);
+            std::vector<VkDescriptorSetLayout> layouts(2, s_Data.resources.descriptor.SetLayout);
             VkDescriptorSetAllocateInfo allocInfo{};
             allocInfo.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             allocInfo.descriptorPool     = s_Data.resources.descriptor.pool;
-            allocInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
+            allocInfo.descriptorSetCount = 2;
             allocInfo.pSetLayouts        = layouts.data();
 
-            VK_CALL(
-                vkAllocateDescriptorSets(device->GetDevice(), &allocInfo, s_Data.resources.set));
+            VK_CALL(vkAllocateDescriptorSets(device, &allocInfo, s_Data.resources.set));
         }
         {
-            for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+            for (uint32_t i = 0; i < 2; i++)
             {
                 VkDescriptorBufferInfo bufferInfo{};
                 // bufferInfo.buffer = *s_Data.resources.UniformBuffers[i]->GetBuffer();
@@ -147,8 +143,8 @@ namespace FooGame
                 descriptorWrites[0].descriptorCount      = 1;
                 descriptorWrites[0].pBufferInfo          = &bufferInfo;
 
-                vkUpdateDescriptorSets(device->GetDevice(), ARRAY_COUNT(descriptorWrites),
-                                       descriptorWrites, 0, nullptr);
+                vkUpdateDescriptorSets(device, ARRAY_COUNT(descriptorWrites), descriptorWrites, 0,
+                                       nullptr);
             }
         }
 
@@ -347,7 +343,7 @@ namespace FooGame
         auto extent       = Backend::GetSwapchainExtent();
         BindPipeline(cmd);
 
-        Api::SetViewportAndScissors(cmd, extent.width, extent.height);
+        // Api::SetViewportAndScissors(cmd, extent.width, extent.height);
         // bind vertexbuffers
         // VkBuffer vertexBuffers[] = {*s_Data.resources.VertexBuffer->GetBuffer()};
         VkDeviceSize offsets[] = {0};
@@ -357,7 +353,7 @@ namespace FooGame
         // vkCmdBindIndexBuffer(cmd, *s_Data.resources.IndexBuffer->GetBuffer(), 0,
         //                      VK_INDEX_TYPE_UINT32);
         // bind descriptorsets
-        BindDescriptorSets(cmd, s_Data.api.pipeline);
+        // BindDescriptorSets(cmd, s_Data.api.pipeline);
         if (s_Data.frameData.QuadIndexCount)
         {
             uint32_t dataSize = (uint32_t)((uint8_t*)s_Data.frameData.QuadVertexBufferPtr -
@@ -368,22 +364,14 @@ namespace FooGame
             s_Data.frameData.DrawCall++;
         }
     }
-    void Renderer2D::BindDescriptorSets(VkCommandBuffer cmd, Pipeline& pipeline,
-                                        VkPipelineBindPoint bindPoint, uint32_t firstSet,
-                                        uint32_t dSetCount, uint32_t dynamicOffsetCount,
-                                        uint32_t* dynamicOffsets)
-    {
-        vkCmdBindDescriptorSets(cmd, bindPoint, pipeline.pipelineLayout, firstSet, dSetCount,
-                                &s_Data.resources.set[Backend::GetCurrentFrame()],
-                                dynamicOffsetCount, dynamicOffsets);
-    }
+
     void Renderer2D::ResetStats()
     {
         memset(&s_Data.Stats, 0, sizeof(Statistics));
     }
     void Renderer2D::BindPipeline(VkCommandBuffer cmd)
     {
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Data.api.pipeline.pipeline);
+        // vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Data.api.pipeline.pipeline);
     }
 
     Renderer2D::Statistics Renderer2D::GetStats()

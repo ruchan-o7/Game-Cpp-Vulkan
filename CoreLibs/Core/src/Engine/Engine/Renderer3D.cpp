@@ -1,5 +1,4 @@
 #include "Renderer3D.h"
-#include "Api.h"
 #include "Backend.h"
 #include <cassert>
 #include <cstddef>
@@ -15,9 +14,7 @@
 #include "../Camera/PerspectiveCamera.h"
 #include "../Camera/Camera.h"
 #include <imgui.h>
-#include "Pipeline.h"
 #include "src/Core/AssetManager.h"
-#include "vulkan/vulkan_core.h"
 #include <Log.h>
 namespace FooGame
 {
@@ -69,7 +66,7 @@ namespace FooGame
     };
     struct RendererContext
     {
-            std::vector<std::unique_ptr<VulkanBuffer>> uniformBuffers{MAX_FRAMES_IN_FLIGHT};
+            std::vector<std::unique_ptr<VulkanBuffer>> uniformBuffers{2};
             std::unique_ptr<VulkanPipeline> pGraphicPipeline;
     };
     RendererContext rContext{};
@@ -82,7 +79,7 @@ namespace FooGame
         auto* device    = pRenderDevice->GetVkDevice();
         g_IsInitialized = true;
 
-        for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+        for (uint32_t i = 0; i < 2; i++)
         {
             VulkanBuffer::BuffDesc desc{};
             desc.pRenderDevice   = pRenderDevice;
@@ -221,6 +218,7 @@ namespace FooGame
             }
             data.VertexBuffer.reset();
         }
+        s_Data.Res.MeshMap2.clear();
     }
 
     void Renderer3D::DrawModel(const std::string& name, std::string& materialName,
@@ -418,12 +416,13 @@ namespace FooGame
         s_Data.Res.deletionQueue.Flush(device);
         for (auto& [index, data] : s_Data.Res.MeshMap2)
         {
-            // data.VertexBuffer->Release();
+            data.VertexBuffer.reset();
             if (data.IndexBuffer)
             {
-                // data.IndexBuffer->Release();
+                data.IndexBuffer.reset();
             }
         }
+        s_Data.Res.MeshMap2.clear();
     }
     void Renderer3D::UpdateUniformData(UniformBufferObject& ubd)
     {
