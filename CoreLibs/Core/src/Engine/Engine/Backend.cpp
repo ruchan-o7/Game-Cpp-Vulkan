@@ -2,8 +2,8 @@
 #include <GLFW/glfw3.h>
 #include "../Engine/VulkanCheckResult.h"
 #include "../Defines.h"
-#include "../Window/Window.h"
-#include "../Events/ApplicationEvent.h"
+#include "../../Core/Window.h"
+#include "../../Events/ApplicationEvent.h"
 #include "../Core/EngineFactory.h"
 #include "../Core/RenderDevice.h"
 #include "../Core/VulkanTexture.h"

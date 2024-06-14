@@ -1,6 +1,6 @@
 #include "Input.h"
 #include <GLFW/glfw3.h>
-#include "../Window/Window.h"
+#include "../Core/Window.h"
 namespace FooGame
 {
 
@@ -20,7 +20,7 @@ namespace FooGame
     bool Input::IsMouseButtonDown(MouseButton button)
     {
         GLFWwindow *windowHandle = Window::Get().GetWindowHandle();
-        int state = glfwGetMouseButton(windowHandle, (int)button);
+        int state                = glfwGetMouseButton(windowHandle, (int)button);
         return state == GLFW_PRESS;
     }
 
@@ -36,7 +36,6 @@ namespace FooGame
     void Input::SetCursorMode(CursorMode mode)
     {
         GLFWwindow *windowHandle = Window::Get().GetWindowHandle();
-        glfwSetInputMode(windowHandle, GLFW_CURSOR,
-                         GLFW_CURSOR_NORMAL + (int)mode);
+        glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL + (int)mode);
     }
 }  // namespace FooGame

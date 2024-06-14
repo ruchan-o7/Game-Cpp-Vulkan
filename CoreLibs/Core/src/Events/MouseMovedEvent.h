@@ -1,6 +1,5 @@
 #pragma once
 #include "Event.h"
-#include "../Defines.h"
 namespace FooGame
 {
     using MouseCode = uint16_t;
@@ -28,10 +27,7 @@ namespace FooGame
     class MouseMovedEvent : public Event
     {
         public:
-            MouseMovedEvent(const float x, const float y)
-                : m_MouseX(x), m_MouseY(y)
-            {
-            }
+            MouseMovedEvent(const float x, const float y) : m_MouseX(x), m_MouseY(y) {}
 
             float GetX() const { return m_MouseX; }
             float GetY() const { return m_MouseY; }
@@ -63,8 +59,7 @@ namespace FooGame
             std::string ToString() const override
             {
                 std::stringstream ss;
-                ss << "MouseScrolledEvent: " << GetXOffset() << ", "
-                   << GetYOffset();
+                ss << "MouseScrolledEvent: " << GetXOffset() << ", " << GetYOffset();
                 return ss.str();
             }
 
@@ -79,8 +74,7 @@ namespace FooGame
         public:
             MouseCode GetMouseButton() const { return m_Button; }
 
-            EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput |
-                                 EventCategoryMouseButton)
+            EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput | EventCategoryMouseButton)
         protected:
             MouseButtonEvent(const MouseCode button) : m_Button(button) {}
 
@@ -90,10 +84,7 @@ namespace FooGame
     class MouseButtonPressedEvent : public MouseButtonEvent
     {
         public:
-            MouseButtonPressedEvent(const MouseCode button)
-                : MouseButtonEvent(button)
-            {
-            }
+            MouseButtonPressedEvent(const MouseCode button) : MouseButtonEvent(button) {}
 
             std::string ToString() const override
             {
@@ -108,10 +99,7 @@ namespace FooGame
     class MouseButtonReleasedEvent : public MouseButtonEvent
     {
         public:
-            MouseButtonReleasedEvent(const MouseCode button)
-                : MouseButtonEvent(button)
-            {
-            }
+            MouseButtonReleasedEvent(const MouseCode button) : MouseButtonEvent(button) {}
 
             std::string ToString() const override
             {

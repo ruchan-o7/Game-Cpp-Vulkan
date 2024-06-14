@@ -1,7 +1,7 @@
 #include "Rotate.h"
 #include <cmath>
 #include "../Scene/Component.h"
-#include "../Engine/Window/Window.h"
+#include "../Core/Window.h"
 namespace FooGame
 {
 

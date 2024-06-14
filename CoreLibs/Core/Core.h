@@ -2,8 +2,6 @@
 #include "src/Core/Base.h"
 #include "src/Core/UUID.h"
 
-#include "src/File/FileHelper.h"
-
 #include "src/Scene/Component.h"
 #include "src/Scene/Entity.h"
 #include "src/Scene/Scene.h"
@@ -34,10 +32,10 @@
 #include "src/Engine/Engine/Renderer3D.h"
 #include "src/Engine/Engine/Shader.h"
 
-#include "src/Engine/Events/ApplicationEvent.h"
-#include "src/Engine/Events/Event.h"
-#include "src/Engine/Events/KeyEvent.h"
-#include "src/Engine/Events/MouseMovedEvent.h"
+#include "src/Events/ApplicationEvent.h"
+#include "src/Events/Event.h"
+#include "src/Events/KeyEvent.h"
+#include "src/Events/MouseMovedEvent.h"
 
 #include "src/Engine/Geometry/AssetLoader.h"
 #include "src/Engine/Geometry/Material.h"
@@ -46,7 +44,7 @@
 #include "src/Engine/Geometry/QuadVertex.h"
 #include "src/Engine/Geometry/Vertex.h"
 
-#include "src/Engine/Input/Input.h"
-#include "src/Engine/Input/KeyCodes.h"
+#include "src/Input/Input.h"
+#include "src/Input/KeyCodes.h"
 
-#include "src/Engine/Window/Window.h"
+#include "src/Core/Window.h"

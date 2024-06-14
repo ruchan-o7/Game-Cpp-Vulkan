@@ -15,6 +15,9 @@ file(GLOB_RECURSE CORE_SOURCES
 
 	"src/Core/*.h"
 	"src/Core/*.cpp"
+	
+	"src/Input/*.h"
+	"src/Input/*.cpp"
 
 	"src/Resouces/*.cpp"
 )
