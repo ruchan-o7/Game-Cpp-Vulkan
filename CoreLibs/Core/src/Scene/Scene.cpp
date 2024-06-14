@@ -3,21 +3,11 @@
 #include "../Scene/ScriptableEntity.h"
 #include <imgui.h>
 #include "../Scene/Component.h"
-#include "glm/fwd.hpp"
 #include <memory>
-#include "../Engine/Engine/Renderer2D.h"
 #include "src/Engine/Engine/Renderer3D.h"
 #include <nlohmann/json.hpp>
 namespace FooGame
 {
-
-#if 1
-#define MODEL_PATH    "../../../Assets/Model/viking_room.obj"
-#define MODEL_TEXTURE "../../../Assets/Model/viking_room.png"
-#else
-#define MODEL_PATH    "../../Assets/Model/viking_room.obj"
-#define MODEL_TEXTURE "../../Assets/Model/viking_room.png"
-#endif
 
     struct Foo : public ScriptableEntity
     {
@@ -36,8 +26,6 @@ namespace FooGame
     };
     Scene::Scene()
     {
-        auto e = CreateEntity();
-        glm::mat4{1.0f};
     }
 
     Scene::~Scene()

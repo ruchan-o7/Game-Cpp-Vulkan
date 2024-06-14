@@ -18,6 +18,10 @@ file(GLOB_RECURSE CORE_SOURCES
 
 	"src/Resouces/*.cpp"
 )
+file(GLOB_RECURSE SCRIPTS
+	"src/Scripts/*.cpp"
+	"src/Scripts/*.h"
+	)
 file(GLOB_RECURSE ENGINE_SOURCES
 	"src/Engine/Camera/*.h"
 	"src/Engine/Camera/*.cpp"
@@ -61,7 +65,7 @@ set(IMGUI_SRCS
 	"${IMGUI_SRC_DIR}/backends/imgui_impl_vulkan.h"
 	"${IMGUI_SRC_DIR}/backends/imgui_impl_vulkan.cpp"
 )
-add_library("${PROJECT_NAME}" "${CORE_SOURCES};${ENGINE_SOURCES};pch.cpp;${IMGUI_SRCS}")
+add_library("${PROJECT_NAME}" "${CORE_SOURCES};${ENGINE_SOURCES};pch.cpp;${IMGUI_SRCS};${SCRIPTS}")
 
 target_include_directories("${PROJECT_NAME}" PUBLIC
 	"${GLFW_INCLUDE_DIR}"

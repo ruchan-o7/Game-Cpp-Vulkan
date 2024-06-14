@@ -3,14 +3,15 @@
 #include <filesystem>
 #include <fstream>
 #include <json.hpp>
-#include <streambuf>
 #include "Entity.h"
 #include "../Core/AssetManager.h"
 #include "../Scene/Component.h"
 #include "../Engine/Geometry/Material.h"
+#include "../Scripts/Rotate.h"
 namespace FooGame
 {
     using json = nlohmann::json;
+    class ScriptableEntity;
 
     SceneSerializer::SceneSerializer(Scene* scene) : m_pScene(scene)
     {
@@ -108,6 +109,22 @@ namespace FooGame
                         auto p = (assetPath / modelPath);
                         AssetManager::LoadGLTFModel(p.string(), p.filename().string(), false);
                         mc.ModelName = p.filename().string();
+                    }
+                }
+                auto scriptComponent = entity["scriptComponent"];
+                if (!scriptComponent.empty())
+                {
+                    auto& sc = deserializedEntity.AddComponent<ScriptComponent>();
+                    for (auto& sname : scriptComponent)
+                    {
+                        if (sname == "Rotate")
+                        {
+                            sc.Bind<RotateScript>();
+                        }
+                        else
+                        {
+                            FOO_ENGINE_ERROR("Script with name: {0} could not found");
+                        }
                     }
                 }
             }

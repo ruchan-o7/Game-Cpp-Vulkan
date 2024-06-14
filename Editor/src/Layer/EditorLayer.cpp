@@ -58,7 +58,7 @@ namespace FooGame
         for (auto [entity, transform, tag] : mv)
         {
             ImGui::PushID(i);
-            ImGui::Text(tag.Tag.c_str());
+            ImGui::Text("%s", tag.Tag.c_str());
             Float3("Position", transform.Translation);
             Float3("Scale", transform.Scale);
             Float3("Rotation", transform.Rotation);
