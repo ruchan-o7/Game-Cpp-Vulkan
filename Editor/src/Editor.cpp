@@ -1,8 +1,11 @@
 #include "Editor.h"
 #include <Core.h>
+#include <ctime>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include "Layer/EditorLayer.h"
+#include "src/Core/Time.h"
+#include "src/Core/Window.h"
 #include <Log.h>
 #include <imgui.h>
 namespace FooGame
@@ -29,12 +32,19 @@ namespace FooGame
         Backend::Init(*m_Window);
         Renderer3D::Init(Backend::GetRenderDevice());
         m_LayerStack = new LayerStack;
+        m_LastTime   = 0.0;
     }
     void Editor::Run()
     {
         while (!m_Window->ShouldClose())
         {
             m_Window->PollEvents();
+            double timeSinceStart = Window::Get().GetTime();
+            double delta          = timeSinceStart - m_LastTime;
+            m_LastTime            = timeSinceStart;
+            Time::UpdateCurrentTime();
+            Time::SetDeltaTime(delta);
+
             if (!m_ShouldRender)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -42,7 +52,7 @@ namespace FooGame
             }
             for (auto& l : *m_LayerStack)
             {
-                l->OnUpdate(0.2f);
+                l->OnUpdate(delta);
             }
             for (auto& l : *m_LayerStack)
             {
@@ -60,8 +70,12 @@ namespace FooGame
                 ImGui::Text("Vertex count :%llu", stats.VertexCount);
                 ImGui::Text("Index count :%llu", stats.IndexCount);
                 ImGui::Text("FPS :%f", io.Framerate);
+                ImGui::Text("Delta time :%f", delta);
+                ImGui::Text("Total frame :%llu", Time::FrameCount());
+                ImGui::Text("Total time :%llu", Time::CurrentTime());
             }
             ImGui::End();
+            Time::IncremenetFrameCount();
             Backend::SwapBuffers();
         }
         Backend::WaitIdle();

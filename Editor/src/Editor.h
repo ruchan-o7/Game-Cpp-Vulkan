@@ -28,5 +28,6 @@ namespace FooGame
             Window* m_Window;
             LayerStack* m_LayerStack;
             bool m_ShouldRender = true;
+            double m_LastTime   = 0;
     };
 }  // namespace FooGame

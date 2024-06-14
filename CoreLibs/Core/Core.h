@@ -1,6 +1,7 @@
 #pragma once
 #include "src/Core/Base.h"
 #include "src/Core/UUID.h"
+#include "src/Core/Time.h"
 
 #include "src/Scene/Component.h"
 #include "src/Scene/Entity.h"
