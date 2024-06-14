@@ -64,7 +64,8 @@
 				"material": "Viking material"
 			},
 			"scriptComponent": [
-				"ScaleYoink"
+				"ScaleYoink",
+				"Rotate"
 			]
 		}
 	]

@@ -1,4 +1,6 @@
 #pragma once
+#include <string>
+#include <unordered_map>
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
@@ -58,20 +60,29 @@ namespace FooGame
 
     struct ScriptComponent
     {
-            ScriptableEntity* Instance = nullptr;
-
-            ScriptableEntity* (*InstantiateScript)();
-            void (*DestroyScript)(ScriptComponent*);
+            struct ScriptFactory
+            {
+                    ScriptableEntity* Instance = nullptr;
+                    ScriptableEntity* (*InstantiateScript)();
+                    void (*DestroyScript)(ScriptComponent*, std::string name);
+            };
+            //     std::vector<ScriptFactory> Scripts;
+            std::unordered_map<std::string, ScriptFactory> Scripts;
 
             template <typename T>
-            void Bind()
+            void Bind(const std::string& name)
             {
-                InstantiateScript = []() { return static_cast<ScriptableEntity*>(new T()); };
-                DestroyScript     = [](ScriptComponent* nsc)
+                ScriptFactory factory{};
+                factory.InstantiateScript = []()
+                { return static_cast<ScriptableEntity*>(new T()); };
+                factory.DestroyScript = [](ScriptComponent* nsc, std::string name)
                 {
-                    delete nsc->Instance;
-                    nsc->Instance = nullptr;
+                    auto& script = nsc->Scripts[name];
+
+                    delete script.Instance;
+                    script.Instance = nullptr;
                 };
+                Scripts[name] = factory;
             }
     };
     template <typename... Component>

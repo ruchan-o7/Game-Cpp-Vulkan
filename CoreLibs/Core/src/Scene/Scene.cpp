@@ -139,14 +139,16 @@ namespace FooGame
                 m_Registry.view<ScriptComponent>().each(
                     [=](auto entity, auto& nsc)
                     {
-                        if (!nsc.Instance)
+                        for (auto& [name, sc] : nsc.Scripts)
                         {
-                            nsc.Instance           = nsc.InstantiateScript();
-                            nsc.Instance->m_Entity = Entity{entity, this};
-                            nsc.Instance->OnCreate();
+                            if (!sc.Instance)
+                            {
+                                sc.Instance           = sc.InstantiateScript();
+                                sc.Instance->m_Entity = Entity{entity, this};
+                                sc.Instance->OnCreate();
+                            }
+                            sc.Instance->OnUpdate(ts);
                         }
-
-                        nsc.Instance->OnUpdate(ts);
                     });
             }
         }

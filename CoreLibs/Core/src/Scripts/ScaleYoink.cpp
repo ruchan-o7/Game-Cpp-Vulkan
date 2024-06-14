@@ -10,6 +10,6 @@ namespace FooGame
     }
     void ScaleYoink::OnUpdate(float ts)
     {
-        m_Transform->Scale.x = sinf(Time::CurrentTime()) * 10;
+        m_Transform->Scale.x = cosf(Time::CurrentTime()) * 10;
     }
 }  // namespace FooGame

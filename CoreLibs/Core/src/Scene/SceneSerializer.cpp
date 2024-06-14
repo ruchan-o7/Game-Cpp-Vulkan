@@ -76,6 +76,7 @@ namespace FooGame
                 Entity deserializedEntity = m_pScene->CreateEntityWithUUID(uuid, name);
 
                 auto transformComponent = entity["transformComponent"];
+                assert(!transformComponent.empty());
                 if (!transformComponent.empty())
                 {
                     auto& tc    = deserializedEntity.GetComponent<TransformComponent>();
@@ -120,11 +121,11 @@ namespace FooGame
                     {
                         if (sname == "Rotate")
                         {
-                            sc.Bind<RotateScript>();
+                            sc.Bind<RotateScript>("RotateScript");
                         }
                         else if (sname == "ScaleYoink")
                         {
-                            sc.Bind<ScaleYoink>();
+                            sc.Bind<ScaleYoink>("ScaleYoink");
                         }
                         else
                         {
