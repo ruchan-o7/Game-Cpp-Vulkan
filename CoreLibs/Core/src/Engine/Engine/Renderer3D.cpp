@@ -414,7 +414,7 @@ namespace FooGame
 
     void Renderer3D::Shutdown()
     {
-        auto device = Api::GetVkDevice();
+        auto device = Backend::GetRenderDevice()->GetVkDevice();  // Api::GetVkDevice();
         s_Data.Res.deletionQueue.Flush(device);
         for (auto& [index, data] : s_Data.Res.MeshMap2)
         {
