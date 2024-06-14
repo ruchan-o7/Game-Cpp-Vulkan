@@ -47,18 +47,21 @@ namespace FooGame
         {
             float val[3] = {vec.x, vec.y, vec.z};
 
-            ImGui::DragFloat3(name.c_str(), val, 0.01f, -100.0f, 100.0f);
+            ImGui::DragFloat3(name.c_str(), val, 0.01f, -9000.0f, 9000.0f);
             vec.x = val[0];
             vec.y = val[1];
             vec.z = val[2];
         };
         ImGui::Begin("Entities");
         int i   = 0;
-        auto mv = m_Scene->GetAllEntitiesWith<TransformComponent>().each();
-        for (auto [entity, transform] : mv)
+        auto mv = m_Scene->GetAllEntitiesWith<TransformComponent, TagComponent>().each();
+        for (auto [entity, transform, tag] : mv)
         {
             ImGui::PushID(i);
+            ImGui::Text(tag.Tag.c_str());
             Float3("Position", transform.Translation);
+            Float3("Scale", transform.Scale);
+            Float3("Rotation", transform.Rotation);
             ImGui::PopID();
             i++;
         }

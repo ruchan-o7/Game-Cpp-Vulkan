@@ -128,8 +128,8 @@ namespace FooGame
         Entity entity = {m_Registry.create(), this};
         entity.AddComponent<IDComponent>(uuid);
         entity.AddComponent<TransformComponent>();
-        // auto& tag = entity.AddComponent<TagComponent>();
-        // tag.Tag   = name.empty() ? "Entity" : name;
+        auto& tag = entity.AddComponent<TagComponent>();
+        tag.Tag   = name.empty() ? "Entity" : name;
 
         m_EntityMap[uuid] = entity;
 

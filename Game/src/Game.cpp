@@ -55,7 +55,7 @@ namespace FooGame
                 // l->OnRender();
                 l->IMGUI();
             }
-            Backend::EndDrawing();
+            Backend::SwapBuffers();
         }
     }
 

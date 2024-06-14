@@ -36,7 +36,7 @@ namespace ENGINE_NAMESPACE
             VulkanBuffer(const BuffDesc& info);
 
             VulkanBuffer(VulkanBuffer&& other);
-            ~VulkanBuffer();  // TODO Implement this
+            ~VulkanBuffer();
 
             void UpdateData(void* data, size_t size, size_t offset = 0);
             void CopyTo(VulkanBuffer& destination, size_t size, VkCommandPool commandPool,

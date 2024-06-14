@@ -15,7 +15,7 @@ namespace FooGame
         public:
             ~Backend();
             static void Init(Window& window);
-            static void EndDrawing();
+            static void SwapBuffers();
             static void WaitIdle();
             static void Shutdown();
             static VkCommandBuffer BeginSingleTimeCommands();
@@ -37,7 +37,6 @@ namespace FooGame
             static void TransitionImageLayout(class VulkanImage* image, VkFormat format,
                                               VkImageLayout oldLayout, VkImageLayout newLayout);
             static void CopyBufferToImage(VulkanBuffer& source, VulkanTexture& destination);
-            static void BeginDrawing();
 
         public:
             static void CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& info,
@@ -69,6 +68,7 @@ namespace FooGame
                                                           const uint32_t* pDynamicOffsets);
 
         private:
+            static void BeginDrawing();
             static void Submit();
             static void InitImgui();
     };

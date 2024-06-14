@@ -213,6 +213,14 @@ namespace FooGame
     }
     void Renderer3D::ClearBuffers()
     {
+        for (auto& [id, data] : s_Data.Res.MeshMap2)
+        {
+            if (data.IndexBuffer)
+            {
+                data.IndexBuffer.reset();
+            }
+            data.VertexBuffer.reset();
+        }
     }
 
     void Renderer3D::DrawModel(const std::string& name, std::string& materialName,

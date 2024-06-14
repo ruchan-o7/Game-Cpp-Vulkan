@@ -13,6 +13,7 @@
 #include "Api.h"
 #include "../Core/VulkanRenderpass.h"
 #include "Types/DeletionQueue.h"
+#include "vulkan/vulkan_core.h"
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <backends/imgui_impl_glfw.h>
@@ -216,6 +217,7 @@ namespace FooGame
 
                 vkDestroyDescriptorPool(d, g_ImguiPool, nullptr);
             });
+        BeginDrawing();
     }
 
     void Backend::BeginDrawing()
@@ -324,9 +326,10 @@ namespace FooGame
     {
         return bContext.pSwapchain->GetExtent();
     }
-    void Backend::EndDrawing()
+    void Backend::SwapBuffers()
     {
         Submit();
+        BeginDrawing();
     }
 
     VkFramebuffer Backend::GetFramebuffer()

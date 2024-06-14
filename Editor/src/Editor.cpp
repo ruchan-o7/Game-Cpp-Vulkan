@@ -44,7 +44,6 @@ namespace FooGame
             {
                 l->OnUpdate(0.2f);
             }
-            Backend::BeginDrawing();
             for (auto& l : *m_LayerStack)
             {
                 l->OnImGuiRender();
@@ -63,7 +62,7 @@ namespace FooGame
                 ImGui::Text("FPS :%f", io.Framerate);
             }
             ImGui::End();
-            Backend::EndDrawing();
+            Backend::SwapBuffers();
         }
         Backend::WaitIdle();
     }
