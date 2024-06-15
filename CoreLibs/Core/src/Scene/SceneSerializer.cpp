@@ -2,12 +2,16 @@
 #include <Log.h>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <json.hpp>
+#include <vector>
 #include "Entity.h"
 #include "../Core/AssetManager.h"
 #include "../Scene/Component.h"
 #include "../Engine/Geometry/Material.h"
 #include "../Scripts/Rotate.h"
+#include "entt/entity/fwd.hpp"
+#include "src/Log.h"
 #include "src/Scripts/ScaleYoink.h"
 namespace FooGame
 {
@@ -16,6 +20,77 @@ namespace FooGame
 
     SceneSerializer::SceneSerializer(Scene* scene) : m_pScene(scene)
     {
+    }
+    void SceneSerializer::DeSerialize(const std::string& path)
+    {
+        json scene;
+        scene["name"]  = m_pScene->m_Name;
+        auto materials = AssetManager::AllMaterials();
+        for (auto& [name, mat] : materials)
+        {
+            scene["materials"].push_back({
+                {  "name",      mat.Name},
+                {"albedo", mat.AlbedoMap}
+            });
+        }
+        scene["entities"] = json::array();
+        auto view         = m_pScene->m_Registry.view<entt::entity>().each();
+        for (auto [e] : view)
+        {
+            Entity ent{e, m_pScene};
+
+            if (!ent)
+            {
+                continue;
+            }
+            json entityJson = json::object();
+            if (!ent.HasComponent<IDComponent>())
+            {
+                uint64_t id      = ent.GetComponent<IDComponent>().ID;
+                entityJson["id"] = id;
+            }
+            if (!ent.HasComponent<TagComponent>())
+            {
+                auto tag                   = ent.GetComponent<TagComponent>().Tag;
+                entityJson["tagComponent"] = {"tag", tag};
+            }
+
+            if (!ent.HasComponent<TransformComponent>())
+            {
+                auto transform = ent.GetComponent<TransformComponent>();
+
+                entityJson["transformComponent"] = json::object({
+                    {"translation",
+                     {transform.Translation.x, transform.Translation.y, transform.Translation.z}},
+                    {   "rotation",
+                     {transform.Rotation.x, transform.Rotation.y, transform.Rotation.z}         },
+                    {      "scale",    {transform.Scale.x, transform.Scale.y, transform.Scale.z}}
+                });
+            }
+            if (!ent.HasComponent<MeshRendererComponent>())
+            {
+                auto mesh                   = ent.GetComponent<MeshRendererComponent>();
+                entityJson["meshComponent"] = json::object({
+                    {"modelPath",    mesh.ModelPath},
+                    { "material", mesh.MaterialName}
+                });
+            }
+            if (!ent.HasComponent<ScriptComponent>())
+            {
+                auto scripts                  = ent.GetComponent<ScriptComponent>();
+                entityJson["scriptComponent"] = json::array();
+                for (auto [name, script] : scripts.Scripts)
+                {
+                    entityJson["scriptComponent"].push_back(name);
+                }
+            }
+            scene["entities"].push_back(entityJson);
+        }
+
+        std::string str = scene.dump();
+        std::ofstream o{path};
+        o << std::setw(4) << scene << std::endl;
+        o.close();
     }
     void SceneSerializer::Serialize(const std::string& path)
     {
@@ -91,6 +166,7 @@ namespace FooGame
                 {
                     auto& mc        = deserializedEntity.AddComponent<MeshRendererComponent>();
                     auto modelPath  = std::filesystem::path(meshComponent["modelPath"]);
+                    mc.ModelPath    = modelPath.string();
                     mc.MaterialName = meshComponent["material"];
 
                     auto modelExtension = modelPath.extension().string();

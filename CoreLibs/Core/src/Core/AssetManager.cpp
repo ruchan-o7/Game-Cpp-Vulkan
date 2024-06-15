@@ -15,6 +15,10 @@ namespace FooGame
     std::unordered_map<ModelName, std::shared_ptr<Model>> s_ModelMap;
     std::unordered_map<ModelName, std::shared_ptr<VulkanTexture>> s_TextureMap;
     std::unordered_map<std::string, Material2> s_MaterialMap;
+    std::unordered_map<std::string, Material2> AssetManager::AllMaterials()
+    {
+        return s_MaterialMap;
+    }
 
     static bool ReadFile(tinygltf::TinyGLTF& context, tinygltf::Model& input,
                          const std::string& path, bool isGlb);

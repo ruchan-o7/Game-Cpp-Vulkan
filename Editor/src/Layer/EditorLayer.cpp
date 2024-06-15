@@ -2,6 +2,7 @@
 #include "glm/fwd.hpp"
 #include "imgui.h"
 #include "src/Engine/Engine/Renderer3D.h"
+#include "src/Input/KeyCodes.h"
 #include "src/Scene/Component.h"
 #include "src/Scene/SceneSerializer.h"
 #include <cstdint>
@@ -115,6 +116,11 @@ namespace FooGame
     {
         m_Scene->OnUpdate(ts);
         UpdateCamera(ts);
+        if (Input::IsKeyDown(KeyCode::F1))
+        {
+            SceneSerializer serializer{m_Scene.get()};
+            serializer.DeSerialize("C:\\Users\\jcead\\Downloads\\scene.json");
+        }
     }
     void EditorLayer::OnEvent(Event& e)
     {

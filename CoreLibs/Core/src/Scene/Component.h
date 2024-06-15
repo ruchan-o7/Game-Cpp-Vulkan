@@ -48,11 +48,12 @@ namespace FooGame
     struct MeshRendererComponent
     {
             std::string ModelName;
+            std::string ModelPath;
             std::string MaterialName;
             MeshRendererComponent()                             = default;
             MeshRendererComponent(const MeshRendererComponent&) = default;
-            MeshRendererComponent(std::string name, std::string materialName)
-                : ModelName(name), MaterialName(materialName)
+            MeshRendererComponent(std::string name, std::string modelPath, std::string materialName)
+                : ModelName(name), ModelPath(modelPath), MaterialName(materialName)
             {
             }
     };
