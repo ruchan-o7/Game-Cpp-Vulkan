@@ -1,6 +1,67 @@
 {
     "entities": [
         {
+            "cameraComponent": {
+                "fixedAspectRatio": true,
+                "primary": true
+            },
+            "id": 3332061642483347496,
+            "scriptComponent": [
+                "CameraController"
+            ],
+            "tagComponent": {
+                "tag": "Camera"
+            },
+            "transformComponent": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.09000000357627869,
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        {
+            "id": 3263328598297060330,
+            "meshComponent": {
+                "material": "Viking material",
+                "modelPath": "Models\\Avocado.obj"
+            },
+            "scriptComponent": [
+                "ScaleYoink",
+                "RotateScript"
+            ],
+            "tagComponent": {
+                "tag": "Avocado"
+            },
+            "transformComponent": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    -6.7167863845825195,
+                    12.0,
+                    12.0
+                ],
+                "translation": [
+                    -0.740888774394989,
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        {
             "id": 3263328598497060330,
             "meshComponent": {
                 "material": "Viking material",
@@ -22,37 +83,6 @@
                 ],
                 "translation": [
                     0.9534403085708618,
-                    0.0,
-                    0.0
-                ]
-            }
-        },
-        {
-            "id": 3263328598297060330,
-            "meshComponent": {
-                "material": "Viking material",
-                "modelPath": "Models\\Avocado.obj"
-            },
-            "scriptComponent": [
-                "RotateScript",
-                "ScaleYoink"
-            ],
-            "tagComponent": {
-                "tag": "Avocado"
-            },
-            "transformComponent": {
-                "rotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scale": [
-                    -3.9966487884521484,
-                    12.0,
-                    12.0
-                ],
-                "translation": [
-                    -0.9166637659072876,
                     0.0,
                     0.0
                 ]

@@ -10,9 +10,8 @@
 #include "../Scene/Component.h"
 #include "../Engine/Geometry/Material.h"
 #include "../Scripts/Rotate.h"
-#include "entt/entity/fwd.hpp"
-#include "src/Log.h"
-#include "src/Scripts/ScaleYoink.h"
+#include "../Scripts/ScaleYoink.h"
+#include "../Scripts/CameraController.h"
 namespace FooGame
 {
     using json = nlohmann::json;
@@ -64,6 +63,14 @@ namespace FooGame
                     sceneEntitiesNode["scriptComponent"].push_back(name);
                 }
             }
+        }
+        if (!entity.HasComponent<CameraComponent>())
+        {
+            auto camC                            = entity.GetComponent<CameraComponent>();
+            sceneEntitiesNode["cameraComponent"] = json::object({
+                {         "primary",          camC.Primary},
+                {"fixedAspectRatio", camC.FixedAspectRatio}
+            });
         }
     }
     static void DeSerializeEntity(const json& entityJson, Scene* scene,
@@ -144,11 +151,26 @@ namespace FooGame
                     {
                         sc.Bind<ScaleYoink>("ScaleYoink");
                     }
+                    else if (sname == "CameraController")
+                    {
+                        sc.Bind<CameraController>("CameraController");
+                    }
                     else
                     {
                         FOO_ENGINE_ERROR("Script with name: {0} could not found", sname);
                     }
                 }
+            }
+        }
+        componentExists = entityJson.contains("cameraComponent");
+        if (componentExists)
+        {
+            auto cameraComponent = entityJson["cameraComponent"];
+            if (!cameraComponent.empty())
+            {
+                auto& sc            = deserializedEntity.AddComponent<CameraComponent>();
+                sc.Primary          = cameraComponent["primary"];
+                sc.FixedAspectRatio = cameraComponent["fixedAspectRatio"];
             }
         }
     }

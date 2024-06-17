@@ -15,6 +15,7 @@
 #include "../Camera/Camera.h"
 #include <imgui.h>
 #include "src/Core/AssetManager.h"
+#include "src/Engine/Engine/Types/GraphicTypes.h"
 #include <Log.h>
 namespace FooGame
 {
@@ -178,6 +179,13 @@ namespace FooGame
 
         ubd.View       = camera.GetView();
         ubd.Projection = camera.GetProjection();
+        UpdateUniformData(ubd);
+    }
+    void Renderer3D::BeginScene(const glm::mat4& view, const glm::mat4& projection)
+    {
+        UniformBufferObject ubd{};
+        ubd.View       = view;
+        ubd.Projection = projection;
         UpdateUniformData(ubd);
     }
 

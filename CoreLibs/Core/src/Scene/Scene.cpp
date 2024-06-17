@@ -3,8 +3,12 @@
 #include "../Scene/ScriptableEntity.h"
 #include <imgui.h>
 #include "../Scene/Component.h"
+#include <cstddef>
 #include <memory>
+#include "src/Engine/Camera/Camera.h"
+#include "src/Engine/Engine/Renderer2D.h"
 #include "src/Engine/Engine/Renderer3D.h"
+#include "src/Scene/Scene.h"
 #include <nlohmann/json.hpp>
 namespace FooGame
 {
@@ -161,9 +165,39 @@ namespace FooGame
 
         return {};
     }
-
+    Entity Scene::GetPrimaryCameraEntity()
+    {
+        auto view = m_Registry.view<CameraComponent>();
+        for (auto entity : view)
+        {
+            const auto& camera = view.get<CameraComponent>(entity);
+            if (camera.Primary)
+            {
+                return Entity{entity, this};
+            }
+        }
+        return {};
+    }
     void Scene::RenderScene()
     {
+        Camera* mainCamera = nullptr;
+        glm::mat4 cameraTransform;
+        {
+            auto view = m_Registry.view<TransformComponent, CameraComponent>();
+            for (auto entity : view)
+            {
+                auto [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
+                if (camera.Primary)
+                {
+                    mainCamera      = camera.pCamera;
+                    cameraTransform = transform.GetTransform();
+                }
+            }
+        }
+        if (mainCamera)
+        {
+            Renderer3D::BeginScene(*mainCamera);
+        }
         m_Registry.view<TransformComponent, MeshRendererComponent>().each(
             [=](auto& transform, auto& comp) {
                 Renderer3D::DrawModel(comp.ModelName, comp.MaterialName, transform.GetTransform());
@@ -200,6 +234,10 @@ namespace FooGame
     template <>
     void Scene::OnComponentAdded<MeshRendererComponent>(Entity entity,
                                                         MeshRendererComponent& component)
+    {
+    }
+    template <>
+    void Scene::OnComponentAdded<CameraComponent>(Entity entity, CameraComponent& component)
     {
     }
 

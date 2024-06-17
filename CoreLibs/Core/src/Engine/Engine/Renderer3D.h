@@ -20,6 +20,7 @@ namespace FooGame
             static void EndDraw();
             static void BeginScene(const PerspectiveCamera& camera);
             static void BeginScene(const Camera& camera);
+            static void BeginScene(const glm::mat4& view, const glm::mat4& projection);
             static void Shutdown();
             static void ClearBuffers();
             static FrameStatistics GetStats();

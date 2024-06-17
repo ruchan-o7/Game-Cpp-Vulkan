@@ -5,6 +5,7 @@
 
 namespace FooGame
 {
+    class SceneHierarchyPanel;
     class EditorLayer final : public Layer
     {
         public:
@@ -18,10 +19,11 @@ namespace FooGame
             void OnEvent(Event& event) override;
 
         private:
-            PerspectiveCamera m_Camera;
+            // PerspectiveCamera m_Camera;
             Camera m_Camera2;
             std::unique_ptr<Scene> m_Scene;
             CommandLineArgs m_Args;
+            SceneHierarchyPanel* m_Panel;
 
         private:
             bool OnMouseMoved(MouseMovedEvent& event);

@@ -90,11 +90,21 @@ namespace FooGame
                 Scripts.erase(name);
             }
     };
+    class Camera;
+    struct CameraComponent
+    {
+            Camera* pCamera;
+            bool Primary          = true;
+            bool FixedAspectRatio = false;
+
+            CameraComponent()                       = default;
+            CameraComponent(const CameraComponent&) = default;
+    };
     template <typename... Component>
     struct ComponentGroup
     {
     };
 
-    using AllComponents =
-        ComponentGroup<TransformComponent, TagComponent, MeshRendererComponent, ScriptComponent>;
+    using AllComponents = ComponentGroup<TransformComponent, TagComponent, MeshRendererComponent,
+                                         ScriptComponent, CameraComponent>;
 }  // namespace FooGame

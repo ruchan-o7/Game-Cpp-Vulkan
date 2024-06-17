@@ -60,6 +60,6 @@ namespace FooGame
             friend class Entity;
             friend class SceneSerializer;
             friend class EditorLayer;
-            // friend class SceneHierarchyPanel;
+            friend class SceneHierarchyPanel;
     };
 }  // namespace FooGame
