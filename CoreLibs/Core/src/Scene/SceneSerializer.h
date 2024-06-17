@@ -6,8 +6,8 @@ namespace FooGame
     {
         public:
             SceneSerializer(Scene* scene);
-            void Serialize(const std::string& path);
             void DeSerialize(const std::string& path);
+            void Serialize(const std::string& path);
 
         private:
             Scene* m_pScene;

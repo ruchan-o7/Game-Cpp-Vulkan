@@ -14,5 +14,6 @@ namespace FooGame
     {
             std::string Name;
             std::string AlbedoMap;
+            std::string AlbedoMapPath;
     };
 }  // namespace FooGame

@@ -67,7 +67,6 @@ namespace FooGame
                     ScriptableEntity* (*InstantiateScript)();
                     void (*DestroyScript)(ScriptComponent*, std::string name);
             };
-            //     std::vector<ScriptFactory> Scripts;
             std::unordered_map<std::string, ScriptFactory> Scripts;
 
             template <typename T>
@@ -84,6 +83,11 @@ namespace FooGame
                     script.Instance = nullptr;
                 };
                 Scripts[name] = factory;
+            }
+            void RemoveScript(const std::string& name)
+            {
+                Scripts[name].DestroyScript(this, name);
+                Scripts.erase(name);
             }
     };
     template <typename... Component>

@@ -72,7 +72,7 @@ namespace FooGame
                 ImGui::Text("FPS :%f", io.Framerate);
                 ImGui::Text("Delta time :%f", delta);
                 ImGui::Text("Total frame :%llu", Time::FrameCount());
-                ImGui::Text("Total time :%llu", Time::CurrentTime());
+                ImGui::Text("Total time :%f", Time::CurrentTime());
             }
             ImGui::End();
             Time::IncremenetFrameCount();

@@ -1,7 +1,6 @@
 #pragma once
 #include <entt/entt.hpp>
 #include "../Core/UUID.h"
-#include <fstream>
 // #include <Engine.h>
 namespace FooGame
 {
@@ -60,7 +59,7 @@ namespace FooGame
 
             friend class Entity;
             friend class SceneSerializer;
+            friend class EditorLayer;
             // friend class SceneHierarchyPanel;
     };
-    std::unique_ptr<Scene> LoadSceneFromJson(std::ifstream& stream);
 }  // namespace FooGame

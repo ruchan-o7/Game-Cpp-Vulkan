@@ -1,18 +1,118 @@
 #include "EditorLayer.h"
-#include "glm/fwd.hpp"
+#include "entt/entity/fwd.hpp"
+#include "entt/entt.hpp"
 #include "imgui.h"
-#include "src/Engine/Engine/Renderer3D.h"
-#include "src/Input/KeyCodes.h"
 #include "src/Scene/Component.h"
-#include "src/Scene/SceneSerializer.h"
+#include <Core.h>
 #include <cstdint>
 #include <memory>
 #include <Core.h>
 #include <Log.h>
 namespace FooGame
 {
+    static void DrawEntitySpecs(entt::registry& registry)
+    {
+        auto Float3 = [&](const char* name, glm::vec3& vec)
+        {
+            float val[3] = {vec.x, vec.y, vec.z};
 
-#define SCENE_JSON "Assets/Scenes/Prototype/scene.json"
+            ImGui::DragFloat3(name, val, 0.01f, -9000.0f, 9000.0f);
+            vec.x = val[0];
+            vec.y = val[1];
+            vec.z = val[2];
+        };
+
+#define REMOVE_COMP_BTN(ent, type)         \
+    if (ImGui::Button("Delete component")) \
+    {                                      \
+        registry.remove<type>(ent);        \
+    }
+
+        auto entites = registry.view<TransformComponent>().each();
+        ImGui::Begin("Entites");
+        int i = 0;
+        for (auto [entity, transform] : entites)
+        {
+            auto tag      = registry.get<TagComponent>(entity);
+            auto idComp   = registry.get<IDComponent>(entity);
+            auto meshComp = registry.try_get<MeshRendererComponent>(entity);
+            auto* sc      = registry.try_get<ScriptComponent>(entity);
+            if (ImGui::CollapsingHeader(tag.Tag.c_str()))
+            {
+                ImGui::PushID(i);
+                uint64_t id = idComp.ID;
+                ImGui::Text("ID: %llu", id);
+
+                if (ImGui::TreeNode("Transform"))
+                {
+                    Float3("Translation", transform.Translation);
+                    Float3("Scale", transform.Scale);
+                    Float3("Rotation", transform.Rotation);
+                    ImGui::TreePop();
+                }
+
+                if (meshComp)
+                {
+                    if (ImGui::TreeNode("MeshRenderer"))
+                    {
+                        ImGui::LabelText(meshComp->ModelName.c_str(), "Model");
+                        REMOVE_COMP_BTN(entity, MeshRendererComponent);
+                        ImGui::TreePop();
+                    }
+                }
+                if (sc)
+                {
+                    if (ImGui::TreeNode("Script"))
+                    {
+                        for (auto& [name, _] : sc->Scripts)
+                        {
+                            bool shouldRemove = false;
+                            if (ImGui::Button("Remove script"))
+                            {
+                                shouldRemove = true;
+                            }
+                            ImGui::SameLine();
+                            ImGui::TextUnformatted(name.c_str());
+                            if (shouldRemove)
+                            {
+                                sc->RemoveScript(name);
+                                break;
+                            }
+                        }
+                        REMOVE_COMP_BTN(entity, ScriptComponent);
+
+                        ImGui::TreePop();
+                    }
+                }
+
+                if (ImGui::Button("Add component"))
+                {
+                    ImGui::OpenPopup("ComponentsPopup");
+                }
+                if (ImGui::BeginPopup("ComponentsPopup"))
+                {
+                    ImGui::SeparatorText("Components");
+                    if (!meshComp)
+                    {
+                        if (ImGui::Selectable("MESH"))
+                        {
+                        }
+                    }
+                    if (!sc)
+                    {
+                        if (ImGui::Selectable("SCRIPT"))
+                        {
+                        }
+                    }
+                    ImGui::EndPopup();
+                }
+                ImGui::PopID();
+            }
+            i++;
+        }
+        ImGui::End();
+#undef REMOVE_COMP_BTN
+    }
     EditorLayer::EditorLayer(const CommandLineArgs& args)
         : Layer("Editor Layer"), m_Args(args), m_Scene(std::make_unique<Scene>())
     {
@@ -22,7 +122,7 @@ namespace FooGame
     {
         FOO_EDITOR_INFO("Reading scene data");
         SceneSerializer serializer(m_Scene.get());
-        serializer.Serialize("Assets/Scenes/Prototype2/Scene.json");
+        serializer.DeSerialize("Assets/Scenes/Prototype2/Scene.json");
 
         auto mv = m_Scene->GetAllEntitiesWith<MeshRendererComponent>().each();
         for (auto [entity, comp] : mv)
@@ -44,30 +144,7 @@ namespace FooGame
     void EditorLayer::OnImGuiRender()
     {
         DrawCameraUI();
-        auto Float3 = [&](const std::string& name, glm::vec3& vec)
-        {
-            float val[3] = {vec.x, vec.y, vec.z};
-
-            ImGui::DragFloat3(name.c_str(), val, 0.01f, -9000.0f, 9000.0f);
-            vec.x = val[0];
-            vec.y = val[1];
-            vec.z = val[2];
-        };
-        ImGui::Begin("Entities");
-        int i   = 0;
-        auto mv = m_Scene->GetAllEntitiesWith<TransformComponent, TagComponent>().each();
-        for (auto [entity, transform, tag] : mv)
-        {
-            ImGui::PushID(i);
-            ImGui::Text("%s", tag.Tag.c_str());
-            Float3("Position", transform.Translation);
-            Float3("Scale", transform.Scale);
-            Float3("Rotation", transform.Rotation);
-            ImGui::PopID();
-            i++;
-        }
-        i = 0;
-        ImGui::End();
+        DrawEntitySpecs(m_Scene->m_Registry);
     }
     void EditorLayer::DrawCameraUI()
     {
@@ -119,7 +196,7 @@ namespace FooGame
         if (Input::IsKeyDown(KeyCode::F1))
         {
             SceneSerializer serializer{m_Scene.get()};
-            serializer.DeSerialize("C:\\Users\\jcead\\Downloads\\scene.json");
+            serializer.Serialize("Scenes\\Prototype2\\Scene.json");
         }
     }
     void EditorLayer::OnEvent(Event& e)

@@ -1,72 +1,70 @@
 {
-	"name": "Prototype scene",
-	"materials": [
-		{
-			"name": "Viking material",
-			"albedo": "Textures\\viking_room.png"
-		}
-	],
-	"entities": [
-		{
-			"id": 3263328598497060330,
-			"tagComponent": {
-				"tag": "Viking"
-			},
-			"transformComponent": {
-				"translation": [
-					0.0,
-					0.0,
-					0.0
-				],
-				"rotation": [
-					-1.5,
-					1.0,
-					0.0
-				],
-				"scale": [
-					1.0,
-					1.0,
-					1.0
-				]
-			},
-			"meshComponent": {
-				"modelPath": "Models\\viking_room.obj",
-				"material": "Viking material"
-			},
-			"scriptComponent": [
-				"Rotate"
-			]
-		},
-		{
-			"id": 3263328598297060330,
-			"tagComponent": {
-				"tag": "Avocado"
-			},
-			"transformComponent": {
-				"translation": [
-					0.0,
-					0.0,
-					0.0
-				],
-				"rotation": [
-					0.0,
-					0.0,
-					0.0
-				],
-				"scale": [
-					12.0,
-					12.0,
-					12.0
-				]
-			},
-			"meshComponent": {
-				"modelPath": "Models\\Avocado.obj",
-				"material": "Viking material"
-			},
-			"scriptComponent": [
-				"ScaleYoink",
-				"Rotate"
-			]
-		}
-	]
+    "entities": [
+        {
+            "id": 3263328598497060330,
+            "meshComponent": {
+                "material": "Viking material",
+                "modelPath": "Models\\viking_room.obj"
+            },
+            "tagComponent": {
+                "tag": "Viking"
+            },
+            "transformComponent": {
+                "rotation": [
+                    -1.5,
+                    1.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.9534403085708618,
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        {
+            "id": 3263328598297060330,
+            "meshComponent": {
+                "material": "Viking material",
+                "modelPath": "Models\\Avocado.obj"
+            },
+            "scriptComponent": [
+                "RotateScript",
+                "ScaleYoink"
+            ],
+            "tagComponent": {
+                "tag": "Avocado"
+            },
+            "transformComponent": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    -3.9966487884521484,
+                    12.0,
+                    12.0
+                ],
+                "translation": [
+                    -0.9166637659072876,
+                    0.0,
+                    0.0
+                ]
+            }
+        }
+    ],
+    "materials": [
+        {
+            "albedo": "viking_room.png",
+            "albedoPath": "Textures\\viking_room.png",
+            "name": "Viking material"
+        }
+    ],
+    "name": "Prototype scene"
 }

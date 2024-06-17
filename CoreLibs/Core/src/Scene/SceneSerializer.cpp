@@ -1,10 +1,10 @@
 #include "SceneSerializer.h"
 #include <Log.h>
+#include <cassert>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <json.hpp>
-#include <vector>
 #include "Entity.h"
 #include "../Core/AssetManager.h"
 #include "../Scene/Component.h"
@@ -21,7 +21,7 @@ namespace FooGame
     SceneSerializer::SceneSerializer(Scene* scene) : m_pScene(scene)
     {
     }
-    static void DeSerializeEntity(Entity& entity, json& sceneEntitiesNode)
+    static void SerializeEntity(Entity& entity, json& sceneEntitiesNode)
     {
         if (!entity.HasComponent<IDComponent>())
         {
@@ -30,8 +30,8 @@ namespace FooGame
         }
         if (!entity.HasComponent<TagComponent>())
         {
-            auto tag                          = entity.GetComponent<TagComponent>().Tag;
-            sceneEntitiesNode["tagComponent"] = {"tag", tag};
+            auto tag                                 = entity.GetComponent<TagComponent>().Tag;
+            sceneEntitiesNode["tagComponent"]["tag"] = tag;
         }
 
         if (!entity.HasComponent<TransformComponent>())
@@ -55,28 +55,35 @@ namespace FooGame
         }
         if (!entity.HasComponent<ScriptComponent>())
         {
-            auto scripts                         = entity.GetComponent<ScriptComponent>();
-            sceneEntitiesNode["scriptComponent"] = json::array();
-            for (auto [name, script] : scripts.Scripts)
+            auto scripts = entity.GetComponent<ScriptComponent>();
+            if (!scripts.Scripts.empty())
             {
-                sceneEntitiesNode["scriptComponent"].push_back(name);
+                sceneEntitiesNode["scriptComponent"] = json::array();
+                for (auto [name, script] : scripts.Scripts)
+                {
+                    sceneEntitiesNode["scriptComponent"].push_back(name);
+                }
             }
         }
     }
-    static void SerializeEntity(const json& entityJson, Scene* scene,
-                                const std::filesystem::path& assetPath)
+    static void DeSerializeEntity(const json& entityJson, Scene* scene,
+                                  const std::filesystem::path& assetPath)
     {
         uint64_t uuid = entityJson["id"];
-        std::string name;
+        std::string tag;
+        bool componentExists = false;
 
+        componentExists = entityJson.contains("tagComponent");
+        // TODO: Add assertion
         auto tagComponent = entityJson["tagComponent"];
         if (!tagComponent.empty())
         {
-            name = tagComponent["tag"];
+            tag = tagComponent["tag"];
         }
-        FOO_ENGINE_TRACE("Deserialized entity with ID = {0}, name = {1}", uuid, name);
-        Entity deserializedEntity = scene->CreateEntityWithUUID(uuid, name);
+        FOO_ENGINE_TRACE("Deserialized entity with ID = {0}, name = {1}", uuid, tag);
+        Entity deserializedEntity = scene->CreateEntityWithUUID(uuid, tag);
 
+        componentExists         = entityJson.contains("transformComponent");
         auto transformComponent = entityJson["transformComponent"];
         assert(!transformComponent.empty());
         if (!transformComponent.empty())
@@ -88,65 +95,78 @@ namespace FooGame
             tc.Scale       = toVec3(transformComponent["scale"]);
             tc.Rotation    = toVec3(transformComponent["rotation"]);
         }
-        auto meshComponent = entityJson["meshComponent"];
-        if (!meshComponent.empty())
+        componentExists = entityJson.contains("meshComponent");
+        if (componentExists)
         {
-            auto& mc        = deserializedEntity.AddComponent<MeshRendererComponent>();
-            auto modelPath  = std::filesystem::path(meshComponent["modelPath"]);
-            mc.ModelPath    = modelPath.string();
-            mc.MaterialName = meshComponent["material"];
+            auto meshComponent = entityJson["meshComponent"];
+            if (!meshComponent.empty())
+            {
+                auto& mc        = deserializedEntity.AddComponent<MeshRendererComponent>();
+                auto modelPath  = std::filesystem::path(meshComponent["modelPath"]);
+                mc.ModelPath    = modelPath.string();
+                mc.MaterialName = meshComponent["material"];
 
-            auto modelExtension = modelPath.extension().string();
-            if (modelExtension == ".obj")
-            {
-                auto p = (assetPath / modelPath);
-                AssetManager::LoadObjModel(p.string(), p.filename().string());
-                mc.ModelName = p.filename().string();
-            }
-            else if (modelExtension == ".glb")
-            {
-                auto p = (assetPath / modelPath);
-                AssetManager::LoadGLTFModel(p.string(), p.filename().string(), true);
-                mc.ModelName = p.filename().string();
-            }
-            else if (modelExtension == ".gltf")
-            {
-                auto p = (assetPath / modelPath);
-                AssetManager::LoadGLTFModel(p.string(), p.filename().string(), false);
-                mc.ModelName = p.filename().string();
+                auto modelExtension = modelPath.extension().string();
+                if (modelExtension == ".obj")
+                {
+                    auto p = (assetPath / modelPath);
+                    AssetManager::LoadObjModel(p.string(), p.filename().string());
+                    mc.ModelName = p.filename().string();
+                }
+                else if (modelExtension == ".glb")
+                {
+                    auto p = (assetPath / modelPath);
+                    AssetManager::LoadGLTFModel(p.string(), p.filename().string(), true);
+                    mc.ModelName = p.filename().string();
+                }
+                else if (modelExtension == ".gltf")
+                {
+                    auto p = (assetPath / modelPath);
+                    AssetManager::LoadGLTFModel(p.string(), p.filename().string(), false);
+                    mc.ModelName = p.filename().string();
+                }
             }
         }
-        auto scriptComponent = entityJson["scriptComponent"];
-        if (!scriptComponent.empty())
+        componentExists = entityJson.contains("scriptComponent");
+        if (componentExists)
         {
-            auto& sc = deserializedEntity.AddComponent<ScriptComponent>();
-            for (auto& sname : scriptComponent)
+            auto scriptComponent = entityJson["scriptComponent"];
+            if (!scriptComponent.empty())
             {
-                if (sname == "Rotate")
+                auto& sc = deserializedEntity.AddComponent<ScriptComponent>();
+                for (std::string sname : scriptComponent)
                 {
-                    sc.Bind<RotateScript>("RotateScript");
-                }
-                else if (sname == "ScaleYoink")
-                {
-                    sc.Bind<ScaleYoink>("ScaleYoink");
-                }
-                else
-                {
-                    FOO_ENGINE_ERROR("Script with name: {0} could not found");
+                    if (sname == "RotateScript")
+                    {
+                        sc.Bind<RotateScript>("RotateScript");
+                    }
+                    else if (sname == "ScaleYoink")
+                    {
+                        sc.Bind<ScaleYoink>("ScaleYoink");
+                    }
+                    else
+                    {
+                        FOO_ENGINE_ERROR("Script with name: {0} could not found", sname);
+                    }
                 }
             }
         }
     }
-    void SceneSerializer::DeSerialize(const std::string& path)
+    void SceneSerializer::Serialize(const std::string& path)
     {
+        auto cwd       = std::filesystem::current_path();
+        auto assets    = cwd.append("Assets");
+        auto scenePath = assets / path;
+
         json scene;
         scene["name"]  = m_pScene->m_Name;
         auto materials = AssetManager::AllMaterials();
         for (auto& [name, mat] : materials)
         {
             scene["materials"].push_back({
-                {  "name",      mat.Name},
-                {"albedo", mat.AlbedoMap}
+                {      "name",          mat.Name},
+                {    "albedo",     mat.AlbedoMap},
+                {"albedoPath", mat.AlbedoMapPath},
             });
         }
         scene["entities"] = json::array();
@@ -160,16 +180,16 @@ namespace FooGame
                 continue;
             }
             json entityJson = json::object();
-            DeSerializeEntity(ent, entityJson);
+            SerializeEntity(ent, entityJson);
             scene["entities"].push_back(entityJson);
         }
 
         std::string str = scene.dump();
-        std::ofstream o{path};
+        std::ofstream o{scenePath};
         o << std::setw(4) << scene << std::endl;
         o.close();
     }
-    void SceneSerializer::Serialize(const std::string& path)
+    void SceneSerializer::DeSerialize(const std::string& path)
     {
         auto cwd       = std::filesystem::current_path();
         auto assetPath = cwd / "Assets";
@@ -203,12 +223,11 @@ namespace FooGame
             for (auto& m : materials)
             {
                 Material2 mat{};
-                mat.Name      = m["name"];
-                mat.AlbedoMap = std::filesystem::path(m["albedo"]).filename().string();
+                mat.Name          = m["name"];
+                mat.AlbedoMap     = m["albedo"];
+                mat.AlbedoMapPath = m["albedoPath"];
                 AssetManager::AddMaterial(mat);
-                auto texPath = assetPath / std::filesystem::path(m["albedo"]);
-
-                AssetManager::LoadTexture(texPath.string(), texPath.filename().string());
+                AssetManager::LoadTexture((assetPath / mat.AlbedoMapPath).string(), mat.AlbedoMap);
             }
         }
         auto entities = sceneJson["entities"];
@@ -216,7 +235,7 @@ namespace FooGame
         {
             for (auto entity : entities)
             {
-                SerializeEntity(entity, m_pScene, assetPath);
+                DeSerializeEntity(entity, m_pScene, assetPath);
             }
         }
     }

@@ -9,21 +9,6 @@
 namespace FooGame
 {
 
-    struct Foo : public ScriptableEntity
-    {
-            void OnCreate() override { std::cout << "Script Created " << std::endl; }
-            void OnDestroy() override { std::cout << "Script Destroy " << std::endl; }
-            void Hello()
-            {
-                if (index <= 10)
-                {
-                    std::cout << "Hello world " << std::endl;
-                }
-                index++;
-            }
-            void OnUpdate(float ts) override { Hello(); }
-            u32 index = 0;
-    };
     Scene::Scene()
     {
     }
@@ -186,31 +171,6 @@ namespace FooGame
     }
     void Scene::IMGUI()
     {
-        m_Registry.view<TransformComponent>().each(
-            [=](auto& transform)
-            {
-                ImGui::Begin("Transform");
-                float scale[3] = {
-                    transform.Scale.x,
-                    transform.Scale.y,
-                    transform.Scale.z,
-                };
-                float pos[3] = {
-                    transform.Translation.x,
-                    transform.Translation.y,
-                    transform.Translation.z,
-                };
-
-                ImGui::SliderFloat3("Scale", scale, 0.1f, 20.0f);
-                transform.Scale.x = scale[0];
-                transform.Scale.y = scale[1];
-                transform.Scale.z = scale[2];
-                ImGui::SliderFloat3("Translation", pos, 0.1f, 20.0f);
-                transform.Translation.x = pos[0];
-                transform.Translation.y = pos[1];
-                transform.Translation.z = pos[2];
-                ImGui::End();
-            });
     }
 
     template <typename T>
@@ -241,14 +201,6 @@ namespace FooGame
     void Scene::OnComponentAdded<MeshRendererComponent>(Entity entity,
                                                         MeshRendererComponent& component)
     {
-    }
-    std::unique_ptr<Scene> LoadSceneFromJson(std::ifstream& stream)
-    {
-        using json       = nlohmann::json;
-        json data        = json::parse(stream);
-        int id           = data["id"];
-        std::string name = data["name"];
-        return std::make_unique<Scene>();
     }
 
 }  // namespace FooGame
