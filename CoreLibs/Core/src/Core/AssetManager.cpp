@@ -121,7 +121,8 @@ namespace FooGame
         stageDesc.pRenderDevice   = pRenderDevice;
         stageDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
         stageDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
-        stageDesc.Name            = (std::string("Stage buffer for texture: ") + name).c_str();
+        auto bufferName           = std::string("Stage buffer for texture: ") + name;
+        stageDesc.Name            = bufferName.c_str();
         stageDesc.BufferData.Data = pixels;
         stageDesc.BufferData.Size = size;
 

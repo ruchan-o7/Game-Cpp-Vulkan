@@ -108,8 +108,9 @@ namespace FooGame
             auto meshComponent = entityJson["meshComponent"];
             if (!meshComponent.empty())
             {
-                auto& mc        = deserializedEntity.AddComponent<MeshRendererComponent>();
-                auto modelPath  = std::filesystem::path(meshComponent["modelPath"]);
+                auto& mc = deserializedEntity.AddComponent<MeshRendererComponent>();
+                auto modelPath =
+                    std::filesystem::path(meshComponent["modelPath"].get<std::string>());
                 mc.ModelPath    = modelPath.string();
                 mc.MaterialName = meshComponent["material"];
 
