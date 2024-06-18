@@ -1,11 +1,13 @@
 #include "Editor.h"
 #include <Core.h>
+#include <cstdint>
 #include <ctime>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include "Layer/EditorLayer.h"
 #include "src/Core/Time.h"
 #include "src/Core/Window.h"
+#include "src/Input/KeyCodes.h"
 #include <Log.h>
 #include <imgui.h>
 namespace FooGame
@@ -96,6 +98,17 @@ namespace FooGame
     }
     bool Editor::OnKeyEvent(KeyPressedEvent& key)
     {
+        ImGuiIO& io = ImGui::GetIO();
+        if (key.GetKeyCode() == KeyCode::Backspace)
+        {
+            io.AddKeyEvent(ImGuiKey_Backspace, true);
+            io.AddKeyEvent(ImGuiKey_Backspace, false);
+        }
+        else
+        {
+            auto keycode = static_cast<uint16_t>(key.GetKeyCode());
+            io.AddInputCharacter(keycode);
+        }
         if (key.GetKeyCode() == KeyCode::Escape)
         {
             std::cout << "Closing..." << std::endl;

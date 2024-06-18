@@ -79,7 +79,7 @@ namespace FooGame
         {
             ImGuiTreeNodeFlags flags =
                 ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-            bool opened = ImGui::TreeNodeEx((void*)9817239, flags, tag.c_str());
+            bool opened = ImGui::TreeNodeEx((void*)9817239, flags, "%s", tag.c_str());
             if (opened)
             {
                 ImGui::TreePop();
@@ -318,6 +318,13 @@ namespace FooGame
                     }
                     ImGui::EndPopup();
                 }
+            });
+        DrawComponent<MeshRendererComponent>(
+            "Mesh Renderer", entity,
+            [](MeshRendererComponent& component)
+            {
+                ImGui::LabelText(component.ModelName.c_str(), "Model: ");
+                ImGui::LabelText(component.MaterialName.c_str(), "Material name: ");
             });
     }
     void SceneHierarchyPanel::SetSelectedEntity(Entity e)

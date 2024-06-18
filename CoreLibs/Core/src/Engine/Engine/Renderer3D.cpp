@@ -232,9 +232,17 @@ namespace FooGame
     void Renderer3D::DrawModel(const std::string& name, std::string& materialName,
                                const glm::mat4& transform)
     {
-        assert(!name.empty());
+        if (name.empty())
+        {
+            FOO_ENGINE_WARN("Empty name string provided");
+            return;
+        }
         auto model = AssetManager::GetModel(name);
-        assert(model != nullptr);
+        if (model == nullptr)
+        {
+            FOO_ENGINE_WARN("Model not found in asset manager: {0}", name);
+            return;
+        }
 
         assert(!materialName.empty());
 

@@ -50,12 +50,12 @@
                     0.0
                 ],
                 "scale": [
-                    -6.7167863845825195,
+                    -8.821260452270508,
                     12.0,
                     12.0
                 ],
                 "translation": [
-                    -0.740888774394989,
+                    -0.47107231616973877,
                     0.0,
                     0.0
                 ]
@@ -83,6 +83,33 @@
                 ],
                 "translation": [
                     0.9534403085708618,
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        {
+            "id": 7954746054582625731,
+            "meshComponent": {
+                "material": "Viking material",
+                "modelPath": "Models\\Sponza.obj"
+            },
+            "tagComponent": {
+                "tag": "SPONZA"
+            },
+            "transformComponent": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
                     0.0,
                     0.0
                 ]

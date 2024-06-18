@@ -9,6 +9,7 @@
 #include "src/Engine/Core/VulkanBuffer.h"
 #include <stb_image.h>
 #include <tiny_gltf.h>
+#include <cstddef>
 namespace FooGame
 {
     using ModelName = std::string;
@@ -363,7 +364,11 @@ namespace FooGame
     }
     std::shared_ptr<Model> AssetManager::GetModel(const std::string& name)
     {
-        return s_ModelMap[name];
+        if (s_ModelMap.find(name) != s_ModelMap.end())
+        {
+            return s_ModelMap[name];
+        }
+        return nullptr;
     }
     std::shared_ptr<VulkanTexture> AssetManager::GetTexture(const std::string& name)
     {
