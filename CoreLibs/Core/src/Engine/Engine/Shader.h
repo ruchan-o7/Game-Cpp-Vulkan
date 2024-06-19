@@ -23,6 +23,7 @@ namespace FooGame
             ShaderStage GetShaderStage() const { return m_Ci.Stage; };
             VkShaderStageFlagBits GetType();
             VkPipelineShaderStageCreateInfo CreateInfo();
+            VkDescriptorSetLayout GetLayout() const;
 
         private:
             struct CreateInfo m_Ci;

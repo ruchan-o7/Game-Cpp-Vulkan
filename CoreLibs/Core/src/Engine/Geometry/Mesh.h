@@ -29,14 +29,9 @@ namespace FooGame
             Material materialData;
             uint32_t RenderId;
 
-            // void SetTexture(const std::shared_ptr<Texture2D>& texture) { m_Texture = texture; }
-
-            VkDescriptorSetLayout GetLayout() const { return m_Layout; }
             VkDescriptorSet* GetSet(uint32_t index) { return &m_DescriptorSets[index]; }
             std::vector<VkDescriptorSet>& GetSets() { return m_DescriptorSets; }
             std::vector<VkDescriptorSet> m_DescriptorSets{3};
-            VkDescriptorSetLayout m_Layout;
-            // std::shared_ptr<Texture2D> m_Texture;
     };
 
 }  // namespace FooGame

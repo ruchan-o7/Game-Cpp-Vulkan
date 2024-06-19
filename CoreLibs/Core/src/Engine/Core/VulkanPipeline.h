@@ -14,8 +14,6 @@ namespace ENGINE_NAMESPACE
                     std::vector<VkPipelineShaderStageCreateInfo> ShaderStages;
                     std::vector<VkVertexInputBindingDescription> VertexBindings;
                     std::vector<VkVertexInputAttributeDescription> VertexAttributes;
-                    VkDescriptorSetLayout SetLayout;
-                    // RenderDevice* pRenderDevice;
                     std::weak_ptr<VulkanLogicalDevice> wpLogicalDevice;
                     VkRenderPass RenderPass;
                     CULL_MODE CullMode         = CULL_MODE_BACK;
@@ -28,12 +26,14 @@ namespace ENGINE_NAMESPACE
             VulkanPipeline(const CreateInfo& ci);
             VkPipelineLayout GetLayout() const { return m_Layout; }
             VkPipeline GetPipeline() const { return m_Pipeline; }
-            // ~VulkanPipeline();
+            VkDescriptorSetLayout GetDescriptorSetLayout() const { return m_DescriptorSetLayout; };
+            ~VulkanPipeline();
 
         private:
             CreateInfo m_Info;
             PipelineWrapper m_Pipeline;
             PipelineLayoutWrapper m_Layout;
+            DescriptorSetLayoutWrapper m_DescriptorSetLayout;
     };
 
 }  // namespace ENGINE_NAMESPACE

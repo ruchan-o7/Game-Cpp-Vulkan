@@ -11,7 +11,24 @@ namespace ENGINE_NAMESPACE
         assert(m_Info.ShaderStages.size() != 0 && "Check your pipeline info structure");
         auto logicalDevice = m_Info.wpLogicalDevice.lock();
 
-        auto device = logicalDevice->GetVkDevice();
+        VkDescriptorSetLayoutBinding uboLayoutBinding{};
+        uboLayoutBinding.binding            = 0;
+        uboLayoutBinding.descriptorCount    = 1;
+        uboLayoutBinding.descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBinding.pImmutableSamplers = nullptr;
+        uboLayoutBinding.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
+        VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+        samplerLayoutBinding.binding             = 1;
+        samplerLayoutBinding.descriptorCount     = 1;
+        samplerLayoutBinding.descriptorType      = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        samplerLayoutBinding.pImmutableSamplers  = nullptr;
+        samplerLayoutBinding.stageFlags          = VK_SHADER_STAGE_FRAGMENT_BIT;
+        VkDescriptorSetLayoutBinding bindings[2] = {uboLayoutBinding, samplerLayoutBinding};
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = ARRAY_COUNT(bindings);
+        layoutInfo.pBindings    = bindings;
+        m_DescriptorSetLayout   = logicalDevice->CreateDescriptorSetLayout(layoutInfo);
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -80,7 +97,7 @@ namespace ENGINE_NAMESPACE
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts    = &m_Info.SetLayout;
+        pipelineLayoutInfo.pSetLayouts    = &m_DescriptorSetLayout;
 
         VkPushConstantRange pushConstants{};
         if (m_Info.PushConstantCount > 0)
@@ -115,4 +132,15 @@ namespace ENGINE_NAMESPACE
         m_Pipeline = logicalDevice->CreateGraphicsPipeline(pipelineInfo, nullptr, m_Info.Name);
     }
 #undef CAST
+    VulkanPipeline::~VulkanPipeline()
+    {
+        auto logicalDevice = m_Info.wpLogicalDevice.lock();
+
+        if (m_Layout)
+        {
+            vkDestroyDescriptorSetLayout(logicalDevice->GetVkDevice(), m_DescriptorSetLayout,
+                                         nullptr);
+            vkDestroyPipeline(logicalDevice->GetVkDevice(), m_Pipeline, nullptr);
+        }
+    }
 }  // namespace ENGINE_NAMESPACE

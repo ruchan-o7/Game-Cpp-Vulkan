@@ -7,7 +7,6 @@
 #include <unordered_map>
 #include "Shader.h"
 #include "../Core/VulkanPipeline.h"
-#include "Types/DescriptorData.h"
 #include "Types/DeletionQueue.h"
 #include "../Core/RenderDevice.h"
 #include "../Core/VulkanBuffer.h"
@@ -16,6 +15,7 @@
 #include <imgui.h>
 #include "src/Core/AssetManager.h"
 #include "src/Engine/Engine/Types/GraphicTypes.h"
+#include "vulkan/vulkan_core.h"
 #include <Log.h>
 namespace FooGame
 {
@@ -47,19 +47,15 @@ namespace FooGame
     {
             struct Resources
             {
-                    // std::unordered_map<uint32_t, MeshDrawData> MeshMap;
                     std::unordered_map<uint32_t, MeshDrawData2> MeshMap2;
                     uint32_t FreeIndex                  = 0;
                     std::shared_ptr<Model> DefaultModel = nullptr;
-                    DescriptorData descriptor;
-                    // vke::DescriptorAllocatorPool* DescriptorAllocatorPool;
                     DeletionQueue deletionQueue;
             };
 
             struct Api
             {
                     VkSampler TextureSampler;
-                    // Texture2D DefaultTexture;  // Owner is Renderer3D
             };
             Resources Res;
             FrameStatistics FrameData;
@@ -69,6 +65,7 @@ namespace FooGame
     {
             std::vector<std::unique_ptr<VulkanBuffer>> uniformBuffers{2};
             std::unique_ptr<VulkanPipeline> pGraphicPipeline;
+            VkDescriptorSet descriptorSets[3];
     };
     RendererContext rContext{};
     static RenderData s_Data;
@@ -93,31 +90,6 @@ namespace FooGame
             rContext.uniformBuffers[i] = std::move(std::make_unique<VulkanBuffer>(desc));
             rContext.uniformBuffers[i]->MapMemory();
         }
-        {
-            VkDescriptorSetLayoutBinding uboLayoutBinding{};
-            uboLayoutBinding.binding            = 0;
-            uboLayoutBinding.descriptorCount    = 1;
-            uboLayoutBinding.descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            uboLayoutBinding.pImmutableSamplers = nullptr;
-            uboLayoutBinding.stageFlags         = VK_SHADER_STAGE_VERTEX_BIT;
-            VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-            samplerLayoutBinding.binding             = 1;
-            samplerLayoutBinding.descriptorCount     = 1;
-            samplerLayoutBinding.descriptorType      = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            samplerLayoutBinding.pImmutableSamplers  = nullptr;
-            samplerLayoutBinding.stageFlags          = VK_SHADER_STAGE_FRAGMENT_BIT;
-            VkDescriptorSetLayoutBinding bindings[2] = {uboLayoutBinding, samplerLayoutBinding};
-            VkDescriptorSetLayoutCreateInfo layoutInfo{};
-            layoutInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            layoutInfo.bindingCount = ARRAY_COUNT(bindings);
-            layoutInfo.pBindings    = bindings;
-            Backend::CreateDescriptorSetLayout(layoutInfo, s_Data.Res.descriptor.SetLayout);
-
-            s_Data.Res.deletionQueue.PushFunction(
-                [&](VkDevice device) {
-                    vkDestroyDescriptorSetLayout(device, s_Data.Res.descriptor.SetLayout, nullptr);
-                });
-        }
 
         {
             auto logicalDevice = pRenderDevice->GetLogicalDevice();
@@ -133,7 +105,6 @@ namespace FooGame
             ci.ShaderStages.push_back(frag.CreateInfo());
             ci.PushConstantCount      = 1;
             ci.PushConstantSize       = sizeof(MeshPushConstants);
-            ci.SetLayout              = s_Data.Res.descriptor.SetLayout;
             ci.SampleCount            = 1;
             ci.wpLogicalDevice        = pRenderDevice->GetLogicalDevice();
             ci.CullMode               = CULL_MODE_BACK;
@@ -249,7 +220,6 @@ namespace FooGame
         auto currentFrame = Backend::GetCurrentFrame();
         auto cmd          = Backend::GetCurrentCommandbuffer();
         auto extent       = Backend::GetSwapchainExtent();
-        auto device       = Backend::GetRenderDevice()->GetVkDevice();
 
         BindPipeline(cmd);
         const auto& material  = AssetManager::GetMaterial(materialName);
@@ -278,9 +248,10 @@ namespace FooGame
         auto allocator = Backend::GetAllocatorHandle();
         for (const auto& mesh : model->GetMeshes())
         {
-            auto& modelRes   = s_Data.Res.MeshMap2[mesh.RenderId];
-            auto& currentSet = *modelRes.PtrMesh->GetSet(currentFrame);
-            allocator.Allocate(modelRes.PtrMesh->GetLayout(), currentSet);
+            auto& modelRes = s_Data.Res.MeshMap2[mesh.RenderId];
+
+            auto& currentSet = rContext.descriptorSets[currentFrame];
+            allocator.Allocate(rContext.pGraphicPipeline->GetDescriptorSetLayout(), currentSet);
 
             VkDescriptorBufferInfo descriptorBufferInfo{};
             descriptorBufferInfo.buffer = rContext.uniformBuffers[currentFrame]->GetBuffer();
@@ -368,7 +339,7 @@ namespace FooGame
             push.renderMatrix = transform;
             auto allocator    = Backend::GetAllocatorHandle();
             auto& currentSet  = *modelRes.PtrMesh->GetSet(currentFrame);
-            allocator.Allocate(modelRes.PtrMesh->GetLayout(), currentSet);
+            allocator.Allocate(rContext.pGraphicPipeline->GetDescriptorSetLayout(), currentSet);
             Backend::PushConstant(rContext.pGraphicPipeline->GetLayout(),
                                   VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants), &push);
             {
