@@ -129,8 +129,11 @@ namespace FooGame
                 }
                 else if (modelExtension == ".gltf")
                 {
-                    auto p = (assetPath / modelPath);
-                    AssetManager::LoadGLTFModel(p.string(), p.filename().string(), false);
+                    auto p           = (assetPath / modelPath);
+                    auto pStr        = p.string();
+                    auto filenameStr = p.filename().string();
+
+                    AssetManager::LoadGLTFModel(pStr, filenameStr, false);
                     mc.ModelName = p.filename().string();
                 }
             }
