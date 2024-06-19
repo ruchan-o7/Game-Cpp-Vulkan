@@ -6,6 +6,7 @@
 #include <Log.h>
 #include "../Engine/Engine/Backend.h"
 #include "glm/gtc/type_ptr.hpp"
+#include "src/Core/File.h"
 #include "src/Engine/Core/VulkanBuffer.h"
 #include "src/Engine/Geometry/Material.h"
 #include <stb_image.h>
@@ -30,7 +31,17 @@ namespace FooGame
     std::vector<Material> g_Materials;
     std::unordered_map<std::string, Material> s_MaterialMap;
 
+    const std::unordered_map<std::string, Material>& AssetManager::GetAllMaterials()
+    {
+        return s_MaterialMap;
+    }
+    void AssetManager::AddMaterial(Material material)
+    {
+        InsertMaterial(material.Name, material);
+    }
+
     static bool ReadFile(tinygltf::Model& input, const std::string& path, bool isGlb);
+
     void AssetManager::LoadObjModel(const std::string& path, const std::string& modelName)
     {
         if (GetModel(modelName))
@@ -248,30 +259,39 @@ namespace FooGame
         for (auto& m : gMats)
         {
             Material mt;
-            mt.Name = m.name;
+            mt.fromGlb = true;
+            mt.Name    = m.name;
             if (m.pbrMetallicRoughness.baseColorTexture.index != -1)
             {
                 auto gBaseColorTexture = gImages[m.pbrMetallicRoughness.baseColorTexture.index];
                 auto baseColorTextureName =
                     gBaseColorTexture.name.empty() ? gBaseColorTexture.uri : gBaseColorTexture.name;
-                mt.PbrMat.BaseColorTextureName =
-                    std::filesystem::path(baseColorTextureName).filename().string();
+                mt.PbrMat.BaseColorTextureName = File::ExtractFileName(baseColorTextureName);
 
                 mt.PbrMat.BaseColorFactor[0] = m.pbrMetallicRoughness.baseColorFactor[0];
                 mt.PbrMat.BaseColorFactor[1] = m.pbrMetallicRoughness.baseColorFactor[1];
                 mt.PbrMat.BaseColorFactor[2] = m.pbrMetallicRoughness.baseColorFactor[2];
                 mt.PbrMat.BaseColorFactor[3] = m.pbrMetallicRoughness.baseColorFactor[3];
 
-                mt.PbrMat.MetallicFactor  = m.pbrMetallicRoughness.metallicFactor;
-                mt.PbrMat.RoughnessFactor = m.pbrMetallicRoughness.roughnessFactor;
+                mt.PbrMat.MetallicFactor       = m.pbrMetallicRoughness.metallicFactor;
+                mt.PbrMat.RoughnessFactor      = m.pbrMetallicRoughness.roughnessFactor;
+                mt.PbrMat.BaseColorTexturePath = gBaseColorTexture.uri;
+            }
+            if (m.pbrMetallicRoughness.metallicRoughnessTexture.index != -1)
+            {
+                auto& metallicRoughness =
+                    gImages[m.pbrMetallicRoughness.metallicRoughnessTexture.index];
+                mt.PbrMat.MetallicRoughnessTextureName =
+                    metallicRoughness.name.empty() ? File::ExtractFileName(metallicRoughness.uri)
+                                                   : metallicRoughness.name;
+                mt.PbrMat.MetallicRoughnessTexturePath = metallicRoughness.uri;
             }
             if (m.normalTexture.index != -1)
             {
                 auto normalTexture = gImages[m.normalTexture.index];
                 auto normalTexturename =
                     normalTexture.name.empty() ? normalTexture.uri : normalTexture.name;
-                mt.NormalTexture.Name =
-                    std::filesystem::path(normalTexturename).filename().string();
+                mt.NormalTexture.Name = File::ExtractFileName(normalTexturename);
             }
             materials.push_back(mt);
         }

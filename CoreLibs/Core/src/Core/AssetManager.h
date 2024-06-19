@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include "../Engine/Geometry/Material.h"
-
+#include <unordered_map>
 namespace FooGame
 {
     class Model;
@@ -16,12 +16,14 @@ namespace FooGame
                                     int32_t width, int32_t height);
             static void LoadTexture(const std::string& path, const std::string& name);
             static void CreateDefaultTexture();
+            static void AddMaterial(Material material);
 
         public:
             static std::shared_ptr<Model> GetModel(const std::string& name);
             static Material GetMaterial(const std::string& name);
             static std::shared_ptr<VulkanTexture> GetTexture(const std::string& name);
             static std::shared_ptr<VulkanTexture> GetDefaultTexture();
+            static const std::unordered_map<std::string, Material>& GetAllMaterials();
 
         private:
             static void InsertTextureToVector(const std::shared_ptr<VulkanTexture>& pT,

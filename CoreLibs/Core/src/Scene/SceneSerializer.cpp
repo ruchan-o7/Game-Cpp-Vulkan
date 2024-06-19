@@ -189,16 +189,27 @@ namespace FooGame
         auto scenePath = assets / path;
 
         json scene;
-        scene["name"] = m_pScene->m_Name;
-        // auto materials = AssetManager::AllMaterials();
-        // for (auto& [name, mat] : materials)
-        // {
-        //     scene["materials"].push_back({
-        //         {      "name",           mat.Name},
-        //         {    "albedo",     mat.Albedo.Map},
-        //         {"albedoPath", mat.Albedo.MapPath},
-        //     });
-        // }
+        scene["name"]  = m_pScene->m_Name;
+        auto materials = AssetManager::GetAllMaterials();
+        for (auto& [name, mat] : materials)
+        {
+            json materialJ                       = json::object();
+            materialJ["name"]                    = mat.Name;
+            materialJ["normalTexture"]           = json::object();
+            materialJ["normalTexture"]["name"]   = mat.NormalTexture.Name;
+            materialJ["fromGlb"]                 = mat.fromGlb;
+            json pbrJ                            = json::object();
+            pbrJ["baseColorTexturePath"]         = mat.PbrMat.BaseColorTexturePath;
+            pbrJ["baseColorTextureName"]         = mat.PbrMat.BaseColorTextureName;
+            pbrJ["metallicRoughnessTextureName"] = mat.PbrMat.MetallicRoughnessTextureName;
+            pbrJ["metallicRoughnessTexturePath"] = mat.PbrMat.MetallicRoughnessTexturePath;
+            pbrJ["metallicFactor"]               = mat.PbrMat.MetallicFactor;
+            pbrJ["roughnessFactor"]              = mat.PbrMat.RoughnessFactor;
+            pbrJ["baseColorFactor"]              = mat.PbrMat.BaseColorFactor;
+            materialJ["pbrMetallicRougness"]     = pbrJ;
+
+            scene["materials"].push_back(materialJ);
+        }
         scene["entities"] = json::array();
         auto view         = m_pScene->m_Registry.view<entt::entity>().each();
         for (auto [e] : view)
@@ -252,13 +263,43 @@ namespace FooGame
         {
             for (auto& m : materials)
             {
-                // Material2 mat{};
-                // mat.Name           = m["name"];
-                // mat.Albedo.Map     = m["albedo"];
-                // mat.Albedo.MapPath = m["albedoPath"];
-                // AssetManager::AddMaterial(mat);
-                // AssetManager::LoadTexture((assetPath / mat.Albedo.MapPath).string(),
-                //                           mat.Albedo.Map);
+                Material mat{};
+                mat.Name               = m["name"];
+                mat.fromGlb            = m["fromGlb"];
+                mat.NormalTexture.Name = m["normalTexture"]["name"];
+                auto& pbrM             = m["pbrMetallicRougness"];
+
+                mat.PbrMat.BaseColorTextureName = pbrM["baseColorTextureName"];
+                mat.PbrMat.BaseColorTexturePath = pbrM["baseColorTexturePath"];
+
+                mat.PbrMat.MetallicRoughnessTextureName = pbrM["metallicRoughnessTextureName"];
+                mat.PbrMat.MetallicRoughnessTexturePath = pbrM["metallicRoughnessTexturePath"];
+
+                mat.PbrMat.BaseColorFactor[0] = pbrM["baseColorFactor"][0];
+                mat.PbrMat.BaseColorFactor[1] = pbrM["baseColorFactor"][1];
+                mat.PbrMat.BaseColorFactor[2] = pbrM["baseColorFactor"][2];
+                mat.PbrMat.BaseColorFactor[3] = pbrM["baseColorFactor"][3];
+
+                mat.PbrMat.MetallicFactor  = pbrM["metallicFactor"];
+                mat.PbrMat.RoughnessFactor = pbrM["roughnessFactor"];
+
+                AssetManager::AddMaterial(mat);
+                if (!mat.fromGlb)
+                {
+                    if (!mat.PbrMat.BaseColorTextureName.empty())
+                    {
+                        auto assetPathStr = (assetPath / mat.PbrMat.BaseColorTexturePath).string();
+                        AssetManager::LoadTexture(assetPathStr, mat.PbrMat.BaseColorTextureName);
+                    }
+                    if (!mat.PbrMat.MetallicRoughnessTextureName.empty())
+                    {
+                        auto assetPathStr =
+                            (assetPath / mat.PbrMat.MetallicRoughnessTexturePath).string();
+
+                        AssetManager::LoadTexture(assetPathStr,
+                                                  mat.PbrMat.MetallicRoughnessTextureName);
+                    }
+                }
             }
         }
         auto entities = sceneJson["entities"];
