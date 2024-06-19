@@ -243,7 +243,7 @@ namespace FooGame
                 for (const auto& primitive : mesh.primitives)
                 {
                     FooGame::Mesh tempMesh{};
-                    Material materialData{};
+                    // Material materialData{};
                     uint32_t firstIndex       = static_cast<uint32_t>(tempMesh.m_Indices.size());
                     uint32_t vertexStart      = static_cast<uint32_t>(tempMesh.m_Vertices.size());
                     uint32_t indexCount       = 0;
@@ -254,13 +254,14 @@ namespace FooGame
                     const auto normalsIndex   = primitive.attributes.at("NORMAL");
 
                     const auto material = gltfInput.materials[materialIndex];
-                    materialData.BaseColorTextureIndex =
-                        material.pbrMetallicRoughness.baseColorTexture.index;
-                    materialData.MetallicRoughnessIndex =
-                        material.pbrMetallicRoughness.metallicRoughnessTexture.index;
-                    materialData.NormalTextureIndex = material.normalTexture.index;
-                    materialData.Name               = material.name;
-                    tempMesh.materialData           = materialData;
+                    tempMesh.M3Name     = material.name;
+                    // materialData.BaseColorTextureIndex =
+                    //     material.pbrMetallicRoughness.baseColorTexture.index;
+                    // materialData.MetallicRoughnessIndex =
+                    //     material.pbrMetallicRoughness.metallicRoughnessTexture.index;
+                    // materialData.NormalTextureIndex = material.normalTexture.index;
+                    // materialData.Name               = material.name;
+                    // tempMesh.materialData           = materialData;
 
                     const auto indicesAccessor   = gltfInput.accessors[indicesIndex];
                     const auto positionsAccessor = gltfInput.accessors[positionsIndex];

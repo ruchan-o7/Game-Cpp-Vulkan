@@ -1,14 +1,9 @@
 #include "EditorLayer.h"
 #include "entt/entt.hpp"
 #include "imgui.h"
-#include "src/Scene/Component.h"
-#include <Core.h>
-#include <memory>
 #include <Core.h>
 #include <Log.h>
-#include "src/Scene/Entity.h"
-#include "src/Scene/SceneHierarchyPanel.h"
-#include "src/Scene/Scene.h"
+#include <memory>
 
 namespace FooGame
 {

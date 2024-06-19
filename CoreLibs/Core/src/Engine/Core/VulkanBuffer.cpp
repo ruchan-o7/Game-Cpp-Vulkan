@@ -34,7 +34,8 @@ namespace ENGINE_NAMESPACE
         assert(m_Desc.BufferData.Size > 0);
         Init();
     }
-    VulkanBuffer::~VulkanBuffer(){
+    VulkanBuffer::~VulkanBuffer()
+    {
         Release();
     }
     void VulkanBuffer::Release()
@@ -64,7 +65,7 @@ namespace ENGINE_NAMESPACE
         ci.pQueueFamilyIndices   = nullptr;
         ci.queueFamilyIndexCount = 0;
 
-        m_Buffer = std::move(lDev->CreateBuffer(ci, m_Desc.Name));
+        m_Buffer = std::move(lDev->CreateBuffer(ci, m_Desc.Name.c_str()));
 
         auto memReqs  = lDev->GetBufferMemoryRequirements(m_Buffer);
         auto memProps = pDev->GetMemoryProperties();

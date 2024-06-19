@@ -1,13 +1,9 @@
 #include "Editor.h"
 #include <Core.h>
 #include <cstdint>
-#include <ctime>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include "Layer/EditorLayer.h"
-#include "src/Core/Time.h"
-#include "src/Core/Window.h"
-#include "src/Input/KeyCodes.h"
 #include <Log.h>
 #include <imgui.h>
 namespace FooGame
@@ -15,8 +11,6 @@ namespace FooGame
     Editor::Editor(CommandLineArgs args) : m_Window(nullptr)
     {
         Log::Init(AppType::Editor);
-        FOO_EDITOR_INFO("Argv {0}", *args.argv);
-
         Init();
         PushLayer(new EditorLayer(args));
     }

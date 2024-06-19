@@ -14,8 +14,8 @@
 #include "../Camera/Camera.h"
 #include <imgui.h>
 #include "src/Core/AssetManager.h"
+#include "src/Engine/Core/VulkanTexture.h"
 #include "src/Engine/Engine/Types/GraphicTypes.h"
-#include "vulkan/vulkan_core.h"
 #include <Log.h>
 namespace FooGame
 {
@@ -112,6 +112,7 @@ namespace FooGame
             ci.VertexBindings         = {Vertex::GetBindingDescription()};
             rContext.pGraphicPipeline = std::make_unique<VulkanPipeline>(ci);
         }
+        AssetManager::CreateDefaultTexture();
     }
 
     void Renderer3D::SubmitModel(const std::string& name)
@@ -222,9 +223,6 @@ namespace FooGame
         auto extent       = Backend::GetSwapchainExtent();
 
         BindPipeline(cmd);
-        const auto& material  = AssetManager::GetMaterial(materialName);
-        const auto& albedoMap = AssetManager::GetTexture(material.AlbedoMap);
-        assert(albedoMap != nullptr);
 
         VkViewport viewport{};
         viewport.x        = 0;
@@ -249,6 +247,16 @@ namespace FooGame
         for (const auto& mesh : model->GetMeshes())
         {
             auto& modelRes = s_Data.Res.MeshMap2[mesh.RenderId];
+            auto material  = AssetManager::GetMaterial(mesh.M3Name);
+            std::shared_ptr<VulkanTexture> baseColorTexture;
+            if (material.PbrMat.BaseColorTextureName.empty())
+            {
+                baseColorTexture = AssetManager::GetDefaultTexture();
+            }
+            else
+            {
+                baseColorTexture = AssetManager::GetTexture(material.PbrMat.BaseColorTextureName);
+            }
 
             auto& currentSet = rContext.descriptorSets[currentFrame];
             allocator.Allocate(rContext.pGraphicPipeline->GetDescriptorSetLayout(), currentSet);
@@ -276,7 +284,7 @@ namespace FooGame
             albedoSet.dstArrayElement = 0;
             albedoSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             albedoSet.descriptorCount = 1;
-            albedoSet.pImageInfo      = &albedoMap->DescriptorInfo;
+            albedoSet.pImageInfo      = &baseColorTexture->DescriptorInfo;
             descriptorWrites.push_back(albedoSet);
 
             Backend::UpdateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0,
@@ -338,7 +346,7 @@ namespace FooGame
             MeshPushConstants push{};
             push.renderMatrix = transform;
             auto allocator    = Backend::GetAllocatorHandle();
-            auto& currentSet  = *modelRes.PtrMesh->GetSet(currentFrame);
+            auto& currentSet  = rContext.descriptorSets[currentFrame];
             allocator.Allocate(rContext.pGraphicPipeline->GetDescriptorSetLayout(), currentSet);
             Backend::PushConstant(rContext.pGraphicPipeline->GetLayout(),
                                   VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants), &push);

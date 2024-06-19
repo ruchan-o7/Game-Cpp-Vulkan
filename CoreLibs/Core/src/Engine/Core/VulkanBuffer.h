@@ -19,7 +19,7 @@ namespace ENGINE_NAMESPACE
             };
             struct BuffDesc
             {
-                    const char* Name = nullptr;
+                    std::string Name;
                     Vulkan::BUFFER_USAGE Usage;
                     Vulkan::BUFFER_MEMORY_FLAG MemoryFlag;
                     RenderDevice* pRenderDevice;

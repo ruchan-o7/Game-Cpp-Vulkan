@@ -1,19 +1,26 @@
 #pragma once
-#include <cstdint>
 #include <string>
 namespace FooGame
 {
-    struct Material
+
+    struct NormalTextureInfo
     {
-            int32_t BaseColorTextureIndex  = 0;
-            int32_t MetallicRoughnessIndex = 0;
-            int32_t NormalTextureIndex     = 0;
             std::string Name;
     };
-    struct Material2
+
+    struct PbrMetallicRoughness
+    {
+            double BaseColorFactor[4] = {1.0, 1.0, 1.0, 1.0};
+            std::string BaseColorTextureName;
+
+            double MetallicFactor{1.0};
+            double RoughnessFactor{1.0};
+            std::string MetallicRoughnessTextureName;
+    };
+    struct Material
     {
             std::string Name;
-            std::string AlbedoMap;
-            std::string AlbedoMapPath;
+            NormalTextureInfo NormalTexture;
+            PbrMetallicRoughness PbrMat;
     };
 }  // namespace FooGame

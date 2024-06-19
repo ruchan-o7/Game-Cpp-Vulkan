@@ -16,7 +16,7 @@ namespace ENGINE_NAMESPACE
         viewInfo.subresourceRange.levelCount     = 1;
         viewInfo.subresourceRange.baseArrayLayer = 0;
         viewInfo.subresourceRange.layerCount     = 1;
-        m_ImageView =  m_Desc.pLogicalDevice->CreateImageView(viewInfo, m_Desc.Name);
+        m_ImageView = m_Desc.pLogicalDevice->CreateImageView(viewInfo, m_Desc.Name.c_str());
     }
 
     VulkanImage::VulkanImage(const ImageDesc& desc) : m_Desc(desc)
@@ -51,8 +51,7 @@ namespace ENGINE_NAMESPACE
 
         m_Desc.pRenderDevice->GetLogicalDevice()->BindImageMemory(m_Image, m_ImageMemory, 0);
     }
-    VulkanTexture::VulkanTexture(VulkanTexture::CreateInfo& info)
-        : m_Info(info)  //, m_Image(nullptr), m_ImageView(nullptr)
+    VulkanTexture::VulkanTexture(const VulkanTexture::CreateInfo& info) : m_Info(info)
     {
         VulkanImage::ImageDesc imageDesc{};
         imageDesc.Extent                = m_Info.Extent;

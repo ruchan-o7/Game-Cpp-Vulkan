@@ -3,15 +3,17 @@
 #include <cassert>
 #include <filesystem>
 #include <fstream>
+#include <future>
 #include <iomanip>
 #include <json.hpp>
 #include "Entity.h"
 #include "../Core/AssetManager.h"
 #include "../Scene/Component.h"
-#include "../Engine/Geometry/Material.h"
 #include "../Scripts/Rotate.h"
 #include "../Scripts/ScaleYoink.h"
 #include "../Scripts/CameraController.h"
+#include "../Engine/Geometry/Model.h"
+#include "../Core/File.h"
 namespace FooGame
 {
     using json = nlohmann::json;
@@ -117,24 +119,26 @@ namespace FooGame
                 auto modelExtension = modelPath.extension().string();
                 if (modelExtension == ".obj")
                 {
-                    auto p = (assetPath / modelPath);
-                    AssetManager::LoadObjModel(p.string(), p.filename().string());
-                    mc.ModelName = p.filename().string();
+                    auto p       = (assetPath / modelPath);
+                    mc.ModelName = File::ExtractFileName(p);
+                    AssetManager::LoadObjModel(p.string(), mc.ModelName);
+                    std::shared_ptr<Model> modelPtr = AssetManager::GetModel(mc.ModelName);
+
+                    modelPtr->m_Meshes[0].M3Name = mc.MaterialName;
                 }
                 else if (modelExtension == ".glb")
                 {
-                    auto p = (assetPath / modelPath);
-                    AssetManager::LoadGLTFModel(p.string(), p.filename().string(), true);
-                    mc.ModelName = p.filename().string();
+                    auto p       = (assetPath / modelPath);
+                    mc.ModelName = File::ExtractFileName(p);
+                    AssetManager::LoadGLTFModel(p.string(), mc.ModelName, true);
                 }
                 else if (modelExtension == ".gltf")
                 {
-                    auto p           = (assetPath / modelPath);
-                    auto pStr        = p.string();
-                    auto filenameStr = p.filename().string();
+                    auto p       = (assetPath / modelPath);
+                    auto pStr    = p.string();
+                    mc.ModelName = File::ExtractFileName(p);
 
-                    AssetManager::LoadGLTFModel(pStr, filenameStr, false);
-                    mc.ModelName = p.filename().string();
+                    AssetManager::LoadGLTFModel(pStr, mc.ModelName, false);
                 }
             }
         }
@@ -185,16 +189,16 @@ namespace FooGame
         auto scenePath = assets / path;
 
         json scene;
-        scene["name"]  = m_pScene->m_Name;
-        auto materials = AssetManager::AllMaterials();
-        for (auto& [name, mat] : materials)
-        {
-            scene["materials"].push_back({
-                {      "name",          mat.Name},
-                {    "albedo",     mat.AlbedoMap},
-                {"albedoPath", mat.AlbedoMapPath},
-            });
-        }
+        scene["name"] = m_pScene->m_Name;
+        // auto materials = AssetManager::AllMaterials();
+        // for (auto& [name, mat] : materials)
+        // {
+        //     scene["materials"].push_back({
+        //         {      "name",           mat.Name},
+        //         {    "albedo",     mat.Albedo.Map},
+        //         {"albedoPath", mat.Albedo.MapPath},
+        //     });
+        // }
         scene["entities"] = json::array();
         auto view         = m_pScene->m_Registry.view<entt::entity>().each();
         for (auto [e] : view)
@@ -248,21 +252,29 @@ namespace FooGame
         {
             for (auto& m : materials)
             {
-                Material2 mat{};
-                mat.Name          = m["name"];
-                mat.AlbedoMap     = m["albedo"];
-                mat.AlbedoMapPath = m["albedoPath"];
-                AssetManager::AddMaterial(mat);
-                AssetManager::LoadTexture((assetPath / mat.AlbedoMapPath).string(), mat.AlbedoMap);
+                // Material2 mat{};
+                // mat.Name           = m["name"];
+                // mat.Albedo.Map     = m["albedo"];
+                // mat.Albedo.MapPath = m["albedoPath"];
+                // AssetManager::AddMaterial(mat);
+                // AssetManager::LoadTexture((assetPath / mat.Albedo.MapPath).string(),
+                //                           mat.Albedo.Map);
             }
         }
         auto entities = sceneJson["entities"];
+        std::vector<std::future<void>> futures;
         if (!entities.empty())
         {
             for (auto entity : entities)
             {
+                // futures.push_back(
+                // std::async(std::launch::async, DeSerializeEntity, entity, m_pScene, assetPath));
                 DeSerializeEntity(entity, m_pScene, assetPath);
             }
+        }
+        for (auto& f : futures)
+        {
+            f.wait();
         }
     }
 }  // namespace FooGame

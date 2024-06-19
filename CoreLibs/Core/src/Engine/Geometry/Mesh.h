@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <vector>
 #include "Vertex.h"
-#include "Material.h"
 #include <vulkan/vulkan.h>
 namespace FooGame
 {
@@ -13,6 +12,7 @@ namespace FooGame
             uint32_t IndexCount;
             int32_t MaterialIndex;
     };
+    struct Material3;
     struct Mesh
     {
         public:
@@ -26,12 +26,10 @@ namespace FooGame
             std::vector<Vertex> m_Vertices;
             std::vector<uint32_t> m_Indices;
             std::vector<Primitive> MeshPrimitives;
-            Material materialData;
+            std::string M3Name;
             uint32_t RenderId;
 
-            VkDescriptorSet* GetSet(uint32_t index) { return &m_DescriptorSets[index]; }
-            std::vector<VkDescriptorSet>& GetSets() { return m_DescriptorSets; }
-            std::vector<VkDescriptorSet> m_DescriptorSets{3};
+            uint32_t AlbedoIndex = 0;
     };
 
 }  // namespace FooGame

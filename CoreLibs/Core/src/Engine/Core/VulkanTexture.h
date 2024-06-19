@@ -38,7 +38,7 @@ namespace ENGINE_NAMESPACE
                     VkFormat Format;
                     VkImageAspectFlagBits Aspects;
                     std::shared_ptr<VulkanLogicalDevice> pLogicalDevice;
-                    const char* Name = "Image View";
+                    std::string Name = "Unspecified IV";
             };
             VulkanImageView(const ImageViewDesc& desc);
             VkImageView GetView() const { return m_ImageView; }
@@ -62,16 +62,17 @@ namespace ENGINE_NAMESPACE
                     VkImageAspectFlagBits AspectFlags;
                     VkMemoryPropertyFlags MemoryPropertiesFlags;
                     class RenderDevice* pRenderDevice;
-                    const char* Name    = "Default Texture";
+                    std::string Name    = "Unspecified Texture";
                     float MaxAnisotropy = 1.0f;
             };
 
         public:
-            VulkanTexture(VulkanTexture::CreateInfo& info);
+            VulkanTexture(const VulkanTexture::CreateInfo& info);
 
             std::shared_ptr<VulkanImage> GetImage() const { return m_Image; }
             VkImageAspectFlagBits GetAspect() const { return m_Info.AspectFlags; }
             VkExtent2D GetExtent() const { return m_Info.Extent; }
+            std::string GetName() const { return m_Info.Name; }
 
         public:
             VkDescriptorImageInfo DescriptorInfo;
@@ -80,7 +81,7 @@ namespace ENGINE_NAMESPACE
             std::shared_ptr<VulkanImage> m_Image;
             std::shared_ptr<VulkanImageView> m_ImageView;
             SamplerWrapper m_Sampler;
-            VulkanTexture::CreateInfo& m_Info;
+            VulkanTexture::CreateInfo m_Info;
     };
 
 }  // namespace ENGINE_NAMESPACE

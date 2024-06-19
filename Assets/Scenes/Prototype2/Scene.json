@@ -91,8 +91,8 @@
         {
             "id": 7954746054582625731,
             "meshComponent": {
-                "material": "Viking material",
-                "modelPath": "Models\\Sponza.obj"
+                "material": "arch_stone_wall_01",
+                "modelPath": "Models\\NewSponza_Main_glTF_003.gltf"
             },
             "tagComponent": {
                 "tag": "SPONZA"
@@ -121,6 +121,11 @@
             "albedo": "viking_room.png",
             "albedoPath": "Textures\\viking_room.png",
             "name": "Viking material"
+        },
+        {
+            "albedo": "arch_stone_wall_01_BaseColor.png",
+            "albedoPath": "Textures\\arch_stone_wall_01_BaseColor.png",
+            "name": "arch_stone_wall_01"
         }
     ],
     "name": "Prototype scene"
