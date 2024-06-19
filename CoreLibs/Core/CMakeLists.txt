@@ -10,9 +10,6 @@ file(GLOB_RECURSE CORE_SOURCES
 	"src/Scene/*.h"
 	"src/Scene/*.cpp"
 
-	"src/File/*.h"
-	"src/File/*.cpp"
-
 	"src/Core/*.h"
 	"src/Core/*.cpp"
 	

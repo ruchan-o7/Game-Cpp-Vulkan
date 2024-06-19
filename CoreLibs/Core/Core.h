@@ -2,12 +2,15 @@
 #include "src/Core/Base.h"
 #include "src/Core/UUID.h"
 #include "src/Core/Time.h"
+#include "src/Core/File.h"
+#include "src/Core/AssetManager.h"
 
 #include "src/Scene/Component.h"
 #include "src/Scene/Entity.h"
 #include "src/Scene/Scene.h"
 #include "src/Scene/ScriptableEntity.h"
 #include "src/Scene/SceneSerializer.h"
+#include "src/Scene/SceneHierarchyPanel.h"
 
 #include "src/Engine/Camera/Camera.h"
 #include "src/Engine/Camera/PerspectiveCamera.h"
@@ -39,7 +42,6 @@
 #include "src/Events/KeyEvent.h"
 #include "src/Events/MouseMovedEvent.h"
 
-#include "src/Engine/Geometry/AssetLoader.h"
 #include "src/Engine/Geometry/Material.h"
 #include "src/Engine/Geometry/Mesh.h"
 #include "src/Engine/Geometry/Model.h"
