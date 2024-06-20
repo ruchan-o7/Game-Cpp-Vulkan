@@ -20,7 +20,7 @@ namespace ENGINE_NAMESPACE
     struct SwapchainDescription
     {
             uint32_t Width, Height;
-            VkFormat VkColorFormat                     = VK_FORMAT_UNDEFINED;
+            VkFormat VkColorFormat                     = VK_FORMAT_R8G8B8A8_SRGB;
             VkImageUsageFlags Usage                    = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
             VkSurfaceTransformFlagBitsKHR PreTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
             uint32_t BufferCount                       = 2;
@@ -45,6 +45,8 @@ namespace ENGINE_NAMESPACE
             VkImageView GetDepthImageView() const { return m_DepthImageView; }
             VkExtent2D GetExtent() const { return {m_Desc.Width, m_Desc.Height}; }
             uint32_t GetBackBufferIndex() const { return m_CurrentFrame; }
+            VkSemaphore GetWaitSemaphore() const;
+            VkFence GetRenderFinishedFence() const;
 
             ImageAcquireResult QueuePresent(VkQueue presentQueue);
             VkResult QueueSubmit(VkQueue graphicsQueue, VkCommandBuffer& commandBuffer);

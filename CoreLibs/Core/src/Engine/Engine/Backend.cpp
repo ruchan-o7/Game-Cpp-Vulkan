@@ -9,9 +9,11 @@
 #include "../Core/VulkanTexture.h"
 #include "../Core/VulkanBuffer.h"
 #include "../Core/VulkanCommandBuffer.h"
+#include <mutex>
 #include <vector>
 #include "../Core/VulkanRenderpass.h"
 #include "Types/DeletionQueue.h"
+#include "src/Engine/Core/Types.h"
 #include "vulkan/vulkan_core.h"
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -84,6 +86,7 @@ namespace FooGame
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
         vkBeginCommandBuffer(cmd, &beginInfo);
         return cmd;
     }
@@ -95,16 +98,19 @@ namespace FooGame
         frameData.fbHeight       = event.GetHeight();
         return true;
     }
+    std::mutex mut;
     void Backend::EndSingleTimeCommands(VkCommandBuffer& commandBuffer)
     {
+        std::lock_guard<std::mutex> lock(mut);
         vkEndCommandBuffer(commandBuffer);
 
         VkSubmitInfo submitInfo{};
         submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers    = &commandBuffer;
-        auto queue                    = bContext.pRenderDevice->GetGraphicsQueue();
-        vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+
+        auto queue = bContext.pRenderDevice->GetTransferQueue();
+        vkQueueSubmit(queue, 1, &submitInfo, nullptr);
         vkQueueWaitIdle(queue);
 
         bContext.pRenderDevice->FreeCommandBuffer(bContext.commandPool, commandBuffer);
@@ -140,7 +146,7 @@ namespace FooGame
         attachments[0].SampleCount    = 1;
         attachments[0].LoadOp         = ATTACHMENT_LOAD_OP_CLEAR;
         attachments[0].StoreOp        = ATTACHMENT_STORE_OP_STORE;
-        attachments[0].Format         = TEX_FORMAT_RGBA8_UNORM;
+        attachments[0].Format         = TEX_FORMAT_RGBA8_UNORM_SRGB;
         attachments[0].StencilLoadOp  = ATTACHMENT_LOAD_OP_DONT_CARE;
         attachments[0].StencilStoreOp = ATTACHMENT_STORE_OP_DONT_CARE;
         attachments[0].InitialLayout  = RESOURCE_STATE_UNDEFINED;
@@ -371,15 +377,15 @@ namespace FooGame
         vkCmdEndRenderPass(cb);
         VK_CALL(vkEndCommandBuffer(cb));
         VkResult res;
-
-        res = bContext.pSwapchain->QueueSubmit(bContext.pRenderDevice->GetGraphicsQueue(), cb);
+        auto gq = bContext.pRenderDevice->GetGraphicsQueue();
+        res     = bContext.pSwapchain->QueueSubmit(gq, cb);
 
         if (res != VK_SUCCESS)
         {
             FOO_ENGINE_ERROR("Failed to submit draw command buffer");
         }
 
-        auto result = bContext.pSwapchain->QueuePresent(bContext.pRenderDevice->GetGraphicsQueue());
+        auto result = bContext.pSwapchain->QueuePresent(gq);
         if (result.Result == VK_ERROR_OUT_OF_DATE_KHR || result.Result == VK_SUBOPTIMAL_KHR)
         {
             RecreateFramebuffer();

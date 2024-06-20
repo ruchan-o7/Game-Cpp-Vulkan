@@ -177,7 +177,6 @@ namespace FooGame
 
         auto* pRenderDevice        = Backend::GetRenderDevice();
         const auto* physicalDevice = pRenderDevice->GetPhysicalDevice();
-
         VulkanBuffer::BuffDesc stageDesc{};
         stageDesc.pRenderDevice   = pRenderDevice;
         stageDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
@@ -204,15 +203,18 @@ namespace FooGame
 
         auto* vTexture = new VulkanTexture{ci};
         auto vkImage   = vTexture->GetImage();
+        {
+            std::lock_guard<std::mutex> lock(g_Texture_mutex);
 
-        Backend::TransitionImageLayout(vkImage.get(), VK_FORMAT_R8G8B8A8_SRGB,
-                                       VK_IMAGE_LAYOUT_UNDEFINED,
-                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            Backend::TransitionImageLayout(vkImage.get(), VK_FORMAT_R8G8B8A8_SRGB,
+                                           VK_IMAGE_LAYOUT_UNDEFINED,
+                                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-        Backend::CopyBufferToImage(stageBuffer, *vTexture);
-        Backend::TransitionImageLayout(vkImage.get(), VK_FORMAT_R8G8B8A8_SRGB,
-                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            Backend::CopyBufferToImage(stageBuffer, *vTexture);
+            Backend::TransitionImageLayout(vkImage.get(), VK_FORMAT_R8G8B8A8_SRGB,
+                                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
         auto texPtr = std::shared_ptr<VulkanTexture>(vTexture);
         InsertTextureToVector(texPtr, name);
     }
@@ -258,7 +260,7 @@ namespace FooGame
                 imageSize   = gltfImage.image.size();
             }
             auto imageName = gltfImage.name.empty() ? gltfImage.uri : gltfImage.name;
-            auto fileName  = std::filesystem::path(imageName).filename().string();
+            auto fileName  = File::ExtractFileName(imageName);
             AssetManager::LoadTexture(fileName, (void*)imageBuffer, imageSize, gltfImage.width,
                                       gltfImage.height);
             auto texture = AssetManager::GetTexture(fileName);

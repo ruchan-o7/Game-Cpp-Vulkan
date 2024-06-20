@@ -115,6 +115,11 @@ namespace ENGINE_NAMESPACE
         return m_LogicalDevice->GetQueue(m_PhysicalDevice->FindQueueFamily(VK_QUEUE_GRAPHICS_BIT),
                                          0);
     }
+    VkQueue RenderDevice::GetTransferQueue() const
+    {
+        return m_LogicalDevice->GetQueue(m_PhysicalDevice->FindQueueFamily(VK_QUEUE_TRANSFER_BIT),
+                                         0);
+    }
     void RenderDevice::CopyBuffer(VulkanBuffer& source, VulkanBuffer& destination, size_t size)
     {
         // auto device = m_LogicalDevice->GetVkDevice();

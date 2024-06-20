@@ -70,6 +70,7 @@ namespace ENGINE_NAMESPACE
                                                    const char* name = "");
             SamplerWrapper CreateSampler(const VkSamplerCreateInfo& info, const char* name = "");
             VkQueue GetGraphicsQueue() const;
+            VkQueue GetTransferQueue() const;
 
         private:
             std::shared_ptr<VulkanInstance> m_VulkanInstance;

@@ -143,8 +143,7 @@ namespace ENGINE_NAMESPACE
 
         {
             // TODO GOOD Refactoring needs asap;
-            stageBuffer.CopyTo(*vertexBuffer, info.BufferData.Size, Backend::GetCommandPool(),
-                               device->GetQueue(0, 0));
+            stageBuffer.CopyTo(*vertexBuffer, info.BufferData.Size);
         }
 
         return std::unique_ptr<VulkanBuffer>(vertexBuffer);
@@ -177,46 +176,20 @@ namespace ENGINE_NAMESPACE
 
         {
             // TODO GOOD Refactoring needs asap;
-            stageBuffer.CopyTo(*vertexBuffer, info.BufferData.Size, Backend::GetCommandPool(),
-                               device->GetQueue(0, 0));
+            stageBuffer.CopyTo(*vertexBuffer, info.BufferData.Size);
         }
 
         return std::unique_ptr<VulkanBuffer>(vertexBuffer);
     }
 
-    void VulkanBuffer::CopyTo(VulkanBuffer& destination, size_t size, VkCommandPool commandPool,
-                              VkQueue queue)
+    void VulkanBuffer::CopyTo(VulkanBuffer& destination, size_t size)
     {
-        auto device = m_Desc.pRenderDevice->GetLogicalDevice()->GetVkDevice();
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool        = commandPool;
-        allocInfo.commandBufferCount = 1;
-
-        VkCommandBuffer commandBuffer;
-        vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        vkBeginCommandBuffer(commandBuffer, &beginInfo);
+        auto cmd = Backend::BeginSingleTimeCommands();
 
         VkBufferCopy copyRegion{};
         copyRegion.size = size;
-        vkCmdCopyBuffer(commandBuffer, GetBuffer(), destination.GetBuffer(), 1, &copyRegion);
+        vkCmdCopyBuffer(cmd, GetBuffer(), destination.GetBuffer(), 1, &copyRegion);
 
-        vkEndCommandBuffer(commandBuffer);
-
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers    = &commandBuffer;
-
-        vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-        vkQueueWaitIdle(queue);
-
-        vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+        Backend::EndSingleTimeCommands(cmd);
     }
 }  // namespace ENGINE_NAMESPACE

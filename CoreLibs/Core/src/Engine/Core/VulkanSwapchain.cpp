@@ -73,6 +73,15 @@ namespace ENGINE_NAMESPACE
         vkResetFences(device, 1, &m_InFlightFences[m_CurrentFrame]);
         return {result, m_ImageIndex};
     }
+    VkSemaphore VulkanSwapchain::GetWaitSemaphore() const
+    {
+        return m_ImageAvailableSemaphores[m_CurrentFrame];
+    }
+    VkFence VulkanSwapchain::GetRenderFinishedFence() const
+    {
+        return m_InFlightFences[m_ImageIndex];
+    }
+
     VkResult VulkanSwapchain::QueueSubmit(VkQueue graphicsQueue, VkCommandBuffer& commandBuffer)
     {
         VkSemaphore waitSemaphores[]      = {m_ImageAvailableSemaphores[m_CurrentFrame]};
@@ -214,8 +223,7 @@ namespace ENGINE_NAMESPACE
                 }
             }
         }
-        auto oldSwapchain    = m_VkSwapchain;
-        m_Desc.VkColorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+        auto oldSwapchain = m_VkSwapchain;
 
         VkSwapchainCreateInfoKHR swapchainCreate{};
         swapchainCreate.sType         = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
