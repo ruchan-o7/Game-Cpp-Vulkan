@@ -76,7 +76,8 @@ namespace FooGame
         }
     }
     static void DeSerializeEntity(const json& entityJson, Scene* scene,
-                                  const std::filesystem::path& assetPath)
+                                  const std::filesystem::path& assetPath,
+                                  std::vector<std::future<void>>& futures)
     {
         uint64_t uuid = entityJson["id"];
         std::string tag;
@@ -137,8 +138,10 @@ namespace FooGame
                     auto p       = (assetPath / modelPath);
                     auto pStr    = p.string();
                     mc.ModelName = File::ExtractFileName(p);
-
-                    AssetManager::LoadGLTFModel(pStr, mc.ModelName, false);
+                    futures.emplace_back(
+                        std::async(std::launch::async, [=]
+                                   { AssetManager::LoadGLTFModel(pStr, mc.ModelName, false); }));
+                    // AssetManager::LoadGLTFModel(pStr, mc.ModelName, false);
                 }
             }
         }
@@ -310,7 +313,7 @@ namespace FooGame
             {
                 // futures.push_back(
                 // std::async(std::launch::async, DeSerializeEntity, entity, m_pScene, assetPath));
-                DeSerializeEntity(entity, m_pScene, assetPath);
+                DeSerializeEntity(entity, m_pScene, assetPath, futures);
             }
         }
         for (auto& f : futures)

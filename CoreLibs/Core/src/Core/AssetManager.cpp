@@ -1,14 +1,15 @@
 #include "AssetManager.h"
-
 #include <tiny_obj_loader.h>
 #include "../Engine/Geometry/Model.h"
 #include "../Engine/Core/VulkanTexture.h"
 #include <Log.h>
 #include "../Engine/Engine/Backend.h"
+#include "Thread.h"
 #include "glm/gtc/type_ptr.hpp"
 #include "src/Core/File.h"
 #include "src/Engine/Core/VulkanBuffer.h"
 #include "src/Engine/Geometry/Material.h"
+#include "src/Log.h"
 #include <stb_image.h>
 #include <tiny_gltf.h>
 #include <cassert>
@@ -30,6 +31,16 @@ namespace FooGame
 
     std::vector<Material> g_Materials;
     std::unordered_map<std::string, Material> s_MaterialMap;
+    std::unique_ptr<Thread> s_pThread;
+
+    void AssetManager::Init()
+    {
+        s_pThread = Thread::Create();
+    }
+    void AssetManager::DeInit()
+    {
+        s_pThread.reset();
+    }
 
     const std::unordered_map<std::string, Material>& AssetManager::GetAllMaterials()
     {
@@ -303,9 +314,16 @@ namespace FooGame
         std::lock_guard<std::mutex> lock(g_Material_mutex);
         s_MaterialMap[name] = m;
     }
-
-    void AssetManager::LoadGLTFModel(const std::string& path, const std::string& name, bool isGlb)
+    void AssetManager::LoadGLTFModelAsync(std::string path, std::string name, bool isGlb)
     {
+        s_pThread->AddTask([=] { AssetManager::LoadGLTFModel(path, name, isGlb); });
+    }
+    void AssetManager::LoadGLTFModel(std::string path, std::string name, bool isGlb)
+    {
+        if (name.empty() || path.empty())
+        {
+            FOO_ENGINE_WARN("Name or path is empty of gltf file");
+        }
         if (s_ModelMap[name])
         {
             FOO_ENGINE_WARN("Model {0} is already loaded", name);

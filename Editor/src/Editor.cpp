@@ -4,6 +4,7 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include "Layer/EditorLayer.h"
+#include "src/Core/AssetManager.h"
 #include <Log.h>
 #include <imgui.h>
 namespace FooGame
@@ -11,6 +12,7 @@ namespace FooGame
     Editor::Editor(CommandLineArgs args) : m_Window(nullptr)
     {
         Log::Init(AppType::Editor);
+        AssetManager::Init();
         Init();
         PushLayer(new EditorLayer(args));
     }
@@ -155,6 +157,7 @@ namespace FooGame
 
     Editor::~Editor()
     {
+        AssetManager::DeInit();
         delete m_LayerStack;
         Renderer3D::Shutdown();
         Backend::Shutdown();
