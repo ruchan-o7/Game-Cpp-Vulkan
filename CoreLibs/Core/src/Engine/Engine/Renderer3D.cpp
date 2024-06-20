@@ -214,11 +214,21 @@ namespace FooGame
             FOO_ENGINE_WARN("Empty name string provided");
             return;
         }
-        auto model = AssetManager::GetModel(name);
-        if (model == nullptr)
+        auto asset = AssetManager::GetModelAsset(name);
+        if (asset.Status == AssetStatus::WORKING || asset.Status == AssetStatus::FAILED ||
+            asset.Status == AssetStatus::NONE)
         {
-            FOO_ENGINE_WARN("Model not found in asset manager: {0}", name);
             return;
+        }
+
+        std::shared_ptr<Model> model;
+        if (asset.Status == AssetStatus::READY)
+        {
+            if (asset.Asset == nullptr)
+            {
+                return;
+            }
+            model = asset.Asset;
         }
 
         assert(!materialName.empty());

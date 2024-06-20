@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <string>
 #include "../Engine/Geometry/Material.h"
 #include <unordered_map>
@@ -6,7 +7,19 @@ namespace FooGame
 {
     class Model;
     class VulkanTexture;
-
+    enum class AssetStatus
+    {
+        NONE,
+        WORKING,
+        READY,
+        FAILED,
+    };
+    template <typename AssetType>
+    struct AssetContainer
+    {
+            AssetStatus Status;
+            AssetType Asset;
+    };
     class AssetManager
     {
         public:
@@ -26,6 +39,7 @@ namespace FooGame
 
         public:
             static std::shared_ptr<Model> GetModel(const std::string& name);
+            static AssetContainer<std::shared_ptr<Model>> GetModelAsset(const std::string& name);
             static Material GetMaterial(const std::string& name);
             static std::shared_ptr<VulkanTexture> GetTexture(const std::string& name);
             static std::shared_ptr<VulkanTexture> GetDefaultTexture();

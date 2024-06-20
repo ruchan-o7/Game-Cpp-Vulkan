@@ -22,24 +22,14 @@
 #include <unordered_map>
 namespace FooGame
 {
-    enum class AssetStatus
-    {
-        NONE,
-        PENDING,
-        FAILED,
-    };
-    template <typename AssetType>
-    struct AssetContainer
-    {
-            AssetStatus Status;
-            AssetType* Asset;
-    };
+
     std::mutex g_Texture_mutex;
     std::mutex g_Model_mutex;
     std::mutex g_Material_mutex;
 
     using ModelName = std::string;
-    std::unordered_map<ModelName, std::shared_ptr<Model>> s_ModelMap;
+    // std::unordered_map<ModelName, std::shared_ptr<Model>> s_ModelMap;
+    std::unordered_map<ModelName, AssetContainer<std::shared_ptr<Model>>> s_ModelMap;
     std::unordered_map<ModelName, std::shared_ptr<VulkanTexture>> s_TextureMap;
 
     std::vector<Material> g_Materials;
@@ -74,6 +64,8 @@ namespace FooGame
             FOO_ENGINE_WARN("Model {0} is already loaded");
             return;
         }
+        auto& asset  = s_ModelMap[modelName];
+        asset.Status = AssetStatus::WORKING;
 
         tinyobj::attrib_t attrib;
         std::vector<tinyobj::shape_t> shapes;
@@ -133,8 +125,8 @@ namespace FooGame
             meshes.push_back(std::move(Mesh{std::move(vertices), std::move(indices)}));
         }
 
-        s_ModelMap[modelName]                     = std::make_shared<Model>(std::move(meshes));
-        s_ModelMap[modelName]->m_Meshes[0].M3Name = materialName;
+        auto modelPtr                = std::make_shared<Model>(std::move(meshes));
+        modelPtr->m_Meshes[0].M3Name = materialName;
         enum TEXTURE_INDICES
         {
             ALBEDO    = 0,
@@ -142,7 +134,11 @@ namespace FooGame
             ROUGHNESS = 2,
             NORMAL    = 3,
         };
-        s_ModelMap[modelName]->textureIndices = {ALBEDO, METALIC, ROUGHNESS, NORMAL};
+        modelPtr->textureIndices = {ALBEDO, METALIC, ROUGHNESS, NORMAL};
+        InsertMap(modelName, modelPtr);
+        // asset.Asset              = modelPtr;
+        // asset.Status             = AssetStatus::READY;
+
         Renderer3D::SubmitModel(modelName);
     }
     void AssetManager::LoadTexture(const std::string& path, const std::string& name)
@@ -340,11 +336,13 @@ namespace FooGame
         {
             FOO_ENGINE_WARN("Name or path is empty of gltf file");
         }
-        if (s_ModelMap[name])
+        auto& asset = s_ModelMap[name];
+        if (asset.Status == AssetStatus::READY)
         {
             FOO_ENGINE_WARN("Model {0} is already loaded", name);
             return;
         }
+        asset.Status = AssetStatus::WORKING;
 
         tinygltf::Model gltfInput;
         std::vector<Mesh> meshes;
@@ -354,6 +352,7 @@ namespace FooGame
 
         if (!ReadFile(gltfInput, path, isGlb))
         {
+            asset.Status = AssetStatus::FAILED;
             FOO_ENGINE_ERROR("Model with path: {0} could not read");
             return;
         }
@@ -495,20 +494,38 @@ namespace FooGame
         auto model            = std::make_shared<Model>(std::move(meshes));
         model->Textures       = vulkanTextures;
         model->textureIndices = textureIndices;
-        s_ModelMap[name]      = model;
+        InsertMap(name, model);
+        // asset.Asset           = model;
+        // asset.Status          = AssetStatus::READY;
+        // s_ModelMap[name]      = model;
         Renderer3D::SubmitModel(name);
     }
     void AssetManager::InsertMap(const std::string& name, std::shared_ptr<Model> m)
     {
         std::lock_guard<std::mutex> lock(g_Model_mutex);
-        s_ModelMap[name] = m;
+        auto& asset  = s_ModelMap[name];
+        asset.Status = AssetStatus::READY;
+        asset.Asset  = m;
+        // s_ModelMap[name] = m;
+    }
+    AssetContainer<std::shared_ptr<Model>> AssetManager::GetModelAsset(const std::string& name)
+    {
+        return s_ModelMap[name];
     }
 
     std::shared_ptr<Model> AssetManager::GetModel(const std::string& name)
     {
         if (s_ModelMap.find(name) != s_ModelMap.end())
         {
-            return s_ModelMap[name];
+            auto& asset = s_ModelMap[name];
+            if (asset.Status == AssetStatus::READY)
+            {
+                return s_ModelMap[name].Asset;
+            }
+            else if (asset.Status == AssetStatus::WORKING)
+            {
+                return nullptr;
+            }
         }
         return nullptr;
     }
