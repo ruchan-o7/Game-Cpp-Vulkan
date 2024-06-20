@@ -1,5 +1,6 @@
 #pragma once
 #include "../Defines.h"
+#include "vulkan/vulkan_core.h"
 #include <string>
 #include <cstdint>
 #include <memory>
@@ -41,6 +42,7 @@ namespace ENGINE_NAMESPACE
                                       const char* ext);
             bool IsExtensionEnabled(const char* extension);
             VkPhysicalDevice SelectPhysicalDevice(uint32_t GpuIndex);
+            VkPhysicalDevice SelectPhysicalDevice(VkPhysicalDeviceType type);
             const std::vector<VkPhysicalDevice>& GetPhysicalDevices() const
             {
                 return m_PhysicalDevices;

@@ -27,7 +27,8 @@ namespace ENGINE_NAMESPACE
         instanceCi.engineVersion        = ci.engineApiVersion;
         auto instance                   = VulkanInstance::Create(instanceCi);
 
-        VulkanPhysicalDevice::CreateInfo pCi{*instance.get(), instance->SelectPhysicalDevice(0)};
+        VulkanPhysicalDevice::CreateInfo pCi{
+            *instance.get(), instance->SelectPhysicalDevice(VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)};
         auto pDevice = VulkanPhysicalDevice::Create(pCi);
 
         std::vector<const char*> deviceExts;

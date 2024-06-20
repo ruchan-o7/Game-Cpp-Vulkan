@@ -198,6 +198,45 @@ namespace ENGINE_NAMESPACE
                                        m_PhysicalDevices.data());
         }
     }
+    VkPhysicalDevice VulkanInstance::SelectPhysicalDevice(VkPhysicalDeviceType type)
+    {
+        const auto IsGraphicsAndComputeQueueSupported = [](VkPhysicalDevice Device)
+        {
+            uint32_t QueueFamilyCount = 0;
+            vkGetPhysicalDeviceQueueFamilyProperties(Device, &QueueFamilyCount, nullptr);
+            assert(QueueFamilyCount > 0);
+            std::vector<VkQueueFamilyProperties> QueueFamilyProperties(QueueFamilyCount);
+            vkGetPhysicalDeviceQueueFamilyProperties(Device, &QueueFamilyCount,
+                                                     QueueFamilyProperties.data());
+            assert(QueueFamilyCount == QueueFamilyProperties.size());
+
+            // If an implementation exposes any queue family that supports graphics operations,
+            // at least one queue family of at least one physical device exposed by the
+            // implementation must support both graphics and compute operations.
+            for (const auto& QueueFamilyProps : QueueFamilyProperties)
+            {
+                if ((QueueFamilyProps.queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0 &&
+                    (QueueFamilyProps.queueFlags & VK_QUEUE_COMPUTE_BIT) != 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
+        VkPhysicalDevice selectedPhysicalDevice = VK_NULL_HANDLE;
+        for (auto& device : m_PhysicalDevices)
+        {
+            VkPhysicalDeviceProperties deviceProps;
+            vkGetPhysicalDeviceProperties(device, &deviceProps);
+
+            if (deviceProps.deviceType == type && IsGraphicsAndComputeQueueSupported(device))
+            {
+                selectedPhysicalDevice = device;
+            }
+        }
+        return selectedPhysicalDevice;
+    }
+
     VkPhysicalDevice VulkanInstance::SelectPhysicalDevice(uint32_t GpuIndex)
     {
         const auto IsGraphicsAndComputeQueueSupported = [](VkPhysicalDevice Device)
