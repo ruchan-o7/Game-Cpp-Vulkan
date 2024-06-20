@@ -108,6 +108,7 @@ namespace FooGame
         componentExists = entityJson.contains("meshComponent");
         if (componentExists)
         {
+#define ASYNC(x) futures.emplace_back(std::async(std::launch::async, [=] { x; }))
             auto meshComponent = entityJson["meshComponent"];
             if (!meshComponent.empty())
             {
@@ -122,25 +123,27 @@ namespace FooGame
                 {
                     auto p       = (assetPath / modelPath);
                     mc.ModelName = File::ExtractFileName(p);
-                    AssetManager::LoadObjModel(p.string(), mc.ModelName);
-                    std::shared_ptr<Model> modelPtr = AssetManager::GetModel(mc.ModelName);
 
-                    modelPtr->m_Meshes[0].M3Name = mc.MaterialName;
+                    ASYNC(AssetManager::LoadObjModel(p.string(), mc.ModelName, mc.MaterialName));
+                    // std::shared_ptr<Model> modelPtr = AssetManager::GetModel(mc.ModelName);
+
+                    // modelPtr->m_Meshes[0].M3Name = mc.MaterialName;
                 }
                 else if (modelExtension == ".glb")
                 {
                     auto p       = (assetPath / modelPath);
                     mc.ModelName = File::ExtractFileName(p);
-                    AssetManager::LoadGLTFModel(p.string(), mc.ModelName, true);
+                    ASYNC(AssetManager::LoadGLTFModel(p.string(), mc.ModelName, true));
                 }
                 else if (modelExtension == ".gltf")
                 {
                     auto p       = (assetPath / modelPath);
                     auto pStr    = p.string();
                     mc.ModelName = File::ExtractFileName(p);
-                    futures.emplace_back(
-                        std::async(std::launch::async, [=]
-                                   { AssetManager::LoadGLTFModel(pStr, mc.ModelName, false); }));
+                    ASYNC(AssetManager::LoadGLTFModel(pStr, mc.ModelName, false));
+                    // futures.emplace_back(
+                    //     std::async(std::launch::async, [=]
+                    //                { AssetManager::LoadGLTFModel(pStr, mc.ModelName, false); }));
                     // AssetManager::LoadGLTFModel(pStr, mc.ModelName, false);
                 }
             }
@@ -318,7 +321,10 @@ namespace FooGame
         }
         for (auto& f : futures)
         {
-            f.wait();
+            if (f.valid())
+            {
+                f.wait();
+            }
         }
     }
 }  // namespace FooGame

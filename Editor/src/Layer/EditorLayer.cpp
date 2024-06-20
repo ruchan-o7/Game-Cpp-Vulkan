@@ -22,7 +22,7 @@ namespace FooGame
         auto mv = m_Scene->GetAllEntitiesWith<MeshRendererComponent>().each();
         for (auto [entity, comp] : mv)
         {
-            Renderer3D::SubmitModel(comp.ModelName);  // TODO move to asset manager
+            // Renderer3D::SubmitModel(comp.ModelName);  // TODO move to asset manager
         }
 
         auto entt          = m_Scene->GetPrimaryCameraEntity();

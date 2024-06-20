@@ -16,6 +16,7 @@
 #include "src/Core/AssetManager.h"
 #include "src/Engine/Core/VulkanTexture.h"
 #include "src/Engine/Engine/Types/GraphicTypes.h"
+#include "src/Log.h"
 #include <Log.h>
 namespace FooGame
 {
@@ -118,7 +119,11 @@ namespace FooGame
     void Renderer3D::SubmitModel(const std::string& name)
     {
         auto model = AssetManager::GetModel(name);
-        assert(model != nullptr);
+        if (model == nullptr)
+        {
+            FOO_ENGINE_WARN("Submitted mesh is null");
+            return;
+        }
         SubmitModel(model.get());
     }
     void Renderer3D::SubmitModel(Model* model)
@@ -247,7 +252,11 @@ namespace FooGame
         for (const auto& mesh : model->GetMeshes())
         {
             auto& modelRes = s_Data.Res.MeshMap2[mesh.RenderId];
-            auto material  = AssetManager::GetMaterial(mesh.M3Name);
+            if (!modelRes.PtrMesh)
+            {
+                continue;
+            }
+            auto material = AssetManager::GetMaterial(mesh.M3Name);
             std::shared_ptr<VulkanTexture> baseColorTexture;
             if (material.PbrMat.BaseColorTextureName.empty())
             {

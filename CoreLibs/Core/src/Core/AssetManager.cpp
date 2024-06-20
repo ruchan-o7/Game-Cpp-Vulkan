@@ -8,11 +8,12 @@
 #include "glm/gtc/type_ptr.hpp"
 #include "src/Core/File.h"
 #include "src/Engine/Core/VulkanBuffer.h"
+#include "src/Engine/Engine/Renderer3D.h"
 #include "src/Engine/Geometry/Material.h"
 #include "src/Log.h"
 #include <stb_image.h>
 #include <tiny_gltf.h>
-#include <cassert>
+#include "../Engine/Engine/Renderer3D.h"
 #include <cstddef>
 #include <filesystem>
 #include <mutex>
@@ -21,6 +22,18 @@
 #include <unordered_map>
 namespace FooGame
 {
+    enum class AssetStatus
+    {
+        NONE,
+        PENDING,
+        FAILED,
+    };
+    template <typename AssetType>
+    struct AssetContainer
+    {
+            AssetStatus Status;
+            AssetType* Asset;
+    };
     std::mutex g_Texture_mutex;
     std::mutex g_Model_mutex;
     std::mutex g_Material_mutex;
@@ -53,7 +66,8 @@ namespace FooGame
 
     static bool ReadFile(tinygltf::Model& input, const std::string& path, bool isGlb);
 
-    void AssetManager::LoadObjModel(const std::string& path, const std::string& modelName)
+    void AssetManager::LoadObjModel(const std::string& path, const std::string& modelName,
+                                    std::string materialName)
     {
         if (GetModel(modelName))
         {
@@ -119,7 +133,8 @@ namespace FooGame
             meshes.push_back(std::move(Mesh{std::move(vertices), std::move(indices)}));
         }
 
-        s_ModelMap[modelName] = std::make_shared<Model>(std::move(meshes));
+        s_ModelMap[modelName]                     = std::make_shared<Model>(std::move(meshes));
+        s_ModelMap[modelName]->m_Meshes[0].M3Name = materialName;
         enum TEXTURE_INDICES
         {
             ALBEDO    = 0,
@@ -128,6 +143,7 @@ namespace FooGame
             NORMAL    = 3,
         };
         s_ModelMap[modelName]->textureIndices = {ALBEDO, METALIC, ROUGHNESS, NORMAL};
+        Renderer3D::SubmitModel(modelName);
     }
     void AssetManager::LoadTexture(const std::string& path, const std::string& name)
     {
@@ -480,6 +496,7 @@ namespace FooGame
         model->Textures       = vulkanTextures;
         model->textureIndices = textureIndices;
         s_ModelMap[name]      = model;
+        Renderer3D::SubmitModel(name);
     }
     void AssetManager::InsertMap(const std::string& name, std::shared_ptr<Model> m)
     {
