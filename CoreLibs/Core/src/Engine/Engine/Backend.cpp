@@ -22,7 +22,6 @@ namespace FooGame
 {
     struct FrameStatistics
     {
-            uint32_t imageIndex   = 0;
             uint32_t currentFrame = 0;
             int32_t fbWidth       = 0;
             int32_t fbHeight      = 0;
@@ -230,8 +229,7 @@ namespace FooGame
         {
             FOO_ENGINE_ERROR("Failed to acquire next image");
         }
-        frameData.imageIndex = res.ImageIndex;
-        auto cb              = GetCurrentCommandbuffer();
+        auto cb = GetCurrentCommandbuffer();
 
         vkResetCommandBuffer(cb, 0);
         VkCommandBufferBeginInfo info{};
@@ -241,7 +239,7 @@ namespace FooGame
         VkRenderPassBeginInfo renderPassInfo{};
         renderPassInfo.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderPassInfo.renderPass        = bContext.pRenderPass->GetRenderPass();
-        renderPassInfo.framebuffer       = bContext.FrameBuffers[frameData.imageIndex];
+        renderPassInfo.framebuffer       = bContext.FrameBuffers[res.ImageIndex];
         renderPassInfo.renderArea.offset = {0, 0};
         renderPassInfo.renderArea.extent = bContext.pSwapchain->GetExtent();
 

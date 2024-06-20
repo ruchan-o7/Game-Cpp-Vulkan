@@ -149,6 +149,25 @@ namespace FooGame
         ubd.View       = camera.matrices.View;
         ubd.Projection = camera.matrices.Perspective;
         UpdateUniformData(ubd);
+
+        auto extent = Backend::GetSwapchainExtent();
+        auto cmd    = Backend::GetCurrentCommandbuffer();
+        BindPipeline(cmd);
+
+        VkViewport viewport{};
+        viewport.x        = 0;
+        viewport.y        = 0;
+        viewport.width    = extent.width;
+        viewport.height   = extent.height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        Backend::SetViewport(viewport);
+
+        VkRect2D scissor{};
+        scissor.extent = {static_cast<uint32_t>(viewport.width),
+                          static_cast<uint32_t>(viewport.height)};
+        scissor.offset = {0, 0};
+        Backend::SetScissor(scissor);
     }
     void Renderer3D::BeginScene(const PerspectiveCamera& camera)
     {
@@ -236,23 +255,6 @@ namespace FooGame
         auto currentFrame = Backend::GetCurrentFrame();
         auto cmd          = Backend::GetCurrentCommandbuffer();
         auto extent       = Backend::GetSwapchainExtent();
-
-        BindPipeline(cmd);
-
-        VkViewport viewport{};
-        viewport.x        = 0;
-        viewport.y        = 0;
-        viewport.width    = extent.width;
-        viewport.height   = extent.height;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-        Backend::SetViewport(viewport);
-
-        VkRect2D scissor{};
-        scissor.extent = {static_cast<uint32_t>(viewport.width),
-                          static_cast<uint32_t>(viewport.height)};
-        scissor.offset = {0, 0};
-        Backend::SetScissor(scissor);
 
         MeshPushConstants push{};
         push.renderMatrix = transform;
