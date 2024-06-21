@@ -7,13 +7,16 @@
 #include "Thread.h"
 #include "glm/gtc/type_ptr.hpp"
 #include "src/Core/File.h"
+#include "src/Core/GltfLoader.h"
 #include "src/Engine/Core/VulkanBuffer.h"
 #include "src/Engine/Engine/Renderer3D.h"
 #include "src/Engine/Geometry/Material.h"
-#include "src/Log.h"
+#include "src/Engine/Geometry/Mesh.h"
 #include <stb_image.h>
 #include <tiny_gltf.h>
 #include "../Engine/Engine/Renderer3D.h"
+#include "src/Log.h"
+#include "src/Scene/Asset.h"
 #include <cstddef>
 #include <mutex>
 #include <stdexcept>
@@ -28,7 +31,8 @@ namespace FooGame
     std::mutex g_Material_mutex;
 
     using ModelName = std::string;
-    std::unordered_map<ModelName, AssetContainer<std::shared_ptr<Model>>> s_ModelMap;
+    std::unordered_map<ModelName, AssetContainer<Model>> s_ModelMap;
+    std::unordered_map<ModelName, AssetContainer<std::shared_ptr<Mesh>>> s_MeshMap;
     std::unordered_map<ModelName, std::shared_ptr<VulkanTexture>> s_TextureMap;
 
     std::unordered_map<std::string, Material> s_MaterialMap;
@@ -49,7 +53,7 @@ namespace FooGame
     }
     void AssetManager::AddMaterial(Material material)
     {
-        InsertMaterial(material.Name, material);
+        InsertMaterial(material);
     }
 
     static bool ReadFile(tinygltf::Model& input, const std::string& path, bool isGlb);
@@ -203,16 +207,18 @@ namespace FooGame
         AssetManager::LoadTexture(name, pixels, imageSize, texWidth, texHeight);
         stbi_image_free(pixels);
     }
-
+    size_t g_UnnamedImagesCount = 0;
     void AssetManager::LoadTexture(const std::string& name, void* pixels, size_t size,
                                    int32_t width, int32_t height)
     {
         bool isExists  = false;
         int foundIndex = 0;
 
-        if (GetTexture(name))
+        std::string imgName = name;
+        if (GetTexture(imgName))
         {
-            return;
+            g_UnnamedImagesCount++;
+            imgName += std::to_string(g_UnnamedImagesCount);
         }
 
         auto* pRenderDevice        = Backend::GetRenderDevice();
@@ -221,7 +227,7 @@ namespace FooGame
         stageDesc.pRenderDevice   = pRenderDevice;
         stageDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
         stageDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
-        stageDesc.Name            = std::string("SB Texture: ") + name;
+        stageDesc.Name            = std::string("SB Texture: ") + imgName;
         stageDesc.BufferData.Data = pixels;
         stageDesc.BufferData.Size = size;
 
@@ -233,7 +239,7 @@ namespace FooGame
         VulkanTexture::CreateInfo ci{};
         ci.pRenderDevice = pRenderDevice;
         ci.MaxAnisotropy = physicalDevice->GetDeviceProperties().limits.maxSamplerAnisotropy;
-        ci.Name          = name;
+        ci.Name          = imgName;
         ci.AspectFlags   = VK_IMAGE_ASPECT_COLOR_BIT;
         ci.Format        = VK_FORMAT_R8G8B8A8_SRGB;
         ci.MemoryPropertiesFlags = Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY;
@@ -256,7 +262,7 @@ namespace FooGame
                                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
         auto texPtr = std::shared_ptr<VulkanTexture>(vTexture);
-        InsertTextureToVector(texPtr, name);
+        InsertTextureToVector(texPtr, imgName);
     }
     void AssetManager::InsertTextureToVector(const std::shared_ptr<VulkanTexture>& pT,
                                              const std::string& name)
@@ -381,10 +387,10 @@ namespace FooGame
 
         return materials;
     }
-    void AssetManager::InsertMaterial(const std::string& name, const Material& m)
+    void AssetManager::InsertMaterial(const Material& m)
     {
         std::lock_guard<std::mutex> lock(g_Material_mutex);
-        s_MaterialMap[name] = m;
+        s_MaterialMap[m.Name] = m;
     }
     void AssetManager::LoadGLTFModelAsync(std::string path, std::string name, bool isGlb)
     {
@@ -407,171 +413,55 @@ namespace FooGame
             return;
         }
         asset.Status = AssetStatus::WORKING;
-
-        tinygltf::Model gltfInput;
-        std::vector<Mesh> meshes;
-        std::vector<std::shared_ptr<VulkanTexture>> vulkanTextures;
-        std::vector<uint32_t> textureIndices;
-        std::vector<Material> materials;
-
-        if (!ReadFile(gltfInput, path, isGlb))
+        GltfLoader loader{path, name, isGlb};
+        auto gltfModel = loader.Load();
+        if (gltfModel->Name.empty())
         {
-            asset.Status = AssetStatus::FAILED;
-            FOO_ENGINE_ERROR("Model with path: {0} could not read", path);
+            FOO_ENGINE_ERROR("Can not load gltf model {0}", name);
+            delete gltfModel;
             return;
         }
-        for (size_t i = 0; i < gltfInput.scenes.size(); i++)
+        auto data = (char*)gltfModel->ImageSources[0].ImageBuffer;  // for test delete after impl
+        std::string UnnamedImageStr = std::string("Unnamed Image");
+        for (auto& gltfImage : gltfModel->ImageSources)
         {
-            ProcessGLTFImages(gltfInput.images, vulkanTextures, name);
-            // TEXTURE
-            for (size_t i = 0; i < gltfInput.textures.size(); i++)
-            {
-                textureIndices.push_back(gltfInput.textures[i].source);
-            }
-
-            materials = std::move(ProcessGLTFMaterial(gltfInput, name));
-
-            for (auto& m : materials)
-            {
-                InsertMaterial(m.Name, m);
-            }
-
-            // MESH
-            for (size_t nodeIndex = 0; nodeIndex < gltfInput.nodes.size(); nodeIndex++)
-            {
-                const auto& node     = gltfInput.nodes[nodeIndex];
-                const auto meshIndex = node.mesh;
-                if (meshIndex <= -1)
-                {
-                    continue;
-                }
-                const auto mesh = gltfInput.meshes[meshIndex];
-                FooGame::Mesh tempMesh{};
-                for (const auto& primitive : mesh.primitives)
-                {
-                    auto material             = materials[primitive.material];
-                    tempMesh.M3Name           = material.Name;
-                    uint32_t firstIndex       = static_cast<uint32_t>(tempMesh.m_Indices.size());
-                    uint32_t vertexStart      = static_cast<uint32_t>(tempMesh.m_Vertices.size());
-                    uint32_t indexCount       = 0;
-                    const auto indicesIndex   = primitive.indices;
-                    const auto materialIndex  = primitive.material;
-                    const auto positionsIndex = primitive.attributes.at("POSITION");
-                    const auto uvsIndex       = primitive.attributes.at("TEXCOORD_0");
-                    const auto normalsIndex   = primitive.attributes.at("NORMAL");
-
-                    const auto indicesAccessor   = gltfInput.accessors[indicesIndex];
-                    const auto positionsAccessor = gltfInput.accessors[positionsIndex];
-                    const auto uvsAccessor       = gltfInput.accessors[uvsIndex];
-                    const auto normalsAccessor   = gltfInput.accessors[normalsIndex];
-
-                    const auto& indicesBufferView =
-                        gltfInput.bufferViews[indicesAccessor.bufferView];
-                    const auto& positionBV = gltfInput.bufferViews[positionsAccessor.bufferView];
-                    const auto& uvsBV      = gltfInput.bufferViews[uvsAccessor.bufferView];
-                    const auto& normalsBV  = gltfInput.bufferViews[normalsAccessor.bufferView];
-                    const float* positionsBuffer = reinterpret_cast<const float*>(
-                        &(gltfInput.buffers[positionBV.buffer]
-                              .data[positionsAccessor.byteOffset + positionBV.byteOffset]));
-
-                    const float* normalsBuffer = reinterpret_cast<const float*>(
-                        &(gltfInput.buffers[normalsBV.buffer]
-                              .data[normalsAccessor.byteOffset + normalsBV.byteOffset]));
-
-                    const float* uvsBuffer = reinterpret_cast<const float*>(
-                        &(gltfInput.buffers[uvsBV.buffer]
-                              .data[uvsAccessor.byteOffset + uvsBV.byteOffset]));
-
-                    const float* indicesBuffer = reinterpret_cast<const float*>(
-                        &(gltfInput.buffers[indicesBufferView.buffer]
-                              .data[indicesAccessor.byteOffset + indicesBufferView.byteOffset]));
-
-                    tempMesh.m_Vertices.reserve(positionsAccessor.count);
-                    for (size_t w = 0; w < positionsAccessor.count; w++)
-                    {
-                        FooGame::Vertex v{};
-
-                        v.Position = glm::vec4(glm::make_vec3(&positionsBuffer[w * 3]), 1.0f);
-                        v.Normal   = glm::normalize(
-                            glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[w * 3])
-                                                      : glm::vec3(0.0f)));
-                        v.TexCoord = uvsBuffer ? glm::vec2(glm::make_vec2(&uvsBuffer[w * 2]))
-                                               : glm::vec2(0.0f);
-                        tempMesh.m_Vertices.push_back(v);
-                    }
-                    {
-                        const auto indexCount = static_cast<uint32_t>(indicesAccessor.count);
-                        switch (indicesAccessor.componentType)
-                        {
-                            case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
-                            {
-                                const auto& indicesBuff =
-                                    gltfInput.buffers[indicesBufferView.buffer];
-                                const uint32_t* buf = reinterpret_cast<const uint32_t*>(
-                                    &indicesBuff.data[indicesAccessor.byteOffset +
-                                                      indicesBufferView.byteOffset]);
-                                for (size_t index = 0; index < indicesAccessor.count; index++)
-                                {
-                                    tempMesh.m_Indices.push_back(buf[index] + vertexStart);
-                                }
-                                break;
-                            }
-                            case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
-                            {
-                                const auto& indicesBuff =
-                                    gltfInput.buffers[indicesBufferView.buffer];
-                                const uint16_t* buf = reinterpret_cast<const uint16_t*>(
-                                    &indicesBuff.data[indicesAccessor.byteOffset +
-                                                      indicesBufferView.byteOffset]);
-                                // indexCount +=
-                                // static_cast<uint32_t>(accessor.count);
-                                for (size_t index = 0; index < indicesAccessor.count; index++)
-                                {
-                                    tempMesh.m_Indices.push_back(buf[index] + vertexStart);
-                                }
-                                break;
-                            }
-                            case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE:
-                            {
-                                const auto& indicesBuff =
-                                    gltfInput.buffers[indicesBufferView.buffer];
-                                const uint8_t* buf = reinterpret_cast<const uint8_t*>(
-                                    &indicesBuff.data[indicesAccessor.byteOffset +
-                                                      indicesBufferView.byteOffset]);
-                                for (size_t index = 0; index < indicesAccessor.count; index++)
-                                {
-                                    tempMesh.m_Indices.push_back(buf[index] + vertexStart);
-                                }
-                                break;
-                            }
-                            default:
-                                FOO_CORE_WARN(
-                                    "Index component type {0} not "
-                                    "sopperted",
-                                    indicesAccessor.componentType);
-                                break;
-                        }
-                    }
-                    meshes.emplace_back(std::move(tempMesh));
-                }
-            }
+            AssetManager::LoadTexture(gltfImage.Name.empty() ? UnnamedImageStr : gltfImage.Name,
+                                      gltfImage.ImageBuffer, gltfImage.ImageSize, gltfImage.Width,
+                                      gltfImage.Height);
+            // TODO Delete loaded texture buffer data
         }
-        auto model            = std::make_shared<Model>(std::move(meshes));
-        model->Textures       = vulkanTextures;
-        model->textureIndices = textureIndices;
-        InsertMap(name, model);
-        Renderer3D::SubmitModel(name);
+        for (auto& m : gltfModel->Materials)
+        {
+            InsertMaterial(m);
+        }
+
+        for (auto* mesh : gltfModel->Meshes)
+        {
+            AssetContainer<std::shared_ptr<Mesh>> container;
+            container.Status      = AssetStatus::READY;
+            container.Asset       = std::shared_ptr<Mesh>(mesh);
+            container.Asset->Name = mesh->Name;
+            s_MeshMap[name]       = container;
+            auto& asset           = s_MeshMap[name];
+            Renderer3D::SubmitMesh(*asset.Asset);
+        }
+
+        delete gltfModel;
+        return;
     }
     void AssetManager::InsertMap(const std::string& name, std::shared_ptr<Model> m)
     {
         std::lock_guard<std::mutex> lock(g_Model_mutex);
         auto& asset  = s_ModelMap[name];
         asset.Status = AssetStatus::READY;
-        asset.Asset  = m;
     }
-    AssetContainer<std::shared_ptr<Model>> AssetManager::GetModelAsset(const std::string& name)
+    AssetContainer<Model>& AssetManager::GetModelAsset(const std::string& name)
     {
         return s_ModelMap[name];
+    }
+    AssetContainer<std::shared_ptr<Mesh>>& AssetManager::GetMeshAsset(const std::string& name)
+    {
+        return s_MeshMap[name];
     }
 
     std::shared_ptr<Model> AssetManager::GetModel(const std::string& name)
@@ -581,7 +471,7 @@ namespace FooGame
             auto& asset = s_ModelMap[name];
             if (asset.Status == AssetStatus::READY)
             {
-                return s_ModelMap[name].Asset;
+                // return s_ModelMap[name].Asset;
             }
             else if (asset.Status == AssetStatus::WORKING)
             {

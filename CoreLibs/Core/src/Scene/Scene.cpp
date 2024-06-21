@@ -3,7 +3,7 @@
 #include "../Scene/ScriptableEntity.h"
 #include <imgui.h>
 #include "../Scene/Component.h"
-#include <cstddef>
+#include "../Scene/ScriptableEntity.h"
 #include <memory>
 #include "src/Engine/Camera/Camera.h"
 #include "src/Engine/Engine/Renderer2D.h"
@@ -126,7 +126,7 @@ namespace FooGame
             // Update scripts
             {
                 m_Registry.view<ScriptComponent>().each(
-                    [=](auto entity, auto& nsc)
+                    [=](auto entity, ScriptComponent& nsc)
                     {
                         for (auto& [name, sc] : nsc.Scripts)
                         {
@@ -199,8 +199,10 @@ namespace FooGame
             Renderer3D::BeginScene(*mainCamera);
         }
         m_Registry.view<TransformComponent, MeshRendererComponent>().each(
-            [=](auto& transform, auto& comp) {
-                Renderer3D::DrawModel(comp.ModelName, comp.MaterialName, transform.GetTransform());
+            [=](TransformComponent& transform, MeshRendererComponent& comp)
+            {
+                auto tt = transform.GetTransform();
+                Renderer3D::DrawMesh(comp.ModelName, tt);
             });
     }
     void Scene::IMGUI()

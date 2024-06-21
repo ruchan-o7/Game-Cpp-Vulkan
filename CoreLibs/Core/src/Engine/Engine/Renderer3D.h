@@ -29,8 +29,10 @@ namespace FooGame
             static void DrawModel(Model* model, const glm::mat4& transform);
             static void DrawModel(const std::string& name, std::string& material,
                                   const glm::mat4& transform);
+            static void DrawMesh(const std::string& name, glm::mat4& transform);
 
         public:
+            static void SubmitMesh(Mesh& mesh);
             static void SubmitMesh(Mesh* mesh);
             static void SubmitModel(Model* model);
             static void SubmitModel(const std::string& name);

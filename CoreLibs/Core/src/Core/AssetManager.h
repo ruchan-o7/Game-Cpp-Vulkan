@@ -4,23 +4,12 @@
 #include <string>
 #include "../Engine/Geometry/Material.h"
 #include <unordered_map>
+#include "../Scene/Asset.h"
 namespace FooGame
 {
     class Model;
+    class Mesh;
     class VulkanTexture;
-    enum class AssetStatus
-    {
-        NONE,
-        WORKING,
-        READY,
-        FAILED,
-    };
-    template <typename AssetType>
-    struct AssetContainer
-    {
-            AssetStatus Status;
-            AssetType Asset;
-    };
     class AssetManager
     {
         public:
@@ -40,7 +29,8 @@ namespace FooGame
 
         public:
             static std::shared_ptr<Model> GetModel(const std::string& name);
-            static AssetContainer<std::shared_ptr<Model>> GetModelAsset(const std::string& name);
+            static AssetContainer<Model>& GetModelAsset(const std::string& name);
+            static AssetContainer<std::shared_ptr<Mesh>>& GetMeshAsset(const std::string& name);
             static Material GetMaterial(const std::string& name);
             static std::shared_ptr<VulkanTexture> GetTexture(const std::string& name);
             static std::shared_ptr<VulkanTexture> GetDefaultTexture();
@@ -49,7 +39,7 @@ namespace FooGame
         private:
             static void InsertTextureToVector(const std::shared_ptr<VulkanTexture>& pT,
                                               const std::string& name);
-            static void InsertMaterial(const std::string& name, const Material& m);
+            static void InsertMaterial(const Material& m);
             static void InsertMap(const std::string& name, std::shared_ptr<Model> m);
     };
 }  // namespace FooGame

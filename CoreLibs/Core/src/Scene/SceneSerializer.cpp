@@ -6,6 +6,7 @@
 #include <future>
 #include <iomanip>
 #include <json.hpp>
+#include <memory>
 #include "Entity.h"
 #include "../Core/AssetManager.h"
 #include "../Scene/Component.h"
@@ -13,6 +14,7 @@
 #include "../Scripts/ScaleYoink.h"
 #include "../Scripts/CameraController.h"
 #include "../Core/File.h"
+#include "Asset.h"
 namespace FooGame
 {
     using json = nlohmann::json;
@@ -21,6 +23,15 @@ namespace FooGame
     SceneSerializer::SceneSerializer(Scene* scene) : m_pScene(scene)
     {
     }
+    template <typename T>
+    static void SerializeAsset(AssetContainer<T>& OutAsset)
+    {
+    }
+    template <>
+    void SerializeAsset(AssetContainer<Model>& OutAsset)
+    {
+    }
+
     static void SerializeEntity(Entity& entity, json& sceneEntitiesNode)
     {
         if (!entity.HasComponent<IDComponent>())
@@ -107,7 +118,11 @@ namespace FooGame
         componentExists = entityJson.contains("meshComponent");
         if (componentExists)
         {
+#if 0
 #define ASYNC(x) futures.emplace_back(std::async(std::launch::async, [=] { x; }))
+#else
+#define ASYNC(x) x;
+#endif
             auto meshComponent = entityJson["meshComponent"];
             if (!meshComponent.empty())
             {

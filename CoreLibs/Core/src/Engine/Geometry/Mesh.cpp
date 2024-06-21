@@ -24,6 +24,7 @@ namespace FooGame
         m_Indices      = std::move(other.m_Indices);
         MeshPrimitives = std::move(other.MeshPrimitives);
         M3Name         = std::move(other.M3Name);
+        Name           = std::move(other.Name);
         RenderId       = other.RenderId;
         other.m_Vertices.clear();
         other.m_Indices.clear();
