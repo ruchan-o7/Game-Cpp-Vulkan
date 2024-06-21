@@ -234,21 +234,18 @@ namespace FooGame
             return;
         }
         auto asset = AssetManager::GetModelAsset(name);
-        if (asset.Status == AssetStatus::WORKING || asset.Status == AssetStatus::FAILED ||
-            asset.Status == AssetStatus::NONE)
+        if (asset.Status != AssetStatus::READY)
         {
             return;
         }
 
         std::shared_ptr<Model> model;
-        if (asset.Status == AssetStatus::READY)
+
+        if (asset.Asset == nullptr)
         {
-            if (asset.Asset == nullptr)
-            {
-                return;
-            }
-            model = asset.Asset;
+            return;
         }
+        model = asset.Asset;
 
         assert(!materialName.empty());
 
@@ -438,6 +435,7 @@ namespace FooGame
                 data.IndexBuffer.reset();
             }
         }
+        rContext.pGraphicPipeline.reset();
         s_Data.Res.MeshMap2.clear();
     }
     void Renderer3D::UpdateUniformData(UniformBufferObject& ubd)

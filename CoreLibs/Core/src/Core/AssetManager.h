@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <memory>
 #include <string>
 #include "../Engine/Geometry/Material.h"
@@ -29,8 +30,8 @@ namespace FooGame
         public:
             static void LoadGLTFModel(std::string path, std::string name, bool isGlb);
             static void LoadGLTFModelAsync(std::string path, std::string name, bool isGlb);
-            static void LoadObjModel(const std::string& path, const std::string& modelName,
-                                     std::string materialName);
+            static void LoadObjModel(const std::filesystem::path& path,
+                                     const std::string& modelName, std::string materialName);
             static void LoadTexture(const std::string& name, void* pixels, size_t size,
                                     int32_t width, int32_t height);
             static void LoadTexture(const std::string& path, const std::string& name);

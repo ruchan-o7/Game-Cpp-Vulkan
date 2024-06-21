@@ -12,7 +12,6 @@
 #include "../Scripts/Rotate.h"
 #include "../Scripts/ScaleYoink.h"
 #include "../Scripts/CameraController.h"
-#include "../Engine/Geometry/Model.h"
 #include "../Core/File.h"
 namespace FooGame
 {
@@ -124,10 +123,7 @@ namespace FooGame
                     auto p       = (assetPath / modelPath);
                     mc.ModelName = File::ExtractFileName(p);
 
-                    ASYNC(AssetManager::LoadObjModel(p.string(), mc.ModelName, mc.MaterialName));
-                    // std::shared_ptr<Model> modelPtr = AssetManager::GetModel(mc.ModelName);
-
-                    // modelPtr->m_Meshes[0].M3Name = mc.MaterialName;
+                    ASYNC(AssetManager::LoadObjModel(p, mc.ModelName, mc.MaterialName));
                 }
                 else if (modelExtension == ".glb")
                 {
@@ -141,12 +137,9 @@ namespace FooGame
                     auto pStr    = p.string();
                     mc.ModelName = File::ExtractFileName(p);
                     ASYNC(AssetManager::LoadGLTFModel(pStr, mc.ModelName, false));
-                    // futures.emplace_back(
-                    //     std::async(std::launch::async, [=]
-                    //                { AssetManager::LoadGLTFModel(pStr, mc.ModelName, false); }));
-                    // AssetManager::LoadGLTFModel(pStr, mc.ModelName, false);
                 }
             }
+#undef ASYNC
         }
         componentExists = entityJson.contains("scriptComponent");
         if (componentExists)
@@ -190,8 +183,7 @@ namespace FooGame
     }
     void SceneSerializer::Serialize(const std::string& path)
     {
-        auto cwd       = std::filesystem::current_path();
-        auto assets    = cwd.append("Assets");
+        auto assets    = File::GetAssetDirectory();
         auto scenePath = assets / path;
 
         json scene;
@@ -238,8 +230,8 @@ namespace FooGame
     }
     void SceneSerializer::DeSerialize(const std::string& path)
     {
-        auto cwd       = std::filesystem::current_path();
-        auto assetPath = cwd / "Assets";
+        auto cwd       = File::GetCWD();
+        auto assetPath = File::GetAssetDirectory();
 
         auto sceneBasePath = cwd / path;
 
@@ -314,8 +306,6 @@ namespace FooGame
         {
             for (auto entity : entities)
             {
-                // futures.push_back(
-                // std::async(std::launch::async, DeSerializeEntity, entity, m_pScene, assetPath));
                 DeSerializeEntity(entity, m_pScene, assetPath, futures);
             }
         }

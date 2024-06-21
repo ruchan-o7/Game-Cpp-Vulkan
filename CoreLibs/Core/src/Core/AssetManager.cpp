@@ -15,11 +15,11 @@
 #include <tiny_gltf.h>
 #include "../Engine/Engine/Renderer3D.h"
 #include <cstddef>
-#include <filesystem>
 #include <mutex>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 namespace FooGame
 {
 
@@ -28,11 +28,9 @@ namespace FooGame
     std::mutex g_Material_mutex;
 
     using ModelName = std::string;
-    // std::unordered_map<ModelName, std::shared_ptr<Model>> s_ModelMap;
     std::unordered_map<ModelName, AssetContainer<std::shared_ptr<Model>>> s_ModelMap;
     std::unordered_map<ModelName, std::shared_ptr<VulkanTexture>> s_TextureMap;
 
-    std::vector<Material> g_Materials;
     std::unordered_map<std::string, Material> s_MaterialMap;
     std::unique_ptr<Thread> s_pThread;
 
@@ -56,7 +54,32 @@ namespace FooGame
 
     static bool ReadFile(tinygltf::Model& input, const std::string& path, bool isGlb);
 
-    void AssetManager::LoadObjModel(const std::string& path, const std::string& modelName,
+    static void ProcessObjMaterial(const std::vector<tinyobj::material_t>& objMaterials)
+    {
+        for (const auto& mat : objMaterials)
+        {
+            Material material;
+            material.Name               = mat.name;
+            material.fromGlb            = false;
+            material.NormalTexture.Name = mat.bump_texname;
+
+            auto& pbr = material.PbrMat;
+
+            pbr.BaseColorFactor[0]   = mat.diffuse[0];
+            pbr.BaseColorFactor[1]   = mat.diffuse[1];
+            pbr.BaseColorFactor[2]   = mat.diffuse[2];
+            pbr.BaseColorFactor[3]   = 1.0;
+            pbr.BaseColorTextureName = mat.diffuse_texname;
+
+            pbr.MetallicRoughnessTextureName = mat.roughness_texname;
+            pbr.MetallicFactor               = mat.metallic;
+            pbr.RoughnessFactor              = mat.roughness;
+
+            AssetManager::AddMaterial(material);
+        }
+    }
+
+    void AssetManager::LoadObjModel(const std::filesystem::path& path, const std::string& modelName,
                                     std::string materialName)
     {
         if (GetModel(modelName))
@@ -75,14 +98,33 @@ namespace FooGame
         std::vector<uint32_t> indices;
         std::vector<Mesh> meshes;
 
-        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.c_str()))
+        auto objPath        = path.string();
+        auto objBasePath    = path.parent_path();
+        auto objBasePathStr = objBasePath.string();
+
+        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, objPath.c_str(),
+                              objBasePathStr.c_str()))
         {
-            FOO_ENGINE_ERROR("Model could not loaded {0}", path);
+            FOO_ENGINE_ERROR("Model could not loaded {0}", path.string());
             return;
+        }
+        ProcessObjMaterial(materials);
+        for (const auto& [name, mat] : s_MaterialMap)
+        {
+            auto texPathStr = mat.PbrMat.BaseColorTexturePath;
+            if (texPathStr.empty())
+            {
+                continue;
+            }
+            auto path = objBasePath / texPathStr;
+            LoadTexture(path.string(), mat.PbrMat.BaseColorTextureName);
         }
 
         for (const auto& shape : shapes)
         {
+            Mesh mesh;
+            mesh.Name = shape.name;
+
             for (const auto& index : shape.mesh.indices)
             {
                 Vertex vertex{};
@@ -119,10 +161,10 @@ namespace FooGame
                 {
                     vertex.Normal = {1.0f, 1.0f, 1.0f};
                 }
-                vertices.push_back(vertex);
-                indices.push_back(indices.size());
+                mesh.m_Vertices.emplace_back(std::move(vertex));
+                mesh.m_Indices.push_back(indices.size());
             }
-            meshes.push_back(std::move(Mesh{std::move(vertices), std::move(indices)}));
+            meshes.emplace_back(std::move(mesh));
         }
 
         auto modelPtr                = std::make_shared<Model>(std::move(meshes));
@@ -136,8 +178,6 @@ namespace FooGame
         };
         modelPtr->textureIndices = {ALBEDO, METALIC, ROUGHNESS, NORMAL};
         InsertMap(modelName, modelPtr);
-        // asset.Asset              = modelPtr;
-        // asset.Status             = AssetStatus::READY;
 
         Renderer3D::SubmitModel(modelName);
     }
@@ -145,7 +185,7 @@ namespace FooGame
     {
         if (GetTexture(name))
         {
-            FOO_ENGINE_WARN("Texture {0} is already loaded");
+            FOO_ENGINE_WARN("Texture {0} is already loaded", name);
             return;
         }
 
@@ -232,7 +272,8 @@ namespace FooGame
     }
 
     void ProcessGLTFImages(std::vector<tinygltf::Image>& images,
-                           std::vector<std::shared_ptr<VulkanTexture>>& vulkanTextures)
+                           std::vector<std::shared_ptr<VulkanTexture>>& vulkanTextures,
+                           std::string defaultName = std::string())
     {
         for (auto& gltfImage : images)
         {
@@ -261,8 +302,16 @@ namespace FooGame
             }
             auto imageName = gltfImage.name.empty() ? gltfImage.uri : gltfImage.name;
             auto fileName  = File::ExtractFileName(imageName);
-            AssetManager::LoadTexture(fileName, (void*)imageBuffer, imageSize, gltfImage.width,
-                                      gltfImage.height);
+            if (fileName.empty())
+            {
+                AssetManager::LoadTexture(defaultName, (void*)imageBuffer, imageSize,
+                                          gltfImage.width, gltfImage.height);
+            }
+            else
+            {
+                AssetManager::LoadTexture(fileName, (void*)imageBuffer, imageSize, gltfImage.width,
+                                          gltfImage.height);
+            }
             auto texture = AssetManager::GetTexture(fileName);
             if (texture)
             {
@@ -275,12 +324,14 @@ namespace FooGame
         }
     }
 
-    static std::vector<Material> ProcessGLTFMaterial(const tinygltf::Model& gltfModel)
+    static std::vector<Material> ProcessGLTFMaterial(
+        const tinygltf::Model& gltfModel, std::string defaultBaseColorTextureName = std::string())
     {
         std::vector<Material> materials;
 
-        const auto& gMats   = gltfModel.materials;
-        const auto& gImages = gltfModel.images;
+        const auto& gMats     = gltfModel.materials;
+        const auto& gImages   = gltfModel.images;
+        const auto& gTextures = gltfModel.textures;  // TODO fix unnamed texture name
         for (auto& m : gMats)
         {
             Material mt;
@@ -288,7 +339,10 @@ namespace FooGame
             mt.Name    = m.name;
             if (m.pbrMetallicRoughness.baseColorTexture.index != -1)
             {
-                auto gBaseColorTexture = gImages[m.pbrMetallicRoughness.baseColorTexture.index];
+                auto& texture = gTextures[m.pbrMetallicRoughness.baseColorTexture.index];
+
+                auto gBaseColorTexture = gImages
+                    [texture.source];  // gImages[m.pbrMetallicRoughness.baseColorTexture.index];
                 auto baseColorTextureName =
                     gBaseColorTexture.name.empty() ? gBaseColorTexture.uri : gBaseColorTexture.name;
                 mt.PbrMat.BaseColorTextureName = File::ExtractFileName(baseColorTextureName);
@@ -304,8 +358,11 @@ namespace FooGame
             }
             if (m.pbrMetallicRoughness.metallicRoughnessTexture.index != -1)
             {
-                auto& metallicRoughness =
-                    gImages[m.pbrMetallicRoughness.metallicRoughnessTexture.index];
+                auto& texture = gTextures[m.pbrMetallicRoughness.metallicRoughnessTexture.index];
+
+                auto& metallicRoughness = gImages
+                    [texture
+                         .source];  //    gImages[m.pbrMetallicRoughness.metallicRoughnessTexture.index];
                 mt.PbrMat.MetallicRoughnessTextureName =
                     metallicRoughness.name.empty() ? File::ExtractFileName(metallicRoughness.uri)
                                                    : metallicRoughness.name;
@@ -313,7 +370,8 @@ namespace FooGame
             }
             if (m.normalTexture.index != -1)
             {
-                auto normalTexture = gImages[m.normalTexture.index];
+                auto& texture       = gTextures[m.normalTexture.index];
+                auto& normalTexture = gImages[texture.source];  // gImages[m.normalTexture.index];
                 auto normalTexturename =
                     normalTexture.name.empty() ? normalTexture.uri : normalTexture.name;
                 mt.NormalTexture.Name = File::ExtractFileName(normalTexturename);
@@ -344,6 +402,10 @@ namespace FooGame
             FOO_ENGINE_WARN("Model {0} is already loaded", name);
             return;
         }
+        else if (asset.Status == AssetStatus::WORKING || asset.Status == AssetStatus::FAILED)
+        {
+            return;
+        }
         asset.Status = AssetStatus::WORKING;
 
         tinygltf::Model gltfInput;
@@ -355,18 +417,20 @@ namespace FooGame
         if (!ReadFile(gltfInput, path, isGlb))
         {
             asset.Status = AssetStatus::FAILED;
-            FOO_ENGINE_ERROR("Model with path: {0} could not read");
+            FOO_ENGINE_ERROR("Model with path: {0} could not read", path);
             return;
         }
         for (size_t i = 0; i < gltfInput.scenes.size(); i++)
         {
-            ProcessGLTFImages(gltfInput.images, vulkanTextures);
+            ProcessGLTFImages(gltfInput.images, vulkanTextures, name);
             // TEXTURE
             for (size_t i = 0; i < gltfInput.textures.size(); i++)
             {
                 textureIndices.push_back(gltfInput.textures[i].source);
             }
-            materials = ProcessGLTFMaterial(gltfInput);
+
+            materials = std::move(ProcessGLTFMaterial(gltfInput, name));
+
             for (auto& m : materials)
             {
                 InsertMaterial(m.Name, m);
@@ -382,10 +446,9 @@ namespace FooGame
                     continue;
                 }
                 const auto mesh = gltfInput.meshes[meshIndex];
-                // FOO_CORE_TRACE("Mesh : {0} will be proceed", mesh.name);
+                FooGame::Mesh tempMesh{};
                 for (const auto& primitive : mesh.primitives)
                 {
-                    FooGame::Mesh tempMesh{};
                     auto material             = materials[primitive.material];
                     tempMesh.M3Name           = material.Name;
                     uint32_t firstIndex       = static_cast<uint32_t>(tempMesh.m_Indices.size());
@@ -497,9 +560,6 @@ namespace FooGame
         model->Textures       = vulkanTextures;
         model->textureIndices = textureIndices;
         InsertMap(name, model);
-        // asset.Asset           = model;
-        // asset.Status          = AssetStatus::READY;
-        // s_ModelMap[name]      = model;
         Renderer3D::SubmitModel(name);
     }
     void AssetManager::InsertMap(const std::string& name, std::shared_ptr<Model> m)
@@ -508,7 +568,6 @@ namespace FooGame
         auto& asset  = s_ModelMap[name];
         asset.Status = AssetStatus::READY;
         asset.Asset  = m;
-        // s_ModelMap[name] = m;
     }
     AssetContainer<std::shared_ptr<Model>> AssetManager::GetModelAsset(const std::string& name)
     {

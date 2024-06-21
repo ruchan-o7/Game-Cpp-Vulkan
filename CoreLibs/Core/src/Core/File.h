@@ -6,6 +6,10 @@ namespace FooGame
     class File
     {
         public:
+            static std::filesystem::path GetCWD();
+            static std::filesystem::path GetAssetDirectory();
+
+        public:
             static std::string ExtractFileName(const std::string& pathStr);
             static std::string ExtractFileName(const std::filesystem::path& path);
             static std::string ExtractExtensionName(const std::string& path);

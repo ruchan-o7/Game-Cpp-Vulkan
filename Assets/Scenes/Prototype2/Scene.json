@@ -1,13 +1,16 @@
 {
     "entities": [
         {
-            "id": 7954746054582625731,
-            "meshComponent": {
-                "material": "arch_stone_wall_01",
-                "modelPath": "Models\\NewSponza_Main_glTF_003.gltf"
+            "cameraComponent": {
+                "fixedAspectRatio": true,
+                "primary": true
             },
+            "id": 3332061642483347496,
+            "scriptComponent": [
+                "CameraController"
+            ],
             "tagComponent": {
-                "tag": "SPONZA"
+                "tag": "Camera"
             },
             "transformComponent": {
                 "rotation": [
@@ -21,7 +24,38 @@
                     1.0
                 ],
                 "translation": [
+                    0.09000000357627869,
                     0.0,
+                    0.0
+                ]
+            }
+        },
+        {
+            "id": 3263328598297060330,
+            "meshComponent": {
+                "material": "Viking material",
+                "modelPath": "Models\\Avocado.glb"
+            },
+            "scriptComponent": [
+                "ScaleYoink",
+                "RotateScript"
+            ],
+            "tagComponent": {
+                "tag": "Avocado"
+            },
+            "transformComponent": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    -8.156379699707031,
+                    12.0,
+                    12.0
+                ],
+                "translation": [
+                    -0.5786091089248657,
                     0.0,
                     0.0
                 ]
@@ -55,51 +89,17 @@
             }
         },
         {
-            "id": 3263328598297060330,
+            "id": 7954746054582625731,
             "meshComponent": {
-                "material": "Viking material",
-                "modelPath": "Models\\Avocado.obj"
+                "material": "arch_stone_wall_01",
+                "modelPath": "Models\\sponza.glb"
             },
-            "scriptComponent": [
-                "RotateScript",
-                "ScaleYoink"
-            ],
             "tagComponent": {
-                "tag": "Avocado"
+                "tag": "SPONZA"
             },
             "transformComponent": {
                 "rotation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "scale": [
-                    -2.755934715270996,
-                    12.0,
-                    12.0
-                ],
-                "translation": [
-                    -0.9612754583358765,
-                    0.0,
-                    0.0
-                ]
-            }
-        },
-        {
-            "cameraComponent": {
-                "fixedAspectRatio": true,
-                "primary": true
-            },
-            "id": 3332061642483347496,
-            "scriptComponent": [
-                "CameraController"
-            ],
-            "tagComponent": {
-                "tag": "Camera"
-            },
-            "transformComponent": {
-                "rotation": [
-                    0.0,
+                    1.5707963705062866,
                     0.0,
                     0.0
                 ],
@@ -109,7 +109,7 @@
                     1.0
                 ],
                 "translation": [
-                    0.09000000357627869,
+                    0.0,
                     0.0,
                     0.0
                 ]
@@ -119,49 +119,7 @@
     "materials": [
         {
             "fromGlb": true,
-            "name": "ornament_01",
-            "normalTexture": {
-                "name": "ornament_01_Normal.png"
-            },
-            "pbrMetallicRougness": {
-                "baseColorFactor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "baseColorTextureName": "ornament_01_BaseColor.png",
-                "baseColorTexturePath": "textures/ornament_01_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "ornament_01_Roughnessornament_01_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/ornament_01_Roughnessornament_01_Metalness.png",
-                "roughnessFactor": 1.0
-            }
-        },
-        {
-            "fromGlb": true,
-            "name": "column_head_2ndfloor_02",
-            "normalTexture": {
-                "name": "col_head_2ndfloor_02_Normal.png"
-            },
-            "pbrMetallicRougness": {
-                "baseColorFactor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "baseColorTextureName": "col_head_2ndfloor_02_BaseColor.png",
-                "baseColorTexturePath": "textures/col_head_2ndfloor_02_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "col_head_2ndfloor_02_Roughnesscol_head_2ndfloor_02_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/col_head_2ndfloor_02_Roughnesscol_head_2ndfloor_02_Metalness.png",
-                "roughnessFactor": 1.0
-            }
-        },
-        {
-            "fromGlb": true,
-            "name": "dirt_decal",
+            "name": "roof",
             "normalTexture": {
                 "name": ""
             },
@@ -170,21 +128,21 @@
                     1.0,
                     1.0,
                     1.0,
-                    0.350000024
+                    1.0
                 ],
-                "baseColorTextureName": "dirt_decal_01_dirt_decal_01_mask_gltf_alpha_dirt_decal_Opacity.png",
-                "baseColorTexturePath": "textures/dirt_decal_01_dirt_decal_01_mask_gltf_alpha_dirt_decal_Opacity.png",
-                "metallicFactor": 1.0,
+                "baseColorTextureName": "sponza_roof_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
                 "metallicRoughnessTextureName": "",
                 "metallicRoughnessTexturePath": "",
-                "roughnessFactor": 1.0
+                "roughnessFactor": 0.8999999761581421
             }
         },
         {
             "fromGlb": true,
-            "name": "column_head_2ndfloor_03",
+            "name": "vase",
             "normalTexture": {
-                "name": "col_head_2ndfloor_03_Normal.png"
+                "name": "vase_bump"
             },
             "pbrMetallicRougness": {
                 "baseColorFactor": [
@@ -193,19 +151,19 @@
                     1.0,
                     1.0
                 ],
-                "baseColorTextureName": "col_head_2ndfloor_03_BaseColor.png",
-                "baseColorTexturePath": "textures/col_head_2ndfloor_03_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "col_head_2ndfloor_03_Roughnesscol_head_2ndfloor_03_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/col_head_2ndfloor_03_Roughnesscol_head_2ndfloor_03_Metalness.png",
-                "roughnessFactor": 1.0
+                "baseColorTextureName": "vase_dif",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
             }
         },
         {
             "fromGlb": true,
-            "name": "ornament_lion",
+            "name": "Material__25",
             "normalTexture": {
-                "name": "lionhead_01_Normal.png"
+                "name": "lion_bump"
             },
             "pbrMetallicRougness": {
                 "baseColorFactor": [
@@ -214,19 +172,19 @@
                     1.0,
                     1.0
                 ],
-                "baseColorTextureName": "lionhead_01_BaseColor.png",
-                "baseColorTexturePath": "textures/lionhead_01_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "lionhead_01_Roughnesslionhead_01_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/lionhead_01_Roughnesslionhead_01_Metalness.png",
-                "roughnessFactor": 1.0
+                "baseColorTextureName": "lion",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
             }
         },
         {
             "fromGlb": true,
-            "name": "wood_01",
+            "name": "chain",
             "normalTexture": {
-                "name": "wood_tile_01_Normal.png"
+                "name": "chain_texture_bump"
             },
             "pbrMetallicRougness": {
                 "baseColorFactor": [
@@ -235,19 +193,19 @@
                     1.0,
                     1.0
                 ],
-                "baseColorTextureName": "wood_tile_01_BaseColor.png",
-                "baseColorTexturePath": "textures/wood_tile_01_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "wood_tile_01_Roughnesswood_tile_01_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/wood_tile_01_Roughnesswood_tile_01_Metalness.png",
-                "roughnessFactor": 1.0
+                "baseColorTextureName": "chain_texture-chain_texture_mask",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.7763931751251221
             }
         },
         {
             "fromGlb": true,
-            "name": "wood_door_01",
+            "name": "fabric_f",
             "normalTexture": {
-                "name": "wood_door_01_Normal.png"
+                "name": ""
             },
             "pbrMetallicRougness": {
                 "baseColorFactor": [
@@ -256,17 +214,101 @@
                     1.0,
                     1.0
                 ],
-                "baseColorTextureName": "wood_door_01_BaseColor.png",
-                "baseColorTexturePath": "textures/wood_door_01_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "wood_door_01_Roughnesswood_door_01_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/wood_door_01_Roughnesswood_door_01_Metalness.png",
-                "roughnessFactor": 1.0
+                "baseColorTextureName": "sponza_curtain_green_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.9900000095367432
             }
         },
         {
             "fromGlb": true,
-            "name": "glass",
+            "name": "fabric_a",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_fabric_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.9900000095367432
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "fabric_d",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_fabric_blue_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.9900000095367432
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "vase_hanging",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "vase_hanging",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.7763931751251221
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "flagpole",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_flagpole_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "Material__47",
             "normalTexture": {
                 "name": ""
             },
@@ -287,9 +329,9 @@
         },
         {
             "fromGlb": true,
-            "name": "ceiling_plaster_01",
+            "name": "arch",
             "normalTexture": {
-                "name": "ceiling_plaster_01_Normal.png"
+                "name": ""
             },
             "pbrMetallicRougness": {
                 "baseColorFactor": [
@@ -298,19 +340,82 @@
                     1.0,
                     1.0
                 ],
-                "baseColorTextureName": "ceiling_plaster_01_BaseColor.png",
-                "baseColorTexturePath": "textures/ceiling_plaster_01_BaseColor.png",
+                "baseColorTextureName": "sponza_arch_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.800000011920929
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "floor",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_floor_a_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.7354248762130737
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "fabric_g",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_curtain_blue_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.9900000095367432
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "2256_Avocado_d",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "",
+                "baseColorTexturePath": "",
                 "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "ceiling_plaster_01_Roughnessceiling_plaster_01_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/ceiling_plaster_01_Roughnessceiling_plaster_01_Metalness.png",
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
                 "roughnessFactor": 1.0
             }
         },
         {
             "fromGlb": true,
-            "name": "door_stoneframe_02",
+            "name": "Material__57",
             "normalTexture": {
-                "name": "door_stoneframe_02_Normal.png"
+                "name": ""
             },
             "pbrMetallicRougness": {
                 "baseColorFactor": [
@@ -319,12 +424,117 @@
                     1.0,
                     1.0
                 ],
-                "baseColorTextureName": "door_stoneframe_02_BaseColor.png",
-                "baseColorTexturePath": "textures/door_stoneframe_02_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "door_stoneframe_02_Roughnessdoor_stoneframe_02_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/door_stoneframe_02_Roughnessdoor_stoneframe_02_Metalness.png",
-                "roughnessFactor": 1.0
+                "baseColorTextureName": "vase_plant-vase_plant_mask",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "fabric_c",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_curtain_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.9900000095367432
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "column_a",
+            "normalTexture": {
+                "name": "sponza_column_a_bump"
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_column_a_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "fabric_e",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_fabric_green_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.9900000095367432
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "leaf",
+            "normalTexture": {
+                "name": "sponza_thorn_bump"
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_thorn_diff-sponza_thorn_mask",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "column_b",
+            "normalTexture": {
+                "name": "sponza_column_b_bump"
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_column_b_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
             }
         },
         {
@@ -350,9 +560,9 @@
         },
         {
             "fromGlb": true,
-            "name": "brickwall_01",
+            "name": "vase_round",
             "normalTexture": {
-                "name": "brickwall_01_Normal.png"
+                "name": "vase_round_bump"
             },
             "pbrMetallicRougness": {
                 "baseColorFactor": [
@@ -361,19 +571,19 @@
                     1.0,
                     1.0
                 ],
-                "baseColorTextureName": "brickwall_01_BaseColor.png",
-                "baseColorTexturePath": "textures/brickwall_01_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "brickwall_01_Roughnessbrickwall_01_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/brickwall_01_Roughnessbrickwall_01_Metalness.png",
-                "roughnessFactor": 1.0
+                "baseColorTextureName": "vase_round",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
             }
         },
         {
             "fromGlb": true,
-            "name": "arch_stone_wall_01",
+            "name": "Material__298",
             "normalTexture": {
-                "name": "arch_stone_wall_01_Normal.png"
+                "name": "background_bump"
             },
             "pbrMetallicRougness": {
                 "baseColorFactor": [
@@ -382,19 +592,19 @@
                     1.0,
                     1.0
                 ],
-                "baseColorTextureName": "arch_stone_wall_01_BaseColor.png",
-                "baseColorTexturePath": "textures/arch_stone_wall_01_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "arch_stone_wall_01_Roughnessarch_stone_wall_01_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/arch_stone_wall_01_Roughnessarch_stone_wall_01_Metalness.png",
-                "roughnessFactor": 1.0
+                "baseColorTextureName": "background",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
             }
         },
         {
             "fromGlb": true,
-            "name": "window_frame_01",
+            "name": "column_c",
             "normalTexture": {
-                "name": "window_frame_01_Normal.png"
+                "name": "sponza_column_c_bump"
             },
             "pbrMetallicRougness": {
                 "baseColorFactor": [
@@ -403,19 +613,19 @@
                     1.0,
                     1.0
                 ],
-                "baseColorTextureName": "window_frame_01_BaseColor.png",
-                "baseColorTexturePath": "textures/window_frame_01_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "window_frame_01_Roughnesswindow_frame_01_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/window_frame_01_Roughnesswindow_frame_01_Metalness.png",
-                "roughnessFactor": 1.0
+                "baseColorTextureName": "sponza_column_c_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
             }
         },
         {
             "fromGlb": true,
-            "name": "stone_trims_01",
+            "name": "bricks",
             "normalTexture": {
-                "name": "stone_trims_01_Normal.png"
+                "name": "spnza_bricks_a_bump"
             },
             "pbrMetallicRougness": {
                 "baseColorFactor": [
@@ -424,122 +634,17 @@
                     1.0,
                     1.0
                 ],
-                "baseColorTextureName": "stone_trims_01_BaseColor.png",
-                "baseColorTexturePath": "textures/stone_trims_01_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "stone_trims_01_Roughnessstone_trims_01_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/stone_trims_01_Roughnessstone_trims_01_Metalness.png",
-                "roughnessFactor": 1.0
+                "baseColorTextureName": "spnza_bricks_a_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
             }
         },
         {
             "fromGlb": true,
-            "name": "metal_door",
-            "normalTexture": {
-                "name": "metal_door_01_Normal.png"
-            },
-            "pbrMetallicRougness": {
-                "baseColorFactor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "baseColorTextureName": "metal_door_01_BaseColor.png",
-                "baseColorTexturePath": "textures/metal_door_01_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "metal_door_01_Roughnessmetal_door_01_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/metal_door_01_Roughnessmetal_door_01_Metalness.png",
-                "roughnessFactor": 1.0
-            }
-        },
-        {
-            "fromGlb": true,
-            "name": "brickwall_02",
-            "normalTexture": {
-                "name": "brickwall_02_Normal.png"
-            },
-            "pbrMetallicRougness": {
-                "baseColorFactor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "baseColorTextureName": "brickwall_02_BaseColor.png",
-                "baseColorTexturePath": "textures/brickwall_02_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "brickwall_02_Roughnessbrickwall_02_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/brickwall_02_Roughnessbrickwall_02_Metalness.png",
-                "roughnessFactor": 1.0
-            }
-        },
-        {
-            "fromGlb": true,
-            "name": "stones_01_tile",
-            "normalTexture": {
-                "name": "stone_01_tile_Normal.png"
-            },
-            "pbrMetallicRougness": {
-                "baseColorFactor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "baseColorTextureName": "stone_01_tile_BaseColor.png",
-                "baseColorTexturePath": "textures/stone_01_tile_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "stone_01_tile_Roughnessstone_01_tile_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/stone_01_tile_Roughnessstone_01_tile_Metalness.png",
-                "roughnessFactor": 1.0
-            }
-        },
-        {
-            "fromGlb": true,
-            "name": "roof_tiles_01",
-            "normalTexture": {
-                "name": "roof_tiles_01_Normal.png"
-            },
-            "pbrMetallicRougness": {
-                "baseColorFactor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "baseColorTextureName": "roof_tiles_01_BaseColor.png",
-                "baseColorTexturePath": "textures/roof_tiles_01_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "roof_tiles_01_Roughnessroof_tiles_01_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/roof_tiles_01_Roughnessroof_tiles_01_Metalness.png",
-                "roughnessFactor": 1.0
-            }
-        },
-        {
-            "fromGlb": true,
-            "name": "floor_01",
-            "normalTexture": {
-                "name": "floor_tiles_01_Normal.png"
-            },
-            "pbrMetallicRougness": {
-                "baseColorFactor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "baseColorTextureName": "floor_tiles_01_BaseColor.png",
-                "baseColorTexturePath": "textures/floor_tiles_01_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "floor_tiles_01_Roughnessfloor_tiles_01_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/floor_tiles_01_Roughnessfloor_tiles_01_Metalness.png",
-                "roughnessFactor": 1.0
-            }
-        },
-        {
-            "fromGlb": true,
-            "name": "light_bulb",
+            "name": "ceiling",
             "normalTexture": {
                 "name": ""
             },
@@ -550,164 +655,17 @@
                     1.0,
                     1.0
                 ],
-                "baseColorTextureName": "",
+                "baseColorTextureName": "sponza_ceiling_a_diff",
                 "baseColorTexturePath": "",
-                "metallicFactor": 1.0,
+                "metallicFactor": 0.0,
                 "metallicRoughnessTextureName": "",
                 "metallicRoughnessTexturePath": "",
-                "roughnessFactor": 1.0
+                "roughnessFactor": 0.8999999761581421
             }
         },
         {
             "fromGlb": true,
-            "name": "column_1stfloor",
-            "normalTexture": {
-                "name": "col_1stfloor_Normal.png"
-            },
-            "pbrMetallicRougness": {
-                "baseColorFactor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "baseColorTextureName": "col_1stfloor_BaseColor.png",
-                "baseColorTexturePath": "textures/col_1stfloor_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "col_1stfloor_Roughnesscol_1stfloor_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/col_1stfloor_Roughnesscol_1stfloor_Metalness.png",
-                "roughnessFactor": 1.0
-            }
-        },
-        {
-            "fromGlb": true,
-            "name": "stones_2ndfloor",
-            "normalTexture": {
-                "name": "stones_2ndfloor_01_Normal.png"
-            },
-            "pbrMetallicRougness": {
-                "baseColorFactor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "baseColorTextureName": "stones_2ndfloor_01_BaseColor.png",
-                "baseColorTexturePath": "textures/stones_2ndfloor_01_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "stones_2ndfloor_01_Roughnessstones_2ndfloor_01_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/stones_2ndfloor_01_Roughnessstones_2ndfloor_01_Metalness.png",
-                "roughnessFactor": 1.0
-            }
-        },
-        {
-            "fromGlb": true,
-            "name": "door_stoneframe_01",
-            "normalTexture": {
-                "name": "door_stoneframe_01_Normal.png"
-            },
-            "pbrMetallicRougness": {
-                "baseColorFactor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "baseColorTextureName": "door_stoneframe_01_BaseColor.png",
-                "baseColorTexturePath": "textures/door_stoneframe_01_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "door_stoneframe_01_Roughnessdoor_stoneframe_01_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/door_stoneframe_01_Roughnessdoor_stoneframe_01_Metalness.png",
-                "roughnessFactor": 1.0
-            }
-        },
-        {
-            "fromGlb": true,
-            "name": "column_head_1stfloor",
-            "normalTexture": {
-                "name": "col_head_1stfloor_Normal.png"
-            },
-            "pbrMetallicRougness": {
-                "baseColorFactor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "baseColorTextureName": "col_head_1stfloor_BaseColor.png",
-                "baseColorTexturePath": "textures/col_head_1stfloor_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "col_head_1stfloor_Roughnesscol_head_1stfloor_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/col_head_1stfloor_Roughnesscol_head_1stfloor_Metalness.png",
-                "roughnessFactor": 1.0
-            }
-        },
-        {
-            "fromGlb": true,
-            "name": "stone_trims_02",
-            "normalTexture": {
-                "name": "stone_trims_02_Normal.png"
-            },
-            "pbrMetallicRougness": {
-                "baseColorFactor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "baseColorTextureName": "stone_trims_02_BaseColor.png",
-                "baseColorTexturePath": "textures/stone_trims_02_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "stone_trims_02_Roughnessstone_trims_02_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/stone_trims_02_Roughnessstone_trims_02_Metalness.png",
-                "roughnessFactor": 1.0
-            }
-        },
-        {
-            "fromGlb": true,
-            "name": "ceiling_plaster_02",
-            "normalTexture": {
-                "name": "ceiling_plaster_01_Normal.png"
-            },
-            "pbrMetallicRougness": {
-                "baseColorFactor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "baseColorTextureName": "ceiling_plaster_02_BaseColor.png",
-                "baseColorTexturePath": "textures/ceiling_plaster_02_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "ceiling_plaster_02_Roughnessceiling_plaster_01_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/ceiling_plaster_02_Roughnessceiling_plaster_01_Metalness.png",
-                "roughnessFactor": 1.0
-            }
-        },
-        {
-            "fromGlb": true,
-            "name": "column_brickwall_01",
-            "normalTexture": {
-                "name": "col_brickwall_01_Normal.png"
-            },
-            "pbrMetallicRougness": {
-                "baseColorFactor": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "baseColorTextureName": "col_brickwall_01_BaseColor.png",
-                "baseColorTexturePath": "textures/col_brickwall_01_BaseColor.png",
-                "metallicFactor": 1.0,
-                "metallicRoughnessTextureName": "col_brickwall_01_Roughnesscol_brickwall_01_Metalness.png",
-                "metallicRoughnessTexturePath": "textures/col_brickwall_01_Roughnesscol_brickwall_01_Metalness.png",
-                "roughnessFactor": 1.0
-            }
-        },
-        {
-            "fromGlb": true,
-            "name": "lamp_glass_01",
+            "name": "details",
             "normalTexture": {
                 "name": ""
             },
@@ -718,12 +676,12 @@
                     1.0,
                     1.0
                 ],
-                "baseColorTextureName": "",
+                "baseColorTextureName": "sponza_details_diff",
                 "baseColorTexturePath": "",
-                "metallicFactor": 1.0,
+                "metallicFactor": 0.0,
                 "metallicRoughnessTextureName": "",
                 "metallicRoughnessTexturePath": "",
-                "roughnessFactor": 1.0
+                "roughnessFactor": 0.8999999761581421
             }
         }
     ],

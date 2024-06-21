@@ -134,13 +134,10 @@ namespace ENGINE_NAMESPACE
 #undef CAST
     VulkanPipeline::~VulkanPipeline()
     {
-        auto logicalDevice = m_Info.wpLogicalDevice.lock();
-
         if (m_Layout)
         {
-            vkDestroyDescriptorSetLayout(logicalDevice->GetVkDevice(), m_DescriptorSetLayout,
-                                         nullptr);
-            vkDestroyPipeline(logicalDevice->GetVkDevice(), m_Pipeline, nullptr);
+            m_DescriptorSetLayout.Release();
+            m_Pipeline.Release();
         }
     }
 }  // namespace ENGINE_NAMESPACE
