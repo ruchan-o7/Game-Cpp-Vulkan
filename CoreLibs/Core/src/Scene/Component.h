@@ -47,6 +47,7 @@ namespace FooGame
     };
     struct MeshRendererComponent
     {
+            std::vector<std::string> MeshNames;
             std::string ModelName;
             std::string ModelPath;
             std::string MaterialName;

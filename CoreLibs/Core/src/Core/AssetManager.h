@@ -29,7 +29,7 @@ namespace FooGame
 
         public:
             static std::shared_ptr<Model> GetModel(const std::string& name);
-            static AssetContainer<Model>& GetModelAsset(const std::string& name);
+            static AssetContainer<std::shared_ptr<Model>>& GetModelAsset(const std::string& name);
             static AssetContainer<std::shared_ptr<Mesh>>& GetMeshAsset(const std::string& name);
             static Material GetMaterial(const std::string& name);
             static std::shared_ptr<VulkanTexture> GetTexture(const std::string& name);

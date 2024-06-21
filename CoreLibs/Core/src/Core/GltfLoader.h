@@ -14,7 +14,7 @@ namespace FooGame
     struct GltfModel
     {
             std::vector<GltfImageSource> ImageSources;
-            std::vector<Mesh*> Meshes;
+            std::vector<Mesh> Meshes;
             std::vector<Material> Materials;
             std::string Name;
     };

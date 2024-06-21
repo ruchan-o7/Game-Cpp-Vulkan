@@ -7,12 +7,6 @@
 namespace FooGame
 {
 
-    struct Primitive
-    {
-            uint32_t FirstIndex;
-            uint32_t IndexCount;
-            int32_t MaterialIndex;
-    };
     struct Material3;
     struct Mesh
     {
@@ -41,7 +35,6 @@ namespace FooGame
             Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
             std::vector<Vertex> m_Vertices;
             std::vector<uint32_t> m_Indices;
-            std::vector<Primitive> MeshPrimitives;
             std::string M3Name;
             std::string Name;
             uint32_t RenderId;

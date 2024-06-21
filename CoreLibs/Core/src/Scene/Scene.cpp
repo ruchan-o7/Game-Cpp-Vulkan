@@ -178,6 +178,7 @@ namespace FooGame
         }
         return {};
     }
+    std::string dummy;
     void Scene::RenderScene()
     {
         Camera* mainCamera = nullptr;
@@ -202,7 +203,7 @@ namespace FooGame
             [=](TransformComponent& transform, MeshRendererComponent& comp)
             {
                 auto tt = transform.GetTransform();
-                Renderer3D::DrawMesh(comp.ModelName, tt);
+                Renderer3D::DrawModel(comp.ModelName, tt);
             });
     }
     void Scene::IMGUI()

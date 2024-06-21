@@ -4,9 +4,8 @@
 #include "../Engine/Core/VulkanTexture.h"
 #include <Log.h>
 #include "../Engine/Engine/Backend.h"
+#include "ObjLoader.h"
 #include "Thread.h"
-#include "glm/gtc/type_ptr.hpp"
-#include "src/Core/File.h"
 #include "src/Core/GltfLoader.h"
 #include "src/Engine/Core/VulkanBuffer.h"
 #include "src/Engine/Engine/Renderer3D.h"
@@ -18,6 +17,7 @@
 #include "src/Log.h"
 #include "src/Scene/Asset.h"
 #include <cstddef>
+#include <memory>
 #include <mutex>
 #include <stdexcept>
 #include <string>
@@ -31,7 +31,7 @@ namespace FooGame
     std::mutex g_Material_mutex;
 
     using ModelName = std::string;
-    std::unordered_map<ModelName, AssetContainer<Model>> s_ModelMap;
+    std::unordered_map<ModelName, AssetContainer<std::shared_ptr<Model>>> s_ModelMap;
     std::unordered_map<ModelName, AssetContainer<std::shared_ptr<Mesh>>> s_MeshMap;
     std::unordered_map<ModelName, std::shared_ptr<VulkanTexture>> s_TextureMap;
 
@@ -55,8 +55,6 @@ namespace FooGame
     {
         InsertMaterial(material);
     }
-
-    static bool ReadFile(tinygltf::Model& input, const std::string& path, bool isGlb);
 
     static void ProcessObjMaterial(const std::vector<tinyobj::material_t>& objMaterials)
     {
@@ -93,6 +91,36 @@ namespace FooGame
         }
         auto& asset  = s_ModelMap[modelName];
         asset.Status = AssetStatus::WORKING;
+
+        ObjLoader loader{path, modelName, materialName};
+        auto model = loader.LoadModel();
+        for (auto& mat : model->Materials)
+        {
+            AssetManager::AddMaterial(mat);
+        }
+        for (auto& mat : model->Materials)
+        {
+            auto& texPathStr = mat.PbrMat.BaseColorTexturePath;
+            if (texPathStr.empty())
+            {
+                continue;
+            }
+            auto texPath = path.parent_path() / texPathStr;
+            LoadTexture(texPath.string(), mat.PbrMat.BaseColorTextureName);
+        }
+        auto modelPtr = std::make_shared<Model>();
+
+        for (size_t i = 0; i < model->Meshes.size(); i++)
+        {
+            modelPtr->m_Meshes.emplace_back(std::move(model->Meshes[i]));
+        }
+        modelPtr->Name = model->Name;
+
+        InsertMap(modelName, modelPtr);
+
+        Renderer3D::SubmitModel(modelName);
+
+#if 0
 
         tinyobj::attrib_t attrib;
         std::vector<tinyobj::shape_t> shapes;
@@ -184,6 +212,7 @@ namespace FooGame
         InsertMap(modelName, modelPtr);
 
         Renderer3D::SubmitModel(modelName);
+#endif
     }
     void AssetManager::LoadTexture(const std::string& path, const std::string& name)
     {
@@ -277,116 +306,6 @@ namespace FooGame
         return s_MaterialMap[name];
     }
 
-    void ProcessGLTFImages(std::vector<tinygltf::Image>& images,
-                           std::vector<std::shared_ptr<VulkanTexture>>& vulkanTextures,
-                           std::string defaultName = std::string())
-    {
-        for (auto& gltfImage : images)
-        {
-            unsigned char* imageBuffer = nullptr;
-            size_t imageSize           = 0;
-            bool deleteBuffer          = false;
-
-            if (gltfImage.component == 3)
-            {
-                imageSize           = gltfImage.width * gltfImage.height * 4;
-                imageBuffer         = new unsigned char[imageSize];
-                unsigned char* rgba = imageBuffer;
-                unsigned char* rgb  = &gltfImage.image[0];
-                for (size_t j = 0; j < gltfImage.width * gltfImage.height; j++)
-                {
-                    memcpy(rgba, rgb, sizeof(unsigned char) * 3);
-                    rgba += 4;
-                    rgb  += 3;
-                }
-                deleteBuffer = true;
-            }
-            else
-            {
-                imageBuffer = &gltfImage.image[0];
-                imageSize   = gltfImage.image.size();
-            }
-            auto imageName = gltfImage.name.empty() ? gltfImage.uri : gltfImage.name;
-            auto fileName  = File::ExtractFileName(imageName);
-            if (fileName.empty())
-            {
-                AssetManager::LoadTexture(defaultName, (void*)imageBuffer, imageSize,
-                                          gltfImage.width, gltfImage.height);
-            }
-            else
-            {
-                AssetManager::LoadTexture(fileName, (void*)imageBuffer, imageSize, gltfImage.width,
-                                          gltfImage.height);
-            }
-            auto texture = AssetManager::GetTexture(fileName);
-            if (texture)
-            {
-                vulkanTextures.push_back(texture);
-            }
-            if (deleteBuffer)
-            {
-                delete[] imageBuffer;
-            }
-        }
-    }
-
-    static std::vector<Material> ProcessGLTFMaterial(
-        const tinygltf::Model& gltfModel, std::string defaultBaseColorTextureName = std::string())
-    {
-        std::vector<Material> materials;
-
-        const auto& gMats     = gltfModel.materials;
-        const auto& gImages   = gltfModel.images;
-        const auto& gTextures = gltfModel.textures;  // TODO fix unnamed texture name
-        for (auto& m : gMats)
-        {
-            Material mt;
-            mt.fromGlb = true;
-            mt.Name    = m.name;
-            if (m.pbrMetallicRoughness.baseColorTexture.index != -1)
-            {
-                auto& texture = gTextures[m.pbrMetallicRoughness.baseColorTexture.index];
-
-                auto gBaseColorTexture = gImages
-                    [texture.source];  // gImages[m.pbrMetallicRoughness.baseColorTexture.index];
-                auto baseColorTextureName =
-                    gBaseColorTexture.name.empty() ? gBaseColorTexture.uri : gBaseColorTexture.name;
-                mt.PbrMat.BaseColorTextureName = File::ExtractFileName(baseColorTextureName);
-
-                mt.PbrMat.BaseColorFactor[0] = m.pbrMetallicRoughness.baseColorFactor[0];
-                mt.PbrMat.BaseColorFactor[1] = m.pbrMetallicRoughness.baseColorFactor[1];
-                mt.PbrMat.BaseColorFactor[2] = m.pbrMetallicRoughness.baseColorFactor[2];
-                mt.PbrMat.BaseColorFactor[3] = m.pbrMetallicRoughness.baseColorFactor[3];
-
-                mt.PbrMat.MetallicFactor       = m.pbrMetallicRoughness.metallicFactor;
-                mt.PbrMat.RoughnessFactor      = m.pbrMetallicRoughness.roughnessFactor;
-                mt.PbrMat.BaseColorTexturePath = gBaseColorTexture.uri;
-            }
-            if (m.pbrMetallicRoughness.metallicRoughnessTexture.index != -1)
-            {
-                auto& texture = gTextures[m.pbrMetallicRoughness.metallicRoughnessTexture.index];
-
-                auto& metallicRoughness = gImages
-                    [texture
-                         .source];  //    gImages[m.pbrMetallicRoughness.metallicRoughnessTexture.index];
-                mt.PbrMat.MetallicRoughnessTextureName =
-                    metallicRoughness.name.empty() ? File::ExtractFileName(metallicRoughness.uri)
-                                                   : metallicRoughness.name;
-                mt.PbrMat.MetallicRoughnessTexturePath = metallicRoughness.uri;
-            }
-            if (m.normalTexture.index != -1)
-            {
-                auto& texture       = gTextures[m.normalTexture.index];
-                auto& normalTexture = gImages[texture.source];  // gImages[m.normalTexture.index];
-                auto normalTexturename =
-                    normalTexture.name.empty() ? normalTexture.uri : normalTexture.name;
-                mt.NormalTexture.Name = File::ExtractFileName(normalTexturename);
-            }
-            materials.push_back(mt);
-        }
-
-        return materials;
-    }
     void AssetManager::InsertMaterial(const Material& m)
     {
         std::lock_guard<std::mutex> lock(g_Material_mutex);
@@ -421,30 +340,24 @@ namespace FooGame
             delete gltfModel;
             return;
         }
-        auto data = (char*)gltfModel->ImageSources[0].ImageBuffer;  // for test delete after impl
         std::string UnnamedImageStr = std::string("Unnamed Image");
         for (auto& gltfImage : gltfModel->ImageSources)
         {
             AssetManager::LoadTexture(gltfImage.Name.empty() ? UnnamedImageStr : gltfImage.Name,
                                       gltfImage.ImageBuffer, gltfImage.ImageSize, gltfImage.Width,
                                       gltfImage.Height);
-            // TODO Delete loaded texture buffer data
         }
         for (auto& m : gltfModel->Materials)
         {
             InsertMaterial(m);
         }
+        auto model = std::make_shared<Model>(std::move(gltfModel->Meshes));
+        AssetContainer<std::shared_ptr<Model>> c;
+        c.Asset  = model;
+        c.Status = AssetStatus::READY;
 
-        for (auto* mesh : gltfModel->Meshes)
-        {
-            AssetContainer<std::shared_ptr<Mesh>> container;
-            container.Status      = AssetStatus::READY;
-            container.Asset       = std::shared_ptr<Mesh>(mesh);
-            container.Asset->Name = mesh->Name;
-            s_MeshMap[name]       = container;
-            auto& asset           = s_MeshMap[name];
-            Renderer3D::SubmitMesh(*asset.Asset);
-        }
+        s_ModelMap[name] = c;
+        Renderer3D::SubmitModel(model.get());
 
         delete gltfModel;
         return;
@@ -454,8 +367,9 @@ namespace FooGame
         std::lock_guard<std::mutex> lock(g_Model_mutex);
         auto& asset  = s_ModelMap[name];
         asset.Status = AssetStatus::READY;
+        asset.Asset  = m;
     }
-    AssetContainer<Model>& AssetManager::GetModelAsset(const std::string& name)
+    AssetContainer<std::shared_ptr<Model>>& AssetManager::GetModelAsset(const std::string& name)
     {
         return s_ModelMap[name];
     }
@@ -471,7 +385,7 @@ namespace FooGame
             auto& asset = s_ModelMap[name];
             if (asset.Status == AssetStatus::READY)
             {
-                // return s_ModelMap[name].Asset;
+                return s_ModelMap[name].Asset;
             }
             else if (asset.Status == AssetStatus::WORKING)
             {
@@ -502,40 +416,9 @@ namespace FooGame
 
     void AssetManager::CreateDefaultTexture()
     {
-        float data[] = {125, 125, 125, 125};
+        float data[] = {199, 199, 199, 255};
         LoadTexture("Default Texture", data, sizeof(data), 1, 1);
         g_IsDefaulTextureInitialized = true;
     }
 
-    bool ReadFile(tinygltf::Model& input, const std::string& path, bool isGlb)
-    {
-        std::string error, warning;
-        tinygltf::TinyGLTF gltfContext;
-
-        bool ret;
-        if (isGlb)
-        {
-            ret = gltfContext.LoadBinaryFromFile(&input, &error, &warning, path);
-        }
-        else
-        {
-            ret = gltfContext.LoadASCIIFromFile(&input, &error, &warning, path);
-        }
-
-        if (!warning.empty())
-        {
-            FOO_CORE_WARN("Warn while loading GLTF model {0}", warning.c_str());
-        }
-
-        if (!error.empty())
-        {
-            FOO_CORE_ERROR("Err: {0}", error.c_str());
-        }
-
-        if (!ret)
-        {
-            FOO_CORE_ERROR("Failed to parse glTF : {0}", path);
-        }
-        return ret;
-    }
 }  // namespace FooGame

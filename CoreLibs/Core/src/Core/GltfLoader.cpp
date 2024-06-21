@@ -38,7 +38,7 @@ namespace FooGame
         model->Name      = File::ExtractFileName(m_Path);
 
         tinygltf::Model gltfInput;
-        std::vector<Mesh*> meshes;
+        std::vector<Mesh> meshes;
         if (!ReadFile(gltfInput, m_Path, m_IsGlb))
         {
             FOO_ENGINE_ERROR("Model with path: {0} could not read", m_Path);
@@ -62,14 +62,14 @@ namespace FooGame
                 continue;
             }
             const auto mesh = gltfInput.meshes[meshIndex];
-            Mesh* tempMesh  = new Mesh;
-            tempMesh->Name  = mesh.name;
+            Mesh tempMesh;
+            tempMesh.Name = mesh.name;
             for (const auto& primitive : mesh.primitives)
             {
                 auto material             = model->Materials[primitive.material];
-                tempMesh->M3Name          = material.Name;
-                uint32_t firstIndex       = static_cast<uint32_t>(tempMesh->m_Indices.size());
-                uint32_t vertexStart      = static_cast<uint32_t>(tempMesh->m_Vertices.size());
+                tempMesh.M3Name           = material.Name;
+                uint32_t firstIndex       = static_cast<uint32_t>(tempMesh.m_Indices.size());
+                uint32_t vertexStart      = static_cast<uint32_t>(tempMesh.m_Vertices.size());
                 uint32_t indexCount       = 0;
                 const auto indicesIndex   = primitive.indices;
                 const auto materialIndex  = primitive.material;
@@ -102,7 +102,7 @@ namespace FooGame
                     &(gltfInput.buffers[indicesBufferView.buffer]
                           .data[indicesAccessor.byteOffset + indicesBufferView.byteOffset]));
 
-                tempMesh->m_Vertices.reserve(positionsAccessor.count);
+                tempMesh.m_Vertices.reserve(positionsAccessor.count);
                 for (size_t w = 0; w < positionsAccessor.count; w++)
                 {
                     FooGame::Vertex v{};
@@ -112,7 +112,7 @@ namespace FooGame
                         normalsBuffer ? glm::make_vec3(&normalsBuffer[w * 3]) : glm::vec3(0.0f)));
                     v.TexCoord =
                         uvsBuffer ? glm::vec2(glm::make_vec2(&uvsBuffer[w * 2])) : glm::vec2(0.0f);
-                    tempMesh->m_Vertices.push_back(v);
+                    tempMesh.m_Vertices.push_back(v);
                 }
                 {
                     const auto indexCount = static_cast<uint32_t>(indicesAccessor.count);
@@ -126,7 +126,7 @@ namespace FooGame
                                                   indicesBufferView.byteOffset]);
                             for (size_t index = 0; index < indicesAccessor.count; index++)
                             {
-                                tempMesh->m_Indices.push_back(buf[index] + vertexStart);
+                                tempMesh.m_Indices.push_back(buf[index] + vertexStart);
                             }
                             break;
                         }
@@ -140,7 +140,7 @@ namespace FooGame
                             // static_cast<uint32_t>(accessor.count);
                             for (size_t index = 0; index < indicesAccessor.count; index++)
                             {
-                                tempMesh->m_Indices.push_back(buf[index] + vertexStart);
+                                tempMesh.m_Indices.push_back(buf[index] + vertexStart);
                             }
                             break;
                         }
@@ -152,7 +152,7 @@ namespace FooGame
                                                   indicesBufferView.byteOffset]);
                             for (size_t index = 0; index < indicesAccessor.count; index++)
                             {
-                                tempMesh->m_Indices.push_back(buf[index] + vertexStart);
+                                tempMesh.m_Indices.push_back(buf[index] + vertexStart);
                             }
                             break;
                         }
@@ -165,11 +165,11 @@ namespace FooGame
                     }
                 }
             }
-            meshes.emplace_back(tempMesh);
+            meshes.emplace_back(std::move(tempMesh));
         }
         for (auto& m : meshes)
         {
-            model->Meshes.push_back(std::move(m));
+            model->Meshes.emplace_back(std::move(m));
         }
         return model;
     }

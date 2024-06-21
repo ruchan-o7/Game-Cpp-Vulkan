@@ -126,6 +126,13 @@ namespace FooGame
         }
         SubmitModel(model.get());
     }
+    void Renderer3D::SubmitModel(std::shared_ptr<Model> model)
+    {
+        for (auto& mesh : model->GetMeshes())
+        {
+            SubmitMesh(&mesh);
+        }
+    }
     void Renderer3D::SubmitModel(Model* model)
     {
         for (auto& mesh : model->GetMeshes())
@@ -219,7 +226,7 @@ namespace FooGame
         vInfo.pRenderDevice   = Backend::GetRenderDevice();
         vInfo.BufferData.Data = mesh->m_Vertices.data();
         vInfo.BufferData.Size = vertexSize;
-        vInfo.Name            = "Mesh vb";
+        vInfo.Name            = "Mesh vb: " + mesh->Name;
         auto vb               = VulkanBuffer::CreateVertexBuffer(vInfo);
 
         std::unique_ptr<VulkanBuffer> ib;
@@ -230,7 +237,7 @@ namespace FooGame
             iInfo.pRenderDevice   = Backend::GetRenderDevice();
             iInfo.BufferData.Data = mesh->m_Indices.data();
             iInfo.BufferData.Size = indicesSize;
-            iInfo.Name            = "Mesh ib";
+            iInfo.Name            = "Mesh ib: " + mesh->Name;
             ib                    = VulkanBuffer::CreateIndexBuffer(iInfo);
         }
 
@@ -346,8 +353,7 @@ namespace FooGame
         s_Data.FrameData.VertexCount += modelRes.PtrMesh->m_Vertices.size();
         s_Data.FrameData.IndexCount  += modelRes.PtrMesh->m_Indices.size();
     }
-    void Renderer3D::DrawModel(const std::string& name, std::string& materialName,
-                               const glm::mat4& transform)
+    void Renderer3D::DrawModel(const std::string& name, const glm::mat4& transform)
     {
         if (name.empty())
         {
@@ -360,12 +366,10 @@ namespace FooGame
             return;
         }
 
-        if (asset.Asset.Name.empty())
+        if (asset.Asset->Name.empty())
         {
             return;
         }
-
-        assert(!materialName.empty());
 
         auto currentFrame = Backend::GetCurrentFrame();
         auto cmd          = Backend::GetCurrentCommandbuffer();
@@ -376,7 +380,7 @@ namespace FooGame
         Backend::PushConstant(rContext.pGraphicPipeline->GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
                               sizeof(MeshPushConstants), &push);
         auto allocator = Backend::GetAllocatorHandle();
-        for (const auto& mesh : asset.Asset.m_Meshes)
+        for (const auto& mesh : asset.Asset->m_Meshes)
         {
             auto& modelRes = s_Data.Res.MeshMap2[mesh.RenderId];
             if (!modelRes.PtrMesh)
