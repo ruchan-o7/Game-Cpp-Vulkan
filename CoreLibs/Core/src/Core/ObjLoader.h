@@ -19,7 +19,8 @@ namespace FooGame
         public:
             ObjLoader(const std::filesystem::path& path, const std::string& modelName,
                       const std::string& materialName);
-            std::unique_ptr<ObjModel> LoadModel();
+            std::unique_ptr<ObjModel> LoadModel() const;
+            const std::filesystem::path& GetPath() const { return m_Path; }
 
         private:
             std::filesystem::path m_Path;

@@ -1,8 +1,7 @@
 #include "ObjLoader.h"
 #include <tiny_obj_loader.h>
 #include "../Engine/Geometry/Mesh.h"
-#include "src/Engine/Geometry/Material.h"
-#include "src/Engine/Geometry/Model.h"
+#include "../Engine/Geometry/Material.h"
 #include <Log.h>
 #include <memory>
 
@@ -15,7 +14,7 @@ namespace FooGame
         : m_Path(path), m_ModelName(modelName), m_MaterialName(materialName)
     {
     }
-    std::unique_ptr<ObjModel> ObjLoader::LoadModel()
+    std::unique_ptr<ObjModel> ObjLoader::LoadModel() const
     {
         tinyobj::attrib_t attrib;
         std::vector<tinyobj::shape_t> shapes;

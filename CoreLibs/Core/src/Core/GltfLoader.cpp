@@ -28,7 +28,7 @@ namespace FooGame
             m_EligibleToLoad = true;
         }
     }
-    GltfModel* GltfLoader::Load()
+    GltfModel* GltfLoader::Load() const
     {
         if (!m_EligibleToLoad)
         {

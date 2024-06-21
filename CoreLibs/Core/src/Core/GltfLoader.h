@@ -22,7 +22,7 @@ namespace FooGame
     {
         public:
             GltfLoader(const std::string& path, const std::string& name, bool isGlb);
-            GltfModel* Load();
+            GltfModel* Load() const;
 
         private:
             std::string m_Path, m_Name;

@@ -6,7 +6,6 @@
 #include "../Engine/Engine/Backend.h"
 #include "ObjLoader.h"
 #include "Thread.h"
-#include "src/Core/GltfLoader.h"
 #include "src/Engine/Core/VulkanBuffer.h"
 #include "src/Engine/Engine/Renderer3D.h"
 #include "src/Engine/Geometry/Material.h"
@@ -16,6 +15,7 @@
 #include "../Engine/Engine/Renderer3D.h"
 #include "src/Log.h"
 #include "src/Scene/Asset.h"
+#include "../Core/GltfLoader.h"
 #include <cstddef>
 #include <memory>
 #include <mutex>
@@ -25,7 +25,20 @@
 #include <utility>
 namespace FooGame
 {
+    class Defer
+    {
+        public:
+            explicit Defer(std::function<void()> func) : m_Func(func) {}
+            ~Defer() { m_Func(); }
 
+        private:
+            const std::function<void()> m_Func;
+    };
+#define DEFER(x)   \
+    Defer defer_   \
+    {              \
+        [&] { x; } \
+    }
     std::mutex g_Texture_mutex;
     std::mutex g_Model_mutex;
     std::mutex g_Material_mutex;
@@ -56,164 +69,82 @@ namespace FooGame
         InsertMaterial(material);
     }
 
-    static void ProcessObjMaterial(const std::vector<tinyobj::material_t>& objMaterials)
+    void AssetManager::LoadGLTFModel(const GltfLoader& loader)
     {
-        for (const auto& mat : objMaterials)
+        auto gltfModel = loader.Load();
+        DEFER(delete gltfModel);
+        if (gltfModel->Name.empty())
         {
-            Material material;
-            material.Name               = mat.name;
-            material.fromGlb            = false;
-            material.NormalTexture.Name = mat.bump_texname;
-
-            auto& pbr = material.PbrMat;
-
-            pbr.BaseColorFactor[0]   = mat.diffuse[0];
-            pbr.BaseColorFactor[1]   = mat.diffuse[1];
-            pbr.BaseColorFactor[2]   = mat.diffuse[2];
-            pbr.BaseColorFactor[3]   = 1.0;
-            pbr.BaseColorTextureName = mat.diffuse_texname;
-
-            pbr.MetallicRoughnessTextureName = mat.roughness_texname;
-            pbr.MetallicFactor               = mat.metallic;
-            pbr.RoughnessFactor              = mat.roughness;
-
-            AssetManager::AddMaterial(material);
-        }
-    }
-
-    void AssetManager::LoadObjModel(const std::filesystem::path& path, const std::string& modelName,
-                                    std::string materialName)
-    {
-        if (GetModel(modelName))
-        {
-            FOO_ENGINE_WARN("Model {0} is already loaded");
+            FOO_ENGINE_WARN("Model name empty");
             return;
         }
-        auto& asset  = s_ModelMap[modelName];
+        auto& asset = s_ModelMap[gltfModel->Name];
+        if (asset.Status == AssetStatus::WORKING)
+        {
+            return;
+        }
         asset.Status = AssetStatus::WORKING;
 
-        ObjLoader loader{path, modelName, materialName};
-        auto model = loader.LoadModel();
-        for (auto& mat : model->Materials)
+        for (auto& mat : gltfModel->Materials)
         {
             AssetManager::AddMaterial(mat);
         }
-        for (auto& mat : model->Materials)
+
+        std::string UnnamedImageStr("Unnamed Image");
+        for (auto& gltfImage : gltfModel->ImageSources)
+        {
+            AssetManager::LoadTexture(gltfImage.Name.empty() ? UnnamedImageStr : gltfImage.Name,
+                                      gltfImage.ImageBuffer, gltfImage.ImageSize, gltfImage.Width,
+                                      gltfImage.Height);
+        }
+        for (auto& m : gltfModel->Materials)
+        {
+            InsertMaterial(m);
+        }
+        auto model = std::make_shared<Model>(std::move(gltfModel->Meshes));
+        AssetContainer<std::shared_ptr<Model>> c;
+        c.Asset  = model;
+        c.Status = AssetStatus::READY;
+
+        s_ModelMap[gltfModel->Name] = c;
+        Renderer3D::SubmitModel(model.get());
+
+        return;
+    }
+    void AssetManager::LoadObjModel(const ObjLoader& loader)
+    {
+        auto objModel = loader.LoadModel();
+        DEFER(objModel.reset(););
+        auto& asset  = s_ModelMap[objModel->Name];
+        asset.Status = AssetStatus::WORKING;
+
+        for (auto& mat : objModel->Materials)
+        {
+            AssetManager::AddMaterial(mat);
+        }
+        for (auto& mat : objModel->Materials)
         {
             auto& texPathStr = mat.PbrMat.BaseColorTexturePath;
             if (texPathStr.empty())
             {
                 continue;
             }
-            auto texPath = path.parent_path() / texPathStr;
+            auto texPath = loader.GetPath().parent_path() / texPathStr;
             LoadTexture(texPath.string(), mat.PbrMat.BaseColorTextureName);
         }
         auto modelPtr = std::make_shared<Model>();
 
-        for (size_t i = 0; i < model->Meshes.size(); i++)
+        for (size_t i = 0; i < objModel->Meshes.size(); i++)
         {
-            modelPtr->m_Meshes.emplace_back(std::move(model->Meshes[i]));
+            modelPtr->m_Meshes.emplace_back(std::move(objModel->Meshes[i]));
         }
-        modelPtr->Name = model->Name;
+        modelPtr->Name = objModel->Name;
 
-        InsertMap(modelName, modelPtr);
+        InsertModel(objModel->Name, modelPtr);
 
-        Renderer3D::SubmitModel(modelName);
-
-#if 0
-
-        tinyobj::attrib_t attrib;
-        std::vector<tinyobj::shape_t> shapes;
-        std::vector<tinyobj::material_t> materials;
-        std::string warn, err;
-        std::vector<Vertex> vertices;
-        std::vector<uint32_t> indices;
-        std::vector<Mesh> meshes;
-
-        auto objPath        = path.string();
-        auto objBasePath    = path.parent_path();
-        auto objBasePathStr = objBasePath.string();
-
-        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, objPath.c_str(),
-                              objBasePathStr.c_str()))
-        {
-            FOO_ENGINE_ERROR("Model could not loaded {0}", path.string());
-            return;
-        }
-        ProcessObjMaterial(materials);
-        for (const auto& [name, mat] : s_MaterialMap)
-        {
-            auto texPathStr = mat.PbrMat.BaseColorTexturePath;
-            if (texPathStr.empty())
-            {
-                continue;
-            }
-            auto path = objBasePath / texPathStr;
-            LoadTexture(path.string(), mat.PbrMat.BaseColorTextureName);
-        }
-
-        for (const auto& shape : shapes)
-        {
-            Mesh mesh;
-            mesh.Name = shape.name;
-
-            for (const auto& index : shape.mesh.indices)
-            {
-                Vertex vertex{};
-                vertex.Position = {
-                    attrib.vertices[3 * index.vertex_index + 0],
-                    attrib.vertices[3 * index.vertex_index + 1],
-                    attrib.vertices[3 * index.vertex_index + 2],
-                };
-                if (index.texcoord_index >= 0)
-                {
-                    vertex.TexCoord = {
-                        attrib.texcoords[2 * index.texcoord_index + 0],
-                        1.0f - attrib.texcoords[2 * index.texcoord_index + 1],
-                    };
-                }
-                else
-                {
-                    vertex.TexCoord = {1.0f, 1.0f};
-                }
-                vertex.Color = {
-                    attrib.colors[3 * index.vertex_index + 0],
-                    attrib.colors[3 * index.vertex_index + 1],
-                    attrib.colors[3 * index.vertex_index + 2],
-                };  // im not sure
-                if (index.normal_index >= 0)
-                {
-                    vertex.Normal = {
-                        attrib.normals[3 * index.normal_index + 0],
-                        attrib.normals[3 * index.normal_index + 1],
-                        attrib.normals[3 * index.normal_index + 2],
-                    };  // im not sure
-                }
-                else
-                {
-                    vertex.Normal = {1.0f, 1.0f, 1.0f};
-                }
-                mesh.m_Vertices.emplace_back(std::move(vertex));
-                mesh.m_Indices.push_back(indices.size());
-            }
-            meshes.emplace_back(std::move(mesh));
-        }
-
-        auto modelPtr                = std::make_shared<Model>(std::move(meshes));
-        modelPtr->m_Meshes[0].M3Name = materialName;
-        enum TEXTURE_INDICES
-        {
-            ALBEDO    = 0,
-            METALIC   = 1,
-            ROUGHNESS = 2,
-            NORMAL    = 3,
-        };
-        modelPtr->textureIndices = {ALBEDO, METALIC, ROUGHNESS, NORMAL};
-        InsertMap(modelName, modelPtr);
-
-        Renderer3D::SubmitModel(modelName);
-#endif
+        Renderer3D::SubmitModel(objModel->Name);
     }
+
     void AssetManager::LoadTexture(const std::string& path, const std::string& name)
     {
         if (GetTexture(name))
@@ -313,56 +244,10 @@ namespace FooGame
     }
     void AssetManager::LoadGLTFModelAsync(std::string path, std::string name, bool isGlb)
     {
-        s_pThread->AddTask([=] { AssetManager::LoadGLTFModel(path, name, isGlb); });
+        // s_pThread->AddTask([=] { AssetManager::LoadGLTFModel(path, name, isGlb); });
     }
-    void AssetManager::LoadGLTFModel(std::string path, std::string name, bool isGlb)
-    {
-        if (name.empty() || path.empty())
-        {
-            FOO_ENGINE_WARN("Name or path is empty of gltf file");
-        }
-        auto& asset = s_ModelMap[name];
-        if (asset.Status == AssetStatus::READY)
-        {
-            FOO_ENGINE_WARN("Model {0} is already loaded", name);
-            return;
-        }
-        else if (asset.Status == AssetStatus::WORKING || asset.Status == AssetStatus::FAILED)
-        {
-            return;
-        }
-        asset.Status = AssetStatus::WORKING;
-        GltfLoader loader{path, name, isGlb};
-        auto gltfModel = loader.Load();
-        if (gltfModel->Name.empty())
-        {
-            FOO_ENGINE_ERROR("Can not load gltf model {0}", name);
-            delete gltfModel;
-            return;
-        }
-        std::string UnnamedImageStr = std::string("Unnamed Image");
-        for (auto& gltfImage : gltfModel->ImageSources)
-        {
-            AssetManager::LoadTexture(gltfImage.Name.empty() ? UnnamedImageStr : gltfImage.Name,
-                                      gltfImage.ImageBuffer, gltfImage.ImageSize, gltfImage.Width,
-                                      gltfImage.Height);
-        }
-        for (auto& m : gltfModel->Materials)
-        {
-            InsertMaterial(m);
-        }
-        auto model = std::make_shared<Model>(std::move(gltfModel->Meshes));
-        AssetContainer<std::shared_ptr<Model>> c;
-        c.Asset  = model;
-        c.Status = AssetStatus::READY;
 
-        s_ModelMap[name] = c;
-        Renderer3D::SubmitModel(model.get());
-
-        delete gltfModel;
-        return;
-    }
-    void AssetManager::InsertMap(const std::string& name, std::shared_ptr<Model> m)
+    void AssetManager::InsertModel(const std::string& name, std::shared_ptr<Model> m)
     {
         std::lock_guard<std::mutex> lock(g_Model_mutex);
         auto& asset  = s_ModelMap[name];

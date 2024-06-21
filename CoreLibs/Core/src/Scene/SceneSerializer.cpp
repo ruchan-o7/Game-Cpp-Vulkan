@@ -15,6 +15,8 @@
 #include "../Scripts/CameraController.h"
 #include "../Core/File.h"
 #include "Asset.h"
+#include "src/Core/GltfLoader.h"
+#include "src/Core/ObjLoader.h"
 namespace FooGame
 {
     using json = nlohmann::json;
@@ -118,7 +120,7 @@ namespace FooGame
         componentExists = entityJson.contains("meshComponent");
         if (componentExists)
         {
-#if 0
+#if 1
 #define ASYNC(x) futures.emplace_back(std::async(std::launch::async, [=] { x; }))
 #else
 #define ASYNC(x) x;
@@ -137,21 +139,27 @@ namespace FooGame
                 {
                     auto p       = (assetPath / modelPath);
                     mc.ModelName = File::ExtractFileName(p);
+                    ObjLoader loader{p, mc.ModelName, mc.MaterialName};
 
-                    ASYNC(AssetManager::LoadObjModel(p, mc.ModelName, mc.MaterialName));
+                    ASYNC(AssetManager::LoadObjModel(loader));
                 }
                 else if (modelExtension == ".glb")
                 {
                     auto p       = (assetPath / modelPath);
                     mc.ModelName = File::ExtractFileName(p);
-                    ASYNC(AssetManager::LoadGLTFModel(p.string(), mc.ModelName, true));
+                    GltfLoader loader{p.string(), mc.ModelName, true};
+
+                    ASYNC(AssetManager::LoadGLTFModel(loader));
                 }
                 else if (modelExtension == ".gltf")
                 {
                     auto p       = (assetPath / modelPath);
                     auto pStr    = p.string();
                     mc.ModelName = File::ExtractFileName(p);
-                    ASYNC(AssetManager::LoadGLTFModel(pStr, mc.ModelName, false));
+
+                    GltfLoader loader{p.string(), mc.ModelName, false};
+
+                    ASYNC(AssetManager::LoadGLTFModel(loader));
                 }
             }
 #undef ASYNC
