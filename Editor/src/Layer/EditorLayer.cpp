@@ -17,18 +17,17 @@ namespace FooGame
     {
         FOO_EDITOR_INFO("Reading scene data");
         SceneSerializer serializer(m_Scene.get());
-        serializer.DeSerialize("Assets/Scenes/Prototype2/Scene.json");
+        serializer.DeSerialize("Assets/Scenes/Prototype2/Scene.jso");
 
         auto mv = m_Scene->GetAllEntitiesWith<MeshRendererComponent>().each();
-        for (auto [entity, comp] : mv)
-        {
-            // Renderer3D::SubmitModel(comp.ModelName);  // TODO move to asset manager
-        }
 
-        auto entt          = m_Scene->GetPrimaryCameraEntity();
-        auto& cameraComp   = entt.GetComponent<CameraComponent>();
-        cameraComp.pCamera = &m_Camera2;
-        m_Panel            = new SceneHierarchyPanel(m_Scene.get());
+        if (m_Scene->m_Name != "New scene")
+        {
+            auto entt          = m_Scene->GetPrimaryCameraEntity();
+            auto& cameraComp   = entt.GetComponent<CameraComponent>();
+            cameraComp.pCamera = &m_Camera2;
+        }
+        m_Panel = new SceneHierarchyPanel(m_Scene.get());
     }
     void EditorLayer::OnDetach()
     {
@@ -59,7 +58,7 @@ namespace FooGame
         if (Input::IsKeyDown(KeyCode::F1))
         {
             SceneSerializer serializer{m_Scene.get()};
-            serializer.Serialize("Scenes\\Prototype2\\Scene.json");
+            serializer.Serialize("Scenes\\Prototype2\\Scene2.json");
         }
     }
     void EditorLayer::OnEvent(Event& e)

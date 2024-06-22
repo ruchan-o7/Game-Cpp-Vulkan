@@ -10,6 +10,7 @@ namespace FooGame
             size_t ImageSize;
             std::string Name;
             uint32_t Width, Height;
+            int ComponentCount;
     };
     struct GltfModel
     {

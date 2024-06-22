@@ -1,0 +1,196 @@
+{
+    "assets": {
+        "images": [
+            "sponza_roof_diff",
+            "lion",
+            "lion_bump",
+            "vase_bump",
+            "sponza_curtain_green_diff",
+            "chain_texture_bump",
+            "sponza_curtain_diff",
+            "sponza_curtain_blue_diff",
+            "sponza_fabric_diff",
+            "background",
+            "vase_round",
+            "sponza_details_diff",
+            "spnza_bricks_a_spec",
+            "chain_texture-chain_texture_mask",
+            "UnNamed Image2",
+            "sponza_floor_a_diff",
+            "UnNamed Image1",
+            "vase_plant-vase_plant_mask",
+            "sponza_ceiling_a_diff",
+            "vase_hanging",
+            "sponza_column_a_diff",
+            "background_bump",
+            "vase_round_bump",
+            "viking_room.png",
+            "sponza_column_b_bump",
+            "Default Texture",
+            "sponza_thorn_diff-sponza_thorn_mask",
+            "spnza_bricks_a_bump",
+            "spnza_bricks_a_diff",
+            "sponza_column_b_diff",
+            "sponza_column_c_diff",
+            "sponza_thorn_bump",
+            "sponza_fabric_blue_diff",
+            "sponza_arch_diff",
+            "UnNamed Image",
+            "sponza_column_a_bump",
+            "floor_gloss",
+            "sponza_column_c_bump",
+            "sponza_flagpole_diff",
+            "vase_dif",
+            "sponza_fabric_green_diff"
+        ],
+        "materials": [
+            "details",
+            "ceiling",
+            "bricks",
+            "column_c",
+            "Material__298",
+            "vase_round",
+            "Viking material",
+            "column_b",
+            "leaf",
+            "fabric_e",
+            "column_a",
+            "fabric_c",
+            "Material__57",
+            "roof",
+            "vase",
+            "Material__25",
+            "chain",
+            "fabric_f",
+            "fabric_a",
+            "fabric_d",
+            "vase_hanging",
+            "flagpole",
+            "arch",
+            "floor",
+            "Material__47",
+            "2256_Avocado_d",
+            "fabric_g"
+        ],
+        "models": [
+            "Model",
+            "viking_room.obj",
+            "Model"
+        ]
+    },
+    "entities": [
+        {
+            "id": 7954746054582625731,
+            "meshComponent": {
+                "model": "sponza.glb"
+            },
+            "tagComponent": {
+                "tag": "SPONZA"
+            },
+            "transformComponent": {
+                "rotation": [
+                    1.5707963705062866,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        {
+            "id": 3263328598497060330,
+            "meshComponent": {
+                "model": "viking_room.obj"
+            },
+            "tagComponent": {
+                "tag": "Viking"
+            },
+            "transformComponent": {
+                "rotation": [
+                    -1.5,
+                    1.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.9534403085708618,
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        {
+            "id": 3263328598297060330,
+            "meshComponent": {
+                "model": "Avocado.glb"
+            },
+            "scriptComponent": [
+                "RotateScript",
+                "ScaleYoink"
+            ],
+            "tagComponent": {
+                "tag": "Avocado"
+            },
+            "transformComponent": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    3.3527848720550537,
+                    12.0,
+                    12.0
+                ],
+                "translation": [
+                    0.9421209096908569,
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        {
+            "cameraComponent": {
+                "fixedAspectRatio": true,
+                "primary": true
+            },
+            "id": 3332061642483347496,
+            "scriptComponent": [
+                "CameraController"
+            ],
+            "tagComponent": {
+                "tag": "Camera"
+            },
+            "transformComponent": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.09000000357627869,
+                    0.0,
+                    0.0
+                ]
+            }
+        }
+    ],
+    "name": "Prototype scene"
+}

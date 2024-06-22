@@ -3,6 +3,7 @@
 #include "VulkanLogicalDevice.h"
 #include "Types.h"
 #include "Utils/VulkanObjectWrapper.h"
+#include "src/Scene/SceneSerializer.h"
 namespace ENGINE_NAMESPACE
 {
     class VulkanImage
@@ -62,7 +63,9 @@ namespace ENGINE_NAMESPACE
                     VkImageAspectFlagBits AspectFlags;
                     VkMemoryPropertyFlags MemoryPropertiesFlags;
                     class RenderDevice* pRenderDevice;
-                    std::string Name    = "Unspecified Texture";
+                    std::string Name = "Unspecified Texture";
+                    size_t Size;
+                    uint32_t Width, Height, ChannelCount;
                     float MaxAnisotropy = 1.0f;
             };
 
@@ -82,6 +85,7 @@ namespace ENGINE_NAMESPACE
             std::shared_ptr<VulkanImageView> m_ImageView;
             SamplerWrapper m_Sampler;
             VulkanTexture::CreateInfo m_Info;
+            friend class SceneSerializer;
     };
 
 }  // namespace ENGINE_NAMESPACE

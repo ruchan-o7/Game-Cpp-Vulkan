@@ -26,4 +26,5 @@ namespace FooGame
             PbrMetallicRoughness PbrMat;
             bool fromGlb = false;
     };
+
 }  // namespace FooGame

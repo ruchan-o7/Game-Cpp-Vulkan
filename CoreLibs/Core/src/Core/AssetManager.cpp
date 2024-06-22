@@ -56,6 +56,12 @@ namespace FooGame
         InsertMaterial(material);
     }
 
+    const std::unordered_map<std::string, std::shared_ptr<VulkanTexture>>&
+    AssetManager::GetAllImages()
+    {
+        return s_TextureMap;
+    }
+
     void AssetManager::LoadGLTFModel(const GltfLoader& loader)
     {
         auto gltfModel = loader.Load();
@@ -82,7 +88,7 @@ namespace FooGame
         {
             AssetManager::LoadTexture(gltfImage.Name.empty() ? UnnamedImageStr : gltfImage.Name,
                                       gltfImage.ImageBuffer, gltfImage.ImageSize, gltfImage.Width,
-                                      gltfImage.Height);
+                                      gltfImage.Height, gltfImage.ComponentCount);
         }
         for (auto& m : gltfModel->Materials)
         {
@@ -151,12 +157,13 @@ namespace FooGame
             FOO_ENGINE_ERROR("Coult not load image : {0}", path);
             return;
         }
-        AssetManager::LoadTexture(name, pixels, imageSize, texWidth, texHeight);
+        AssetManager::LoadTexture(name, pixels, imageSize, texWidth, texHeight,
+                                  /*texChannels*/ STBI_rgb_alpha);
         stbi_image_free(pixels);
     }
     size_t g_UnnamedImagesCount = 0;
     void AssetManager::LoadTexture(const std::string& name, void* pixels, size_t size,
-                                   int32_t width, int32_t height)
+                                   int32_t width, int32_t height, int32_t channelCount)
     {
         bool isExists  = false;
         int foundIndex = 0;
@@ -188,11 +195,22 @@ namespace FooGame
         ci.MaxAnisotropy = physicalDevice->GetDeviceProperties().limits.maxSamplerAnisotropy;
         ci.Name          = imgName;
         ci.AspectFlags   = VK_IMAGE_ASPECT_COLOR_BIT;
-        ci.Format        = VK_FORMAT_R8G8B8A8_SRGB;
+        if (channelCount == 4)
+        {
+            ci.Format = VK_FORMAT_R8G8B8A8_SRGB;
+        }
+        else
+        {
+            ci.Format = VK_FORMAT_R8G8B8_SRGB;
+        }
         ci.MemoryPropertiesFlags = Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY;
         ci.Tiling                = VK_IMAGE_TILING_LINEAR;
         ci.UsageFlags            = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
         ci.Extent                = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+        ci.Size                  = size;
+        ci.Width                 = width;
+        ci.Height                = height;
+        ci.ChannelCount          = channelCount;
 
         auto* vTexture = new VulkanTexture{ci};
         auto vkImage   = vTexture->GetImage();
@@ -289,7 +307,7 @@ namespace FooGame
     void AssetManager::CreateDefaultTexture()
     {
         float data[] = {199, 199, 199, 255};
-        LoadTexture("Default Texture", data, sizeof(data), 1, 1);
+        LoadTexture("Default Texture", data, sizeof(data), 1, 1, 4);
         g_IsDefaulTextureInitialized = true;
     }
 

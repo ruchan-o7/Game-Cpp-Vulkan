@@ -1,7 +1,9 @@
 #pragma once
 #include <memory>
+#include <vector>
 #include <unordered_map>
 #include <utility>
+#include <string>
 #include "Defer.h"
 namespace FooGame
 {
@@ -9,6 +11,8 @@ namespace FooGame
     using Shared = std::shared_ptr<T>;
     template <typename T>
     using Unique = std::unique_ptr<T>;
+
+    using String = std::string;
 
     template <typename T>
     using List = std::vector<T>;
@@ -52,4 +56,17 @@ public:                         \
 #ifndef ARRAY_COUNT
 #define ARRAY_COUNT(x) (sizeof(x) / sizeof(x[0]))
 #endif
+
+#define u64 uint64_t
+#define i64 int64_t
+
+#define u32 uint32_t
+#define i32 int32_t
+
+#define i16 int16_t
+#define i16 int16_t
+
+#define i8 int8_t
+#define u8 uint8_t
+
 }  // namespace FooGame

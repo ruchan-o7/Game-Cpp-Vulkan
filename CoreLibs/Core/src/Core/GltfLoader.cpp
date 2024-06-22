@@ -208,9 +208,10 @@ namespace FooGame
 
             source.ImageBuffer = new unsigned char[imageSize];
             memcpy(source.ImageBuffer, (void*)imageBuffer, imageSize);
-            source.ImageSize = imageSize;
-            source.Width     = gltfImage.width;
-            source.Height    = gltfImage.height;
+            source.ImageSize      = imageSize;
+            source.Width          = gltfImage.width;
+            source.Height         = gltfImage.height;
+            source.ComponentCount = gltfImage.component;
             if (fileName.empty())
             {
                 source.Name = "UnNamed Image";
