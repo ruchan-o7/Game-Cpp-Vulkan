@@ -76,6 +76,7 @@ namespace ENGINE_NAMESPACE
             VkImageAspectFlagBits GetAspect() const { return m_Info.AspectFlags; }
             VkExtent2D GetExtent() const { return m_Info.Extent; }
             std::string GetName() const { return m_Info.Name; }
+            size_t GetSize() const { return m_Info.Size; }
 
         public:
             VkDescriptorImageInfo DescriptorInfo;

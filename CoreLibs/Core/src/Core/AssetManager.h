@@ -20,6 +20,7 @@ namespace FooGame
             static void DeInit();
 
         public:
+            static void LoadModel(const Asset::FModel& fmodel);
             static void LoadGLTFModel(const GltfLoader& loader);
             static void LoadGLTFModelAsync(std::string path, std::string name, bool isGlb);
 
@@ -30,6 +31,9 @@ namespace FooGame
             static void LoadTexture(const std::string& path, const std::string& name);
             static void CreateDefaultTexture();
             static void AddMaterial(Material material);
+
+            static void GetTextureFromGPU(const std::string& name,
+                                          std::vector<unsigned char>& buffer, size_t& size);
 
         public:
             static std::shared_ptr<Model> GetModel(const std::string& name);
@@ -53,5 +57,6 @@ namespace FooGame
                                               const std::string& name);
             static void InsertMaterial(const Material& m);
             static void InsertModel(const std::string& name, std::shared_ptr<Model> m);
+            friend class VulkanTexture;
     };
 }  // namespace FooGame

@@ -16,8 +16,8 @@ namespace FooGame
     void EditorLayer::OnAttach()
     {
         FOO_EDITOR_INFO("Reading scene data");
-        SceneSerializer serializer(m_Scene.get());
-        serializer.DeSerialize("Assets/Scenes/Prototype2/Scene.jso");
+        SceneSerializer serializer("Assets/Scenes/Prototype2/Scene2.json", m_Scene.get());
+        serializer.DeSerialize();
 
         auto mv = m_Scene->GetAllEntitiesWith<MeshRendererComponent>().each();
 
@@ -57,8 +57,8 @@ namespace FooGame
         m_Scene->OnUpdate(ts);
         if (Input::IsKeyDown(KeyCode::F1))
         {
-            SceneSerializer serializer{m_Scene.get()};
-            serializer.Serialize("Scenes\\Prototype2\\Scene2.json");
+            SceneSerializer serializer{"Assets\\Scenes\\Prototype2\\Scene2.json", m_Scene.get()};
+            serializer.Serialize();
         }
     }
     void EditorLayer::OnEvent(Event& e)

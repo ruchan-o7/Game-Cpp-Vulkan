@@ -1,81 +1,36 @@
 {
     "assets": {
         "images": [
-            "sponza_roof_diff",
-            "lion",
-            "lion_bump",
-            "vase_bump",
-            "sponza_curtain_green_diff",
-            "chain_texture_bump",
-            "sponza_curtain_diff",
-            "sponza_curtain_blue_diff",
-            "sponza_fabric_diff",
-            "background",
-            "vase_round",
-            "sponza_details_diff",
-            "spnza_bricks_a_spec",
-            "chain_texture-chain_texture_mask",
-            "UnNamed Image2",
-            "sponza_floor_a_diff",
-            "UnNamed Image1",
-            "vase_plant-vase_plant_mask",
-            "sponza_ceiling_a_diff",
-            "vase_hanging",
-            "sponza_column_a_diff",
-            "background_bump",
-            "vase_round_bump",
-            "viking_room.png",
-            "sponza_column_b_bump",
-            "Default Texture",
-            "sponza_thorn_diff-sponza_thorn_mask",
-            "spnza_bricks_a_bump",
-            "spnza_bricks_a_diff",
-            "sponza_column_b_diff",
-            "sponza_column_c_diff",
-            "sponza_thorn_bump",
-            "sponza_fabric_blue_diff",
-            "sponza_arch_diff",
-            "UnNamed Image",
-            "sponza_column_a_bump",
-            "floor_gloss",
-            "sponza_column_c_bump",
-            "sponza_flagpole_diff",
-            "vase_dif",
-            "sponza_fabric_green_diff"
+            "Default Texture"
         ],
         "materials": [
-            "details",
-            "ceiling",
-            "bricks",
-            "column_c",
-            "Material__298",
+            "Material__57",
+            "column_a",
+            "fabric_c",
+            "leaf",
+            "fabric_e",
             "vase_round",
             "Viking material",
             "column_b",
-            "leaf",
-            "fabric_e",
-            "column_a",
-            "fabric_c",
-            "Material__57",
+            "column_c",
+            "bricks",
+            "Material__298",
+            "ceiling",
+            "details",
             "roof",
-            "vase",
-            "Material__25",
-            "chain",
-            "fabric_f",
-            "fabric_a",
-            "fabric_d",
-            "vase_hanging",
-            "flagpole",
-            "arch",
-            "floor",
-            "Material__47",
+            "fabric_g",
             "2256_Avocado_d",
-            "fabric_g"
-        ],
-        "models": [
-            "Model",
-            "viking_room.obj",
-            "Model"
+            "vase",
+            "Material__47",
+            "floor",
+            "arch",
+            "flagpole",
+            "vase_hanging",
+            "fabric_d",
+            "fabric_a",
+            "fabric_f",
+            "chain",
+            "Material__25"
         ]
     },
     "entities": [
@@ -150,12 +105,12 @@
                     0.0
                 ],
                 "scale": [
-                    3.3527848720550537,
+                    -2.464102268218994,
                     12.0,
                     12.0
                 ],
                 "translation": [
-                    0.9421209096908569,
+                    0.9691645503044128,
                     0.0,
                     0.0
                 ]
@@ -192,5 +147,5 @@
             }
         }
     ],
-    "name": "Prototype scene"
+    "name": "Prototype scene2"
 }

@@ -355,6 +355,7 @@ namespace FooGame
     }
     void Renderer3D::DrawModel(const std::string& name, const glm::mat4& transform)
     {
+        return;
         if (name.empty())
         {
             FOO_ENGINE_WARN("Empty name string provided");

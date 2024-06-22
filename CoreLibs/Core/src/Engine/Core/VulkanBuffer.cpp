@@ -1,5 +1,6 @@
 #include "VulkanBuffer.h"
 #include <cassert>
+#include <cstring>
 #include "RenderDevice.h"
 #include "Types.h"
 #include "../Engine/Backend.h"
@@ -92,6 +93,10 @@ namespace ENGINE_NAMESPACE
             auto device = m_Desc.pRenderDevice->GetLogicalDevice();
             device->UnmapMemory(m_Memory);
         }
+    }
+    void VulkanBuffer::CopyTo(void* dest, size_t size)
+    {
+        memcpy(m_MappedPtr, dest, size);
     }
     void VulkanBuffer::UpdateData(void* data, size_t size, size_t offset)
     {

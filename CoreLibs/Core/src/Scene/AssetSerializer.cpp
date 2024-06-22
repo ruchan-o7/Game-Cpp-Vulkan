@@ -51,10 +51,11 @@ namespace FooGame
         mat.BaseColorTexture.factor[3] = json["baseColorTexture"]["factor"][3];
 
         mat.MetallicTextureName = json["metallicColorTexture"]["name"];
-        mat.MetallicFactor      = json["metallicColorTexture"]["factor"];
+        mat.MetallicFactor      = 1.0;  // TODO Change it after deserialize properly
+                                        // json["metallicColorTexture"]["factor"];
 
         mat.RoughnessTextureName = json["roughnessColorTexture"]["name"];
-        mat.RoughnessFactor      = json["roughnessColorTexture"]["factor"];
+        mat.RoughnessFactor      = 1.0;  // TODO json["roughnessColorTexture"]["factor"];
 
         mat.EmissiveTexture.Name      = json["emissiveColorTexture"]["name"];
         mat.EmissiveTexture.factor[0] = json["emissiveColorTexture"]["factor"][0];
@@ -144,6 +145,7 @@ namespace FooGame
         Asset::FModel m;
         m.Name      = json["name"];
         m.MeshCount = json["meshCount"];
+
         for (auto& mj : json["meshes"])
         {
             Asset::FMesh mesh;

@@ -40,6 +40,7 @@ namespace ENGINE_NAMESPACE
 
             void UpdateData(void* data, size_t size, size_t offset = 0);
             void CopyTo(VulkanBuffer& destination, size_t size);
+            void CopyTo(void* dest, size_t size);
 
             void MapMemory();
             void UnMapMemory();

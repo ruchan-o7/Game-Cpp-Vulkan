@@ -3,9 +3,7 @@
 #include <cassert>
 #include <filesystem>
 #include <fstream>
-#include <future>
 #include <iomanip>
-#include <json.hpp>
 #include <utility>
 #include "AssetSerializer.h"
 #include "Entity.h"
@@ -19,6 +17,7 @@
 #include "Asset.h"
 #include "src/Core/GltfLoader.h"
 #include "src/Core/ObjLoader.h"
+#include "src/Log.h"
 #include <stb_image.h>
 /// Scene path should be base path
 ///
@@ -34,11 +33,29 @@ namespace FooGame
     using json = nlohmann::json;
     class ScriptableEntity;
 
-    SceneSerializer::SceneSerializer(Scene* scene) : m_pScene(scene)
+    SceneSerializer::SceneSerializer(String scenePath, Scene* scene)
+        : m_ScenePathStr(scenePath), m_pScene(scene)
     {
+        // auto assets          = File::GetAssetDirectory();
+        m_ScenePath        = File::GetCWD() / std::filesystem::path(m_ScenePathStr);
+        auto sceneBasePath = m_ScenePath.parent_path();
+        m_AssetFolder      = sceneBasePath / "Assets";
+        m_ModelsFolder     = m_AssetFolder / "Models";
+        m_ImagesFolder     = m_AssetFolder / "Images";
+        m_MaterialsFolder  = m_AssetFolder / "Materials";
+#define CREATE_IF_NOT_EXISTS(x)                        \
+    if (!std::filesystem::exists(x.string()))          \
+    {                                                  \
+        std::filesystem::create_directory(x.string()); \
+    }
+        CREATE_IF_NOT_EXISTS(m_AssetFolder);
+        CREATE_IF_NOT_EXISTS(m_ModelsFolder);
+        CREATE_IF_NOT_EXISTS(m_ImagesFolder);
+        CREATE_IF_NOT_EXISTS(m_MaterialsFolder);
+#undef CREATE_IF_NOT_EXISTS
     }
 
-    static void SerializeEntity(Entity& entity, json& sceneEntitiesNode)
+    void SceneSerializer::SerializeEntity(Entity& entity, json& sceneEntitiesNode)
     {
         if (!entity.HasComponent<IDComponent>())
         {
@@ -97,9 +114,8 @@ namespace FooGame
             });
         }
     }
-    static void DeSerializeEntity(const json& entityJson, Scene* scene,
-                                  const std::filesystem::path& assetPath,
-                                  std::vector<std::future<void>>& futures)
+    void SceneSerializer::DeSerializeEntity(const json& entityJson, Scene* scene,
+                                            std::vector<std::future<void>>& futures)
     {
         uint64_t uuid = entityJson["id"];
         std::string tag;
@@ -130,49 +146,12 @@ namespace FooGame
         componentExists = entityJson.contains("meshComponent");
         if (componentExists)
         {
-#if 1
-#define ASYNC(x) futures.emplace_back(std::async(std::launch::async, [=] { x; }))
-#else
-#define ASYNC(x) x;
-#endif
-            auto meshComponent = entityJson["meshComponent"];
-            if (!meshComponent.empty())
+            auto meshComponentJson = entityJson["meshComponent"];
+            if (!meshComponentJson.empty())
             {
-                auto& mc = deserializedEntity.AddComponent<MeshRendererComponent>();
-                auto modelPath =
-                    std::filesystem::path(meshComponent["modelPath"].get<std::string>());
-                mc.ModelPath    = modelPath.string();
-                mc.MaterialName = meshComponent["material"];
-
-                auto modelExtension = modelPath.extension().string();
-                if (modelExtension == ".obj")
-                {
-                    auto p       = (assetPath / modelPath);
-                    mc.ModelName = File::ExtractFileName(p);
-                    ObjLoader loader{p, mc.ModelName, mc.MaterialName};
-
-                    ASYNC(AssetManager::LoadObjModel(loader));
-                }
-                else if (modelExtension == ".glb")
-                {
-                    auto p       = (assetPath / modelPath);
-                    mc.ModelName = File::ExtractFileName(p);
-                    GltfLoader loader{p.string(), mc.ModelName, true};
-
-                    ASYNC(AssetManager::LoadGLTFModel(loader));
-                }
-                else if (modelExtension == ".gltf")
-                {
-                    auto p       = (assetPath / modelPath);
-                    auto pStr    = p.string();
-                    mc.ModelName = File::ExtractFileName(p);
-
-                    GltfLoader loader{p.string(), mc.ModelName, false};
-
-                    ASYNC(AssetManager::LoadGLTFModel(loader));
-                }
+                auto& mc     = deserializedEntity.AddComponent<MeshRendererComponent>();
+                mc.ModelName = meshComponentJson["model"];
             }
-#undef ASYNC
         }
         componentExists = entityJson.contains("scriptComponent");
         if (componentExists)
@@ -214,27 +193,8 @@ namespace FooGame
             }
         }
     }
-    void SceneSerializer::Serialize(const std::string& path)
+    void SceneSerializer::Serialize()
     {
-        auto assets          = File::GetAssetDirectory();
-        auto scenePath       = assets / path;
-        auto sceneBasePath   = scenePath.parent_path();
-        auto assetFolder     = sceneBasePath / "Assets";
-        auto modelsFolder    = assetFolder / "Models";
-        auto imagesFolder    = assetFolder / "Images";
-        auto materialsFolder = assetFolder / "Materials";
-
-#define CREATE_IF_NOT_EXISTS(x)                        \
-    if (!std::filesystem::exists(x.string()))          \
-    {                                                  \
-        std::filesystem::create_directory(x.string()); \
-    }
-        CREATE_IF_NOT_EXISTS(assetFolder);
-        CREATE_IF_NOT_EXISTS(modelsFolder);
-        CREATE_IF_NOT_EXISTS(imagesFolder);
-        CREATE_IF_NOT_EXISTS(materialsFolder);
-#undef CREATE_IF_NOT_EXISTS
-
         json scene;
         scene["name"] = m_pScene->m_Name;
 
@@ -246,6 +206,10 @@ namespace FooGame
             [&](MeshRendererComponent& c)
             {
                 auto model = AssetManager::GetModel(c.ModelName);
+                if (!model)
+                {
+                    return;
+                }
                 Asset::FModel fmodel;
                 fmodel.MeshCount = model->m_Meshes.size();
                 fmodel.Name      = model->Name;
@@ -284,7 +248,7 @@ namespace FooGame
             });
         for (auto& modelAssetsJson : modelAssetsJsons)
         {
-            auto modelAssetFileName = modelsFolder / modelAssetsJson["name"];
+            auto modelAssetFileName = m_ModelsFolder / modelAssetsJson["name"];
             modelAssetFileName.replace_extension(".fmodel");
             std::ofstream o{modelAssetFileName};
             DEFER(o.close());
@@ -325,7 +289,7 @@ namespace FooGame
         }
         for (auto& materialAssetJson : materialJsons)
         {
-            auto materialAssetFileName = materialsFolder / materialAssetJson["name"];
+            auto materialAssetFileName = m_MaterialsFolder / materialAssetJson["name"];
             materialAssetFileName.replace_extension(".fmat");
             std::ofstream o{materialAssetFileName};
             DEFER(o.close());
@@ -342,6 +306,10 @@ namespace FooGame
         auto& images = AssetManager::GetAllImages();
         for (auto& [name, img] : images)
         {
+            if (name == "Default Texture")
+            {
+                continue;
+            }
             Asset::FImage fimg;
             fimg.Name         = name;
             fimg.Size         = img->m_Info.Size;
@@ -356,15 +324,13 @@ namespace FooGame
             {
                 fimg.Format = Asset::TextureFormat::RGB8;
             }
-            // todo get image from gpu
-            // fimg.Data = imageData;
-
+            AssetManager::GetTextureFromGPU(name, fimg.Data, fimg.Size);
             imagesJsons.emplace_back(std::move(is.Serialize(fimg)));
         }
 
         for (auto& imageAssetJson : imagesJsons)
         {
-            auto materialAssetFileName = imagesFolder / imageAssetJson["name"];
+            auto materialAssetFileName = m_ImagesFolder / imageAssetJson["name"];
             materialAssetFileName.replace_extension(".fimg");
             std::ofstream o{materialAssetFileName};
             DEFER(o.close());
@@ -391,23 +357,19 @@ namespace FooGame
         }
 
         // std::string str = scene.dump();
-        std::ofstream o{scenePath};
+        std::ofstream o{m_ScenePath};
         o << std::setw(4) << scene << std::endl;
         o.close();
     }
-    void SceneSerializer::DeSerialize(const std::string& path)
+    void SceneSerializer::DeSerialize()
     {
-        if (!std::filesystem::exists(path))
+        if (!std::filesystem::exists(m_ScenePath))
         {
             m_pScene->m_Name = "New scene";
             return;
         }
-        auto cwd       = File::GetCWD();
-        auto assetPath = File::GetAssetDirectory();
-
-        auto sceneBasePath = cwd / path;
-
-        std::ifstream is(sceneBasePath);
+        std::ifstream is(m_ScenePath);
+        Defer defer{[&] { is.close(); }};
         json sceneJson;
         try
         {
@@ -415,11 +377,9 @@ namespace FooGame
         }
         catch (const std::exception& e)
         {
-            is.close();
             FOO_CORE_ERROR("Can not load scene {0}", e.what());
             return;
         }
-        is.close();
         if (sceneJson["name"].empty())
         {
             FOO_CORE_ERROR("Scene does not has name");
@@ -428,57 +388,99 @@ namespace FooGame
 
         m_pScene->m_Name = sceneJson["name"];
         FOO_CORE_TRACE("Scene: {0} deserializing", m_pScene->m_Name);
-        auto materials = sceneJson["materials"];
+        auto materials = sceneJson["assets"]["materials"];
         if (!materials.empty())
         {
-            for (auto& m : materials)
+            for (auto& m : materials.get<std::vector<String>>())
             {
-                Material mat{};
-                mat.Name               = m["name"];
-                mat.fromGlb            = m["fromGlb"];
-                mat.NormalTexture.Name = m["normalTexture"]["name"];
-                auto& pbrM             = m["pbrMetallicRougness"];
-
-                mat.PbrMat.BaseColorTextureName = pbrM["baseColorTextureName"];
-                mat.PbrMat.BaseColorTexturePath = pbrM["baseColorTexturePath"];
-
-                mat.PbrMat.MetallicRoughnessTextureName = pbrM["metallicRoughnessTextureName"];
-                mat.PbrMat.MetallicRoughnessTexturePath = pbrM["metallicRoughnessTexturePath"];
-
-                mat.PbrMat.BaseColorFactor[0] = pbrM["baseColorFactor"][0];
-                mat.PbrMat.BaseColorFactor[1] = pbrM["baseColorFactor"][1];
-                mat.PbrMat.BaseColorFactor[2] = pbrM["baseColorFactor"][2];
-                mat.PbrMat.BaseColorFactor[3] = pbrM["baseColorFactor"][3];
-
-                mat.PbrMat.MetallicFactor  = pbrM["metallicFactor"];
-                mat.PbrMat.RoughnessFactor = pbrM["roughnessFactor"];
-
-                AssetManager::AddMaterial(mat);
-                if (!mat.fromGlb)
+                std::filesystem::path matPath = m_MaterialsFolder / m;
+                matPath.replace_extension(".fmat");
+                if (std::filesystem::exists(matPath))
                 {
-                    if (!mat.PbrMat.BaseColorTextureName.empty())
-                    {
-                        auto assetPathStr = (assetPath / mat.PbrMat.BaseColorTexturePath).string();
-                        AssetManager::LoadTexture(assetPathStr, mat.PbrMat.BaseColorTextureName);
-                    }
-                    if (!mat.PbrMat.MetallicRoughnessTextureName.empty())
-                    {
-                        auto assetPathStr =
-                            (assetPath / mat.PbrMat.MetallicRoughnessTexturePath).string();
+                    std::ifstream is{matPath};
+                    Defer defer{[&] { is.close(); }};
+                    json matJ = json::parse(is);
+                    MaterialSerializer ms;
+                    auto fMat = std::move(ms.DeSerialize(matJ));
 
-                        AssetManager::LoadTexture(assetPathStr,
-                                                  mat.PbrMat.MetallicRoughnessTextureName);
-                    }
+                    Material mat{};
+                    mat.Name                 = fMat.Name;
+                    mat.fromGlb              = false;
+                    auto& pbr                = mat.PbrMat;
+                    pbr.BaseColorTextureName = fMat.BaseColorTexture.Name;
+                    pbr.BaseColorFactor[0]   = fMat.BaseColorTexture.factor[0];
+                    pbr.BaseColorFactor[1]   = fMat.BaseColorTexture.factor[1];
+                    pbr.BaseColorFactor[2]   = fMat.BaseColorTexture.factor[2];
+                    pbr.BaseColorFactor[3]   = fMat.BaseColorTexture.factor[3];
+
+                    pbr.MetallicFactor               = fMat.MetallicFactor;
+                    pbr.MetallicRoughnessTextureName = fMat.MetallicTextureName;
+                    pbr.RoughnessFactor              = fMat.RoughnessFactor;
+
+                    AssetManager::AddMaterial(mat);
+                }
+                else
+                {
+                    FOO_CORE_WARN("Material does not exists: {0},\n Searched path: {1}", m,
+                                  matPath.string());
                 }
             }
         }
-        auto entities = sceneJson["entities"];
+        auto models = sceneJson["assets"]["models"];
+        std::vector<Asset::FModel> fModels;
+        for (auto& mJ : models.get<std::vector<std::string>>())
+        {
+            std::filesystem::path modelPath = m_ModelsFolder / mJ;
+            modelPath.replace_extension(".fmodel");
+            if (std::filesystem::exists(modelPath))
+            {
+                std::ifstream is{modelPath};
+                json fModelJson = json::parse(is, nullptr, false);
+
+                Asset::FModel model;
+                model.Name      = fModelJson["name"];
+                model.MeshCount = fModelJson["meshCount"];
+                for (auto& m : fModelJson["meshes"])
+                {
+                    Asset::FMesh mesh;
+                    mesh.Name            = m["name"];
+                    mesh.MaterialName    = m["materialName"];
+                    mesh.VertexCount     = m["vertexCount"];
+                    mesh.IndicesCount    = m["indicesCount"];
+                    mesh.TotalSize       = m["totalSize"];
+                    List<float> vertices = m["vertices"];
+                    mesh.Vertices        = std::move(vertices);
+                    List<u32> indices    = m["indices"];
+                    mesh.Indices         = std::move(indices);
+                    model.Meshes.emplace_back(std::move(mesh));
+                }
+                fModels.emplace_back(std::move(model));
+            }
+            else
+            {
+                FOO_CORE_WARN("Model does not exists: {0},\n Searched path: {1}", mJ,
+                              modelPath.string());
+            }
+        }
         std::vector<std::future<void>> futures;
+
+#if 1
+#define ASYNC(x) futures.emplace_back(std::async(std::launch::async, [=] { x; }))
+#else
+#define ASYNC(x) x;
+#endif
+        for (auto& m : fModels)
+        {
+            ASYNC(AssetManager::LoadModel(m));
+        }
+#undef ASYNC
+
+        auto entities = sceneJson["entities"];
         if (!entities.empty())
         {
             for (auto entity : entities)
             {
-                DeSerializeEntity(entity, m_pScene, assetPath, futures);
+                DeSerializeEntity(entity, m_pScene, futures);
             }
         }
         for (auto& f : futures)
