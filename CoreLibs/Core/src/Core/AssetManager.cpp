@@ -13,8 +13,8 @@
 #include <stb_image.h>
 #include <tiny_gltf.h>
 #include "../Engine/Engine/Renderer3D.h"
-#include "src/Log.h"
-#include "src/Scene/Asset.h"
+#include "../Scene/Asset.h"
+#include "../Base.h"
 #include "../Core/GltfLoader.h"
 #include <cstddef>
 #include <memory>
@@ -25,20 +25,7 @@
 #include <utility>
 namespace FooGame
 {
-    class Defer
-    {
-        public:
-            explicit Defer(std::function<void()> func) : m_Func(func) {}
-            ~Defer() { m_Func(); }
 
-        private:
-            const std::function<void()> m_Func;
-    };
-#define DEFER(x)   \
-    Defer defer_   \
-    {              \
-        [&] { x; } \
-    }
     std::mutex g_Texture_mutex;
     std::mutex g_Model_mutex;
     std::mutex g_Material_mutex;
