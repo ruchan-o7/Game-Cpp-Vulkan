@@ -101,6 +101,7 @@ namespace FooGame
         }
 
         auto model   = std::make_shared<Model>(std::move(meshes));
+        model->Name  = fmodel.Name;
         asset.Asset  = model;
         asset.Status = AssetStatus::READY;
         Renderer3D::SubmitModel(model.get());
@@ -148,26 +149,36 @@ namespace FooGame
         delete gltfModel;
         return;
     }
-    void AssetManager::LoadObjModel(const ObjLoader& loader)
+    void AssetManager::LoadObjModel(Unique<ObjModel> objModel)
     {
-        auto objModel = loader.LoadModel();
-        DEFER(objModel.reset(););
         auto& asset  = s_ModelMap[objModel->Name];
         asset.Status = AssetStatus::WORKING;
 
-        for (auto& mat : objModel->Materials)
+        if (objModel->Materials.empty())
         {
-            AssetManager::AddMaterial(mat);
-        }
-        for (auto& mat : objModel->Materials)
-        {
-            auto& texPathStr = mat.PbrMat.BaseColorTexturePath;
-            if (texPathStr.empty())
+            for (auto& mesh : objModel->Meshes)
             {
-                continue;
+                mesh.M3Name = DEFAULT_MATERIAL_NAME;
             }
-            auto texPath = loader.GetPath().parent_path() / texPathStr;
-            LoadTexture(texPath.string(), mat.PbrMat.BaseColorTextureName);
+        }
+        else
+        {
+            for (auto& mat : objModel->Materials)
+            {
+                AssetManager::AddMaterial(mat);
+            }
+            for (auto& mat : objModel->Materials)
+            {
+                auto& texPathStr = mat.PbrMat.BaseColorTexturePath;
+                if (texPathStr.empty())
+                {
+                    continue;
+                }
+                auto texPath =
+                    mat.PbrMat
+                        .BaseColorTexturePath;  // loader.GetPath().parent_path() / texPathStr;
+                LoadTexture(texPath, mat.PbrMat.BaseColorTextureName);
+            }
         }
         auto modelPtr = std::make_shared<Model>();
 
@@ -363,9 +374,13 @@ namespace FooGame
         s_TextureMap[name] = pT;
     }
 
-    Material AssetManager::GetMaterial(const std::string& name)
+    Material& AssetManager::GetMaterial(const std::string& name)
     {
         std::lock_guard<std::mutex> lock(g_Material_mutex);
+        if (name.empty())
+        {
+            return s_MaterialMap[DEFAULT_MATERIAL_NAME];
+        }
         return s_MaterialMap[name];
     }
 
@@ -428,13 +443,17 @@ namespace FooGame
         {
             throw std::runtime_error("Default texture not initilized");
         }
-        return GetTexture("Default Texture");
+        return GetTexture(DEFAULT_TEXTURE_NAME);
     }
 
     void AssetManager::CreateDefaultTexture()
     {
         float data[] = {199, 199, 199, 255};
-        LoadTexture("Default Texture", data, sizeof(data), 1, 1, 4);
+        LoadTexture(DEFAULT_TEXTURE_NAME, data, sizeof(data), 1, 1, 4);
+        Material m;
+        m.Name                        = DEFAULT_MATERIAL_NAME;
+        m.PbrMat.BaseColorTextureName = DEFAULT_TEXTURE_NAME;
+        InsertMaterial(m);
         g_IsDefaulTextureInitialized = true;
     }
 

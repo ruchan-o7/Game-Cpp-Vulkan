@@ -1,0 +1,66 @@
+{
+    "assets": {
+        "models": [
+            "viking_room.obj"
+        ]
+    },
+    "entities": [
+        {
+            "cameraComponent": {
+                "fixedAspectRatio": false,
+                "primary": true
+            },
+            "id": 1743478469088508260,
+            "scriptComponent": [
+                "CameraController"
+            ],
+            "tagComponent": {
+                "tag": "CAMERA"
+            },
+            "transformComponent": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        {
+            "id": 10640248659343860195,
+            "meshComponent": {
+                "model": "viking_room.obj"
+            },
+            "tagComponent": {
+                "tag": "VIKING"
+            },
+            "transformComponent": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            }
+        }
+    ],
+    "name": "Prototype"
+}

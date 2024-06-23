@@ -2,8 +2,10 @@
 #include <cstdint>
 #include <functional>
 #include <string>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
 
-struct GLFWwindow;
 namespace FooGame
 {
     class Event;
@@ -12,8 +14,8 @@ namespace FooGame
             std::string Title;
             uint32_t Width;
             uint32_t Height;
-            WindowProperties(const std::string& title = "Game",
-                             uint32_t width = 1600, uint32_t height = 900)
+            WindowProperties(const std::string& title = "Game", uint32_t width = 1600,
+                             uint32_t height = 900)
                 : Title(title), Width(width), Height(height)
             {
             }
@@ -30,6 +32,7 @@ namespace FooGame
             void Run();
             void Close();
             GLFWwindow* GetWindowHandle() const { return m_WindowHandle; }
+            HWND GetWin32NativeHandle() const;
             void SetOnEventFunction(const EventCallback& callback)
             {
                 m_Data.eventCallback = callback;

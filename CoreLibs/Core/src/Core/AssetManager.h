@@ -13,6 +13,7 @@ namespace FooGame
     class GltfLoader;
     class ObjLoader;
     class VulkanImage;
+    struct ObjModel;
     class AssetManager
     {
         public:
@@ -24,7 +25,7 @@ namespace FooGame
             static void LoadGLTFModel(const GltfLoader& loader);
             static void LoadGLTFModelAsync(std::string path, std::string name, bool isGlb);
 
-            static void LoadObjModel(const ObjLoader& loader);
+            static void LoadObjModel(Unique<ObjModel> objModel);
 
             static void LoadTexture(const std::string& name, void* pixels, size_t size,
                                     int32_t width, int32_t height, int32_t channelCount);
@@ -42,7 +43,7 @@ namespace FooGame
 
             static AssetContainer<std::shared_ptr<Mesh>>& GetMeshAsset(const std::string& name);
 
-            static Material GetMaterial(const std::string& name);
+            static Material& GetMaterial(const std::string& name);
 
             static std::shared_ptr<VulkanTexture> GetTexture(const std::string& name);
 

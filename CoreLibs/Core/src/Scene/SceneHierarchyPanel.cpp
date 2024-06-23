@@ -1,12 +1,18 @@
 #include "SceneHierarchyPanel.h"
+#include "../Core/AssetManager.h"
+#include "../Engine/Geometry/Model.h"
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <filesystem>
 #include "Entity.h"
 #include "Scene.h"
 #include "Component.h"
 #include "../Scripts/CameraController.h"
 #include "../Scripts/Rotate.h"
 #include "../Scripts/ScaleYoink.h"
+#include "src/Core/Base.h"
+#include "src/Core/File.h"
+#include "src/Core/ObjLoader.h"
 namespace FooGame
 {
     static const std::string scriptNames[] = {"RotateScript", "ScaleYoink", "CameraController"};
@@ -32,6 +38,7 @@ namespace FooGame
             if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
             {
                 m_SelectionContext = {};
+                m_SelectedMaterial = nullptr;
             }
             if (ImGui::BeginPopupContextWindow())
             {
@@ -41,14 +48,34 @@ namespace FooGame
                 }
                 ImGui::EndPopup();
             }
+            auto& materials = AssetManager::GetAllMaterials();
+            ImGui::SeparatorText("Materials");
+            for (auto& [name, m] : materials)
+            {
+                if (ImGui::Selectable(name.c_str()))
+                {
+                    m_SelectedMaterial = name.c_str();
+                }
+            }
         }
         ImGui::Begin("Properties");
         if (m_SelectionContext)
         {
             DrawComponents(m_SelectionContext);
         }
+        if (m_SelectedMaterial)
+        {
+            ImGui::SeparatorText("Material");
+            auto& material = AssetManager::GetMaterial(m_SelectedMaterial);
+            ImGui::Text("Name: %s", material.Name.c_str());
+            ImGui::Text("Base color: %s", material.PbrMat.BaseColorTextureName.c_str());
+        }
         ImGui::End();
+
         ImGui::End();
+    }
+    void SceneHierarchyPanel::DrawMaterial(std::string_view material)
+    {
     }
     void SceneHierarchyPanel::DrawEntityNode(Entity entity)
     {
@@ -323,8 +350,76 @@ namespace FooGame
             "Mesh Renderer", entity,
             [](MeshRendererComponent& component)
             {
-                ImGui::LabelText(component.ModelName.c_str(), "Model: ");
-                ImGui::LabelText(component.MaterialName.c_str(), "Material name: ");
+                ImGui::TextUnformatted("Model: ");
+                ImGui::SameLine();
+                ImGui::Text("%s", component.ModelName.c_str());
+                auto model = AssetManager::GetModel(component.ModelName);
+                if (!model)
+                {
+                    if (ImGui::BeginPopupContextWindow())
+                    {
+                        if (ImGui::MenuItem("Load Obj"))
+                        {
+                            List<std::filesystem::path> objs;
+                            File::OpenFileDialog(objs);
+                            bool isOk = false;
+                            for (auto& o : objs)
+                            {
+                                if (o.extension() != ".obj")
+                                {
+                                    File::OpenMessageBox("Selected item is not obj");
+                                    isOk = false;
+                                    break;
+                                }
+                                isOk = true;
+                            }
+                            if (!isOk)
+                            {
+                                return;
+                            }
+                            for (auto& o : objs)
+                            {
+                                auto fileNameStr    = o.filename().string();
+                                component.ModelName = fileNameStr;
+                                ObjLoader loader{o};
+                                auto objModel = loader.LoadModel();
+                                if (objModel)
+                                {
+                                    AssetManager::LoadObjModel(std::move(objModel));
+                                }
+                            }
+                        }
+                        if (ImGui::MenuItem("Load Gltf"))
+                        {
+                        }
+                        ImGui::EndPopup();
+                    }
+                    return;
+                }
+                List<int> selection(model->m_Meshes.size());
+                List<const char*> meshNames(model->m_Meshes.size());
+                for (size_t i = 0; i < selection.size(); i++)
+                {
+                    selection[i] = i;
+                }
+                for (size_t i = 0; i < meshNames.size(); i++)
+                {
+                    if (model->m_Meshes[i].Name.empty())
+                    {
+                        meshNames[i] = model->Name.c_str();
+                    }
+                    else
+                    {
+                        meshNames[i] = model->m_Meshes[i].Name.c_str();
+                    }
+                }
+                for (size_t i = 0; i < model->m_Meshes.size(); i++)
+                {
+                    ImGui::PushID(i);
+                    ImGui::ListBox("", &selection[i], meshNames.data(), meshNames.size());
+                    ImGui::PopID();
+                }
+                // ImGui::PopItemWidth();
             });
     }
     void SceneHierarchyPanel::SetSelectedEntity(Entity e)

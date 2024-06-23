@@ -64,10 +64,8 @@ namespace FooGame
             {
                 auto stats = Renderer3D::GetStats();
                 auto& io   = ImGui::GetIO();
-                ImGui::Text("Draw call :%i", stats.DrawCall);
-                ImGui::Text("Vertex count :%llu", stats.VertexCount);
-                ImGui::Text("Index count :%llu", stats.IndexCount);
                 ImGui::Text("FPS :%f", io.Framerate);
+                ImGui::Text("Imgui Delta Time :%f", io.DeltaTime);
                 ImGui::Text("Delta time :%f", delta);
                 ImGui::Text("Total frame :%llu", Time::FrameCount());
                 ImGui::Text("Total time :%f", Time::CurrentTime());

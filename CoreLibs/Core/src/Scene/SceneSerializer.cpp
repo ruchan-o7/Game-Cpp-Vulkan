@@ -1,10 +1,7 @@
 #include "SceneSerializer.h"
+#include <pch.h>
+#include "../Base.h"
 #include <Log.h>
-#include <cassert>
-#include <filesystem>
-#include <fstream>
-#include <iomanip>
-#include <utility>
 #include "AssetSerializer.h"
 #include "Entity.h"
 #include "../Engine/Geometry/Model.h"
@@ -15,9 +12,8 @@
 #include "../Scripts/CameraController.h"
 #include "../Core/File.h"
 #include "Asset.h"
-#include "src/Core/GltfLoader.h"
-#include "src/Core/ObjLoader.h"
-#include "src/Log.h"
+#include "../Core/GltfLoader.h"
+#include "../Core/ObjLoader.h"
 #include <stb_image.h>
 /// Scene path should be base path
 ///
@@ -48,6 +44,7 @@ namespace FooGame
     {                                                  \
         std::filesystem::create_directory(x.string()); \
     }
+        CREATE_IF_NOT_EXISTS(sceneBasePath);
         CREATE_IF_NOT_EXISTS(m_AssetFolder);
         CREATE_IF_NOT_EXISTS(m_ModelsFolder);
         CREATE_IF_NOT_EXISTS(m_ImagesFolder);
@@ -115,10 +112,10 @@ namespace FooGame
         }
     }
     void SceneSerializer::DeSerializeEntity(const json& entityJson, Scene* scene,
-                                            std::vector<std::future<void>>& futures)
+                                            List<std::future<void>>& futures)
     {
         uint64_t uuid = entityJson["id"];
-        std::string tag;
+        String tag;
         bool componentExists = false;
 
         componentExists = entityJson.contains("tagComponent");
@@ -160,7 +157,7 @@ namespace FooGame
             if (!scriptComponent.empty())
             {
                 auto& sc = deserializedEntity.AddComponent<ScriptComponent>();
-                for (std::string sname : scriptComponent)
+                for (String sname : scriptComponent)
                 {
                     if (sname == "RotateScript")
                     {
@@ -199,8 +196,8 @@ namespace FooGame
         scene["name"] = m_pScene->m_Name;
 
         ModelSerializer s;
-        std::vector<Asset::FModel> modelAssets;
-        std::vector<json> modelAssetsJsons;
+        List<Asset::FModel> modelAssets;
+        List<json> modelAssetsJsons;
         auto comps = m_pScene->GetAllEntitiesWith<MeshRendererComponent>();
         comps.each(
             [&](MeshRendererComponent& c)
@@ -212,7 +209,7 @@ namespace FooGame
                 }
                 Asset::FModel fmodel;
                 fmodel.MeshCount = model->m_Meshes.size();
-                fmodel.Name      = model->Name;
+                fmodel.Name      = c.ModelName;
                 for (auto& m : model->m_Meshes)
                 {
                     Asset::FMesh mesh;
@@ -266,10 +263,14 @@ namespace FooGame
     x[2] = y[2];           \
     x[3] = y[3];
 
-        std::vector<json> materialJsons;
+        List<json> materialJsons;
         MaterialSerializer ms;
         for (auto& [name, mat] : materials)
         {
+            if (name == DEFAULT_MATERIAL_NAME || name.empty())
+            {
+                continue;
+            }
             Asset::FMaterial fmat;
             fmat.Name                  = name;
             fmat.BaseColorTexture.Name = mat.PbrMat.BaseColorTextureName;
@@ -301,12 +302,12 @@ namespace FooGame
         }
 #undef PARSE_FACTOR
 
-        std::vector<json> imagesJsons;
+        List<json> imagesJsons;
         ImageSerializer is;
         auto& images = AssetManager::GetAllImages();
         for (auto& [name, img] : images)
         {
-            if (name == "Default Texture")
+            if (name == DEFAULT_TEXTURE_NAME)
             {
                 continue;
             }
@@ -356,10 +357,9 @@ namespace FooGame
             scene["entities"].push_back(entityJson);
         }
 
-        // std::string str = scene.dump();
         std::ofstream o{m_ScenePath};
+        DEFER(o.close(););
         o << std::setw(4) << scene << std::endl;
-        o.close();
     }
     void SceneSerializer::DeSerialize()
     {
@@ -380,18 +380,23 @@ namespace FooGame
             FOO_CORE_ERROR("Can not load scene {0}", e.what());
             return;
         }
-        if (sceneJson["name"].empty())
+        auto name = sceneJson["name"].get<String>();
+        if (name.empty())
         {
             FOO_CORE_ERROR("Scene does not has name");
             return;
         }
+        auto assetsJson    = sceneJson["assets"];
+        auto imagesJson    = assetsJson["images"];
+        auto materialsJson = assetsJson["materials"];
+        auto modelsJson    = assetsJson["models"];
 
-        m_pScene->m_Name = sceneJson["name"];
+        m_pScene->m_Name = name;
+
         FOO_CORE_TRACE("Scene: {0} deserializing", m_pScene->m_Name);
-        auto materials = sceneJson["assets"]["materials"];
-        if (!materials.empty())
+        if (!materialsJson.empty())
         {
-            for (auto& m : materials.get<std::vector<String>>())
+            for (auto& m : materialsJson.get<List<String>>())
             {
                 std::filesystem::path matPath = m_MaterialsFolder / m;
                 matPath.replace_extension(".fmat");
@@ -426,43 +431,47 @@ namespace FooGame
                 }
             }
         }
-        auto models = sceneJson["assets"]["models"];
-        std::vector<Asset::FModel> fModels;
-        for (auto& mJ : models.get<std::vector<std::string>>())
+        List<Asset::FModel> fModels;
+        if (!modelsJson.empty())
         {
-            std::filesystem::path modelPath = m_ModelsFolder / mJ;
-            modelPath.replace_extension(".fmodel");
-            if (std::filesystem::exists(modelPath))
+            for (auto& mJ : modelsJson.get<List<String>>())
             {
-                std::ifstream is{modelPath};
-                json fModelJson = json::parse(is, nullptr, false);
-
-                Asset::FModel model;
-                model.Name      = fModelJson["name"];
-                model.MeshCount = fModelJson["meshCount"];
-                for (auto& m : fModelJson["meshes"])
+                std::filesystem::path modelPath = m_ModelsFolder / mJ;
+                modelPath.replace_extension(".fmodel");
+                if (std::filesystem::exists(modelPath))
                 {
-                    Asset::FMesh mesh;
-                    mesh.Name            = m["name"];
-                    mesh.MaterialName    = m["materialName"];
-                    mesh.VertexCount     = m["vertexCount"];
-                    mesh.IndicesCount    = m["indicesCount"];
-                    mesh.TotalSize       = m["totalSize"];
-                    List<float> vertices = m["vertices"];
-                    mesh.Vertices        = std::move(vertices);
-                    List<u32> indices    = m["indices"];
-                    mesh.Indices         = std::move(indices);
-                    model.Meshes.emplace_back(std::move(mesh));
+                    std::ifstream is{modelPath};
+                    Defer defer{[&] { is.close(); }};
+                    json fModelJson = json::parse(is, nullptr, false);
+
+                    Asset::FModel model;
+                    model.Name      = fModelJson["name"];
+                    model.MeshCount = fModelJson["meshCount"];
+                    for (auto& m : fModelJson["meshes"])
+                    {
+                        Asset::FMesh mesh;
+                        mesh.Name            = m["name"];
+                        mesh.MaterialName    = m["materialName"];
+                        mesh.VertexCount     = m["vertexCount"];
+                        mesh.IndicesCount    = m["indicesCount"];
+                        mesh.TotalSize       = m["totalSize"];
+                        List<float> vertices = m["vertices"];
+                        mesh.Vertices        = std::move(vertices);
+                        List<u32> indices    = m["indices"];
+                        mesh.Indices         = std::move(indices);
+                        model.Meshes.emplace_back(std::move(mesh));
+                    }
+                    fModels.emplace_back(std::move(model));
                 }
-                fModels.emplace_back(std::move(model));
-            }
-            else
-            {
-                FOO_CORE_WARN("Model does not exists: {0},\n Searched path: {1}", mJ,
-                              modelPath.string());
+                else
+                {
+                    FOO_CORE_WARN("Model does not exists: {0},\n Searched path: {1}", mJ,
+                                  modelPath.string());
+                }
             }
         }
-        std::vector<std::future<void>> futures;
+
+        List<std::future<void>> futures;
 
 #if 1
 #define ASYNC(x) futures.emplace_back(std::async(std::launch::async, [=] { x; }))

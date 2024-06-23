@@ -1,5 +1,4 @@
 #include "Window.h"
-#include <GLFW/glfw3.h>
 #include "../Events/KeyEvent.h"
 #include "../Events/ApplicationEvent.h"
 #include "../Input/KeyCodes.h"
@@ -16,6 +15,11 @@ namespace FooGame
     {
         return glfwGetTime();
     }
+    HWND Window::GetWin32NativeHandle() const
+    {
+        return glfwGetWin32Window(m_WindowHandle);
+    }
+
     Window::Window(WindowProperties specifications)
     {
         s_Instance = this;

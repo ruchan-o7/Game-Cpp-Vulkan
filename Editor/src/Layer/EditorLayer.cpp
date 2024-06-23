@@ -16,14 +16,14 @@ namespace FooGame
     void EditorLayer::OnAttach()
     {
         FOO_EDITOR_INFO("Reading scene data");
-        SceneSerializer serializer("Assets/Scenes/Prototype2/Scene2.json", m_Scene.get());
+        SceneSerializer serializer("Assets\\Scenes\\Prototype3\\Scene.json", m_Scene.get());
         serializer.DeSerialize();
 
         auto mv = m_Scene->GetAllEntitiesWith<MeshRendererComponent>().each();
 
-        if (m_Scene->m_Name != "New scene")
+        auto entt = m_Scene->GetPrimaryCameraEntity();
+        if (entt)
         {
-            auto entt          = m_Scene->GetPrimaryCameraEntity();
             auto& cameraComp   = entt.GetComponent<CameraComponent>();
             cameraComp.pCamera = &m_Camera2;
         }
@@ -57,7 +57,7 @@ namespace FooGame
         m_Scene->OnUpdate(ts);
         if (Input::IsKeyDown(KeyCode::F1))
         {
-            SceneSerializer serializer{"Assets\\Scenes\\Prototype2\\Scene2.json", m_Scene.get()};
+            SceneSerializer serializer{"Assets\\Scenes\\Prototype3\\Scene.json", m_Scene.get()};
             serializer.Serialize();
         }
     }
@@ -72,14 +72,6 @@ namespace FooGame
     }
     bool EditorLayer::OnMouseMoved(MouseMovedEvent& event)
     {
-        if (Input::IsMouseButtonDown(MouseButton::Right))
-        {
-            Input::SetCursorMode(CursorMode::Locked);
-        }
-        else
-        {
-            Input::SetCursorMode(CursorMode::Normal);
-        }
         return true;
     }
     void EditorLayer::UpdateCamera(float ts)

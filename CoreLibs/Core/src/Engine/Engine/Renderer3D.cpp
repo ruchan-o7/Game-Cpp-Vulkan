@@ -355,10 +355,8 @@ namespace FooGame
     }
     void Renderer3D::DrawModel(const std::string& name, const glm::mat4& transform)
     {
-        return;
-        if (name.empty())
+        if (name.empty() || name == "Empty Component")
         {
-            FOO_ENGINE_WARN("Empty name string provided");
             return;
         }
         auto& asset = AssetManager::GetModelAsset(name);
@@ -374,7 +372,6 @@ namespace FooGame
 
         auto currentFrame = Backend::GetCurrentFrame();
         auto cmd          = Backend::GetCurrentCommandbuffer();
-        auto extent       = Backend::GetSwapchainExtent();
 
         MeshPushConstants push{};
         push.renderMatrix = transform;

@@ -17,13 +17,11 @@ namespace FooGame
     class ObjLoader
     {
         public:
-            ObjLoader(const std::filesystem::path& path, const std::string& modelName,
-                      const std::string& materialName);
+            ObjLoader(const std::filesystem::path& path);
             std::unique_ptr<ObjModel> LoadModel() const;
             const std::filesystem::path& GetPath() const { return m_Path; }
 
         private:
             std::filesystem::path m_Path;
-            std::string m_ModelName, m_MaterialName;
     };
 }  // namespace FooGame

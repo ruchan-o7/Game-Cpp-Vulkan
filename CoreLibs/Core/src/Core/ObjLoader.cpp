@@ -9,9 +9,7 @@ namespace FooGame
 {
     static std::vector<Material> ProcessMaterial(
         const std::vector<tinyobj::material_t>& objMaterials);
-    ObjLoader::ObjLoader(const std::filesystem::path& path, const std::string& modelName,
-                         const std::string& materialName)
-        : m_Path(path), m_ModelName(modelName), m_MaterialName(materialName)
+    ObjLoader::ObjLoader(const std::filesystem::path& path) : m_Path(path)
     {
     }
     std::unique_ptr<ObjModel> ObjLoader::LoadModel() const
@@ -78,15 +76,14 @@ namespace FooGame
                     vertex.Normal = {1.0f, 1.0f, 1.0f};
                 }
                 mesh.m_Vertices.emplace_back(std::move(vertex));
-                mesh.m_Indices.push_back(indices.size());
+                mesh.m_Indices.push_back(mesh.m_Indices.size());
             }
             meshes.emplace_back(std::move(mesh));
         }
-        ObjModel* model         = new ObjModel;
-        model->Materials        = std::move(materials);
-        model->Meshes           = std::move(meshes);
-        model->Meshes[0].M3Name = m_MaterialName;
-        model->Name             = m_ModelName;
+        ObjModel* model  = new ObjModel;
+        model->Materials = std::move(materials);
+        model->Meshes    = std::move(meshes);
+        model->Name      = m_Path.filename().string();
         enum TEXTURE_INDICES
         {
             ALBEDO    = 0,

@@ -23,7 +23,6 @@ namespace FooGame
         {
             m_pCamera->MoveLeft();
         }
-        m_pCamera->Update(ts);
         ImGui::Begin("Camera");
         auto cameraPos = m_pCamera->Position;
         float pos[3]   = {cameraPos.x, cameraPos.y, cameraPos.z};
@@ -48,6 +47,7 @@ namespace FooGame
         ImGui::DragFloat("ZNear", &m_pCamera->ZNear, 0.01f, 0.0f, 1000000.0f);
         ImGui::DragFloat("ZFar", &m_pCamera->ZFar, 0.01f, 0.0f, 1000000.0f);
         ImGui::End();
+        m_pCamera->Update(ts);
 
         m_pCamera->SetPosition(glm::vec3{pos[0], pos[1], pos[2]});
         m_pCamera->SetRotation(glm::vec3(rot[0], rot[1], rot[2]));

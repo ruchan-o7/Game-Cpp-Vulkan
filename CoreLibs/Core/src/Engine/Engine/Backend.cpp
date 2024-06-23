@@ -369,7 +369,6 @@ namespace FooGame
     }
     void Backend::Submit()
     {
-        bContext.DescriptorAllocatorPool->GetAllocator();
         bContext.DescriptorAllocatorPool->Flip();
         auto cb = GetCurrentCommandbuffer();
         ImGui::Render();

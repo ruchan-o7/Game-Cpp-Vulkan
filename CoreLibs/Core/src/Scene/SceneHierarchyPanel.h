@@ -1,4 +1,5 @@
 #pragma once
+#include <string_view>
 #include "Entity.h"
 namespace FooGame
 {
@@ -17,9 +18,11 @@ namespace FooGame
             void DisplayAddComponentEntry(const std::string& entryName);
             void DrawEntityNode(Entity entity);
             void DrawComponents(Entity entity);
+            void DrawMaterial(std::string_view material);
 
         private:
             Scene* m_pScene;
             Entity m_SelectionContext;
+            const char* m_SelectedMaterial = nullptr;
     };
 }  // namespace FooGame
