@@ -1,7 +1,6 @@
 #include "File.h"
 #include <cstddef>
 #include <filesystem>
-#include "../Core/Window.h"
 #include "src/Base.h"
 #include <GLFW/glfw3.h>
 #include <combaseapi.h>
@@ -12,7 +11,43 @@
 #include <winuser.h>
 namespace FooGame
 {
-
+    static std::filesystem::path m_SceneBasePath, m_AssetPath, m_ModelsPath, m_ImagesPath,
+        m_MaterialsPath;
+    void File::SetSceneBasePath(const std::filesystem::path& p)
+    {
+        m_SceneBasePath = p;
+        m_AssetPath     = GetCWD() / m_SceneBasePath / "Assets";
+        m_ModelsPath    = m_AssetPath / "Models";
+        m_ImagesPath    = m_AssetPath / "Images";
+        m_MaterialsPath = m_AssetPath / "Materials";
+#define CREATE_IF_NOT_EXISTS(x)                        \
+    if (!std::filesystem::exists(x.string()))          \
+    {                                                  \
+        std::filesystem::create_directory(x.string()); \
+    }
+        CREATE_IF_NOT_EXISTS(m_SceneBasePath);
+        CREATE_IF_NOT_EXISTS(m_AssetPath);
+        CREATE_IF_NOT_EXISTS(m_ModelsPath);
+        CREATE_IF_NOT_EXISTS(m_ImagesPath);
+        CREATE_IF_NOT_EXISTS(m_MaterialsPath);
+#undef CREATE_IF_NOT_EXISTS
+    }
+    std::filesystem::path File::GetAssetPath()
+    {
+        return m_AssetPath;
+    }
+    std::filesystem::path File::GetModelsPath()
+    {
+        return m_ModelsPath;
+    }
+    std::filesystem::path File::GetImagesPath()
+    {
+        return m_ImagesPath;
+    }
+    std::filesystem::path File::GetMaterialsPath()
+    {
+        return m_MaterialsPath;
+    }
     std::string File::ExtractFileName(const std::string& pathStr)
     {
         return std::filesystem::path(pathStr).filename().string();
@@ -38,15 +73,6 @@ namespace FooGame
             Cwd = std::filesystem::current_path();
         }
         return Cwd;
-    }
-    std::filesystem::path File::GetAssetDirectory()
-    {
-        static std::filesystem::path AssetDir;
-        if (AssetDir.empty())
-        {
-            AssetDir = GetCWD() / "Assets";
-        }
-        return AssetDir;
     }
     void File::OpenMessageBox(const char* msg)
     {

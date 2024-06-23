@@ -16,6 +16,7 @@
 #include "src/Core/AssetManager.h"
 #include "src/Engine/Core/VulkanTexture.h"
 #include "src/Engine/Engine/Types/GraphicTypes.h"
+#include "src/Engine/Geometry/Material.h"
 #include "src/Log.h"
 #include <Log.h>
 namespace FooGame
@@ -291,15 +292,19 @@ namespace FooGame
         {
             return;
         }
-        auto material = AssetManager::GetMaterial(asset.Asset->M3Name);
+        const auto* material = AssetManager::GetMaterial(asset.Asset->M3Name);
+        if (material == nullptr)
+        {
+            material = AssetManager::GetDefaultMaterial();
+        }
         std::shared_ptr<VulkanTexture> baseColorTexture;
-        if (material.PbrMat.BaseColorTextureName.empty())
+        if (material->PbrMat.BaseColorTextureName.empty())
         {
             baseColorTexture = AssetManager::GetDefaultTexture();
         }
         else
         {
-            baseColorTexture = AssetManager::GetTexture(material.PbrMat.BaseColorTextureName);
+            baseColorTexture = AssetManager::GetTexture(material->PbrMat.BaseColorTextureName);
         }
 
         auto& currentSet = rContext.descriptorSets[currentFrame];
@@ -385,15 +390,19 @@ namespace FooGame
             {
                 continue;
             }
-            auto material = AssetManager::GetMaterial(mesh.M3Name);
+            const auto* material = AssetManager::GetMaterial(mesh.M3Name);
+            if (material == nullptr)
+            {
+                material = AssetManager::GetDefaultMaterial();
+            }
             std::shared_ptr<VulkanTexture> baseColorTexture;
-            if (material.PbrMat.BaseColorTextureName.empty())
+            if (material->PbrMat.BaseColorTextureName.empty())
             {
                 baseColorTexture = AssetManager::GetDefaultTexture();
             }
             else
             {
-                baseColorTexture = AssetManager::GetTexture(material.PbrMat.BaseColorTextureName);
+                baseColorTexture = AssetManager::GetTexture(material->PbrMat.BaseColorTextureName);
             }
 
             auto& currentSet = rContext.descriptorSets[currentFrame];

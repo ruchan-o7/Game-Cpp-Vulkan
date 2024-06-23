@@ -102,21 +102,13 @@ namespace FooGame
     Asset::FImage ImageSerializer::DeSerialize(const nlohmann::json& json)
     {
         Asset::FImage i;
-        i.Name         = json["name"];
-        i.Size         = json["size"];
-        i.Width        = json["width"];
-        i.Height       = json["height"];
-        i.ChannelCount = json["channelCount"];
-        std::string l  = json["layout"];
-        if (l == "RGBA8")
-        {
-            i.Format = Asset::TextureFormat::RGBA8;
-        }
-        else if (l == "RGB8")
-        {
-            i.Format = Asset::TextureFormat::RGB8;
-        }
-        List<unsigned char> data = json["data"];
+        i.Name                   = json["name"];
+        i.Size                   = json["size"];
+        i.Width                  = json["width"];
+        i.Height                 = json["height"];
+        i.ChannelCount           = json["channelCount"];
+        i.Format                 = Asset::TextureFormat::RGBA8;
+        List<unsigned char> data = std::move(json["data"]);
         i.Data                   = std::move(data);
         return i;
     }

@@ -29,12 +29,10 @@ namespace FooGame
 
             static void LoadTexture(const std::string& name, void* pixels, size_t size,
                                     int32_t width, int32_t height, int32_t channelCount);
+            static void LoadTexture(Asset::FImage& fimage);
             static void LoadTexture(const std::string& path, const std::string& name);
             static void CreateDefaultTexture();
             static void AddMaterial(Material material);
-
-            static void GetTextureFromGPU(const std::string& name,
-                                          std::vector<unsigned char>& buffer, size_t& size);
 
         public:
             static std::shared_ptr<Model> GetModel(const std::string& name);
@@ -43,13 +41,14 @@ namespace FooGame
 
             static AssetContainer<std::shared_ptr<Mesh>>& GetMeshAsset(const std::string& name);
 
-            static Material& GetMaterial(const std::string& name);
+            static Material* GetMaterial(const std::string& name);
 
             static std::shared_ptr<VulkanTexture> GetTexture(const std::string& name);
 
             static std::shared_ptr<VulkanTexture> GetDefaultTexture();
+            static Material* GetDefaultMaterial();
 
-            static const std::unordered_map<std::string, Material>& GetAllMaterials();
+            static std::unordered_map<std::string, Material>& GetAllMaterials();
             static const std::unordered_map<std::string, std::shared_ptr<VulkanTexture>>&
             GetAllImages();
 

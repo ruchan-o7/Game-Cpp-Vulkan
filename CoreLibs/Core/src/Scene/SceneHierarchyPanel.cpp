@@ -3,16 +3,20 @@
 #include "../Engine/Geometry/Model.h"
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <string.h>
 #include <filesystem>
+#include <unordered_map>
 #include "Entity.h"
 #include "Scene.h"
 #include "Component.h"
 #include "../Scripts/CameraController.h"
 #include "../Scripts/Rotate.h"
 #include "../Scripts/ScaleYoink.h"
-#include "src/Core/Base.h"
-#include "src/Core/File.h"
-#include "src/Core/ObjLoader.h"
+#include "../Base.h"
+#include "../Core/File.h"
+#include "../Core/ObjLoader.h"
+#include "../Base.h"
+#include "src/Engine/Geometry/Material.h"
 namespace FooGame
 {
     static const std::string scriptNames[] = {"RotateScript", "ScaleYoink", "CameraController"};
@@ -24,6 +28,73 @@ namespace FooGame
     {
         m_pScene = context;
     }
+    void SceneHierarchyPanel::DrawMaterialSection()
+    {
+        ImGui::Begin("Scene materials");
+        {
+            auto& materials = AssetManager::GetAllMaterials();
+            auto avail      = ImGui::GetContentRegionAvail();
+            ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
+            Defer pc{[&] { ImGui::PopStyleVar(); }};
+            ImGui::BeginChild("material_list", ImVec2(avail.x, 200), ImGuiChildFlags_Border,
+                              ImGuiWindowFlags_MenuBar);
+            Defer cd{[&] { ImGui::EndChild(); }};
+            {
+                ImGui::BeginMenuBar();
+
+                Defer mbd{[&] { ImGui::EndMenuBar(); }};
+
+                if (ImGui::BeginMenu("File"))
+                {
+                    Defer mc{[&] { ImGui::EndMenu(); }};
+                    if (ImGui::MenuItem("Add Material"))
+                    {
+                        Material newMat{};
+                        newMat.Name                        = "New Material";
+                        newMat.PbrMat.BaseColorTextureName = DEFAULT_TEXTURE_NAME;
+                        AssetManager::AddMaterial(newMat);
+                    }
+                    if (ImGui::MenuItem("Add Texture"))
+                    {
+                        List<std::filesystem::path> outPaths;
+                        File::OpenFileDialog(outPaths);
+                        for (auto& p : outPaths)
+                        {
+                            auto extension = p.extension().string();
+                            if (extension != ".png" || extension != ".jpg" || extension != ".jpeg")
+                            {
+                                AssetManager::LoadTexture(p.string(), p.filename().string());
+                            }
+                        }
+                    }
+                }
+            }
+            String willDeleteMat;
+            for (auto& [name, mat] : materials)
+            {
+                if (ImGui::Selectable(name.c_str()))
+                {
+                    m_SelectedMaterial = name.c_str();
+                }
+                if (ImGui::BeginPopupContextItem())
+                {
+                    if (ImGui::Button("Remove material"))
+                    {
+                        willDeleteMat = name;
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::EndPopup();
+                }
+            }
+            if (!willDeleteMat.empty())
+            {
+                materials.extract(willDeleteMat);
+            }
+        }
+        DrawMaterial();
+        ImGui::End();
+    }
+
     void SceneHierarchyPanel::OnImgui()
     {
         ImGui::Begin("Scene hierarchy");
@@ -48,34 +119,74 @@ namespace FooGame
                 }
                 ImGui::EndPopup();
             }
-            auto& materials = AssetManager::GetAllMaterials();
-            ImGui::SeparatorText("Materials");
-            for (auto& [name, m] : materials)
-            {
-                if (ImGui::Selectable(name.c_str()))
-                {
-                    m_SelectedMaterial = name.c_str();
-                }
-            }
         }
         ImGui::Begin("Properties");
         if (m_SelectionContext)
         {
             DrawComponents(m_SelectionContext);
         }
-        if (m_SelectedMaterial)
-        {
-            ImGui::SeparatorText("Material");
-            auto& material = AssetManager::GetMaterial(m_SelectedMaterial);
-            ImGui::Text("Name: %s", material.Name.c_str());
-            ImGui::Text("Base color: %s", material.PbrMat.BaseColorTextureName.c_str());
-        }
+
+        DrawMaterialSection();
+
         ImGui::End();
 
         ImGui::End();
     }
-    void SceneHierarchyPanel::DrawMaterial(std::string_view material)
+    void SceneHierarchyPanel::DrawMaterial()
     {
+        auto avail = ImGui::GetContentRegionAvail();
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
+        Defer pc{[&] { ImGui::PopStyleVar(); }};
+        ImGui::BeginChild("material_props", avail, ImGuiChildFlags_Border,
+                          ImGuiWindowFlags_MenuBar);
+        Defer cd{[&] { ImGui::EndChild(); }};
+        if (m_SelectedMaterial)
+        {
+            char buffer[256];
+            memset(buffer, 0, sizeof(buffer));
+            ImGui::SeparatorText("Material Properties");
+            auto* material = AssetManager::GetMaterial(m_SelectedMaterial);
+            strncpy_s(buffer, sizeof(buffer), material->Name.c_str(), sizeof(buffer));
+            if (material->Name != DEFAULT_MATERIAL_NAME)
+            {
+                if (ImGui::InputText("##Name", buffer, sizeof(buffer)))
+                {
+                    auto& allMaterials = AssetManager::GetAllMaterials();
+                    Material newMaterial;
+                    newMaterial.Name                        = material->Name;
+                    newMaterial.PbrMat.BaseColorTextureName = material->PbrMat.BaseColorTextureName;
+                    allMaterials.extract(material->Name);
+                    newMaterial.Name = std::string(buffer);
+                    AssetManager::AddMaterial(newMaterial);
+                    material = AssetManager::GetMaterial(m_SelectedMaterial);
+
+                    m_SelectedMaterial = material->Name.c_str();
+                }
+            }
+            else
+            {
+                ImGui::Text("%s", material->Name.c_str());
+            }
+            ImGui::Text("Base color: %s", material->PbrMat.BaseColorTextureName.c_str());
+            ImGui::SameLine();
+            if (ImGui::Button("Change"))
+            {
+                ImGui::OpenPopup("texture_popup_base");
+            }
+            if (ImGui::BeginPopup("texture_popup_base"))
+            {
+                ImGui::SeparatorText("All Textures");
+                auto textures = AssetManager::GetAllImages();
+                for (auto& [name, tex] : textures)
+                {
+                    if (ImGui::Selectable(name.c_str()))
+                    {
+                        material->PbrMat.BaseColorTextureName = String(name);
+                    }
+                }
+                ImGui::EndPopup();
+            }
+        }
     }
     void SceneHierarchyPanel::DrawEntityNode(Entity entity)
     {
@@ -350,9 +461,7 @@ namespace FooGame
             "Mesh Renderer", entity,
             [](MeshRendererComponent& component)
             {
-                ImGui::TextUnformatted("Model: ");
-                ImGui::SameLine();
-                ImGui::Text("%s", component.ModelName.c_str());
+                ImGui::Text("Model: %s", component.ModelName.c_str());
                 auto model = AssetManager::GetModel(component.ModelName);
                 if (!model)
                 {
@@ -396,28 +505,67 @@ namespace FooGame
                     }
                     return;
                 }
-                List<int> selection(model->m_Meshes.size());
-                List<const char*> meshNames(model->m_Meshes.size());
-                for (size_t i = 0; i < selection.size(); i++)
+
+                ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
+                Defer d_1{[&] { ImGui::PopStyleVar(); }};
+                ImGui::BeginChild("model_meshes", ImGui::GetContentRegionAvail(),
+                                  ImGuiChildFlags_Border);
+                Defer d_2{[&] { ImGui::EndChild(); }};
+
+                if (ImGui::BeginTable("materials_", 4))
                 {
-                    selection[i] = i;
-                }
-                for (size_t i = 0; i < meshNames.size(); i++)
-                {
-                    if (model->m_Meshes[i].Name.empty())
+                    Defer td{[&] { ImGui::EndTable(); }};
+                    for (size_t i = 0; i < model->m_Meshes.size(); i++)
                     {
-                        meshNames[i] = model->Name.c_str();
+                        ImGui::PushID(i);
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%zu: ", i);
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%s", model->m_Meshes[i].Name.c_str());
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%s", model->m_Meshes[i].M3Name.c_str());
+                        ImGui::TableNextColumn();
+                        if (ImGui::Button("Change Material"))
+                        {
+                            ImGui::OpenPopup("change_mat_pop");
+                        }
+                        if (ImGui::BeginPopup("change_mat_pop"))
+                        {
+                            Defer dd_{[&] { ImGui::EndPopup(); }};
+                            ImGui::SeparatorText("All Materials");
+                            auto materials = AssetManager::GetAllMaterials();
+                            for (auto& [name, mat] : materials)
+                            {
+                                if (ImGui::Selectable(name.c_str()))
+                                {
+                                    model->m_Meshes[i].M3Name = name;
+                                }
+                            }
+                        }
+
+                        // if (ImGui::Selectable(meshNames[i]))
+                        // {
+                        //     if (ImGui::Button("Change Material"))
+                        //     {
+                        //         ImGui::OpenPopup("mesh_change_mat_popup");
+                        //     }
+                        //     ImGui::SameLine();
+                        //     if (ImGui::BeginPopup("mesh_change_mat_popup"))
+                        //     {
+                        //         Defer d_3{[&] { ImGui::EndPopup(); }};
+                        //         ImGui::SeparatorText("All Materials");
+                        //         auto materials = AssetManager::GetAllMaterials();
+                        //         for (auto& [name, mat] : materials)
+                        //         {
+                        //             if (ImGui::Selectable(name.c_str()))
+                        //             {
+                        //                 model->m_Meshes[i].M3Name = name;
+                        //             }
+                        //         }
+                        //     }
+                        // }
+                        ImGui::PopID();
                     }
-                    else
-                    {
-                        meshNames[i] = model->m_Meshes[i].Name.c_str();
-                    }
-                }
-                for (size_t i = 0; i < model->m_Meshes.size(); i++)
-                {
-                    ImGui::PushID(i);
-                    ImGui::ListBox("", &selection[i], meshNames.data(), meshNames.size());
-                    ImGui::PopID();
                 }
                 // ImGui::PopItemWidth();
             });

@@ -1,5 +1,11 @@
 {
     "assets": {
+        "images": [
+            "viking_room.png"
+        ],
+        "materials": [
+            "New Material"
+        ],
         "models": [
             "viking_room.obj"
         ]

@@ -17,8 +17,12 @@
 #include "../Scene/Asset.h"
 #include "../Base.h"
 #include "../Core/GltfLoader.h"
+#include "src/Scene/AssetSerializer.h"
 #include "vulkan/vulkan_core.h"
 #include <cstddef>
+#include <cstring>
+#include <filesystem>
+#include <fstream>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
@@ -49,7 +53,7 @@ namespace FooGame
         s_pThread.reset();
     }
 
-    const std::unordered_map<std::string, Material>& AssetManager::GetAllMaterials()
+    std::unordered_map<std::string, Material>& AssetManager::GetAllMaterials()
     {
         return s_MaterialMap;
     }
@@ -194,7 +198,7 @@ namespace FooGame
     }
 
     void AssetManager::LoadTexture(const std::string& path, const std::string& name)
-    {
+    {  //! extension related data reading is cumborsome from .fimg refactor it
         if (GetTexture(name))
         {
             FOO_ENGINE_WARN("Texture {0} is already loaded", name);
@@ -207,97 +211,45 @@ namespace FooGame
         stbi_uc* pixels =
             stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         size_t imageSize = texWidth * texHeight * 4;
+        Defer d{[&] { stbi_image_free(pixels); }};
         if (!pixels)
         {
             FOO_ENGINE_ERROR("Coult not load image : {0}", path);
             return;
         }
-        AssetManager::LoadTexture(name, pixels, imageSize, texWidth, texHeight,
-                                  /*texChannels*/ STBI_rgb_alpha);
-        stbi_image_free(pixels);
-    }
-    void AssetManager::GetTextureFromGPU(const std::string& name,
-                                         std::vector<unsigned char>& buffer, size_t& size)
-    {
-        auto texture               = GetTexture(name);
-        auto* pRenderDevice        = Backend::GetRenderDevice();
-        const auto* physicalDevice = pRenderDevice->GetPhysicalDevice();
-
-        void* pixels;
-        size = texture->GetSize();
-
-        VulkanBuffer::BuffDesc stageDesc{};
-        stageDesc.pRenderDevice   = pRenderDevice;
-        stageDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_DESTINATION;
-        stageDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
-        stageDesc.Name            = std::string("SB Texture For Dump: ") + name;
-        stageDesc.BufferData.Data = pixels;
-        stageDesc.BufferData.Size = size;
-
-        VulkanBuffer stageBuffer{stageDesc};
-        VkImageSubresourceLayers imageSubresource{};
-        imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-        imageSubresource.mipLevel       = 1;
-        imageSubresource.baseArrayLayer = 1;
-        imageSubresource.layerCount     = 1;
-
-        auto extent = texture->GetExtent();
-        VkImageMemoryBarrier barrier{};
-        barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        barrier.oldLayout                       = VK_IMAGE_LAYOUT_UNDEFINED;
-        barrier.newLayout                       = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        barrier.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image                           = texture->GetImage()->GetImageHandle();
-        barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-        barrier.subresourceRange.baseMipLevel   = 0;
-        barrier.subresourceRange.levelCount     = 1;
-        barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount     = 1;
-        barrier.srcAccessMask                   = 0;
-        barrier.dstAccessMask                   = VK_ACCESS_TRANSFER_READ_BIT;
-
-        auto cmd = Backend::BeginSingleTimeCommands();
-
-        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                             0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-        // Copy the image to the buffer
-        VkBufferImageCopy region{};
-        region.bufferOffset                    = 0;
-        region.bufferRowLength                 = 0;
-        region.bufferImageHeight               = 0;
-        region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-        region.imageSubresource.mipLevel       = 0;
-        region.imageSubresource.baseArrayLayer = 0;
-        region.imageSubresource.layerCount     = 1;
-        region.imageOffset                     = {0, 0, 0};
-        region.imageExtent                     = {extent.width, extent.height, 1};
-
-        vkCmdCopyImageToBuffer(cmd, texture->GetImage()->GetImageHandle(),
-                               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, stageBuffer.GetBuffer(), 1,
-                               &region);
-
-        // Transition the image layout back to its original layout
-        barrier.oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        barrier.newLayout     = VK_IMAGE_LAYOUT_GENERAL;  // or VK_IMAGE_LAYOUT_GENERAL
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        barrier.dstAccessMask = 0;
-
-        vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1,
-                             &barrier);
-        stageBuffer.MapMemory();
-        void* imageData;
-        stageBuffer.CopyTo(imageData, size);
-        stageBuffer.UnMapMemory();
-
-        unsigned char* pData = (unsigned char*)imageData;
-        for (size_t i = 0; i < size; i++)
+        Asset::FImage fimage;
+        fimage.Name         = name;
+        fimage.Size         = imageSize;
+        fimage.Width        = texWidth;
+        fimage.Height       = texHeight;
+        fimage.ChannelCount = STBI_rgb_alpha;
+        fimage.Format       = Asset::TextureFormat::RGBA8;
+        auto* p             = (unsigned char*)pixels;
+        fimage.Data.reserve(imageSize);
+        for (size_t i = 0; i < imageSize; i++)
         {
-            buffer.push_back(pData[i]);
+            fimage.Data.push_back(p[i]);
         }
+        auto images    = File::GetImagesPath();
+        auto assetFile = images / name;
+        assetFile.replace_extension(".fimg");
+        if (!std::filesystem::exists(assetFile))
+        {
+            ImageSerializer is;
+            auto j = is.Serialize(fimage);
+            std::ofstream o{assetFile};
+            DEFER(o.close());
+            o << std::setw(4) << j << std::endl;
+        }
+        AssetManager::LoadTexture(fimage);
     }
+    void AssetManager::LoadTexture(Asset::FImage& fimage)
+    {
+        AssetManager::LoadTexture(fimage.Name, fimage.Data.data(), fimage.Size, fimage.Width,
+                                  fimage.Height,
+                                  /*texChannels*/ STBI_rgb_alpha);
+    }
+
     size_t g_UnnamedImagesCount = 0;
     void AssetManager::LoadTexture(const std::string& name, void* pixels, size_t size,
                                    int32_t width, int32_t height, int32_t channelCount)
@@ -374,14 +326,13 @@ namespace FooGame
         s_TextureMap[name] = pT;
     }
 
-    Material& AssetManager::GetMaterial(const std::string& name)
+    Material* AssetManager::GetMaterial(const std::string& name)
     {
-        std::lock_guard<std::mutex> lock(g_Material_mutex);
-        if (name.empty())
+        if (s_MaterialMap.find(name) != s_MaterialMap.end())
         {
-            return s_MaterialMap[DEFAULT_MATERIAL_NAME];
+            return &s_MaterialMap[name];
         }
-        return s_MaterialMap[name];
+        return nullptr;
     }
 
     void AssetManager::InsertMaterial(const Material& m)
@@ -437,6 +388,11 @@ namespace FooGame
         return s_TextureMap[name];
     }
     bool g_IsDefaulTextureInitialized = false;
+    Material* AssetManager::GetDefaultMaterial()
+    {
+        return &s_MaterialMap[DEFAULT_MATERIAL_NAME];
+    }
+
     std::shared_ptr<VulkanTexture> AssetManager::GetDefaultTexture()
     {
         if (!g_IsDefaulTextureInitialized)

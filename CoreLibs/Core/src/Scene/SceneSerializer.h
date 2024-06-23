@@ -24,9 +24,5 @@ namespace FooGame
             String m_ScenePathStr;
             Scene* m_pScene;
             std::filesystem::path m_ScenePath;
-            std::filesystem::path m_AssetFolder;
-            std::filesystem::path m_ModelsFolder;
-            std::filesystem::path m_ImagesFolder;
-            std::filesystem::path m_MaterialsFolder;
     };
 }  // namespace FooGame

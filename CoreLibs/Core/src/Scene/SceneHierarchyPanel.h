@@ -18,7 +18,8 @@ namespace FooGame
             void DisplayAddComponentEntry(const std::string& entryName);
             void DrawEntityNode(Entity entity);
             void DrawComponents(Entity entity);
-            void DrawMaterial(std::string_view material);
+            void DrawMaterial();
+            void DrawMaterialSection();
 
         private:
             Scene* m_pScene;

@@ -22,6 +22,7 @@ namespace ENGINE_NAMESPACE
             };
             VulkanImage(const ImageDesc& desc);
             VkImage GetImageHandle() const { return m_Image; }
+            VkDeviceMemory GetMem() const { return m_ImageMemory; }
 
         private:
             ImageDesc m_Desc;

@@ -43,11 +43,8 @@ namespace ENGINE_NAMESPACE
     {
         if (m_Buffer != nullptr)
         {
-            // auto lDev = m_Desc.pRenderDevice->GetLogicalDevice();
             m_Buffer.Release();
             m_Memory.Release();
-            // lDev->ReleaseVulkanObject(std::move(m_Buffer));
-            // lDev->ReleaseVulkanObject(std::move(m_Memory));
         }
     }
     void VulkanBuffer::Init()
@@ -66,7 +63,7 @@ namespace ENGINE_NAMESPACE
         ci.pQueueFamilyIndices   = nullptr;
         ci.queueFamilyIndexCount = 0;
 
-        m_Buffer = std::move(lDev->CreateBuffer(ci, m_Desc.Name.c_str()));
+        m_Buffer = lDev->CreateBuffer(ci, m_Desc.Name.c_str());
 
         auto memReqs  = lDev->GetBufferMemoryRequirements(m_Buffer);
         auto memProps = pDev->GetMemoryProperties();
@@ -77,7 +74,7 @@ namespace ENGINE_NAMESPACE
         allocInfo.memoryTypeIndex = m_Desc.pRenderDevice->GetPhysicalDevice()->FindMemoryType(
             memReqs.memoryTypeBits, m_Desc.MemoryFlag);
 
-        m_Memory = std::move(lDev->AllocateDeviceMemory(allocInfo));
+        m_Memory = lDev->AllocateDeviceMemory(allocInfo);
 
         lDev->BindBufferMemory(m_Buffer, m_Memory, 0);
     }
@@ -96,7 +93,7 @@ namespace ENGINE_NAMESPACE
     }
     void VulkanBuffer::CopyTo(void* dest, size_t size)
     {
-        memcpy(m_MappedPtr, dest, size);
+        memcpy(dest, m_MappedPtr, size);
     }
     void VulkanBuffer::UpdateData(void* data, size_t size, size_t offset)
     {

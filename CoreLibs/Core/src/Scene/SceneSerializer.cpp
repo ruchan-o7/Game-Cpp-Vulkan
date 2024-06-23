@@ -15,6 +15,8 @@
 #include "../Core/GltfLoader.h"
 #include "../Core/ObjLoader.h"
 #include <stb_image.h>
+#include <cstddef>
+#include <filesystem>
 /// Scene path should be base path
 ///
 /// |- Scene Folder - Scene.json
@@ -32,24 +34,8 @@ namespace FooGame
     SceneSerializer::SceneSerializer(String scenePath, Scene* scene)
         : m_ScenePathStr(scenePath), m_pScene(scene)
     {
-        // auto assets          = File::GetAssetDirectory();
-        m_ScenePath        = File::GetCWD() / std::filesystem::path(m_ScenePathStr);
-        auto sceneBasePath = m_ScenePath.parent_path();
-        m_AssetFolder      = sceneBasePath / "Assets";
-        m_ModelsFolder     = m_AssetFolder / "Models";
-        m_ImagesFolder     = m_AssetFolder / "Images";
-        m_MaterialsFolder  = m_AssetFolder / "Materials";
-#define CREATE_IF_NOT_EXISTS(x)                        \
-    if (!std::filesystem::exists(x.string()))          \
-    {                                                  \
-        std::filesystem::create_directory(x.string()); \
-    }
-        CREATE_IF_NOT_EXISTS(sceneBasePath);
-        CREATE_IF_NOT_EXISTS(m_AssetFolder);
-        CREATE_IF_NOT_EXISTS(m_ModelsFolder);
-        CREATE_IF_NOT_EXISTS(m_ImagesFolder);
-        CREATE_IF_NOT_EXISTS(m_MaterialsFolder);
-#undef CREATE_IF_NOT_EXISTS
+        m_ScenePath = File::GetCWD() / std::filesystem::path(m_ScenePathStr);
+        File::SetSceneBasePath(m_ScenePath.parent_path());
     }
 
     void SceneSerializer::SerializeEntity(Entity& entity, json& sceneEntitiesNode)
@@ -245,7 +231,7 @@ namespace FooGame
             });
         for (auto& modelAssetsJson : modelAssetsJsons)
         {
-            auto modelAssetFileName = m_ModelsFolder / modelAssetsJson["name"];
+            auto modelAssetFileName = File::GetModelsPath() / modelAssetsJson["name"];
             modelAssetFileName.replace_extension(".fmodel");
             std::ofstream o{modelAssetFileName};
             DEFER(o.close());
@@ -290,7 +276,7 @@ namespace FooGame
         }
         for (auto& materialAssetJson : materialJsons)
         {
-            auto materialAssetFileName = m_MaterialsFolder / materialAssetJson["name"];
+            auto materialAssetFileName = File::GetMaterialsPath() / materialAssetJson["name"];
             materialAssetFileName.replace_extension(".fmat");
             std::ofstream o{materialAssetFileName};
             DEFER(o.close());
@@ -325,18 +311,10 @@ namespace FooGame
             {
                 fimg.Format = Asset::TextureFormat::RGB8;
             }
-            AssetManager::GetTextureFromGPU(name, fimg.Data, fimg.Size);
+            // AssetManager::GetTextureFromGPU(name, fimg.Data, fimg.Size);
             imagesJsons.emplace_back(std::move(is.Serialize(fimg)));
         }
 
-        for (auto& imageAssetJson : imagesJsons)
-        {
-            auto materialAssetFileName = m_ImagesFolder / imageAssetJson["name"];
-            materialAssetFileName.replace_extension(".fimg");
-            std::ofstream o{materialAssetFileName};
-            DEFER(o.close());
-            o << std::setw(4) << imageAssetJson << std::endl;
-        }
         for (auto& imgJ : imagesJsons)
         {
             scene["assets"]["images"].push_back(imgJ["name"]);
@@ -357,7 +335,8 @@ namespace FooGame
             scene["entities"].push_back(entityJson);
         }
 
-        std::ofstream o{m_ScenePath};
+        auto scenefile = File::GetCWD() / std::filesystem::path(m_ScenePathStr);
+        std::ofstream o{scenefile};
         DEFER(o.close(););
         o << std::setw(4) << scene << std::endl;
     }
@@ -396,16 +375,17 @@ namespace FooGame
         FOO_CORE_TRACE("Scene: {0} deserializing", m_pScene->m_Name);
         if (!materialsJson.empty())
         {
+            MaterialSerializer ms;
+
             for (auto& m : materialsJson.get<List<String>>())
             {
-                std::filesystem::path matPath = m_MaterialsFolder / m;
+                std::filesystem::path matPath = File::GetMaterialsPath() / m;
                 matPath.replace_extension(".fmat");
                 if (std::filesystem::exists(matPath))
                 {
                     std::ifstream is{matPath};
                     Defer defer{[&] { is.close(); }};
                     json matJ = json::parse(is);
-                    MaterialSerializer ms;
                     auto fMat = std::move(ms.DeSerialize(matJ));
 
                     Material mat{};
@@ -434,39 +414,42 @@ namespace FooGame
         List<Asset::FModel> fModels;
         if (!modelsJson.empty())
         {
+            ModelSerializer ms;
             for (auto& mJ : modelsJson.get<List<String>>())
             {
-                std::filesystem::path modelPath = m_ModelsFolder / mJ;
+                std::filesystem::path modelPath = File::GetModelsPath() / mJ;
                 modelPath.replace_extension(".fmodel");
                 if (std::filesystem::exists(modelPath))
                 {
                     std::ifstream is{modelPath};
                     Defer defer{[&] { is.close(); }};
                     json fModelJson = json::parse(is, nullptr, false);
-
-                    Asset::FModel model;
-                    model.Name      = fModelJson["name"];
-                    model.MeshCount = fModelJson["meshCount"];
-                    for (auto& m : fModelJson["meshes"])
-                    {
-                        Asset::FMesh mesh;
-                        mesh.Name            = m["name"];
-                        mesh.MaterialName    = m["materialName"];
-                        mesh.VertexCount     = m["vertexCount"];
-                        mesh.IndicesCount    = m["indicesCount"];
-                        mesh.TotalSize       = m["totalSize"];
-                        List<float> vertices = m["vertices"];
-                        mesh.Vertices        = std::move(vertices);
-                        List<u32> indices    = m["indices"];
-                        mesh.Indices         = std::move(indices);
-                        model.Meshes.emplace_back(std::move(mesh));
-                    }
+                    auto model      = std::move(ms.DeSerialize(fModelJson));
                     fModels.emplace_back(std::move(model));
                 }
                 else
                 {
                     FOO_CORE_WARN("Model does not exists: {0},\n Searched path: {1}", mJ,
                                   modelPath.string());
+                }
+            }
+        }
+        List<Asset::FImage> fimages;
+        if (!imagesJson.empty())
+        {
+            for (auto& imj : imagesJson.get<List<String>>())
+            {
+                std::filesystem::path fimPath = File::GetImagesPath() / imj;
+                fimPath.replace_extension(".fimg");
+                ImageSerializer iss;
+                if (std::filesystem::exists(fimPath))
+                {
+                    std::ifstream is{fimPath};
+                    DEFER(is.close());
+
+                    json fimJ   = json::parse(is, nullptr, false);
+                    auto fimage = std::move(iss.DeSerialize(fimJ));
+                    fimages.emplace_back(std::move(fimage));
                 }
             }
         }
@@ -478,6 +461,10 @@ namespace FooGame
 #else
 #define ASYNC(x) x;
 #endif
+        for (size_t i = 0; i < fimages.size(); i++)
+        {
+            AssetManager::LoadTexture(fimages[i]);
+        }
         for (auto& m : fModels)
         {
             ASYNC(AssetManager::LoadModel(m));

@@ -1,27 +1,27 @@
 #pragma once
-#include <string>
+#include "../../Base.h"
 namespace FooGame
 {
 
     struct NormalTextureInfo
     {
-            std::string Name;
+            String Name;
     };
 
     struct PbrMetallicRoughness
     {
             double BaseColorFactor[4] = {1.0, 1.0, 1.0, 1.0};
-            std::string BaseColorTextureName;
-            std::string BaseColorTexturePath;
+            String BaseColorTextureName;
+            String BaseColorTexturePath;
 
             double MetallicFactor{1.0};
             double RoughnessFactor{1.0};
-            std::string MetallicRoughnessTextureName;
-            std::string MetallicRoughnessTexturePath;
+            String MetallicRoughnessTextureName;
+            String MetallicRoughnessTexturePath;
     };
     struct Material
     {
-            std::string Name;
+            String Name;
             NormalTextureInfo NormalTexture;
             PbrMetallicRoughness PbrMat;
             bool fromGlb = false;

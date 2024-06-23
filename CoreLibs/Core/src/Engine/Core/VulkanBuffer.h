@@ -46,7 +46,7 @@ namespace ENGINE_NAMESPACE
             void UnMapMemory();
 
             VkBuffer GetBuffer() const { return m_Buffer; };
-            VkDeviceMemory& GetMemory();
+            VkDeviceMemory GetMemory() { return m_Memory; }
 
         private:
             void Release();
