@@ -1,32 +1,32 @@
 {
     "assets": {
         "images": [
-            "avocado_metallic",
-            "avocado_base",
+            "viking_room",
             "avocado_normal",
-            "viking_room"
+            "avocado_base",
+            "avocado_metallic"
         ],
         "materials": [
-            "2256_Avocado_d",
-            "VM"
+            "VM",
+            "2256_Avocado_d"
         ],
         "models": [
-            "Avocado2.glb",
-            "viking_room.obj"
+            "viking_room.obj",
+            "Avocado2.glb"
         ]
     },
     "entities": [
         {
-            "id": 12521184461450340299,
+            "id": 4901485977135763663,
             "meshComponent": {
-                "model": "Avocado2.glb"
+                "model": "viking_room.obj"
             },
             "tagComponent": {
-                "tag": "AVACADO"
+                "tag": "VIKING"
             },
             "transformComponent": {
                 "rotation": [
-                    0.0,
+                    -1.5707963705062866,
                     0.0,
                     0.0
                 ],
@@ -73,12 +73,12 @@
             }
         },
         {
-            "id": 4901485977135763663,
+            "id": 12521184461450340299,
             "meshComponent": {
-                "model": "viking_room.obj"
+                "model": "Avocado2.glb"
             },
             "tagComponent": {
-                "tag": "VIKING"
+                "tag": "AVACADO"
             },
             "transformComponent": {
                 "rotation": [
