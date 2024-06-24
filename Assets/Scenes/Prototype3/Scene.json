@@ -4,7 +4,7 @@
             "viking_room.png"
         ],
         "materials": [
-            "New Material"
+            "VIKING"
         ],
         "models": [
             "viking_room.obj"

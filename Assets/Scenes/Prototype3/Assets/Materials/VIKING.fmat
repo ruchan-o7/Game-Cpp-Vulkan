@@ -1,0 +1,42 @@
+{
+    "alphaCutOff": 0.5,
+    "alphaMode": "OPAQUE",
+    "baseColorTexture": {
+        "factor": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ],
+        "name": "viking_room.png"
+    },
+    "doubleSided": false,
+    "emissiveColorTexture": {
+        "factor": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ],
+        "name": "viking_room.png"
+    },
+    "metallicColorTexture": {
+        "factor": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ],
+        "name": "viking_room.png"
+    },
+    "name": "VIKING",
+    "roughnessColorTexture": {
+        "factor": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ],
+        "name": "viking_room.png"
+    }
+}
