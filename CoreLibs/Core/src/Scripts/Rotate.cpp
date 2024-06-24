@@ -2,7 +2,7 @@
 #include <cmath>
 #include "../Scene/Component.h"
 #include "../Core/Window.h"
-namespace FooGame
+namespace FooGame::Script
 {
 
     void RotateScript::OnCreate()
@@ -15,4 +15,4 @@ namespace FooGame
         m_Transform->Translation.x = sin(time);
     }
 
-}  // namespace FooGame
+}  // namespace FooGame::Script

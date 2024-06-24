@@ -441,17 +441,17 @@ namespace FooGame
                 {
                     if (ImGui::MenuItem(scriptNames[0].c_str()))
                     {
-                        component.Bind<RotateScript>(scriptNames[0]);
+                        component.Bind(scriptNames[0]);
                         ImGui::CloseCurrentPopup();
                     }
                     else if (ImGui::MenuItem(scriptNames[1].c_str()))
                     {
-                        component.Bind<ScaleYoink>(scriptNames[1]);
+                        component.Bind(scriptNames[1]);
                         ImGui::CloseCurrentPopup();
                     }
                     else if (ImGui::MenuItem(scriptNames[2].c_str()))
                     {
-                        component.Bind<CameraController>(scriptNames[2]);
+                        component.Bind(scriptNames[2]);
 
                         ImGui::CloseCurrentPopup();
                     }

@@ -3,7 +3,7 @@
 #include "../Engine/Camera/Camera.h"
 #include <Core.h>
 #include <imgui.h>
-namespace FooGame
+namespace FooGame::Script
 {
     void CameraController::OnUpdate(float ts)
     {
@@ -64,4 +64,4 @@ namespace FooGame
         m_pCamera->Fov           = 90.f;
         m_pCamera->type          = Camera::CameraType::firstperson;
     }
-}  // namespace FooGame
+}  // namespace FooGame::Script

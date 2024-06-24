@@ -130,13 +130,13 @@ namespace FooGame
                     {
                         for (auto& [name, sc] : nsc.Scripts)
                         {
-                            if (!sc.Instance)
+                            if (!sc->Instance)
                             {
-                                sc.Instance           = sc.InstantiateScript();
-                                sc.Instance->m_Entity = Entity{entity, this};
-                                sc.Instance->OnCreate();
+                                sc->Instance           = sc->InstantiateScript();
+                                sc->Instance->m_Entity = Entity{entity, this};
+                                sc->Instance->OnCreate();
                             }
-                            sc.Instance->OnUpdate(ts);
+                            sc->Instance->OnUpdate(ts);
                         }
                     });
             }

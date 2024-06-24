@@ -1,7 +1,7 @@
 #include "ScaleYoink.h"
 #include "../Core/Time.h"
 
-namespace FooGame
+namespace FooGame::Script
 {
 
     void ScaleYoink::OnCreate()
@@ -12,4 +12,4 @@ namespace FooGame
     {
         m_Transform->Scale.x = cosf(Time::CurrentTime()) * 10;
     }
-}  // namespace FooGame
+}  // namespace FooGame::Script

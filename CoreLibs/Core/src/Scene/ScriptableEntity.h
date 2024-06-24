@@ -23,5 +23,4 @@ namespace FooGame
             Entity m_Entity;
             friend class Scene;
     };
-
 }  // namespace FooGame

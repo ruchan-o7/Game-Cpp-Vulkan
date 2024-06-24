@@ -14,6 +14,7 @@
 #include "Asset.h"
 #include "../Core/GltfLoader.h"
 #include "../Core/ObjLoader.h"
+#include "src/Log.h"
 #include <stb_image.h>
 #include <cstddef>
 #include <filesystem>
@@ -129,24 +130,16 @@ namespace FooGame
             if (!scriptComponent.empty())
             {
                 auto& sc = deserializedEntity.AddComponent<ScriptComponent>();
-                for (String sname : scriptComponent)
+                for (auto& scriptName : scriptComponent.get<List<String>>())
                 {
-                    if (sname == "RotateScript")
+                    auto res = Script::HasScriptExists(scriptName);
+                    if (!res)
                     {
-                        sc.Bind<RotateScript>("RotateScript");
+                        FOO_CORE_ERROR("Script could not found: {0}", scriptName);
+                        FOO_CORE_WARN("Did you forget to REGISTER_SCRIPT({0})", scriptName);
+                        continue;
                     }
-                    else if (sname == "ScaleYoink")
-                    {
-                        sc.Bind<ScaleYoink>("ScaleYoink");
-                    }
-                    else if (sname == "CameraController")
-                    {
-                        sc.Bind<CameraController>("CameraController");
-                    }
-                    else
-                    {
-                        FOO_ENGINE_ERROR("Script with name: {0} could not found", sname);
-                    }
+                    sc.Bind(scriptName);
                 }
             }
         }

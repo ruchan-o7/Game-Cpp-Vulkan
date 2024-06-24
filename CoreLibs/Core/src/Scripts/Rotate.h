@@ -3,12 +3,17 @@
 namespace FooGame
 {
     struct TransformComponent;
-    class RotateScript : public ScriptableEntity
+    namespace Script
     {
-            void OnUpdate(float ts) override;
-            void OnCreate() override;
+        class RotateScript : public ScriptableEntity
+        {
+                void OnUpdate(float ts) override;
+                void OnCreate() override;
 
-        private:
-            TransformComponent* m_Transform;
-    };
+            private:
+                TransformComponent* m_Transform;
+        };
+    }  // namespace Script
+
+    REGISTER_SCRIPT(RotateScript)
 }  // namespace FooGame
