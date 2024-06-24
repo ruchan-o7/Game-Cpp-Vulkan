@@ -95,21 +95,20 @@ namespace FooGame
                 j["format"] = "RGB8";
                 break;
         }
-        j["data"] = image.Data;
+        j["bufferPath"] = image.BufferPath;
 
         return j;
     }
     Asset::FImage ImageSerializer::DeSerialize(const nlohmann::json& json)
     {
         Asset::FImage i;
-        i.Name                   = json["name"];
-        i.Size                   = json["size"];
-        i.Width                  = json["width"];
-        i.Height                 = json["height"];
-        i.ChannelCount           = json["channelCount"];
-        i.Format                 = Asset::TextureFormat::RGBA8;
-        List<unsigned char> data = std::move(json["data"]);
-        i.Data                   = std::move(data);
+        i.Name         = json["name"];
+        i.Size         = json["size"];
+        i.Width        = json["width"];
+        i.Height       = json["height"];
+        i.ChannelCount = json["channelCount"];
+        i.Format       = Asset::TextureFormat::RGBA8;
+        i.BufferPath   = json["bufferPath"];
         return i;
     }
     nlohmann::json ModelSerializer::Serialize(const Asset::FModel& model)

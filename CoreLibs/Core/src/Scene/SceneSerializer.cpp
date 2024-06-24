@@ -457,7 +457,7 @@ namespace FooGame
         List<std::future<void>> futures;
 
 #if 1
-#define ASYNC(x) futures.emplace_back(std::async(std::launch::async, [=] { x; }))
+#define ASYNC(x) futures.emplace_back(std::async(std::launch::async, [&] { x; }))
 #else
 #define ASYNC(x) x;
 #endif

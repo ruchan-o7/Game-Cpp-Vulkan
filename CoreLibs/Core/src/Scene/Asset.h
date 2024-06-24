@@ -59,7 +59,8 @@ namespace FooGame::Asset
             u32 Height;
             u8 ChannelCount;
             TextureFormat Format;
-            List<unsigned char> Data;
+            //     List<unsigned char> Data;
+            std::string BufferPath;
     };
     struct FMesh
     {

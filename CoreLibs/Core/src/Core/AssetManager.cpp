@@ -6,19 +6,19 @@
 #include "../Engine/Engine/Backend.h"
 #include "ObjLoader.h"
 #include "Thread.h"
-#include "src/Engine/Core/Types.h"
-#include "src/Engine/Core/VulkanBuffer.h"
-#include "src/Engine/Engine/Renderer3D.h"
-#include "src/Engine/Geometry/Material.h"
-#include "src/Engine/Geometry/Mesh.h"
+#include "../Engine/Core/Types.h"
+#include "../Engine/Core/VulkanBuffer.h"
+#include "../Engine/Engine/Renderer3D.h"
+#include "../Engine/Geometry/Material.h"
+#include "../Engine/Geometry/Mesh.h"
 #include <stb_image.h>
+#include <stb_image_write.h>
 #include <tiny_gltf.h>
 #include "../Engine/Engine/Renderer3D.h"
 #include "../Scene/Asset.h"
 #include "../Base.h"
 #include "../Core/GltfLoader.h"
-#include "src/Scene/AssetSerializer.h"
-#include "vulkan/vulkan_core.h"
+#include "../Scene/AssetSerializer.h"
 #include <cstddef>
 #include <cstring>
 #include <filesystem>
@@ -217,6 +217,7 @@ namespace FooGame
             FOO_ENGINE_ERROR("Coult not load image : {0}", path);
             return;
         }
+
         Asset::FImage fimage;
         fimage.Name         = name;
         fimage.Size         = imageSize;
@@ -224,19 +225,18 @@ namespace FooGame
         fimage.Height       = texHeight;
         fimage.ChannelCount = STBI_rgb_alpha;
         fimage.Format       = Asset::TextureFormat::RGBA8;
-        auto* p             = (unsigned char*)pixels;
-        fimage.Data.reserve(imageSize);
-        for (size_t i = 0; i < imageSize; i++)
-        {
-            fimage.Data.push_back(p[i]);
-        }
+
         auto images    = File::GetImagesPath();
         auto assetFile = images / name;
-        assetFile.replace_extension(".fimg");
         if (!std::filesystem::exists(assetFile))
         {
+            assetFile.replace_extension(".fimgbuff");
+            fimage.BufferPath = assetFile.string();
+            stbi_write_bmp(assetFile.string().c_str(), fimage.Width, fimage.Height, STBI_rgb_alpha,
+                           pixels);
             ImageSerializer is;
             auto j = is.Serialize(fimage);
+            assetFile.replace_extension(".fimg");
             std::ofstream o{assetFile};
             DEFER(o.close());
             o << std::setw(4) << j << std::endl;
@@ -245,8 +245,10 @@ namespace FooGame
     }
     void AssetManager::LoadTexture(Asset::FImage& fimage)
     {
-        AssetManager::LoadTexture(fimage.Name, fimage.Data.data(), fimage.Size, fimage.Width,
-                                  fimage.Height,
+        int x, y, channels;
+        stbi_uc* pixels = stbi_load(fimage.BufferPath.c_str(), &x, &y, &channels, STBI_rgb_alpha);
+        DEFER(stbi_image_free(pixels));
+        AssetManager::LoadTexture(fimage.Name, pixels, fimage.Size, x, y,
                                   /*texChannels*/ STBI_rgb_alpha);
     }
 
