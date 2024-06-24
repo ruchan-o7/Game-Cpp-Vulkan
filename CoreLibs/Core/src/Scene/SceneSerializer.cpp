@@ -17,14 +17,6 @@
 #include <stb_image.h>
 #include <cstddef>
 #include <filesystem>
-/// Scene path should be base path
-///
-/// |- Scene Folder - Scene.json
-/// |- Assets Folder - Asset Name Folder - Asset.json
-/// |- Assets Folder - Asset Name Folder - Asset.fmodel | Asset.fimg
-/// |- Assets Folder - Asset Name Folder - Asset.fmat
-///
-///
 
 namespace FooGame
 {
@@ -68,13 +60,7 @@ namespace FooGame
 
             sceneEntitiesNode["meshComponent"] = json::object({
                 {"model", mesh.ModelName},
-                // {"material", mesh.MaterialName}
             });
-
-            // sceneEntitiesNode["meshComponent"] = json::object({
-            //     {"modelPath",    mesh.ModelPath},
-            //     { "material", mesh.MaterialName}
-            // });
         }
         if (!entity.HasComponent<ScriptComponent>())
         {
@@ -311,7 +297,6 @@ namespace FooGame
             {
                 fimg.Format = Asset::TextureFormat::RGB8;
             }
-            // AssetManager::GetTextureFromGPU(name, fimg.Data, fimg.Size);
             imagesJsons.emplace_back(std::move(is.Serialize(fimg)));
         }
 
@@ -447,9 +432,8 @@ namespace FooGame
                     std::ifstream is{fimPath};
                     DEFER(is.close());
 
-                    json fimJ   = json::parse(is, nullptr, false);
-                    auto fimage = std::move(iss.DeSerialize(fimJ));
-                    fimages.emplace_back(std::move(fimage));
+                    json fimJ = json::parse(is, nullptr, false);
+                    fimages.emplace_back(std::move(iss.DeSerialize(fimJ)));
                 }
             }
         }
@@ -463,7 +447,8 @@ namespace FooGame
 #endif
         for (size_t i = 0; i < fimages.size(); i++)
         {
-            AssetManager::LoadTexture(fimages[i]);
+            AssetManager::LoadTexture(fimages[i].BufferPath);
+            // AssetManager::LoadTexture(fimages[i]);
         }
         for (auto& m : fModels)
         {

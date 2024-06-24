@@ -1,22 +1,53 @@
 {
     "assets": {
         "images": [
-            "viking_room.png"
+            "avocado_metallic",
+            "avocado_base",
+            "avocado_normal",
+            "viking_room"
         ],
         "materials": [
-            "VIKING"
+            "2256_Avocado_d",
+            "VM"
         ],
         "models": [
+            "Avocado2.glb",
             "viking_room.obj"
         ]
     },
     "entities": [
         {
+            "id": 12521184461450340299,
+            "meshComponent": {
+                "model": "Avocado2.glb"
+            },
+            "tagComponent": {
+                "tag": "AVACADO"
+            },
+            "transformComponent": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        {
             "cameraComponent": {
                 "fixedAspectRatio": false,
                 "primary": true
             },
-            "id": 1743478469088508260,
+            "id": 13624598332543171232,
             "scriptComponent": [
                 "CameraController"
             ],
@@ -42,7 +73,7 @@
             }
         },
         {
-            "id": 10640248659343860195,
+            "id": 4901485977135763663,
             "meshComponent": {
                 "model": "viking_room.obj"
             },

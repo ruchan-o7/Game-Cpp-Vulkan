@@ -11,17 +11,19 @@ namespace FooGame
     {
         public:
             Model(std::vector<Mesh>&& meshes);
+            Model& operator=(Model&& o)
+            {
+                if (this != &o)
+                {
+                    this->AssetId  = o.AssetId;
+                    this->m_Meshes = std::move(o.m_Meshes);
+                    this->Name     = std::move(o.Name);
+                }
+                return *this;
+            }
             Model() = default;
             std::vector<Mesh>& GetMeshes() { return m_Meshes; }
-            void PushId(uint32_t id) { m_Ids.push_back(id); }
-            const std::vector<uint32_t>& GetIds() const { return m_Ids; }
-            glm::mat4 Transform{1.0f};
-
             std::vector<Mesh> m_Meshes;
-            // std::vector<Texture2D> images;
-            std::vector<std::shared_ptr<VulkanTexture>> Textures;
-            std::vector<uint32_t> textureIndices;
-            std::vector<uint32_t> m_Ids;
             uint32_t AssetId;
             std::string Name = "Model";
     };

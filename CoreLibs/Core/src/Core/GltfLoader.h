@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include "pch.h"
 namespace FooGame
 {
@@ -22,11 +23,12 @@ namespace FooGame
     class GltfLoader
     {
         public:
-            GltfLoader(const std::string& path, const std::string& name, bool isGlb);
+            GltfLoader(const std::filesystem::path& path, bool isGlb);
             GltfModel* Load() const;
 
         private:
-            std::string m_Path, m_Name;
+            std::filesystem::path m_Path;
+            std::string m_Name;
             bool m_IsGlb;
             bool m_EligibleToLoad;
     };

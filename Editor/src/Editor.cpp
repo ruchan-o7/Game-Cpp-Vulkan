@@ -12,9 +12,9 @@ namespace FooGame
     Editor::Editor(CommandLineArgs args) : m_Window(nullptr)
     {
         Log::Init(AppType::Editor);
-        AssetManager::Init();
         Init();
         PushLayer(new EditorLayer(args));
+        AssetManager::Init();
     }
     void Editor::Init()
     {

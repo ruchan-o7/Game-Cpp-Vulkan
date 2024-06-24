@@ -3,6 +3,7 @@
 #include <utility>
 #include <vector>
 #include "Vertex.h"
+#include "src/Engine/Defines.h"
 #include <vulkan/vulkan.h>
 namespace FooGame
 {
@@ -11,9 +12,19 @@ namespace FooGame
     struct Mesh
     {
         public:
+            DELETE_COPY(Mesh);
             Mesh();
             ~Mesh();
-            Mesh(Mesh&&);
+
+            Mesh(Mesh&& o)
+            {
+                m_Vertices = std::move(o.m_Vertices);
+                m_Indices  = std::move(o.m_Indices);
+                M3Name     = std::move(o.M3Name);
+                Name       = std::move(o.Name);
+                RenderId   = o.RenderId;
+                o.RenderId = -1;
+            }
             Mesh& operator=(Mesh&& other) noexcept
             {
                 if (this != &other)

@@ -1,9 +1,17 @@
 #include "AssetManager.h"
 #include <tiny_obj_loader.h>
+#include <Log.h>
+#include <stb_image.h>
+#include <stb_image_write.h>
+#include <tiny_gltf.h>
+#include <pch.h>
+#include <cstddef>
+#include <filesystem>
+#include <utility>
 #include "../Engine/Geometry/Model.h"
 #include "../Engine/Core/VulkanTexture.h"
-#include <Log.h>
 #include "../Engine/Engine/Backend.h"
+#include "Base.h"
 #include "ObjLoader.h"
 #include "Thread.h"
 #include "../Engine/Core/Types.h"
@@ -11,24 +19,12 @@
 #include "../Engine/Engine/Renderer3D.h"
 #include "../Engine/Geometry/Material.h"
 #include "../Engine/Geometry/Mesh.h"
-#include <stb_image.h>
-#include <stb_image_write.h>
-#include <tiny_gltf.h>
 #include "../Engine/Engine/Renderer3D.h"
 #include "../Scene/Asset.h"
 #include "../Base.h"
 #include "../Core/GltfLoader.h"
 #include "../Scene/AssetSerializer.h"
-#include <cstddef>
-#include <cstring>
-#include <filesystem>
-#include <fstream>
-#include <memory>
-#include <mutex>
-#include <stdexcept>
-#include <string>
-#include <unordered_map>
-#include <utility>
+#include "../Base.h"
 namespace FooGame
 {
 
@@ -47,6 +43,7 @@ namespace FooGame
     void AssetManager::Init()
     {
         s_pThread = Thread::Create();
+        CreateDefaultTexture();
     }
     void AssetManager::DeInit()
     {
@@ -111,47 +108,44 @@ namespace FooGame
         Renderer3D::SubmitModel(model.get());
     }
 
-    void AssetManager::LoadGLTFModel(const GltfLoader& loader)
+    void AssetManager::LoadGLTFModel(GltfModel& gltfModel)
     {
-        auto gltfModel = loader.Load();
-        // DEFER(delete gltfModel);
-        if (gltfModel->Name.empty())
+        if (gltfModel.Name.empty())
         {
             FOO_ENGINE_WARN("Model name empty");
             return;
         }
-        auto& asset = s_ModelMap[gltfModel->Name];
+        auto& asset = s_ModelMap[gltfModel.Name];
         if (asset.Status == AssetStatus::WORKING)
         {
             return;
         }
         asset.Status = AssetStatus::WORKING;
 
-        for (auto& mat : gltfModel->Materials)
+        for (auto& mat : gltfModel.Materials)
         {
             AssetManager::AddMaterial(mat);
         }
 
         std::string UnnamedImageStr("Unnamed Image");
-        for (auto& gltfImage : gltfModel->ImageSources)
+        for (auto& gltfImage : gltfModel.ImageSources)
         {
-            AssetManager::LoadTexture(gltfImage.Name.empty() ? UnnamedImageStr : gltfImage.Name,
-                                      gltfImage.ImageBuffer, gltfImage.ImageSize, gltfImage.Width,
-                                      gltfImage.Height, gltfImage.ComponentCount);
+            LoadTexture(gltfImage.Name, (void*)gltfImage.ImageBuffer, gltfImage.ImageSize,
+                        gltfImage.Width, gltfImage.Height);
         }
-        for (auto& m : gltfModel->Materials)
+        for (auto& m : gltfModel.Materials)
         {
             InsertMaterial(m);
         }
-        auto model = std::make_shared<Model>(std::move(gltfModel->Meshes));
+
+        auto model  = std::make_shared<Model>(std::move(gltfModel.Meshes));
+        model->Name = gltfModel.Name;
         AssetContainer<std::shared_ptr<Model>> c;
-        c.Asset  = model;
+        c.Asset  = Shared<Model>(model);
         c.Status = AssetStatus::READY;
 
-        s_ModelMap[gltfModel->Name] = c;
-        Renderer3D::SubmitModel(model.get());
-        delete gltfModel;
-        return;
+        s_ModelMap[gltfModel.Name] = c;
+        Renderer3D::SubmitModel(model);
     }
     void AssetManager::LoadObjModel(Unique<ObjModel> objModel)
     {
@@ -178,10 +172,9 @@ namespace FooGame
                 {
                     continue;
                 }
-                auto texPath =
-                    mat.PbrMat
-                        .BaseColorTexturePath;  // loader.GetPath().parent_path() / texPathStr;
-                LoadTexture(texPath, mat.PbrMat.BaseColorTextureName);
+                // auto texPath = mat.PbrMat.BaseColorTexturePath;
+
+                // LoadTexture(texPath, mat.PbrMat.BaseColorTextureName);
             }
         }
         auto modelPtr = std::make_shared<Model>();
@@ -196,74 +189,73 @@ namespace FooGame
 
         Renderer3D::SubmitModel(objModel->Name);
     }
-
-    void AssetManager::LoadTexture(const std::string& path, const std::string& name)
-    {  //! extension related data reading is cumborsome from .fimg refactor it
-        if (GetTexture(name))
-        {
-            FOO_ENGINE_WARN("Texture {0} is already loaded", name);
-            return;
-        }
-
-        auto* pRenderDevice = Backend::GetRenderDevice();
-
-        int32_t texWidth, texHeight, texChannels;
-        stbi_uc* pixels =
-            stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-        size_t imageSize = texWidth * texHeight * 4;
-        Defer d{[&] { stbi_image_free(pixels); }};
-        if (!pixels)
-        {
-            FOO_ENGINE_ERROR("Coult not load image : {0}", path);
-            return;
-        }
-
+    void AssetManager::WriteBmpFile(const std::filesystem::path& path, void* data, int w, int h)
+    {
+        stbi_write_bmp(path.string().c_str(), w, h, STBI_rgb_alpha, data);
+    }
+    Asset::FImage AssetManager::CreateFimageAssetFile(const String& assetName, size_t imageSize,
+                                                      i32 w, i32 h, void* pixelData)
+    {
         Asset::FImage fimage;
-        fimage.Name         = name;
+        fimage.Name         = assetName;
         fimage.Size         = imageSize;
-        fimage.Width        = texWidth;
-        fimage.Height       = texHeight;
+        fimage.Width        = w;
+        fimage.Height       = h;
         fimage.ChannelCount = STBI_rgb_alpha;
         fimage.Format       = Asset::TextureFormat::RGBA8;
 
         auto images    = File::GetImagesPath();
-        auto assetFile = images / name;
+        auto assetFile = images / fimage.Name;
+        assetFile.replace_extension(".fimgbuff");
+        fimage.BufferPath = assetFile.string();
         if (!std::filesystem::exists(assetFile))
         {
-            assetFile.replace_extension(".fimgbuff");
-            fimage.BufferPath = assetFile.string();
-            stbi_write_bmp(assetFile.string().c_str(), fimage.Width, fimage.Height, STBI_rgb_alpha,
-                           pixels);
+            WriteBmpFile(assetFile, pixelData, fimage.Width, fimage.Height);
+
             ImageSerializer is;
             auto j = is.Serialize(fimage);
+
             assetFile.replace_extension(".fimg");
             std::ofstream o{assetFile};
             DEFER(o.close());
+
             o << std::setw(4) << j << std::endl;
         }
-        AssetManager::LoadTexture(fimage);
+        return fimage;
     }
-    void AssetManager::LoadTexture(Asset::FImage& fimage)
+
+    void AssetManager::LoadTexture(const std::filesystem::path& path)
     {
-        int x, y, channels;
-        stbi_uc* pixels = stbi_load(fimage.BufferPath.c_str(), &x, &y, &channels, STBI_rgb_alpha);
-        DEFER(stbi_image_free(pixels));
-        AssetManager::LoadTexture(fimage.Name, pixels, fimage.Size, x, y,
-                                  /*texChannels*/ STBI_rgb_alpha);
+        if (HasTextureExists(path.string()))
+        {
+            FOO_ENGINE_WARN("Texture {0} is already loaded", path.filename().string());
+            return;
+        }
+        auto* pRenderDevice = Backend::GetRenderDevice();
+
+        auto pathStr = path.string();
+        i32 texWidth, texHeight, texChannels;
+        stbi_uc* pixels =
+            stbi_load(pathStr.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+        size_t imageSize = texWidth * texHeight * 4;
+
+        Defer d{[&] { stbi_image_free(pixels); }};
+        if (!pixels)
+        {
+            FOO_ENGINE_ERROR("Coult not load image : {0}", path.string());
+            return;
+        }
+
+        LoadTexture(path.filename().string(), pixels, imageSize, texWidth, texHeight);
     }
 
     size_t g_UnnamedImagesCount = 0;
-    void AssetManager::LoadTexture(const std::string& name, void* pixels, size_t size,
-                                   int32_t width, int32_t height, int32_t channelCount)
+    void AssetManager::LoadTexture(Asset::FImage& fimage, void* pixels)
     {
-        bool isExists  = false;
-        int foundIndex = 0;
-
-        std::string imgName = name;
-        if (GetTexture(imgName))
+        if (HasTextureExists(fimage.Name))
         {
             g_UnnamedImagesCount++;
-            imgName += std::to_string(g_UnnamedImagesCount);
+            fimage.Name += std::to_string(g_UnnamedImagesCount);
         }
 
         auto* pRenderDevice        = Backend::GetRenderDevice();
@@ -272,37 +264,30 @@ namespace FooGame
         stageDesc.pRenderDevice   = pRenderDevice;
         stageDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
         stageDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
-        stageDesc.Name            = std::string("SB Texture: ") + imgName;
-        stageDesc.BufferData.Data = pixels;
-        stageDesc.BufferData.Size = size;
+        stageDesc.Name            = std::string("SB Texture: ") + fimage.Name;
+        stageDesc.BufferData.Data = nullptr;
+        stageDesc.BufferData.Size = fimage.Size;
 
         VulkanBuffer stageBuffer{stageDesc};
         stageBuffer.MapMemory();
-        stageBuffer.UpdateData(pixels, size);
+        stageBuffer.UpdateData(pixels, fimage.Size);
         stageBuffer.UnMapMemory();
 
         VulkanTexture::CreateInfo ci{};
         ci.pRenderDevice = pRenderDevice;
         ci.MaxAnisotropy = physicalDevice->GetDeviceProperties().limits.maxSamplerAnisotropy;
-        ci.Name          = imgName;
+        ci.Name          = fimage.Name;
         ci.AspectFlags   = VK_IMAGE_ASPECT_COLOR_BIT;
-        if (channelCount == 4)
-        {
-            ci.Format = VK_FORMAT_R8G8B8A8_SRGB;
-        }
-        else
-        {
-            ci.Format = VK_FORMAT_R8G8B8_SRGB;
-        }
+        ci.Format        = VK_FORMAT_R8G8B8A8_SRGB;
         ci.MemoryPropertiesFlags = Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY;
         ci.Tiling                = VK_IMAGE_TILING_LINEAR;
         ci.UsageFlags            = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        ci.Extent       = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
-        ci.Size         = size;
-        ci.Width        = width;
-        ci.Height       = height;
-        ci.ChannelCount = channelCount;
+        ci.Extent = {static_cast<uint32_t>(fimage.Width), static_cast<uint32_t>(fimage.Height)};
+        ci.Size   = fimage.Size;
+        ci.Width  = fimage.Height;
+        ci.Height = fimage.Height;
+        ci.ChannelCount = STBI_rgb_alpha;
 
         auto* vTexture = new VulkanTexture{ci};
         auto vkImage   = vTexture->GetImage();
@@ -319,8 +304,15 @@ namespace FooGame
                                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
         auto texPtr = std::shared_ptr<VulkanTexture>(vTexture);
-        InsertTextureToVector(texPtr, imgName);
+        InsertTextureToVector(texPtr, fimage.Name);
     }
+    void AssetManager::LoadTexture(const String& name, void* buffer, size_t size, i32 w, i32 h)
+    {
+        auto fimg = CreateFimageAssetFile(name, size, w, h, buffer);
+        fimg.Name = std::filesystem::path(fimg.Name).filename().replace_extension("").string();
+        LoadTexture(fimg, buffer);
+    }
+
     void AssetManager::InsertTextureToVector(const std::shared_ptr<VulkanTexture>& pT,
                                              const std::string& name)
     {
@@ -330,7 +322,7 @@ namespace FooGame
 
     Material* AssetManager::GetMaterial(const std::string& name)
     {
-        if (s_MaterialMap.find(name) != s_MaterialMap.end())
+        if (HasMaterialExists(name))
         {
             return &s_MaterialMap[name];
         }
@@ -406,13 +398,35 @@ namespace FooGame
 
     void AssetManager::CreateDefaultTexture()
     {
-        float data[] = {199, 199, 199, 255};
-        LoadTexture(DEFAULT_TEXTURE_NAME, data, sizeof(data), 1, 1, 4);
+        float data[] = {199.0f, 199.f, 199.f, 255.f};
+        Asset::FImage defaultTex;
+        defaultTex.Name         = DEFAULT_TEXTURE_NAME;
+        defaultTex.ChannelCount = STBI_rgb_alpha;
+        defaultTex.Width        = 1;
+        defaultTex.Height       = 1;
+        defaultTex.Size         = sizeof(data);
+        LoadTexture(defaultTex, data);
         Material m;
         m.Name                        = DEFAULT_MATERIAL_NAME;
         m.PbrMat.BaseColorTextureName = DEFAULT_TEXTURE_NAME;
         InsertMaterial(m);
         g_IsDefaulTextureInitialized = true;
+    }
+    bool AssetManager::HasTextureExists(const std::string& name)
+    {
+        if (s_TextureMap.find(name) != s_TextureMap.end())
+        {
+            return true;
+        }
+        return false;
+    }
+    bool AssetManager::HasMaterialExists(const std::string& name)
+    {
+        if (s_MaterialMap.find(name) != s_MaterialMap.end())
+        {
+            return true;
+        }
+        return false;
     }
 
 }  // namespace FooGame

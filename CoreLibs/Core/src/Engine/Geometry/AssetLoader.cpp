@@ -360,8 +360,6 @@ namespace FooGame
             }
         }
         auto model = std::make_unique<Model>(std::move(meshes));
-        // model->Textures       = vulkanTextures;
-        model->textureIndices = textureIndices;
         return std::move(model);
     }
 

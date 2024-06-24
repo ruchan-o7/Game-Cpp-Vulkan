@@ -114,7 +114,6 @@ namespace FooGame
             ci.VertexBindings         = {Vertex::GetBindingDescription()};
             rContext.pGraphicPipeline = std::make_unique<VulkanPipeline>(ci);
         }
-        AssetManager::CreateDefaultTexture();
     }
 
     void Renderer3D::SubmitModel(const std::string& name)
@@ -513,18 +512,18 @@ namespace FooGame
                 uniformSet.descriptorCount = 1;
                 uniformSet.pBufferInfo     = &descriptorBufferInfo;
                 descriptorWrites.push_back(uniformSet);
-                for (auto& image : model->Textures)
-                {
-                    VkWriteDescriptorSet imageSet{};
-                    imageSet.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                    imageSet.dstSet          = currentSet;
-                    imageSet.dstBinding      = 1;
-                    imageSet.dstArrayElement = 0;
-                    imageSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                    imageSet.descriptorCount = 1;
-                    imageSet.pImageInfo      = &image->DescriptorInfo;
-                    descriptorWrites.push_back(imageSet);
-                }
+                // for (auto& image : model->Textures)
+                // {
+                //     VkWriteDescriptorSet imageSet{};
+                //     imageSet.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                //     imageSet.dstSet          = currentSet;
+                //     imageSet.dstBinding      = 1;
+                //     imageSet.dstArrayElement = 0;
+                //     imageSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                //     imageSet.descriptorCount = 1;
+                //     imageSet.pImageInfo      = &image->DescriptorInfo;
+                //     descriptorWrites.push_back(imageSet);
+                // }
                 Backend::UpdateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0,
                                               nullptr);
                 VkDescriptorSet sets[] = {currentSet};

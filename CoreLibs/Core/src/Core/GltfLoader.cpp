@@ -4,6 +4,7 @@
 #include <Log.h>
 #include <cstring>
 #include <glm/gtc/type_ptr.hpp>
+#include <string>
 #include "../Engine/Geometry/Mesh.h"
 #include "../Engine/Geometry/Material.h"
 
@@ -15,12 +16,12 @@ namespace FooGame
                                                      std::string defaultBaseColorTextureName);
 
     bool ReadFile(tinygltf::Model& input, const std::string& path, bool isGlb);
-    GltfLoader::GltfLoader(const std::string& path, const std::string& name, bool isGlb)
-        : m_Path(path), m_Name(name), m_IsGlb(isGlb)
+    GltfLoader::GltfLoader(const std::filesystem::path& path, bool isGlb)
+        : m_Path(path), m_Name(path.filename().string()), m_IsGlb(isGlb)
     {
         if (m_Name.empty() || m_Path.empty())
         {
-            FOO_ENGINE_WARN("Name or path is empty, name: {0}, path {1}", m_Name, m_Path);
+            FOO_ENGINE_WARN("Name or path is empty, name: {0}, path {1}", m_Name, m_Path.string());
             m_EligibleToLoad = false;
         }
         else
@@ -39,9 +40,9 @@ namespace FooGame
 
         tinygltf::Model gltfInput;
         std::vector<Mesh> meshes;
-        if (!ReadFile(gltfInput, m_Path, m_IsGlb))
+        if (!ReadFile(gltfInput, m_Path.string(), m_IsGlb))
         {
-            FOO_ENGINE_ERROR("Model with path: {0} could not read", m_Path);
+            FOO_ENGINE_ERROR("Model with path: {0} could not read", m_Path.string());
             return {};
         }
         model->ImageSources = std::move(ProcessGLTFImages(gltfInput.images));
@@ -232,6 +233,8 @@ namespace FooGame
         const auto& gMats     = gltfModel.materials;
         const auto& gImages   = gltfModel.images;
         const auto& gTextures = gltfModel.textures;
+        size_t index          = 0;
+        auto sceneName        = gltfModel.scenes[0].name + "_";
         for (auto& m : gMats)
         {
             Material mt;
@@ -245,6 +248,11 @@ namespace FooGame
                 auto baseColorTextureName =
                     gBaseColorTexture.name.empty() ? gBaseColorTexture.uri : gBaseColorTexture.name;
                 mt.PbrMat.BaseColorTextureName = File::ExtractFileName(baseColorTextureName);
+                if (mt.PbrMat.BaseColorTextureName.empty())
+                {
+                    mt.PbrMat.BaseColorTextureName = std::string(sceneName + std::to_string(index));
+                    index++;
+                }
 
                 mt.PbrMat.BaseColorFactor[0] = m.pbrMetallicRoughness.baseColorFactor[0];
                 mt.PbrMat.BaseColorFactor[1] = m.pbrMetallicRoughness.baseColorFactor[1];
@@ -263,6 +271,12 @@ namespace FooGame
                 mt.PbrMat.MetallicRoughnessTextureName =
                     metallicRoughness.name.empty() ? File::ExtractFileName(metallicRoughness.uri)
                                                    : metallicRoughness.name;
+                if (mt.PbrMat.MetallicRoughnessTextureName.empty())
+                {
+                    mt.PbrMat.MetallicRoughnessTextureName =
+                        std::string(sceneName + std::to_string(index));
+                    index++;
+                }
                 mt.PbrMat.MetallicRoughnessTexturePath = metallicRoughness.uri;
             }
             if (m.normalTexture.index != -1)
@@ -271,6 +285,11 @@ namespace FooGame
                 auto& normalTexture = gImages[texture.source];
                 auto normalTexturename =
                     normalTexture.name.empty() ? normalTexture.uri : normalTexture.name;
+                if (normalTexturename.empty())
+                {
+                    normalTexturename = std::string(sceneName + std::to_string(index));
+                    index++;
+                }
                 mt.NormalTexture.Name = File::ExtractFileName(normalTexturename);
             }
             materials.push_back(mt);

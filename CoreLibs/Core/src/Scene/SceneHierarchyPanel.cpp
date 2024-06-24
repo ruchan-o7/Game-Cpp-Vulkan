@@ -16,6 +16,8 @@
 #include "../Core/File.h"
 #include "../Core/ObjLoader.h"
 #include "../Base.h"
+#include "src/Base.h"
+#include "src/Core/GltfLoader.h"
 #include "src/Engine/Geometry/Material.h"
 namespace FooGame
 {
@@ -63,7 +65,7 @@ namespace FooGame
                             auto extension = p.extension().string();
                             if (extension != ".png" || extension != ".jpg" || extension != ".jpeg")
                             {
-                                AssetManager::LoadTexture(p.string(), p.filename().string());
+                                AssetManager::LoadTexture(p);
                             }
                         }
                     }
@@ -500,6 +502,30 @@ namespace FooGame
                         }
                         if (ImGui::MenuItem("Load Gltf"))
                         {
+                            List<std::filesystem::path> gltfs;
+                            File::OpenFileDialog(gltfs);
+                            bool isOk = false;
+                            for (auto& g : gltfs)
+                            {
+                                if (g.extension() == ".glb" || g.extension() == ".gltf")
+                                {
+                                    isOk = true;
+                                    break;
+                                }
+                            }
+                            if (!isOk)
+                            {
+                                return;
+                            }
+                            for (auto& g : gltfs)
+                            {
+                                auto fileNameStr    = g.filename().string();
+                                component.ModelName = fileNameStr;
+                                GltfLoader loader{g.string(), g.extension() == ".glb"};
+                                auto gltfModel = loader.Load();
+                                Defer gd{[&] { delete gltfModel; }};
+                                AssetManager::LoadGLTFModel(*gltfModel);
+                            }
                         }
                         ImGui::EndPopup();
                     }
