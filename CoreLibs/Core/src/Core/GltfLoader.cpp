@@ -106,7 +106,7 @@ namespace FooGame
                 tempMesh.m_Vertices.reserve(positionsAccessor.count);
                 for (size_t w = 0; w < positionsAccessor.count; w++)
                 {
-                    FooGame::Vertex v{};
+                    Vertex v{};
 
                     v.Position = glm::vec4(glm::make_vec3(&positionsBuffer[w * 3]), 1.0f);
                     v.Normal   = glm::normalize(glm::vec3(

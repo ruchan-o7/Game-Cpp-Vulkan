@@ -1,7 +1,6 @@
 #include "Backend.h"
 #include <GLFW/glfw3.h>
 #include "../Engine/VulkanCheckResult.h"
-#include "../Defines.h"
 #include "../../Core/Window.h"
 #include "../../Events/ApplicationEvent.h"
 #include "../Core/EngineFactory.h"

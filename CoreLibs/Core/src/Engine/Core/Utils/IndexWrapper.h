@@ -1,7 +1,7 @@
 #pragma once
-#include "../../Defines.h"
 #include <cstdint>
 #include <type_traits>
+#include "../../../Base.h"
 namespace ENGINE_NAMESPACE
 {
     template <typename IndexType, typename UniqueTag>

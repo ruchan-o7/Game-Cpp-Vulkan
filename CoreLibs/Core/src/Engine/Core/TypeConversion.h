@@ -1,5 +1,5 @@
 #pragma once
-#include "../Defines.h"
+#include "../../Base.h"
 #include "Types.h"
 #include <vulkan/vulkan.h>
 namespace ENGINE_NAMESPACE

@@ -7,10 +7,10 @@
 namespace ENGINE_NAMESPACE
 {
 
-    static uint32_t SelectMemoryType(const VkPhysicalDeviceMemoryProperties& memoryProperties,
-                                     uint32_t memoryTypeBits, VkMemoryPropertyFlags flags)
+    static u32 SelectMemoryType(const VkPhysicalDeviceMemoryProperties& memoryProperties,
+                                u32 memoryTypeBits, VkMemoryPropertyFlags flags)
     {
-        for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i)
+        for (u32 i = 0; i < memoryProperties.memoryTypeCount; ++i)
         {
             if ((memoryTypeBits & (1 << i)) != 0 &&
                 (memoryProperties.memoryTypes[i].propertyFlags & flags) == flags)
@@ -52,7 +52,7 @@ namespace ENGINE_NAMESPACE
         auto pDev = m_Desc.pRenderDevice->GetPhysicalDevice();
         auto lDev = m_Desc.pRenderDevice->GetLogicalDevice();
 
-        VkBufferUsageFlags usage = m_Desc.Usage;  // BuffUsageToVkUsage(m_Desc.Usage);
+        VkBufferUsageFlags usage = m_Desc.Usage;
 
         VkBufferCreateInfo ci{};
         ci.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -111,14 +111,12 @@ namespace ENGINE_NAMESPACE
         }
     }
 
-    std::unique_ptr<VulkanBuffer> VulkanBuffer::CreateDynamicBuffer(size_t size,
-                                                                    Vulkan::BUFFER_USAGE usage)
+    Unique<VulkanBuffer> VulkanBuffer::CreateDynamicBuffer(size_t size, Vulkan::BUFFER_USAGE usage)
     {
         NOT_IMPLEMENTED();
         return nullptr;
     }
-    std::unique_ptr<VulkanBuffer> VulkanBuffer::CreateVertexBuffer(
-        const VulkanBuffer::BuffDesc& info)
+    Unique<VulkanBuffer> VulkanBuffer::CreateVertexBuffer(const VulkanBuffer::BuffDesc& info)
     {
         auto device = info.pRenderDevice->GetLogicalDevice();
         VulkanBuffer::BuffDesc stageDesc{};
@@ -148,10 +146,9 @@ namespace ENGINE_NAMESPACE
             stageBuffer.CopyTo(*vertexBuffer, info.BufferData.Size);
         }
 
-        return std::unique_ptr<VulkanBuffer>(vertexBuffer);
+        return Unique<VulkanBuffer>(vertexBuffer);
     }
-    std::unique_ptr<VulkanBuffer> VulkanBuffer::CreateIndexBuffer(
-        const VulkanBuffer::BuffDesc& info)
+    Unique<VulkanBuffer> VulkanBuffer::CreateIndexBuffer(const VulkanBuffer::BuffDesc& info)
     {
         auto device = info.pRenderDevice->GetLogicalDevice();
         VulkanBuffer::BuffDesc stageDesc{};
@@ -181,7 +178,7 @@ namespace ENGINE_NAMESPACE
             stageBuffer.CopyTo(*vertexBuffer, info.BufferData.Size);
         }
 
-        return std::unique_ptr<VulkanBuffer>(vertexBuffer);
+        return Unique<VulkanBuffer>(vertexBuffer);
     }
 
     void VulkanBuffer::CopyTo(VulkanBuffer& destination, size_t size)

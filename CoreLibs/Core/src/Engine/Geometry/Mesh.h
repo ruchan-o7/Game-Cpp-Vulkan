@@ -3,8 +3,8 @@
 #include <utility>
 #include <vector>
 #include "Vertex.h"
-#include "src/Engine/Defines.h"
 #include <vulkan/vulkan.h>
+#include "../../Base.h"
 namespace FooGame
 {
 

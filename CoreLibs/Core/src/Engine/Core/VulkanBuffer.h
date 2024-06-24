@@ -2,6 +2,7 @@
 #include "Types.h"
 #include "VulkanLogicalDevice.h"
 #include "Utils/VulkanObjectWrapper.h"
+#include "../../Base.h"
 
 namespace ENGINE_NAMESPACE
 {
@@ -19,19 +20,17 @@ namespace ENGINE_NAMESPACE
             };
             struct BuffDesc
             {
-                    std::string Name;
+                    String Name;
                     Vulkan::BUFFER_USAGE Usage;
                     Vulkan::BUFFER_MEMORY_FLAG MemoryFlag;
                     RenderDevice* pRenderDevice;
                     BuffData BufferData;
             };
 
-            static std::unique_ptr<VulkanBuffer> CreateDynamicBuffer(size_t size,
-                                                                     Vulkan::BUFFER_USAGE usage);
-            static std::unique_ptr<VulkanBuffer> CreateVertexBuffer(
-                const VulkanBuffer::BuffDesc& info);
-            static std::unique_ptr<VulkanBuffer> CreateIndexBuffer(
-                const VulkanBuffer::BuffDesc& info);
+            static Unique<VulkanBuffer> CreateDynamicBuffer(size_t size,
+                                                            Vulkan::BUFFER_USAGE usage);
+            static Unique<VulkanBuffer> CreateVertexBuffer(const VulkanBuffer::BuffDesc& info);
+            static Unique<VulkanBuffer> CreateIndexBuffer(const VulkanBuffer::BuffDesc& info);
 
             VulkanBuffer(const BuffDesc& info);
 

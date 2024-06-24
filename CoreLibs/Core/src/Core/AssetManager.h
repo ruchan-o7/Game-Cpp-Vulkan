@@ -4,7 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include "../Scene/Asset.h"
-#include "Base.h"
+#include "../Base.h"
 namespace FooGame
 {
     class Model;

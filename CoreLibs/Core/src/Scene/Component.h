@@ -1,5 +1,4 @@
 #pragma once
-#include <string>
 #include <unordered_map>
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -7,7 +6,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include "../Core/UUID.h"
-#include "../Core/Base.h"
+#include "../Base.h"
 namespace FooGame
 {
     class Model;
@@ -20,11 +19,11 @@ namespace FooGame
     };
     struct TagComponent
     {
-            std::string Tag;
+            String Tag;
 
             TagComponent()                    = default;
             TagComponent(const TagComponent&) = default;
-            TagComponent(const std::string& tag) : Tag(tag) {}
+            TagComponent(const String& tag) : Tag(tag) {}
     };
 
     struct TransformComponent
@@ -47,13 +46,13 @@ namespace FooGame
     };
     struct MeshRendererComponent
     {
-            std::vector<std::string> MeshNames;
-            std::string ModelName = "Empty Component";
-            std::string ModelPath;
-            std::string MaterialName;
+            List<String> MeshNames;
+            String ModelName = "Empty Component";
+            String ModelPath;
+            String MaterialName;
             MeshRendererComponent()                             = default;
             MeshRendererComponent(const MeshRendererComponent&) = default;
-            MeshRendererComponent(std::string name, std::string modelPath, std::string materialName)
+            MeshRendererComponent(String name, String modelPath, String materialName)
                 : ModelName(name), ModelPath(modelPath), MaterialName(materialName)
             {
             }
@@ -66,17 +65,17 @@ namespace FooGame
             {
                     ScriptableEntity* Instance = nullptr;
                     ScriptableEntity* (*InstantiateScript)();
-                    void (*DestroyScript)(ScriptComponent*, std::string name);
+                    void (*DestroyScript)(ScriptComponent*, String name);
             };
-            std::unordered_map<std::string, ScriptFactory> Scripts;
+            Hashmap<String, ScriptFactory> Scripts;
 
             template <typename T>
-            void Bind(const std::string& name)
+            void Bind(const String& name)
             {
                 ScriptFactory factory{};
                 factory.InstantiateScript = []()
                 { return static_cast<ScriptableEntity*>(new T()); };
-                factory.DestroyScript = [](ScriptComponent* nsc, std::string name)
+                factory.DestroyScript = [](ScriptComponent* nsc, String name)
                 {
                     auto& script = nsc->Scripts[name];
 
@@ -85,7 +84,7 @@ namespace FooGame
                 };
                 Scripts[name] = factory;
             }
-            void RemoveScript(const std::string& name)
+            void RemoveScript(const String& name)
             {
                 Scripts[name].DestroyScript(this, name);
                 Scripts.erase(name);

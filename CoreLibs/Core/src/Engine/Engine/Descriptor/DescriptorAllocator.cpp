@@ -3,7 +3,6 @@
 #include <mutex>
 #include <memory>
 #include <vector>
-#include "../../Defines.h"
 namespace vke
 {
 
@@ -58,14 +57,11 @@ namespace vke
             virtual ~DescriptorAllocatorPoolImpl();
 
             void Flip() override final;
-            void SetPoolSizeMultiplier(VkDescriptorType type,
-                                       float multiplier) override final;
+            void SetPoolSizeMultiplier(VkDescriptorType type, float multiplier) override final;
             DescriptorAllocatorHandle GetAllocator() override final;
 
-            void ReturnAllocator(DescriptorAllocatorHandle& handle,
-                                 bool bIsFull);
-            VkDescriptorPool createPool(int count,
-                                        VkDescriptorPoolCreateFlags flags);
+            void ReturnAllocator(DescriptorAllocatorHandle& handle, bool bIsFull);
+            VkDescriptorPool createPool(int count, VkDescriptorPoolCreateFlags flags);
 
             VkDevice _device;
             PoolSizes _poolSizes;
@@ -81,8 +77,8 @@ namespace vke
             std::vector<DescriptorAllocator> _clearAllocators;
     };
 
-    vke::DescriptorAllocatorPool* vke::DescriptorAllocatorPool::Create(
-        const VkDevice& device, int nFrames)
+    vke::DescriptorAllocatorPool* vke::DescriptorAllocatorPool::Create(const VkDevice& device,
+                                                                       int nFrames)
     {
         DescriptorAllocatorPoolImpl* impl = new DescriptorAllocatorPoolImpl();
         impl->_device                     = device;
@@ -105,8 +101,7 @@ namespace vke
         }
     }
 
-    DescriptorAllocatorHandle::DescriptorAllocatorHandle(
-        DescriptorAllocatorHandle&& other)
+    DescriptorAllocatorHandle::DescriptorAllocatorHandle(DescriptorAllocatorHandle&& other)
     {
         Return();
 
@@ -150,21 +145,20 @@ namespace vke
         ownerPool = nullptr;
     }
 
-    bool DescriptorAllocatorHandle::Allocate(
-        const VkDescriptorSetLayout& layout, VkDescriptorSet& builtSet)
+    bool DescriptorAllocatorHandle::Allocate(const VkDescriptorSetLayout& layout,
+                                             VkDescriptorSet& builtSet)
     {
         DescriptorAllocatorPoolImpl* implPool =
             static_cast<DescriptorAllocatorPoolImpl*>(ownerPool);
 
         VkDescriptorSetAllocateInfo allocInfo;
-        allocInfo.pNext = nullptr;
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.pNext              = nullptr;
+        allocInfo.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool     = vkPool;
         allocInfo.descriptorSetCount = 1;
         allocInfo.pSetLayouts        = &layout;
 
-        VkResult result =
-            vkAllocateDescriptorSets(implPool->_device, &allocInfo, &builtSet);
+        VkResult result = vkAllocateDescriptorSets(implPool->_device, &allocInfo, &builtSet);
         if (result != VK_SUCCESS)
         {
             // we reallocate pools on memory error
@@ -195,8 +189,8 @@ namespace vke
         return true;
     }
 
-    VkDescriptorPool DescriptorAllocatorPoolImpl::createPool(
-        int count, VkDescriptorPoolCreateFlags flags)
+    VkDescriptorPool DescriptorAllocatorPoolImpl::createPool(int count,
+                                                             VkDescriptorPoolCreateFlags flags)
     {
         std::vector<VkDescriptorPoolSize> sizes;
         sizes.reserve(_poolSizes.sizes.size());
@@ -205,11 +199,11 @@ namespace vke
             sizes.push_back({sz.type, uint32_t(sz.multiplier * count)});
         }
         VkDescriptorPoolCreateInfo pool_info = {};
-        pool_info.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        pool_info.flags         = flags;
-        pool_info.maxSets       = count;
-        pool_info.poolSizeCount = (uint32_t)sizes.size();
-        pool_info.pPoolSizes    = sizes.data();
+        pool_info.sType                      = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        pool_info.flags                      = flags;
+        pool_info.maxSets                    = count;
+        pool_info.poolSizeCount              = (uint32_t)sizes.size();
+        pool_info.pPoolSizes                 = sizes.data();
 
         VkDescriptorPool descriptorPool;
         vkCreateDescriptorPool(_device, &pool_info, nullptr, &descriptorPool);
@@ -242,16 +236,14 @@ namespace vke
 
         for (auto al : _descriptorPools[_frameIndex]->_fullAllocators)
         {
-            vkResetDescriptorPool(_device, al.pool,
-                                  VkDescriptorPoolResetFlags{0});
+            vkResetDescriptorPool(_device, al.pool, VkDescriptorPoolResetFlags{0});
 
             _clearAllocators.push_back(al);
         }
 
         for (auto al : _descriptorPools[_frameIndex]->_usableAllocators)
         {
-            vkResetDescriptorPool(_device, al.pool,
-                                  VkDescriptorPoolResetFlags{0});
+            vkResetDescriptorPool(_device, al.pool, VkDescriptorPoolResetFlags{0});
 
             _clearAllocators.push_back(al);
         }
@@ -260,8 +252,7 @@ namespace vke
         _descriptorPools[_frameIndex]->_usableAllocators.clear();
     }
 
-    void DescriptorAllocatorPoolImpl::SetPoolSizeMultiplier(
-        VkDescriptorType type, float multiplier)
+    void DescriptorAllocatorPoolImpl::SetPoolSizeMultiplier(VkDescriptorType type, float multiplier)
     {
         for (auto& s : _poolSizes.sizes)
         {
@@ -279,8 +270,8 @@ namespace vke
         _poolSizes.sizes.push_back(newSize);
     }
 
-    void DescriptorAllocatorPoolImpl::ReturnAllocator(
-        DescriptorAllocatorHandle& handle, bool bIsFull)
+    void DescriptorAllocatorPoolImpl::ReturnAllocator(DescriptorAllocatorHandle& handle,
+                                                      bool bIsFull)
     {
         std::lock_guard<std::mutex> lk(_poolMutex);
 
@@ -316,8 +307,7 @@ namespace vke
         {
             if (_descriptorPools[poolIndex]->_usableAllocators.size() > 0)
             {
-                allocator =
-                    _descriptorPools[poolIndex]->_usableAllocators.back();
+                allocator = _descriptorPools[poolIndex]->_usableAllocators.back();
                 _descriptorPools[poolIndex]->_usableAllocators.pop_back();
                 foundAllocator = 1;
             }

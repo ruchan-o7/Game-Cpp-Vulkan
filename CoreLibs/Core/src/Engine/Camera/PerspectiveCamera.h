@@ -1,5 +1,4 @@
 #pragma once
-#include "../Defines.h"
 #include <glm/glm.hpp>
 namespace FooGame
 {

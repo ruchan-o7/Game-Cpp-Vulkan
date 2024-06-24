@@ -1,5 +1,4 @@
 #pragma once
-#include "src/Core/Base.h"
 #include "src/Core/UUID.h"
 #include "src/Core/Time.h"
 #include "src/Core/File.h"

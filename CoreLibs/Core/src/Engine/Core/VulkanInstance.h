@@ -1,11 +1,10 @@
 #pragma once
-#include "../Defines.h"
-#include "vulkan/vulkan_core.h"
 #include <string>
 #include <cstdint>
 #include <memory>
 #include <vector>
 #include <vulkan/vulkan.h>
+#include "../../Base.h"
 namespace ENGINE_NAMESPACE
 {
 

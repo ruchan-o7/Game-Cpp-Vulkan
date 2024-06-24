@@ -1,9 +1,9 @@
 #pragma once
 #include <cstdint>
 #include <vector>
-#include "../Defines.h"
 #include <vulkan/vulkan.h>
 #include <memory>
+#include "../../Base.h"
 namespace ENGINE_NAMESPACE
 {
     enum ADAPTER_VENDOR_ID

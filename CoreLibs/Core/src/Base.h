@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include <utility>
 #include <string>
-#include "Defer.h"
 namespace FooGame
 {
     template <typename T>
@@ -31,31 +30,21 @@ namespace FooGame
     {
         return std::make_shared<T>(std::forward(args...));
     }
-#ifndef DELETE_COPY
 #define DELETE_COPY(x)               \
 public:                              \
     x(const x&)            = delete; \
     x& operator=(const x&) = delete;
-#endif
-#ifndef DELETE_MOVE
+
 #define DELETE_MOVE(x)          \
 public:                         \
     x(x&&)            = delete; \
     x& operator=(x&&) = delete;
-#endif
-#define DEFER(x)   \
-    Defer defer_   \
-    {              \
-        [&] { x; } \
-    }
-#define DEFER_(F, C) \
-    Defer defer_##C  \
-    {                \
-        [&] { F; }   \
-    }
-#ifndef ARRAY_COUNT
+
+#define DELETE_COPY_MOVE(type) \
+    DELETE_COPY(type)          \
+    DELETE_MOVE(type)
+
 #define ARRAY_COUNT(x) (sizeof(x) / sizeof(x[0]))
-#endif
 
 #define u64 uint64_t
 #define i64 int64_t
@@ -71,4 +60,33 @@ public:                         \
 
 #define DEFAULT_MATERIAL_NAME "Default Material"
 #define DEFAULT_TEXTURE_NAME  "Default Texture"
+
+#define ENGINE_NAMESPACE FooGame
+
+#define BIT(x) (1 << x)
+
+#define ARRAY_COUNT(x) (sizeof(x) / sizeof(x[0]))
+
+#define BIND_EVENT_FN(fn)                    \
+    [this](auto&&... args) -> decltype(auto) \
+    { return this->fn(std::forward<decltype(args)>(args)...); }
+
+#define NOT_IMPLEMENTED() assert(0 && "Not implemented yet")
+#define DEPRECATED()                                                               \
+    FOO_ENGINE_CRITICAL("This function deprecated: {0}, {1}", __FILE__, __LINE__); \
+    assert(0)
+
+#define DEFER(x)   \
+    Defer defer_   \
+    {              \
+        [&] { x; } \
+    }
+
+#define DEFER_(F, C) \
+    Defer defer_##C  \
+    {                \
+        [&] { F; }   \
+    }
+
 }  // namespace FooGame
+#include "Util.h"

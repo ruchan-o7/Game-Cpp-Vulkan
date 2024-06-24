@@ -1,5 +1,5 @@
 #pragma once
-#include "../Defines.h"
+#include "../../Base.h"
 #include "VulkanLogicalDevice.h"
 #include "Types.h"
 #include "Utils/VulkanObjectWrapper.h"

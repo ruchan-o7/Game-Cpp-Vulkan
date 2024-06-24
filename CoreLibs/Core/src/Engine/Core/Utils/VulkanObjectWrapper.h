@@ -1,6 +1,5 @@
 #pragma once
 #include <memory>
-#include "../../Defines.h"
 #include "../VulkanLogicalDevice.h"
 
 namespace ENGINE_NAMESPACE

@@ -1,5 +1,4 @@
 #pragma once
-#include "../Defines.h"
 #include <glm/glm.hpp>
 
 namespace FooGame
@@ -7,8 +6,7 @@ namespace FooGame
     class OrthographicCamera
     {
         public:
-            OrthographicCamera(float left, float right, float bottom,
-                               float top);
+            OrthographicCamera(float left, float right, float bottom, float top);
 
             const glm::vec3 GetPosition() const { return m_Position; }
             const glm::mat4 GetProjection() const { return m_Projection; }

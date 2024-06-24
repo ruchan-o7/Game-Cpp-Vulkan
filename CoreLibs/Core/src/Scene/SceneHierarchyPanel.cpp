@@ -1,12 +1,13 @@
 #include "SceneHierarchyPanel.h"
-#include "../Core/AssetManager.h"
-#include "../Engine/Geometry/Model.h"
 #include <pch.h>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include "Entity.h"
 #include "Scene.h"
 #include "Component.h"
+#include "../Base.h"
+#include "../Core/AssetManager.h"
+#include "../Engine/Geometry/Model.h"
 #include "../Scripts/CameraController.h"
 #include "../Scripts/Rotate.h"
 #include "../Scripts/ScaleYoink.h"
