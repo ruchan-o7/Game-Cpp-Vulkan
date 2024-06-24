@@ -6,14 +6,14 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 #include "../Engine/Geometry/Mesh.h"
-#include "../Engine/Geometry/Material.h"
+#include "../Scene/Asset.h"
 
 namespace FooGame
 {
-    static std::vector<GltfImageSource> ProcessGLTFImages(std::vector<tinygltf::Image>& images);
+    static List<GltfImageSource> ProcessGLTFImages(List<tinygltf::Image>& images);
 
-    static std::vector<Material> ProcessGLTFMaterial(const tinygltf::Model& gltfModel,
-                                                     std::string defaultBaseColorTextureName);
+    static List<Asset::FMaterial> ProcessGLTFMaterial(const tinygltf::Model& gltfModel,
+                                                      std::string defaultBaseColorTextureName);
 
     bool ReadFile(tinygltf::Model& input, const std::string& path, bool isGlb);
     GltfLoader::GltfLoader(const std::filesystem::path& path, bool isGlb)
@@ -39,7 +39,7 @@ namespace FooGame
         model->Name      = File::ExtractFileName(m_Path);
 
         tinygltf::Model gltfInput;
-        std::vector<Mesh> meshes;
+        List<Mesh> meshes;
         if (!ReadFile(gltfInput, m_Path.string(), m_IsGlb))
         {
             FOO_ENGINE_ERROR("Model with path: {0} could not read", m_Path.string());
@@ -175,9 +175,9 @@ namespace FooGame
         return model;
     }
 
-    std::vector<GltfImageSource> ProcessGLTFImages(std::vector<tinygltf::Image>& images)
+    List<GltfImageSource> ProcessGLTFImages(List<tinygltf::Image>& images)
     {
-        std::vector<GltfImageSource> imageSources;
+        List<GltfImageSource> imageSources;
         for (auto& gltfImage : images)
         {
             unsigned char* imageBuffer = nullptr;
@@ -225,10 +225,10 @@ namespace FooGame
         }
         return imageSources;
     }
-    std::vector<Material> ProcessGLTFMaterial(const tinygltf::Model& gltfModel,
-                                              std::string defaultBaseColorTextureName)
+    List<Asset::FMaterial> ProcessGLTFMaterial(const tinygltf::Model& gltfModel,
+                                               std::string defaultBaseColorTextureName)
     {
-        std::vector<Material> materials;
+        List<Asset::FMaterial> materials;
 
         const auto& gMats     = gltfModel.materials;
         const auto& gImages   = gltfModel.images;
@@ -237,9 +237,8 @@ namespace FooGame
         auto sceneName        = gltfModel.scenes[0].name + "_";
         for (auto& m : gMats)
         {
-            Material mt;
-            mt.fromGlb = true;
-            mt.Name    = m.name;
+            Asset::FMaterial mt;
+            mt.Name = m.name;
             if (m.pbrMetallicRoughness.baseColorTexture.index != -1)
             {
                 auto& texture = gTextures[m.pbrMetallicRoughness.baseColorTexture.index];
@@ -247,37 +246,34 @@ namespace FooGame
                 auto gBaseColorTexture = gImages[texture.source];
                 auto baseColorTextureName =
                     gBaseColorTexture.name.empty() ? gBaseColorTexture.uri : gBaseColorTexture.name;
-                mt.PbrMat.BaseColorTextureName = File::ExtractFileName(baseColorTextureName);
-                if (mt.PbrMat.BaseColorTextureName.empty())
+                mt.BaseColorTexture.Name = File::ExtractFileName(baseColorTextureName);
+                if (mt.BaseColorTexture.Name.empty())
                 {
-                    mt.PbrMat.BaseColorTextureName = std::string(sceneName + std::to_string(index));
+                    mt.BaseColorTexture.Name = std::string(sceneName + std::to_string(index));
                     index++;
                 }
+                mt.BaseColorTexture.factor[0] = m.pbrMetallicRoughness.baseColorFactor[0];
+                mt.BaseColorTexture.factor[1] = m.pbrMetallicRoughness.baseColorFactor[1];
+                mt.BaseColorTexture.factor[2] = m.pbrMetallicRoughness.baseColorFactor[2];
+                mt.BaseColorTexture.factor[3] = m.pbrMetallicRoughness.baseColorFactor[3];
 
-                mt.PbrMat.BaseColorFactor[0] = m.pbrMetallicRoughness.baseColorFactor[0];
-                mt.PbrMat.BaseColorFactor[1] = m.pbrMetallicRoughness.baseColorFactor[1];
-                mt.PbrMat.BaseColorFactor[2] = m.pbrMetallicRoughness.baseColorFactor[2];
-                mt.PbrMat.BaseColorFactor[3] = m.pbrMetallicRoughness.baseColorFactor[3];
-
-                mt.PbrMat.MetallicFactor       = m.pbrMetallicRoughness.metallicFactor;
-                mt.PbrMat.RoughnessFactor      = m.pbrMetallicRoughness.roughnessFactor;
-                mt.PbrMat.BaseColorTexturePath = gBaseColorTexture.uri;
+                mt.MetallicFactor  = m.pbrMetallicRoughness.metallicFactor;
+                mt.RoughnessFactor = m.pbrMetallicRoughness.roughnessFactor;
             }
             if (m.pbrMetallicRoughness.metallicRoughnessTexture.index != -1)
             {
                 auto& texture = gTextures[m.pbrMetallicRoughness.metallicRoughnessTexture.index];
 
                 auto& metallicRoughness = gImages[texture.source];
-                mt.PbrMat.MetallicRoughnessTextureName =
-                    metallicRoughness.name.empty() ? File::ExtractFileName(metallicRoughness.uri)
-                                                   : metallicRoughness.name;
-                if (mt.PbrMat.MetallicRoughnessTextureName.empty())
+                mt.MetallicTextureName  = metallicRoughness.name.empty()
+                                              ? File::ExtractFileName(metallicRoughness.uri)
+                                              : metallicRoughness.name;
+
+                if (mt.MetallicTextureName.empty())
                 {
-                    mt.PbrMat.MetallicRoughnessTextureName =
-                        std::string(sceneName + std::to_string(index));
+                    mt.MetallicTextureName = std::string(sceneName + std::to_string(index));
                     index++;
                 }
-                mt.PbrMat.MetallicRoughnessTexturePath = metallicRoughness.uri;
             }
             if (m.normalTexture.index != -1)
             {
@@ -290,7 +286,8 @@ namespace FooGame
                     normalTexturename = std::string(sceneName + std::to_string(index));
                     index++;
                 }
-                mt.NormalTexture.Name = File::ExtractFileName(normalTexturename);
+
+                mt.NormalTextureName = File::ExtractFileName(normalTexturename);
             }
             materials.push_back(mt);
         }

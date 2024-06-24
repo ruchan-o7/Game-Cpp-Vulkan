@@ -17,7 +17,6 @@
 #include "../Engine/Core/Types.h"
 #include "../Engine/Core/VulkanBuffer.h"
 #include "../Engine/Engine/Renderer3D.h"
-#include "../Engine/Geometry/Material.h"
 #include "../Engine/Geometry/Mesh.h"
 #include "../Engine/Engine/Renderer3D.h"
 #include "../Scene/Asset.h"
@@ -25,6 +24,7 @@
 #include "../Core/GltfLoader.h"
 #include "../Scene/AssetSerializer.h"
 #include "../Base.h"
+#include "../Core/File.h"
 namespace FooGame
 {
 
@@ -37,7 +37,7 @@ namespace FooGame
     std::unordered_map<ModelName, AssetContainer<std::shared_ptr<Mesh>>> s_MeshMap;
     std::unordered_map<ModelName, std::shared_ptr<VulkanTexture>> s_TextureMap;
 
-    std::unordered_map<std::string, Material> s_MaterialMap;
+    std::unordered_map<std::string, Asset::FMaterial> s_MaterialMap;
     std::unique_ptr<Thread> s_pThread;
 
     void AssetManager::Init()
@@ -50,11 +50,11 @@ namespace FooGame
         s_pThread.reset();
     }
 
-    std::unordered_map<std::string, Material>& AssetManager::GetAllMaterials()
+    std::unordered_map<std::string, Asset::FMaterial>& AssetManager::GetAllMaterials()
     {
         return s_MaterialMap;
     }
-    void AssetManager::AddMaterial(Material material)
+    void AssetManager::AddMaterial(Asset::FMaterial material)
     {
         InsertMaterial(material);
     }
@@ -149,8 +149,10 @@ namespace FooGame
     }
     void AssetManager::LoadObjModel(Unique<ObjModel> objModel)
     {
-        auto& asset  = s_ModelMap[objModel->Name];
-        asset.Status = AssetStatus::WORKING;
+        if (HasModelExists(objModel->Name))
+        {
+            return;
+        }
 
         if (objModel->Materials.empty())
         {
@@ -167,7 +169,7 @@ namespace FooGame
             }
             for (auto& mat : objModel->Materials)
             {
-                auto& texPathStr = mat.PbrMat.BaseColorTexturePath;
+                auto& texPathStr = mat.BaseColorTexture.Name;
                 if (texPathStr.empty())
                 {
                     continue;
@@ -320,7 +322,7 @@ namespace FooGame
         s_TextureMap[name] = pT;
     }
 
-    Material* AssetManager::GetMaterial(const std::string& name)
+    Asset::FMaterial* AssetManager::GetMaterial(const std::string& name)
     {
         if (HasMaterialExists(name))
         {
@@ -329,7 +331,7 @@ namespace FooGame
         return nullptr;
     }
 
-    void AssetManager::InsertMaterial(const Material& m)
+    void AssetManager::InsertMaterial(const Asset::FMaterial& m)
     {
         std::lock_guard<std::mutex> lock(g_Material_mutex);
         s_MaterialMap[m.Name] = m;
@@ -382,7 +384,7 @@ namespace FooGame
         return s_TextureMap[name];
     }
     bool g_IsDefaulTextureInitialized = false;
-    Material* AssetManager::GetDefaultMaterial()
+    Asset::FMaterial* AssetManager::GetDefaultMaterial()
     {
         return &s_MaterialMap[DEFAULT_MATERIAL_NAME];
     }
@@ -406,9 +408,9 @@ namespace FooGame
         defaultTex.Height       = 1;
         defaultTex.Size         = sizeof(data);
         LoadTexture(defaultTex, data);
-        Material m;
-        m.Name                        = DEFAULT_MATERIAL_NAME;
-        m.PbrMat.BaseColorTextureName = DEFAULT_TEXTURE_NAME;
+        Asset::FMaterial m;
+        m.Name                  = DEFAULT_MATERIAL_NAME;
+        m.BaseColorTexture.Name = DEFAULT_TEXTURE_NAME;
         InsertMaterial(m);
         g_IsDefaulTextureInitialized = true;
     }
@@ -423,6 +425,14 @@ namespace FooGame
     bool AssetManager::HasMaterialExists(const std::string& name)
     {
         if (s_MaterialMap.find(name) != s_MaterialMap.end())
+        {
+            return true;
+        }
+        return false;
+    }
+    bool AssetManager::HasModelExists(const std::string& name)
+    {
+        if (s_ModelMap.find(name) != s_ModelMap.end())
         {
             return true;
         }

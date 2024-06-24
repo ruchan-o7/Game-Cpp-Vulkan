@@ -16,8 +16,6 @@
 #include "src/Core/AssetManager.h"
 #include "src/Engine/Core/VulkanTexture.h"
 #include "src/Engine/Engine/Types/GraphicTypes.h"
-#include "src/Engine/Geometry/Material.h"
-#include "src/Log.h"
 #include <Log.h>
 namespace FooGame
 {
@@ -297,13 +295,13 @@ namespace FooGame
             material = AssetManager::GetDefaultMaterial();
         }
         std::shared_ptr<VulkanTexture> baseColorTexture;
-        if (material->PbrMat.BaseColorTextureName.empty())
+        if (material->BaseColorTexture.Name.empty())
         {
             baseColorTexture = AssetManager::GetDefaultTexture();
         }
         else
         {
-            baseColorTexture = AssetManager::GetTexture(material->PbrMat.BaseColorTextureName);
+            baseColorTexture = AssetManager::GetTexture(material->BaseColorTexture.Name);
         }
 
         auto& currentSet = rContext.descriptorSets[currentFrame];
@@ -395,13 +393,13 @@ namespace FooGame
                 material = AssetManager::GetDefaultMaterial();
             }
             std::shared_ptr<VulkanTexture> baseColorTexture;
-            if (material->PbrMat.BaseColorTextureName.empty())
+            if (material->BaseColorTexture.Name.empty())
             {
                 baseColorTexture = AssetManager::GetDefaultTexture();
             }
             else
             {
-                baseColorTexture = AssetManager::GetTexture(material->PbrMat.BaseColorTextureName);
+                baseColorTexture = AssetManager::GetTexture(material->BaseColorTexture.Name);
             }
 
             auto& currentSet = rContext.descriptorSets[currentFrame];

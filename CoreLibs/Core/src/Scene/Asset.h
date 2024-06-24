@@ -33,6 +33,7 @@ namespace FooGame::Asset
     {
             String Name;
             TextureInfo BaseColorTexture;
+            String NormalTextureName;
 
             String MetallicTextureName;
             float MetallicFactor;
@@ -59,7 +60,6 @@ namespace FooGame::Asset
             u32 Height;
             u8 ChannelCount;
             TextureFormat Format;
-            //     List<unsigned char> Data;
             std::string BufferPath;
     };
     struct FMesh

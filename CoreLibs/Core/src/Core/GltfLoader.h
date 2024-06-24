@@ -1,6 +1,7 @@
 #pragma once
 #include <filesystem>
 #include "pch.h"
+#include "../Scene/Asset.h"
 namespace FooGame
 {
     class Mesh;
@@ -17,7 +18,7 @@ namespace FooGame
     {
             std::vector<GltfImageSource> ImageSources;
             std::vector<Mesh> Meshes;
-            std::vector<Material> Materials;
+            std::vector<Asset::FMaterial> Materials;
             std::string Name;
     };
     class GltfLoader

@@ -1,11 +1,9 @@
 #include "SceneHierarchyPanel.h"
 #include "../Core/AssetManager.h"
 #include "../Engine/Geometry/Model.h"
+#include <pch.h>
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <string.h>
-#include <filesystem>
-#include <unordered_map>
 #include "Entity.h"
 #include "Scene.h"
 #include "Component.h"
@@ -16,9 +14,8 @@
 #include "../Core/File.h"
 #include "../Core/ObjLoader.h"
 #include "../Base.h"
-#include "src/Base.h"
-#include "src/Core/GltfLoader.h"
-#include "src/Engine/Geometry/Material.h"
+#include "../Scene/Asset.h"
+#include "../Core/GltfLoader.h"
 namespace FooGame
 {
     static const std::string scriptNames[] = {"RotateScript", "ScaleYoink", "CameraController"};
@@ -51,9 +48,9 @@ namespace FooGame
                     Defer mc{[&] { ImGui::EndMenu(); }};
                     if (ImGui::MenuItem("Add Material"))
                     {
-                        Material newMat{};
-                        newMat.Name                        = "New Material";
-                        newMat.PbrMat.BaseColorTextureName = DEFAULT_TEXTURE_NAME;
+                        Asset::FMaterial newMat;
+                        newMat.Name                  = "New Material";
+                        newMat.BaseColorTexture.Name = DEFAULT_TEXTURE_NAME;
                         AssetManager::AddMaterial(newMat);
                     }
                     if (ImGui::MenuItem("Add Texture"))
@@ -154,9 +151,10 @@ namespace FooGame
                 if (ImGui::InputText("##Name", buffer, sizeof(buffer)))
                 {
                     auto& allMaterials = AssetManager::GetAllMaterials();
-                    Material newMaterial;
-                    newMaterial.Name                        = material->Name;
-                    newMaterial.PbrMat.BaseColorTextureName = material->PbrMat.BaseColorTextureName;
+                    Asset::FMaterial newMaterial;
+                    newMaterial.Name                  = material->Name;
+                    newMaterial.BaseColorTexture.Name = material->BaseColorTexture.Name;
+
                     allMaterials.extract(material->Name);
                     newMaterial.Name = std::string(buffer);
                     AssetManager::AddMaterial(newMaterial);
@@ -169,7 +167,7 @@ namespace FooGame
             {
                 ImGui::Text("%s", material->Name.c_str());
             }
-            ImGui::Text("Base color: %s", material->PbrMat.BaseColorTextureName.c_str());
+            ImGui::Text("Base color: %s", material->BaseColorTexture.Name.c_str());
             ImGui::SameLine();
             if (ImGui::Button("Change"))
             {
@@ -183,7 +181,7 @@ namespace FooGame
                 {
                     if (ImGui::Selectable(name.c_str()))
                     {
-                        material->PbrMat.BaseColorTextureName = String(name);
+                        material->BaseColorTexture.Name = String(name);
                     }
                 }
                 ImGui::EndPopup();

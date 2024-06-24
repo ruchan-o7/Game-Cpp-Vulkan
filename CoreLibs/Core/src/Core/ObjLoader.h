@@ -1,7 +1,7 @@
 #pragma once
-#include <memory>
 #include <string>
-#include "File.h"
+#include "../Scene/Asset.h"
+#include "../Base.h"
 
 namespace FooGame
 {
@@ -10,15 +10,15 @@ namespace FooGame
     struct Material;
     struct ObjModel
     {
-            std::vector<Mesh> Meshes;
-            std::vector<Material> Materials;
+            List<Mesh> Meshes;
+            List<Asset::FMaterial> Materials;
             std::string Name;
     };
     class ObjLoader
     {
         public:
             ObjLoader(const std::filesystem::path& path);
-            std::unique_ptr<ObjModel> LoadModel() const;
+            Unique<ObjModel> LoadModel() const;
             const std::filesystem::path& GetPath() const { return m_Path; }
 
         private:

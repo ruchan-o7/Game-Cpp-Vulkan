@@ -243,22 +243,7 @@ namespace FooGame
             {
                 continue;
             }
-            Asset::FMaterial fmat;
-            fmat.Name                  = name;
-            fmat.BaseColorTexture.Name = mat.PbrMat.BaseColorTextureName;
-            PARSE_FACTOR(fmat.BaseColorTexture.factor, mat.PbrMat.BaseColorFactor);
-
-            fmat.MetallicTextureName = mat.PbrMat.MetallicRoughnessTextureName;
-            fmat.MetallicFactor      = mat.PbrMat.MetallicFactor;
-
-            fmat.RoughnessTextureName = mat.PbrMat.MetallicRoughnessTextureName;
-            fmat.RoughnessFactor      = mat.PbrMat.RoughnessFactor;
-
-            fmat.EmissiveTexture.factor[0] = 1.0f;  // TODO FOR NOW
-
-            fmat.alphaMode   = Asset::AlphaMode::Opaque;  // TODO
-            fmat.DoubleSided = false;
-            materialJsons.emplace_back(std::move(ms.Serialize(fmat)));
+            materialJsons.emplace_back(std::move(ms.Serialize(mat)));
         }
         for (auto& materialAssetJson : materialJsons)
         {
@@ -372,22 +357,7 @@ namespace FooGame
                     Defer defer{[&] { is.close(); }};
                     json matJ = json::parse(is);
                     auto fMat = std::move(ms.DeSerialize(matJ));
-
-                    Material mat{};
-                    mat.Name                 = fMat.Name;
-                    mat.fromGlb              = false;
-                    auto& pbr                = mat.PbrMat;
-                    pbr.BaseColorTextureName = fMat.BaseColorTexture.Name;
-                    pbr.BaseColorFactor[0]   = fMat.BaseColorTexture.factor[0];
-                    pbr.BaseColorFactor[1]   = fMat.BaseColorTexture.factor[1];
-                    pbr.BaseColorFactor[2]   = fMat.BaseColorTexture.factor[2];
-                    pbr.BaseColorFactor[3]   = fMat.BaseColorTexture.factor[3];
-
-                    pbr.MetallicFactor               = fMat.MetallicFactor;
-                    pbr.MetallicRoughnessTextureName = fMat.MetallicTextureName;
-                    pbr.RoughnessFactor              = fMat.RoughnessFactor;
-
-                    AssetManager::AddMaterial(mat);
+                    AssetManager::AddMaterial(fMat);
                 }
                 else
                 {

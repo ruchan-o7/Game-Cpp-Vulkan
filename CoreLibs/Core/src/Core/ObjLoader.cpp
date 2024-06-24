@@ -1,26 +1,24 @@
 #include "ObjLoader.h"
 #include <tiny_obj_loader.h>
 #include "../Engine/Geometry/Mesh.h"
-#include "../Engine/Geometry/Material.h"
+#include "src/Scene/Asset.h"
 #include <Log.h>
-#include <memory>
 
 namespace FooGame
 {
-    static std::vector<Material> ProcessMaterial(
-        const std::vector<tinyobj::material_t>& objMaterials);
+    static List<Asset::FMaterial> ProcessMaterial(const List<tinyobj::material_t>& objMaterials);
     ObjLoader::ObjLoader(const std::filesystem::path& path) : m_Path(path)
     {
     }
     std::unique_ptr<ObjModel> ObjLoader::LoadModel() const
     {
         tinyobj::attrib_t attrib;
-        std::vector<tinyobj::shape_t> shapes;
-        std::vector<tinyobj::material_t> objMaterials;
-        std::string warn, err;
-        std::vector<Vertex> vertices;
-        std::vector<uint32_t> indices;
-        std::vector<Mesh> meshes;
+        List<tinyobj::shape_t> shapes;
+        List<tinyobj::material_t> objMaterials;
+        String warn, err;
+        List<Vertex> vertices;
+        List<uint32_t> indices;
+        List<Mesh> meshes;
 
         auto objPath        = m_Path.string();
         auto objBasePath    = m_Path.parent_path();
@@ -94,27 +92,27 @@ namespace FooGame
         // model->textureIndices = {ALBEDO, METALIC, ROUGHNESS, NORMAL};
         return std::unique_ptr<ObjModel>(model);
     }
-    std::vector<Material> ProcessMaterial(const std::vector<tinyobj::material_t>& objMaterials)
+    List<Asset::FMaterial> ProcessMaterial(const List<tinyobj::material_t>& objMaterials)
     {
-        std::vector<Material> materials;
+        List<Asset::FMaterial> materials;
         for (const auto& mat : objMaterials)
         {
-            Material material;
-            material.Name               = mat.name;
-            material.fromGlb            = false;
-            material.NormalTexture.Name = mat.bump_texname;
+            Asset::FMaterial material;
+            material.Name                       = mat.name;
+            material.BaseColorTexture.factor[0] = mat.diffuse[0];
+            material.BaseColorTexture.factor[1] = mat.diffuse[1];
+            material.BaseColorTexture.factor[2] = mat.diffuse[2];
+            material.BaseColorTexture.factor[3] = 1.0;
+            material.BaseColorTexture.Name      = mat.diffuse_texname;
 
-            auto& pbr = material.PbrMat;
+            material.NormalTextureName = mat.bump_texname;
 
-            pbr.BaseColorFactor[0]   = mat.diffuse[0];
-            pbr.BaseColorFactor[1]   = mat.diffuse[1];
-            pbr.BaseColorFactor[2]   = mat.diffuse[2];
-            pbr.BaseColorFactor[3]   = 1.0;
-            pbr.BaseColorTextureName = mat.diffuse_texname;
+            material.MetallicTextureName = mat.roughness_texname;
+            material.MetallicFactor      = mat.metallic;
 
-            pbr.MetallicRoughnessTextureName = mat.roughness_texname;
-            pbr.MetallicFactor               = mat.metallic;
-            pbr.RoughnessFactor              = mat.roughness;
+            material.RoughnessFactor      = mat.roughness;
+            material.RoughnessTextureName = mat.roughness_texname;
+
             materials.emplace_back(std::move(material));
         }
         return materials;
