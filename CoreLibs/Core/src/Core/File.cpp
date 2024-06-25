@@ -119,4 +119,12 @@ namespace FooGame
             CoUninitialize();
         }
     }
+    void File::WriteJsonData(std::filesystem::path& path, const String& extension,
+                             const nlohmann::json& data)
+    {
+        path.replace_extension(extension);
+        std::ofstream o{path};
+        DEFER(o.close(););
+        o << std::setw(4) << data << std::endl;
+    }
 }  // namespace FooGame

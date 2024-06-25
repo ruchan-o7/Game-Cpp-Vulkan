@@ -73,8 +73,8 @@ namespace FooGame
                 {
                     vertex.Normal = {1.0f, 1.0f, 1.0f};
                 }
-                mesh.m_Vertices.emplace_back(std::move(vertex));
-                mesh.m_Indices.push_back(mesh.m_Indices.size());
+                mesh.Vertices.emplace_back(std::move(vertex));
+                mesh.Indices.push_back(mesh.Indices.size());
             }
             meshes.emplace_back(std::move(mesh));
         }
@@ -105,13 +105,13 @@ namespace FooGame
             material.BaseColorTexture.factor[3] = 1.0;
             material.BaseColorTexture.Name      = mat.diffuse_texname;
 
-            material.NormalTextureName = mat.bump_texname;
+            // material.NormalTextureName = mat.bump_texname;
 
-            material.MetallicTextureName = mat.roughness_texname;
-            material.MetallicFactor      = mat.metallic;
+            // material.MetallicTextureName = mat.roughness_texname;
+            material.MetallicFactor = mat.metallic;
 
-            material.RoughnessFactor      = mat.roughness;
-            material.RoughnessTextureName = mat.roughness_texname;
+            material.RoughnessFactor = mat.roughness;
+            // material.RoughnessTextureName = mat.roughness_texname;
 
             materials.emplace_back(std::move(material));
         }

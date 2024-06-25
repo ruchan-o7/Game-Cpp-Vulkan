@@ -6,14 +6,13 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 #include "../Engine/Geometry/Mesh.h"
-#include "../Scene/Asset.h"
 
 namespace FooGame
 {
-    static List<GltfImageSource> ProcessGLTFImages(List<tinygltf::Image>& images);
+    static void ProcessGLTFImages(List<tinygltf::Image>& images, List<GltfImageSource>& out);
 
-    static List<Asset::FMaterial> ProcessGLTFMaterial(const tinygltf::Model& gltfModel,
-                                                      std::string defaultBaseColorTextureName);
+    static void ProcessGLTFMaterial(const tinygltf::Model& gltfModel,
+                                    List<GltfMaterialSource>& out);
 
     bool ReadFile(tinygltf::Model& input, const std::string& path, bool isGlb);
     GltfLoader::GltfLoader(const std::filesystem::path& path, bool isGlb)
@@ -29,11 +28,11 @@ namespace FooGame
             m_EligibleToLoad = true;
         }
     }
-    GltfModel* GltfLoader::Load() const
+    Unique<GltfModel> GltfLoader::Load() const
     {
         if (!m_EligibleToLoad)
         {
-            return {};
+            return nullptr;
         }
         GltfModel* model = new GltfModel;
         model->Name      = File::ExtractFileName(m_Path);
@@ -45,9 +44,9 @@ namespace FooGame
             FOO_ENGINE_ERROR("Model with path: {0} could not read", m_Path.string());
             return {};
         }
-        model->ImageSources = std::move(ProcessGLTFImages(gltfInput.images));
+        ProcessGLTFImages(gltfInput.images, model->ImageSources);
 
-        model->Materials = std::move(ProcessGLTFMaterial(gltfInput, std::string()));
+        ProcessGLTFMaterial(gltfInput, model->Materials);
 
         if (gltfInput.scenes.size() > 1)
         {
@@ -67,10 +66,10 @@ namespace FooGame
             tempMesh.Name = mesh.name;
             for (const auto& primitive : mesh.primitives)
             {
-                auto material             = model->Materials[primitive.material];
-                tempMesh.M3Name           = material.Name;
-                uint32_t firstIndex       = static_cast<uint32_t>(tempMesh.m_Indices.size());
-                uint32_t vertexStart      = static_cast<uint32_t>(tempMesh.m_Vertices.size());
+                auto& material            = model->Materials[primitive.material];
+                tempMesh.MaterialName     = material.Name;
+                uint32_t firstIndex       = static_cast<uint32_t>(tempMesh.Indices.size());
+                uint32_t vertexStart      = static_cast<uint32_t>(tempMesh.Vertices.size());
                 uint32_t indexCount       = 0;
                 const auto indicesIndex   = primitive.indices;
                 const auto materialIndex  = primitive.material;
@@ -103,7 +102,7 @@ namespace FooGame
                     &(gltfInput.buffers[indicesBufferView.buffer]
                           .data[indicesAccessor.byteOffset + indicesBufferView.byteOffset]));
 
-                tempMesh.m_Vertices.reserve(positionsAccessor.count);
+                tempMesh.Vertices.reserve(positionsAccessor.count);
                 for (size_t w = 0; w < positionsAccessor.count; w++)
                 {
                     Vertex v{};
@@ -113,7 +112,7 @@ namespace FooGame
                         normalsBuffer ? glm::make_vec3(&normalsBuffer[w * 3]) : glm::vec3(0.0f)));
                     v.TexCoord =
                         uvsBuffer ? glm::vec2(glm::make_vec2(&uvsBuffer[w * 2])) : glm::vec2(0.0f);
-                    tempMesh.m_Vertices.push_back(v);
+                    tempMesh.Vertices.push_back(v);
                 }
                 {
                     const auto indexCount = static_cast<uint32_t>(indicesAccessor.count);
@@ -127,7 +126,7 @@ namespace FooGame
                                                   indicesBufferView.byteOffset]);
                             for (size_t index = 0; index < indicesAccessor.count; index++)
                             {
-                                tempMesh.m_Indices.push_back(buf[index] + vertexStart);
+                                tempMesh.Indices.push_back(buf[index] + vertexStart);
                             }
                             break;
                         }
@@ -141,7 +140,7 @@ namespace FooGame
                             // static_cast<uint32_t>(accessor.count);
                             for (size_t index = 0; index < indicesAccessor.count; index++)
                             {
-                                tempMesh.m_Indices.push_back(buf[index] + vertexStart);
+                                tempMesh.Indices.push_back(buf[index] + vertexStart);
                             }
                             break;
                         }
@@ -153,7 +152,7 @@ namespace FooGame
                                                   indicesBufferView.byteOffset]);
                             for (size_t index = 0; index < indicesAccessor.count; index++)
                             {
-                                tempMesh.m_Indices.push_back(buf[index] + vertexStart);
+                                tempMesh.Indices.push_back(buf[index] + vertexStart);
                             }
                             break;
                         }
@@ -172,12 +171,11 @@ namespace FooGame
         {
             model->Meshes.emplace_back(std::move(m));
         }
-        return model;
+        return Unique<GltfModel>(model);
     }
 
-    List<GltfImageSource> ProcessGLTFImages(List<tinygltf::Image>& images)
+    void ProcessGLTFImages(List<tinygltf::Image>& images, List<GltfImageSource>& out)
     {
-        List<GltfImageSource> imageSources;
         for (auto& gltfImage : images)
         {
             unsigned char* imageBuffer = nullptr;
@@ -204,15 +202,17 @@ namespace FooGame
                 imageSize   = gltfImage.image.size();
             }
             GltfImageSource source{};
-            auto imageName = gltfImage.name.empty() ? gltfImage.uri : gltfImage.name;
-            auto fileName  = File::ExtractFileName(imageName);
 
             source.ImageBuffer = new unsigned char[imageSize];
             memcpy(source.ImageBuffer, (void*)imageBuffer, imageSize);
+
             source.ImageSize      = imageSize;
             source.Width          = gltfImage.width;
             source.Height         = gltfImage.height;
             source.ComponentCount = gltfImage.component;
+
+            auto imageName = gltfImage.name.empty() ? gltfImage.uri : gltfImage.name;
+            auto fileName  = File::ExtractFileName(imageName);
             if (fileName.empty())
             {
                 source.Name = "UnNamed Image";
@@ -221,15 +221,11 @@ namespace FooGame
             {
                 source.Name = fileName;
             }
-            imageSources.push_back(source);
+            out.emplace_back(std::move(source));
         }
-        return imageSources;
     }
-    List<Asset::FMaterial> ProcessGLTFMaterial(const tinygltf::Model& gltfModel,
-                                               std::string defaultBaseColorTextureName)
+    void ProcessGLTFMaterial(const tinygltf::Model& gltfModel, List<GltfMaterialSource>& out)
     {
-        List<Asset::FMaterial> materials;
-
         const auto& gMats     = gltfModel.materials;
         const auto& gImages   = gltfModel.images;
         const auto& gTextures = gltfModel.textures;
@@ -237,7 +233,7 @@ namespace FooGame
         auto sceneName        = gltfModel.scenes[0].name + "_";
         for (auto& m : gMats)
         {
-            Asset::FMaterial mt;
+            GltfMaterialSource mt;
             mt.Name = m.name;
             if (m.pbrMetallicRoughness.baseColorTexture.index != -1)
             {
@@ -246,16 +242,16 @@ namespace FooGame
                 auto gBaseColorTexture = gImages[texture.source];
                 auto baseColorTextureName =
                     gBaseColorTexture.name.empty() ? gBaseColorTexture.uri : gBaseColorTexture.name;
-                mt.BaseColorTexture.Name = File::ExtractFileName(baseColorTextureName);
-                if (mt.BaseColorTexture.Name.empty())
+                mt.BaseColorTextureName = File::ExtractFileName(baseColorTextureName);
+                if (mt.BaseColorTextureName.empty())
                 {
-                    mt.BaseColorTexture.Name = std::string(sceneName + std::to_string(index));
+                    mt.BaseColorTextureName = std::string(sceneName + std::to_string(index));
                     index++;
                 }
-                mt.BaseColorTexture.factor[0] = m.pbrMetallicRoughness.baseColorFactor[0];
-                mt.BaseColorTexture.factor[1] = m.pbrMetallicRoughness.baseColorFactor[1];
-                mt.BaseColorTexture.factor[2] = m.pbrMetallicRoughness.baseColorFactor[2];
-                mt.BaseColorTexture.factor[3] = m.pbrMetallicRoughness.baseColorFactor[3];
+                mt.BaseColorTextureFactor[0] = m.pbrMetallicRoughness.baseColorFactor[0];
+                mt.BaseColorTextureFactor[1] = m.pbrMetallicRoughness.baseColorFactor[1];
+                mt.BaseColorTextureFactor[2] = m.pbrMetallicRoughness.baseColorFactor[2];
+                mt.BaseColorTextureFactor[3] = m.pbrMetallicRoughness.baseColorFactor[3];
 
                 mt.MetallicFactor  = m.pbrMetallicRoughness.metallicFactor;
                 mt.RoughnessFactor = m.pbrMetallicRoughness.roughnessFactor;
@@ -289,10 +285,8 @@ namespace FooGame
 
                 mt.NormalTextureName = File::ExtractFileName(normalTexturename);
             }
-            materials.push_back(mt);
+            out.push_back(mt);
         }
-
-        return materials;
     }
     bool ReadFile(tinygltf::Model& input, const std::string& path, bool isGlb)
     {

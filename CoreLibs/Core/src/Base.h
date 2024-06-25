@@ -58,9 +58,6 @@ public:                         \
 #define i8 int8_t
 #define u8 uint8_t
 
-#define DEFAULT_MATERIAL_NAME "Default Material"
-#define DEFAULT_TEXTURE_NAME  "Default Texture"
-
 #define ENGINE_NAMESPACE FooGame
 
 #define BIT(x) (1 << x)

@@ -1,15 +1,14 @@
 #include "Scene.h"
+#include <imgui.h>
+#include <memory>
+#include <nlohmann/json.hpp>
 #include "../Scene/Entity.h"
 #include "../Scene/ScriptableEntity.h"
-#include <imgui.h>
 #include "../Scene/Component.h"
 #include "../Scene/ScriptableEntity.h"
-#include <memory>
-#include "src/Engine/Camera/Camera.h"
-#include "src/Engine/Engine/Renderer2D.h"
-#include "src/Engine/Engine/Renderer3D.h"
-#include "src/Scene/Scene.h"
-#include <nlohmann/json.hpp>
+#include "../Engine/Camera/Camera.h"
+#include "../Engine/Engine/Renderer3D.h"
+#include "../Scene/Scene.h"
 namespace FooGame
 {
 
@@ -202,7 +201,7 @@ namespace FooGame
             [=](TransformComponent& transform, MeshRendererComponent& comp)
             {
                 auto tt = transform.GetTransform();
-                Renderer3D::DrawModel(comp.ModelName, tt);
+                Renderer3D::DrawModel(comp.ModelId, tt);
             });
     }
     void Scene::IMGUI()

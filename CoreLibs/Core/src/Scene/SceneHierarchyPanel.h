@@ -24,6 +24,6 @@ namespace FooGame
         private:
             Scene* m_pScene;
             Entity m_SelectionContext;
-            const char* m_SelectedMaterial = nullptr;
+            u64 m_SelectedMaterial = 0;
     };
 }  // namespace FooGame

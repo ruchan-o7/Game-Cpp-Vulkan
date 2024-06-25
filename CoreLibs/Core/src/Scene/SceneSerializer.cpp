@@ -1,9 +1,14 @@
 #include "SceneSerializer.h"
 #include <pch.h>
-#include "../Base.h"
 #include <Log.h>
 #include "AssetSerializer.h"
 #include "Entity.h"
+#include "Asset.h"
+#include <stb_image.h>
+#include <cstddef>
+#include <filesystem>
+#include "../Engine/Core/VulkanTexture.h"
+#include "../Base.h"
 #include "../Engine/Geometry/Model.h"
 #include "../Core/AssetManager.h"
 #include "../Scene/Component.h"
@@ -11,13 +16,7 @@
 #include "../Scripts/ScaleYoink.h"
 #include "../Scripts/CameraController.h"
 #include "../Core/File.h"
-#include "Asset.h"
-#include "../Core/GltfLoader.h"
-#include "../Core/ObjLoader.h"
-#include "src/Log.h"
-#include <stb_image.h>
-#include <cstddef>
-#include <filesystem>
+#include "../Config.h"
 
 namespace FooGame
 {
@@ -60,7 +59,7 @@ namespace FooGame
             auto mesh = entity.GetComponent<MeshRendererComponent>();
 
             sceneEntitiesNode["meshComponent"] = json::object({
-                {"model", mesh.ModelName},
+                {"modelId", (u64)mesh.ModelId},
             });
         }
         if (!entity.HasComponent<ScriptComponent>())
@@ -119,8 +118,8 @@ namespace FooGame
             auto meshComponentJson = entityJson["meshComponent"];
             if (!meshComponentJson.empty())
             {
-                auto& mc     = deserializedEntity.AddComponent<MeshRendererComponent>();
-                mc.ModelName = meshComponentJson["model"];
+                auto& mc   = deserializedEntity.AddComponent<MeshRendererComponent>();
+                mc.ModelId = meshComponentJson["modelId"].get<u64>();
             }
         }
         componentExists = entityJson.contains("scriptComponent");
@@ -158,116 +157,127 @@ namespace FooGame
     void SceneSerializer::Serialize()
     {
         json scene;
-        scene["name"] = m_pScene->m_Name;
+        scene["name"] = m_pScene->m_Name.empty() ? "New Scene" : m_pScene->m_Name;
+        json imageAssetsJson;
+        json materialAssetsJson;
+        json modelAssetsJson;
 
-        ModelSerializer s;
-        List<Asset::FModel> modelAssets;
-        List<json> modelAssetsJsons;
-        auto comps = m_pScene->GetAllEntitiesWith<MeshRendererComponent>();
-        comps.each(
+        json FModelJsons;
+        json FImageJsons;
+        json FMatJsons;
+
+        ModelSerializer ms;
+        ImageSerializer is;
+        MaterialSerializer mats;
+
+        std::set<u64> materialIdsToSerialize;
+        std::set<u64> imageIdsToSerialize;
+
+        auto CreateAssetItemJson = [&](const String& name, u64 id)
+        {
+            json a;
+            a["name"] = name;
+            a["id"]   = id;
+            return a;
+        };
+        auto AddMaterialIdIfNotEmpty = [&](u64 id) { materialIdsToSerialize.insert(id); };
+        auto AddImageNameIfNotEmpty  = [&](u64 id) { imageIdsToSerialize.insert(id); };
+
+        /// MESH
+        auto meshRendererComponents = m_pScene->GetAllEntitiesWith<MeshRendererComponent>();
+        meshRendererComponents.each(
             [&](MeshRendererComponent& c)
             {
-                auto model = AssetManager::GetModel(c.ModelName);
-                if (!model)
+                auto* modelAsset = AssetManager::GetModelAsset(c.ModelId);
+                if (modelAsset == nullptr)
                 {
                     return;
                 }
+                auto model = modelAsset->Asset;
+                u64 id     = modelAsset->Id;
+
+                json assetItem = CreateAssetItemJson(modelAsset->Name, id);
+                modelAssetsJson.push_back(assetItem);
+
                 Asset::FModel fmodel;
-                fmodel.MeshCount = model->m_Meshes.size();
-                fmodel.Name      = c.ModelName;
-                for (auto& m : model->m_Meshes)
+
+                fmodel.MeshCount = model->Meshes.size();
+                fmodel.Name      = model->Name;
+                for (auto& mesh : model->Meshes)
                 {
-                    Asset::FMesh mesh;
-                    mesh.Name         = m.Name;
-                    mesh.MaterialName = m.M3Name;
-                    mesh.IndicesCount = m.m_Indices.size();
-                    mesh.VertexCount  = m.m_Vertices.size();
-                    mesh.TotalSize =
-                        m.m_Vertices.size() * 11 * sizeof(float) + m.m_Indices.size() * sizeof(u32);
-                    mesh.Vertices.reserve(m.m_Vertices.size() * 11);
-                    for (size_t i = 0; i < m.m_Vertices.size(); i++)
+                    AddMaterialIdIfNotEmpty(mesh.MaterialId);
+
+                    Asset::FMesh fmesh;
+                    fmesh.Name         = mesh.Name;
+                    fmesh.MaterialName = mesh.MaterialName;
+                    fmesh.IndicesCount = mesh.Indices.size();
+                    fmesh.VertexCount  = mesh.Vertices.size();
+                    fmesh.MaterialId   = mesh.MaterialId;
+
+                    fmesh.TotalSize = mesh.Vertices.size() * 11 * sizeof(float) +
+                                      mesh.Indices.size() * sizeof(u32);
+                    fmesh.Indices = mesh.Indices;
+                    fmesh.Vertices.reserve(mesh.Vertices.size() * 11);
+                    for (size_t i = 0; i < mesh.Vertices.size(); i++)
                     {
-                        auto& v = m.m_Vertices[i];
-                        mesh.Vertices.push_back(v.Position.x);
-                        mesh.Vertices.push_back(v.Position.y);
-                        mesh.Vertices.push_back(v.Position.z);
+                        auto& v = mesh.Vertices[i];
+                        fmesh.Vertices.push_back(v.Position.x);
+                        fmesh.Vertices.push_back(v.Position.y);
+                        fmesh.Vertices.push_back(v.Position.z);
 
-                        mesh.Vertices.push_back(v.Normal.x);
-                        mesh.Vertices.push_back(v.Normal.y);
-                        mesh.Vertices.push_back(v.Normal.z);
+                        fmesh.Vertices.push_back(v.Normal.x);
+                        fmesh.Vertices.push_back(v.Normal.y);
+                        fmesh.Vertices.push_back(v.Normal.z);
 
-                        mesh.Vertices.push_back(v.Color.x);
-                        mesh.Vertices.push_back(v.Color.y);
-                        mesh.Vertices.push_back(v.Color.z);
+                        fmesh.Vertices.push_back(v.Color.x);
+                        fmesh.Vertices.push_back(v.Color.y);
+                        fmesh.Vertices.push_back(v.Color.z);
 
-                        mesh.Vertices.push_back(v.TexCoord.x);
-                        mesh.Vertices.push_back(v.TexCoord.y);
+                        fmesh.Vertices.push_back(v.TexCoord.x);
+                        fmesh.Vertices.push_back(v.TexCoord.y);
                     }
-                    mesh.Indices = m.m_Indices;
-                    fmodel.Meshes.emplace_back(std::move(mesh));
+                    fmodel.Meshes.emplace_back(std::move(fmesh));
                 }
-                modelAssetsJsons.emplace_back(std::move(s.Serialize(fmodel)));
+                FModelJsons.emplace_back(ms.Serialize(fmodel));
             });
-        for (auto& modelAssetsJson : modelAssetsJsons)
+        /// MATERIALS
+        for (auto& materialId : materialIdsToSerialize)
         {
-            auto modelAssetFileName = File::GetModelsPath() / modelAssetsJson["name"];
-            modelAssetFileName.replace_extension(".fmodel");
-            std::ofstream o{modelAssetFileName};
-            DEFER(o.close());
-            o << std::setw(4) << modelAssetsJson << std::endl;
-        }
-        for (auto& modJ : modelAssetsJsons)
-        {
-            scene["assets"]["models"].push_back(modJ["name"]);
-        }
-
-        auto& materials = AssetManager::GetAllMaterials();
-#define PARSE_FACTOR(x, y) \
-    x[0] = y[0];           \
-    x[1] = y[1];           \
-    x[2] = y[2];           \
-    x[3] = y[3];
-
-        List<json> materialJsons;
-        MaterialSerializer ms;
-        for (auto& [name, mat] : materials)
-        {
-            if (name == DEFAULT_MATERIAL_NAME || name.empty())
+            auto* materialAsset = AssetManager::GetMaterialAsset(materialId);
+            if (!materialAsset)
             {
                 continue;
             }
-            materialJsons.emplace_back(std::move(ms.Serialize(mat)));
-        }
-        for (auto& materialAssetJson : materialJsons)
-        {
-            auto materialAssetFileName = File::GetMaterialsPath() / materialAssetJson["name"];
-            materialAssetFileName.replace_extension(".fmat");
-            std::ofstream o{materialAssetFileName};
-            DEFER(o.close());
-            o << std::setw(4) << materialAssetJson << std::endl;
-        }
-        for (auto& matJ : materialJsons)
-        {
-            scene["assets"]["materials"].push_back(matJ["name"]);
-        }
-#undef PARSE_FACTOR
+            u64 id         = materialAsset->Id;
+            json assetItem = CreateAssetItemJson(materialAsset->Name, id);
+            materialAssetsJson.push_back(assetItem);
 
-        List<json> imagesJsons;
-        ImageSerializer is;
-        auto& images = AssetManager::GetAllImages();
-        for (auto& [name, img] : images)
+            AddImageNameIfNotEmpty(materialAsset->Asset->BaseColorTexture.id);
+            AddImageNameIfNotEmpty(materialAsset->Asset->NormalTextureId);
+            AddImageNameIfNotEmpty(materialAsset->Asset->RoughnessTextureId);
+            AddImageNameIfNotEmpty(materialAsset->Asset->MetallicTextureId);
+
+            FMatJsons.emplace_back(std::move(mats.Serialize(*materialAsset->Asset)));
+        }
+        /// IMAGES
+        for (auto& imageId : imageIdsToSerialize)
         {
-            if (name == DEFAULT_TEXTURE_NAME)
+            auto* imageAsset = AssetManager::GetTextureAsset(imageId);
+            if (!imageAsset || imageId == DEFAULT_TEXTURE_ID || imageId == 0)
             {
                 continue;
             }
+            auto imageName = imageAsset->Name;
+            u64 id         = imageAsset->Id;
+            imageAssetsJson.emplace_back(std::move(CreateAssetItemJson(imageName, id)));
+
             Asset::FImage fimg;
-            fimg.Name         = name;
-            fimg.Size         = img->m_Info.Size;
-            fimg.Width        = img->m_Info.Width;
-            fimg.Height       = img->m_Info.Height;
-            fimg.ChannelCount = img->m_Info.ChannelCount;
-            if (img->m_Info.Format == VK_FORMAT_R8G8B8A8_SRGB)
+            fimg.Name         = imageName;
+            fimg.Size         = imageAsset->Asset->m_Info.Size;
+            fimg.Width        = imageAsset->Asset->m_Info.Width;
+            fimg.Height       = imageAsset->Asset->m_Info.Height;
+            fimg.ChannelCount = imageAsset->Asset->m_Info.ChannelCount;
+            if (imageAsset->Asset->m_Info.Format == VK_FORMAT_R8G8B8A8_SRGB)
             {
                 fimg.Format = Asset::TextureFormat::RGBA8;
             }
@@ -275,14 +285,27 @@ namespace FooGame
             {
                 fimg.Format = Asset::TextureFormat::RGB8;
             }
-            imagesJsons.emplace_back(std::move(is.Serialize(fimg)));
+            FImageJsons.push_back(is.Serialize(fimg));
         }
-
-        for (auto& imgJ : imagesJsons)
+        scene["assets"]["images"]    = imageAssetsJson;
+        scene["assets"]["materials"] = materialAssetsJson;
+        scene["assets"]["models"]    = modelAssetsJson;
+        auto WriteAssetDataToFile =
+            [](const json& assets, const String& extension, std::filesystem::path& basePath)
         {
-            scene["assets"]["images"].push_back(imgJ["name"]);
-        }
-
+            for (auto& asset : assets)
+            {
+                auto assetName = basePath / asset["name"];
+                File::WriteJsonData(assetName, extension, asset);
+            }
+        };
+        auto imagesPath    = File::GetImagesPath();
+        auto materialsPath = File::GetMaterialsPath();
+        auto modelsPath    = File::GetModelsPath();
+        WriteAssetDataToFile(FImageJsons, FIMAGE_ASSET_EXTENSION, imagesPath);
+        WriteAssetDataToFile(FMatJsons, FMATERIAL_ASSET_EXTENSION, materialsPath);
+        WriteAssetDataToFile(FModelJsons, FMODEL_ASSET_EXTENSION, modelsPath);
+        /// ENTITIES
         scene["entities"] = json::array();
         auto view         = m_pScene->m_Registry.view<entt::entity>().each();
         for (auto [e] : view)
@@ -299,9 +322,7 @@ namespace FooGame
         }
 
         auto scenefile = File::GetCWD() / std::filesystem::path(m_ScenePathStr);
-        std::ofstream o{scenefile};
-        DEFER(o.close(););
-        o << std::setw(4) << scene << std::endl;
+        File::WriteJsonData(scenefile, ".json", scene);
     }
     void SceneSerializer::DeSerialize()
     {
@@ -328,81 +349,117 @@ namespace FooGame
             FOO_CORE_ERROR("Scene does not has name");
             return;
         }
-        auto assetsJson    = sceneJson["assets"];
-        auto imagesJson    = assetsJson["images"];
-        auto materialsJson = assetsJson["materials"];
-        auto modelsJson    = assetsJson["models"];
+        m_pScene->m_Name        = name;
+        auto assetsJson         = sceneJson["assets"];
+        auto imageAssetsJson    = assetsJson["images"];
+        auto materialAssetsJson = assetsJson["materials"];
+        auto modelAssetsJson    = assetsJson["models"];
 
-        m_pScene->m_Name = name;
+        MaterialSerializer mats;
+        ImageSerializer ims;
+        ModelSerializer ms;
 
-        FOO_CORE_TRACE("Scene: {0} deserializing", m_pScene->m_Name);
-        if (!materialsJson.empty())
+        struct FimageAsset
         {
-            MaterialSerializer ms;
-
-            for (auto& m : materialsJson.get<List<String>>())
-            {
-                std::filesystem::path matPath = File::GetMaterialsPath() / m;
-                matPath.replace_extension(".fmat");
-                if (std::filesystem::exists(matPath))
-                {
-                    std::ifstream is{matPath};
-                    Defer defer{[&] { is.close(); }};
-                    json matJ = json::parse(is);
-                    auto fMat = std::move(ms.DeSerialize(matJ));
-                    AssetManager::AddMaterial(fMat);
-                }
-                else
-                {
-                    FOO_CORE_WARN("Material does not exists: {0},\n Searched path: {1}", m,
-                                  matPath.string());
-                }
-            }
-        }
-        List<Asset::FModel> fModels;
-        if (!modelsJson.empty())
+                Asset::FImage image;
+                UUID id;
+        };
+        struct FModelAsset
         {
-            ModelSerializer ms;
-            for (auto& mJ : modelsJson.get<List<String>>())
-            {
-                std::filesystem::path modelPath = File::GetModelsPath() / mJ;
-                modelPath.replace_extension(".fmodel");
-                if (std::filesystem::exists(modelPath))
-                {
-                    std::ifstream is{modelPath};
-                    Defer defer{[&] { is.close(); }};
-                    json fModelJson = json::parse(is, nullptr, false);
-                    auto model      = std::move(ms.DeSerialize(fModelJson));
-                    fModels.emplace_back(std::move(model));
-                }
-                else
-                {
-                    FOO_CORE_WARN("Model does not exists: {0},\n Searched path: {1}", mJ,
-                                  modelPath.string());
-                }
-            }
-        }
-        List<Asset::FImage> fimages;
-        if (!imagesJson.empty())
-        {
-            for (auto& imj : imagesJson.get<List<String>>())
-            {
-                std::filesystem::path fimPath = File::GetImagesPath() / imj;
-                fimPath.replace_extension(".fimg");
-                ImageSerializer iss;
-                if (std::filesystem::exists(fimPath))
-                {
-                    std::ifstream is{fimPath};
-                    DEFER(is.close());
+                Asset::FModel model;
+                UUID id;
+        };
+        List<FimageAsset> fimages;
+        List<FModelAsset> fModels;
 
-                    json fimJ = json::parse(is, nullptr, false);
-                    fimages.emplace_back(std::move(iss.DeSerialize(fimJ)));
+        FOO_CORE_TRACE("Opening scene: {0}", m_pScene->m_Name);
+
+        if (!materialAssetsJson.empty())
+        {
+            for (auto& mAssetJson : materialAssetsJson)
+            {
+                UUID id          = mAssetJson["id"].get<u64>();
+                String assetName = mAssetJson["name"];
+
+                std::filesystem::path assetMaterialDataPath = File::GetMaterialsPath() / assetName;
+
+                assetMaterialDataPath.replace_extension(".fmat");
+                if (!std::filesystem::exists(assetMaterialDataPath))
+                {
+                    FOO_CORE_WARN("Material does not exists: {0},\n Searched path: {1}", assetName,
+                                  assetMaterialDataPath.string());
+                    continue;
                 }
+
+                std::ifstream is{assetMaterialDataPath};
+                Defer defer{[&] { is.close(); }};
+                json matJ             = json::parse(is);
+                Asset::FMaterial fMat = std::move(mats.DeSerialize(matJ));
+
+                auto* pfmat = new Asset::FMaterial(fMat);
+                AssetMaterialC amc;
+                amc.Name   = name;
+                amc.Id     = id;
+                amc.Asset  = Shared<Asset::FMaterial>(pfmat);
+                amc.Status = Asset::AssetStatus::READY;
+
+                AssetManager::AddMaterial(amc);
             }
         }
 
+        if (!modelAssetsJson.empty())
+        {
+            for (auto& mAssetJson : modelAssetsJson)
+            {
+                UUID id          = mAssetJson["id"].get<u64>();
+                String assetName = mAssetJson["name"];
+
+                std::filesystem::path assetModelDataPath = File::GetModelsPath() / assetName;
+                assetModelDataPath.replace_extension(".fmodel");
+
+                if (!std::filesystem::exists(assetModelDataPath))
+                {
+                    FOO_CORE_WARN("Model does not exists: {0},\n Searched path: {1}", assetName,
+                                  assetModelDataPath.string());
+                    continue;
+                }
+
+                std::ifstream is{assetModelDataPath};
+                Defer defer{[&] { is.close(); }};
+                json modelAssetJsonData = json::parse(is);
+                auto fM                 = std::move(ms.DeSerialize(modelAssetJsonData));
+                FModelAsset fmodel;
+                fmodel.id    = id;
+                fmodel.model = std::move(fM);
+                fModels.emplace_back(std::move(fmodel));
+            }
+        }
+        if (!imageAssetsJson.empty())
+        {
+            for (auto& imj : imageAssetsJson)
+            {
+                UUID id                                  = imj["id"].get<u64>();
+                String assetName                         = imj["name"];
+                std::filesystem::path assetModelDataPath = File::GetImagesPath() / assetName;
+                assetModelDataPath.replace_extension(".fimg");
+                if (!std::filesystem::exists(assetModelDataPath))
+                {
+                    FOO_CORE_WARN("Model does not exists: {0},\n Searched path: {1}", assetName,
+                                  assetModelDataPath.string());
+                    continue;
+                }
+                std::ifstream is{assetModelDataPath};
+                DEFER(is.close());
+
+                json fimJ   = json::parse(is, nullptr, false);
+                auto fimage = ims.DeSerialize(fimJ);
+                FimageAsset asset;
+                asset.id    = id;
+                asset.image = std::move(fimage);
+                fimages.emplace_back(std::move(asset));
+            }
+        }
         List<std::future<void>> futures;
-
 #if 1
 #define ASYNC(x) futures.emplace_back(std::async(std::launch::async, [&] { x; }))
 #else
@@ -410,12 +467,11 @@ namespace FooGame
 #endif
         for (size_t i = 0; i < fimages.size(); i++)
         {
-            AssetManager::LoadTexture(fimages[i].BufferPath);
-            // AssetManager::LoadTexture(fimages[i]);
+            AssetManager::LoadFIMG(fimages[i].image, fimages[i].id);
         }
-        for (auto& m : fModels)
+        for (size_t i = 0; i < fModels.size(); i++)
         {
-            ASYNC(AssetManager::LoadModel(m));
+            ASYNC(AssetManager::LoadModel(fModels[i].model, fModels[i].id));
         }
 #undef ASYNC
 

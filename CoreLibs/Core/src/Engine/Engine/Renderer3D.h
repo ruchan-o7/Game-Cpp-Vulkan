@@ -1,6 +1,9 @@
 #pragma once
 #include "../Geometry/Model.h"
 #include "../Engine/Types/GraphicTypes.h"
+#include "../../Core/UUID.h"
+struct VkCommandBuffer_T;
+typedef VkCommandBuffer_T* VkCommandBuffer;
 namespace FooGame
 {
 
@@ -26,15 +29,13 @@ namespace FooGame
             static FrameStatistics GetStats();
 
         public:
-            static void DrawModel(Model* model, const glm::mat4& transform);
-            static void DrawModel(const std::string& name, const glm::mat4& transform);
+            static void DrawModel(UUID id, const glm::mat4& transform);
 
         public:
             static void SubmitMesh(Mesh& mesh);
             static void SubmitMesh(Mesh* mesh);
             static void SubmitModel(Model* model);
-            static void SubmitModel(std::shared_ptr<Model> model);
-            static void SubmitModel(const std::string& name);
+            static void SubmitModel(UUID id);
 
         private:
             static void BindPipeline(VkCommandBuffer cmd);

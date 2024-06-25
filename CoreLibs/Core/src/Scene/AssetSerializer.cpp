@@ -9,20 +9,20 @@ namespace FooGame
         json j;
         j["name"]                  = mat.Name;
         j["baseColorTexture"]      = json::object({
-            {  "name",   mat.BaseColorTexture.Name},
-            {"factor", mat.BaseColorTexture.factor}
+            {    "id", (u64)mat.BaseColorTexture.id},
+            {"factor",  mat.BaseColorTexture.factor}
         });
         j["metallicColorTexture"]  = json::object({
-            {  "name",   mat.BaseColorTexture.Name},
-            {"factor", mat.BaseColorTexture.factor}
+            {    "id", (u64)mat.MetallicTextureId},
+            {"factor",         mat.MetallicFactor}
         });
         j["roughnessColorTexture"] = json::object({
-            {  "name",   mat.BaseColorTexture.Name},
-            {"factor", mat.BaseColorTexture.factor}
+            {    "id", (u64)mat.RoughnessTextureId},
+            {"factor",         mat.RoughnessFactor}
         });
         j["emissiveColorTexture"]  = json::object({
-            {  "name",   mat.BaseColorTexture.Name},
-            {"factor", mat.BaseColorTexture.factor}
+            {    "id", (u64)mat.EmissiveTexture.id},
+            {"factor",  mat.EmissiveTexture.factor}
         });
         switch (mat.alphaMode)
         {
@@ -44,20 +44,20 @@ namespace FooGame
         Asset::FMaterial mat;
         mat.Name = json["name"];
 
-        mat.BaseColorTexture.Name      = json["baseColorTexture"]["name"];
+        mat.BaseColorTexture.id        = json["baseColorTexture"]["id"].get<u64>();
         mat.BaseColorTexture.factor[0] = json["baseColorTexture"]["factor"][0];
         mat.BaseColorTexture.factor[1] = json["baseColorTexture"]["factor"][1];
         mat.BaseColorTexture.factor[2] = json["baseColorTexture"]["factor"][2];
         mat.BaseColorTexture.factor[3] = json["baseColorTexture"]["factor"][3];
 
-        mat.MetallicTextureName = json["metallicColorTexture"]["name"];
-        mat.MetallicFactor      = 1.0;  // TODO Change it after deserialize properly
-                                        // json["metallicColorTexture"]["factor"];
+        mat.MetallicTextureId = json["metallicColorTexture"]["id"].get<u64>();
+        mat.MetallicFactor    = 1.0;  // TODO Change it after deserialize properly
+                                      // json["metallicColorTexture"]["factor"];
 
-        mat.RoughnessTextureName = json["roughnessColorTexture"]["name"];
-        mat.RoughnessFactor      = 1.0;  // TODO json["roughnessColorTexture"]["factor"];
+        mat.RoughnessTextureId = json["roughnessColorTexture"]["id"].get<u64>();
+        mat.RoughnessFactor    = 1.0;  // TODO json["roughnessColorTexture"]["factor"];
 
-        mat.EmissiveTexture.Name      = json["emissiveColorTexture"]["name"];
+        mat.EmissiveTexture.id        = json["emissiveColorTexture"]["id"].get<u64>();
         mat.EmissiveTexture.factor[0] = json["emissiveColorTexture"]["factor"][0];
         mat.EmissiveTexture.factor[1] = json["emissiveColorTexture"]["factor"][1];
         mat.EmissiveTexture.factor[2] = json["emissiveColorTexture"]["factor"][2];
@@ -122,6 +122,7 @@ namespace FooGame
             json m;
             m["name"]         = mesh.Name;
             m["materialName"] = mesh.MaterialName;
+            m["materialId"]   = (u64)mesh.MaterialId;
             m["vertexCount"]  = mesh.VertexCount;
             m["indicesCount"] = mesh.IndicesCount;
             m["totalSize"]    = mesh.TotalSize;
@@ -142,6 +143,7 @@ namespace FooGame
             Asset::FMesh mesh;
             mesh.Name         = mj["name"];
             mesh.MaterialName = mj["materialName"];
+            mesh.MaterialId   = mj["materialId"].get<u64>();
             mesh.VertexCount  = mj["vertexCount"];
             mesh.IndicesCount = mj["indicesCount"];
             mesh.TotalSize    = mj["totalSize"];

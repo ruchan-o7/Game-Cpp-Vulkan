@@ -1,13 +1,10 @@
 #pragma once
 #include <filesystem>
-#include <memory>
-#include <string>
-#include <unordered_map>
 #include "../Scene/Asset.h"
 #include "../Base.h"
+#include "../Engine/Geometry/Model.h"
 namespace FooGame
 {
-    class Model;
     class Mesh;
     class VulkanTexture;
     class GltfLoader;
@@ -15,6 +12,19 @@ namespace FooGame
     class VulkanImage;
     class GltfModel;
     struct ObjModel;
+
+    using AssetModelC    = Asset::AssetContainer<Model>;
+    using AssetMeshC     = Asset::AssetContainer<Mesh>;
+    using AssetTextureC  = Asset::AssetContainer<VulkanTexture>;
+    using AssetMaterialC = Asset::AssetContainer<Asset::FMaterial>;
+
+    using Name = std::string;
+    using Id   = u64;
+
+    using ModelRegistery    = Hashmap<Id, AssetModelC>;
+    using TextureRegistery  = Hashmap<Id, AssetTextureC>;
+    using MaterialRegistery = Hashmap<Id, AssetMaterialC>;
+
     class AssetManager
     {
         public:
@@ -22,55 +32,56 @@ namespace FooGame
             static void DeInit();
 
         public:
-            static void LoadModel(const Asset::FModel& fmodel);
-            static void LoadGLTFModel(GltfModel& gltfModel);
-            static void LoadGLTFModelAsync(std::string path, std::string name, bool isGlb);
+            static void LoadModel(const Asset::FModel& fmodel, UUID id);
+            static void LoadGLTFModel(GltfModel& gltfModel, UUID id);
+            static void LoadGLTFModelAsync(String path, String name, bool isGlb);
 
-            static void LoadObjModel(Unique<ObjModel> objModel);
+            static void LoadObjModel(Unique<ObjModel> objModel, UUID id);
 
-            static void LoadTexture(Asset::FImage& fimage, void* pixels);
-
-            static void LoadTexture(const String& name, void* buffer, size_t size, i32 w, i32 h);
-
-            static void LoadTexture(const std::filesystem::path& path);
+            static void LoadFIMG(const Asset::FImage& fimage, UUID id);
+            static void LoadExternalImage(const std::filesystem::path& path);
+            static void LoadTexture(const String& name, unsigned char* buffer, size_t size,
+                                    i32 width, i32 height, UUID id);
 
             static void CreateDefaultTexture();
-            static void AddMaterial(Asset::FMaterial material);
+
+            static void AddMaterial(const AssetMaterialC& material);
 
         public:
-            static std::shared_ptr<Model> GetModel(const std::string& name);
+            static AssetModelC* GetModelAsset(UUID id);
 
-            static AssetContainer<std::shared_ptr<Model>>* GetModelAsset(const std::string& name);
+            static AssetMaterialC* GetMaterialAsset(const u64& id);
 
-            static Asset::FMaterial* GetMaterial(const std::string& name);
+            static AssetTextureC* GetTextureAsset(u64 id);
 
-            static std::shared_ptr<VulkanTexture> GetTexture(const std::string& name);
+            static AssetTextureC* GetDefaultTextureAsset();
 
-            static std::shared_ptr<VulkanTexture> GetDefaultTexture();
-            static Asset::FMaterial* GetDefaultMaterial();
+            static AssetMaterialC* GetDefaultMaterial();
 
-            static std::unordered_map<std::string, Asset::FMaterial>& GetAllMaterials();
-            static const std::unordered_map<std::string, std::shared_ptr<VulkanTexture>>&
-            GetAllImages();
+            static MaterialRegistery& GetAllMaterials();
 
-            static bool HasTextureExists(const std::string& name);
-            static bool HasMaterialExists(const std::string& name);
-            static bool HasModelExists(const std::string& name);
-            static bool HasModelAssetExists(const std::string& name);
+            static const TextureRegistery& GetAllImages();
+
+            static bool HasTextureExists(UUID id);
+            static bool HasMaterialExists(UUID id);
+            // static bool HasModelExists( Strig& name);
+            static bool HasModelAssetExists(UUID id);
 
         private:
-            static void InsertTextureToVector(const std::shared_ptr<VulkanTexture>& pT,
-                                              const std::string& name);
-            static void InsertMaterial(const Asset::FMaterial& m);
-            static void InsertModel(const std::string& name, std::shared_ptr<Model> m);
-            friend class VulkanTexture;
+            static void InsertTextureAsset(const Shared<VulkanTexture>& pT, UUID id);
+            static void InsertMaterialAsset(const Asset::FMaterial& m);
+            static void InsertModelAsset(Shared<Model> m, UUID id);
             // clang-format off
             static Asset::FImage CreateFimageAssetFile(
                 const String& assetName,
                 size_t imageSize,
-                i32 w,i32 h, void* pixelData
+                i32 w,i32 h, void* pixelData,UUID id
             );
             // clang-format on
             static void WriteBmpFile(const std::filesystem::path& path, void* data, int w, int h);
+            static void CreateFIMGFile(std::filesystem::path& assetPath,
+                                       const Asset::FImage& fimage, void* pixels);
+
+            friend class VulkanTexture;
     };
 }  // namespace FooGame

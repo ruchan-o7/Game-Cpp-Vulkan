@@ -1,4 +1,5 @@
 #pragma once
+#include <Log.h>
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
@@ -6,6 +7,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include "../Core/UUID.h"
 #include "../Base.h"
+#include "Asset.h"
 namespace FooGame
 {
     class Model;
@@ -45,16 +47,9 @@ namespace FooGame
     };
     struct MeshRendererComponent
     {
-            List<String> MeshNames;
-            String ModelName = "Empty Component";
-            String ModelPath;
-            String MaterialName;
+            UUID ModelId;
             MeshRendererComponent()                             = default;
             MeshRendererComponent(const MeshRendererComponent&) = default;
-            MeshRendererComponent(String name, String modelPath, String materialName)
-                : ModelName(name), ModelPath(modelPath), MaterialName(materialName)
-            {
-            }
     };
     class ScriptableEntity;
     struct ScriptComponent;
@@ -69,13 +64,13 @@ namespace FooGame
     namespace Script
     {
         using ScriptRegistery = Hashmap<String, ScriptFactory>;
-        static inline ScriptRegistery& GetRegistry()
+        inline ScriptRegistery& GetRegistry()
         {
             static ScriptRegistery registery;
             return registery;
         }
 
-        static inline bool HasScriptExists(const String& tag)
+        inline bool HasScriptExists(const String& tag)
         {
             auto& r = GetRegistry();
             if (r.find(tag) != r.end())
@@ -85,29 +80,30 @@ namespace FooGame
             return false;
         }
 
-        static inline bool RegisterScriptFactory(const String& factoryTag, ScriptFactory factory)
+        inline bool RegisterScriptFactory(const String& factoryTag, ScriptFactory factory)
         {
             if (HasScriptExists(factoryTag))
             {
-                //! FOO_CORE_WARN("Script already registered: {0}", factoryTag);
+                // FOO_CORE_WARN("Script already registered: {0}", factoryTag);
                 return false;
             }
             auto res =
                 GetRegistry().insert(ScriptRegistery::value_type{factoryTag, factory}).second;
             if (!res)
             {
-                //! FOO_CORE_WARN("Script could not inserted: {0}", factoryTag);
+                // FOO_CORE_WARN("Script could not inserted: {0}", factoryTag);
                 return false;
             }
             return true;
         }
 
-        static inline ScriptFactory* GetScript(const String& tag)
+        inline ScriptFactory* GetScript(const String& tag)
         {
             if (HasScriptExists(tag))
             {
                 return &GetRegistry()[tag];
             }
+            FOO_CORE_WARN("Script could not found bruh: {0}", tag);
             return nullptr;
         }
 
@@ -126,7 +122,7 @@ namespace FooGame
     };
 
 #define REGISTER_SCRIPT(S)                                                              \
-    const bool ScriptRegistery__##S{Script::RegisterScriptFactory(                      \
+    const inline bool ScriptRegistery__##S{Script::RegisterScriptFactory(               \
         #S, {nullptr, []() { return static_cast<ScriptableEntity*>(new Script::S()); }, \
              [](ScriptComponent* sc, String name)                                       \
              {                                                                          \

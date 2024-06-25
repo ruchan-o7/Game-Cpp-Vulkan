@@ -26,10 +26,7 @@ namespace std
     template <>
     struct hash<FooGame::UUID>
     {
-            std::size_t operator()(const FooGame::UUID& uuid) const
-            {
-                return (uint64_t)uuid;
-            }
+            std::size_t operator()(const FooGame::UUID& uuid) const { return (uint64_t)uuid; }
     };
 
 }  // namespace std

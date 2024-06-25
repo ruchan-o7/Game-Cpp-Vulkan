@@ -26,6 +26,17 @@ namespace FooGame
             auto& cameraComp   = entt.GetComponent<CameraComponent>();
             cameraComp.pCamera = &m_Camera2;
         }
+        else
+        {
+            auto mainCameraEntity = m_Scene->CreateEntity("Main Camera");
+            auto& cam             = mainCameraEntity.AddComponent<CameraComponent>();
+            cam.pCamera           = &m_Camera2;
+            cam.Primary           = true;
+            cam.FixedAspectRatio  = true;
+            auto& sc              = mainCameraEntity.AddComponent<ScriptComponent>();
+
+            sc.Bind("CameraController");
+        }
         m_Panel = new SceneHierarchyPanel(m_Scene.get());
     }
     void EditorLayer::OnDetach()

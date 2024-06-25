@@ -1,7 +1,6 @@
 #pragma once
-#include <filesystem>
+#include "../Base.h"
 #include "pch.h"
-#include "../Scene/Asset.h"
 namespace FooGame
 {
     class Mesh;
@@ -14,18 +13,43 @@ namespace FooGame
             uint32_t Width, Height;
             int ComponentCount;
     };
+
+    struct GltfMaterialSource
+    {
+            String Name;
+            String BaseColorTextureName;
+            float BaseColorTextureFactor[4];
+
+            String NormalTextureName;
+
+            String RoughnessTextureName;
+            float RoughnessFactor;
+
+            String MetallicTextureName;
+            float MetallicFactor;
+    };
     struct GltfModel
     {
+            std::string Name;
             std::vector<GltfImageSource> ImageSources;
             std::vector<Mesh> Meshes;
-            std::vector<Asset::FMaterial> Materials;
-            std::string Name;
+            std::vector<GltfMaterialSource> Materials;
+            ~GltfModel()
+            {
+                for (auto& is : ImageSources)
+                {
+                    delete is.ImageBuffer;
+                }
+                ImageSources.clear();
+                Meshes.clear();
+                Materials.clear();
+            }
     };
     class GltfLoader
     {
         public:
             GltfLoader(const std::filesystem::path& path, bool isGlb);
-            GltfModel* Load() const;
+            Unique<GltfModel> Load() const;
 
         private:
             std::filesystem::path m_Path;

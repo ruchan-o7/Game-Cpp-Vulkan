@@ -114,26 +114,23 @@ namespace FooGame
         }
     }
 
-    void Renderer3D::SubmitModel(const std::string& name)
+    void Renderer3D::SubmitModel(UUID id)
     {
-        auto model = AssetManager::GetModel(name);
-        if (model == nullptr)
+        auto modelAsset = AssetManager::GetModelAsset(id);
+        if (modelAsset == nullptr)
         {
-            FOO_ENGINE_WARN("Submitted mesh is null");
+            FOO_ENGINE_WARN("Submitted model asset is null");
             return;
         }
-        SubmitModel(model.get());
-    }
-    void Renderer3D::SubmitModel(std::shared_ptr<Model> model)
-    {
-        for (auto& mesh : model->GetMeshes())
+        auto model = modelAsset->Asset;
+        for (auto& mesh : model->Meshes)
         {
-            SubmitMesh(&mesh);
+            SubmitMesh(mesh);
         }
     }
     void Renderer3D::SubmitModel(Model* model)
     {
-        for (auto& mesh : model->GetMeshes())
+        for (auto& mesh : model->Meshes)
         {
             SubmitMesh(&mesh);
         }
@@ -192,21 +189,21 @@ namespace FooGame
 
     void Renderer3D::SubmitMesh(Mesh& mesh)
     {
-        size_t vertexSize = sizeof(mesh.m_Vertices[0]) * mesh.m_Vertices.size();
+        size_t vertexSize = sizeof(mesh.Vertices[0]) * mesh.Vertices.size();
         VulkanBuffer::BuffDesc vInfo{};
         vInfo.pRenderDevice   = Backend::GetRenderDevice();
-        vInfo.BufferData.Data = mesh.m_Vertices.data();
+        vInfo.BufferData.Data = mesh.Vertices.data();
         vInfo.BufferData.Size = vertexSize;
         vInfo.Name            = "Mesh vb";
         auto vb               = VulkanBuffer::CreateVertexBuffer(vInfo);
 
         std::unique_ptr<VulkanBuffer> ib;
-        if (mesh.m_Indices.size() != 0)
+        if (mesh.Indices.size() != 0)
         {
-            size_t indicesSize = sizeof(mesh.m_Indices[0]) * mesh.m_Indices.size();
+            size_t indicesSize = sizeof(mesh.Indices[0]) * mesh.Indices.size();
             VulkanBuffer::BuffDesc iInfo{};
             iInfo.pRenderDevice   = Backend::GetRenderDevice();
-            iInfo.BufferData.Data = mesh.m_Indices.data();
+            iInfo.BufferData.Data = mesh.Indices.data();
             iInfo.BufferData.Size = indicesSize;
             iInfo.Name            = "Mesh ib";
             ib                    = VulkanBuffer::CreateIndexBuffer(iInfo);
@@ -219,21 +216,21 @@ namespace FooGame
     }
     void Renderer3D::SubmitMesh(Mesh* mesh)
     {
-        size_t vertexSize = sizeof(mesh->m_Vertices[0]) * mesh->m_Vertices.size();
+        size_t vertexSize = sizeof(mesh->Vertices[0]) * mesh->Vertices.size();
         VulkanBuffer::BuffDesc vInfo{};
         vInfo.pRenderDevice   = Backend::GetRenderDevice();
-        vInfo.BufferData.Data = mesh->m_Vertices.data();
+        vInfo.BufferData.Data = mesh->Vertices.data();
         vInfo.BufferData.Size = vertexSize;
         vInfo.Name            = "Mesh vb: " + mesh->Name;
         auto vb               = VulkanBuffer::CreateVertexBuffer(vInfo);
 
         std::unique_ptr<VulkanBuffer> ib;
-        if (mesh->m_Indices.size() != 0)
+        if (mesh->Indices.size() != 0)
         {
-            size_t indicesSize = sizeof(mesh->m_Indices[0]) * mesh->m_Indices.size();
+            size_t indicesSize = sizeof(mesh->Indices[0]) * mesh->Indices.size();
             VulkanBuffer::BuffDesc iInfo{};
             iInfo.pRenderDevice   = Backend::GetRenderDevice();
-            iInfo.BufferData.Data = mesh->m_Indices.data();
+            iInfo.BufferData.Data = mesh->Indices.data();
             iInfo.BufferData.Size = indicesSize;
             iInfo.Name            = "Mesh ib: " + mesh->Name;
             ib                    = VulkanBuffer::CreateIndexBuffer(iInfo);
@@ -257,14 +254,14 @@ namespace FooGame
         s_Data.Res.MeshMap2.clear();
     }
 
-    void Renderer3D::DrawModel(const std::string& name, const glm::mat4& transform)
+    void Renderer3D::DrawModel(UUID id, const glm::mat4& transform)
     {
-        if (name.empty() || name == "Empty Component")
+        auto* asset = AssetManager::GetModelAsset(id);
+        if (!asset)
         {
             return;
         }
-        auto* asset = AssetManager::GetModelAsset(name);
-        if (asset->Status != AssetStatus::READY)
+        if (asset->Status != Asset::AssetStatus::READY)
         {
             return;
         }
@@ -282,27 +279,31 @@ namespace FooGame
         Backend::PushConstant(rContext.pGraphicPipeline->GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
                               sizeof(MeshPushConstants), &push);
         auto allocator = Backend::GetAllocatorHandle();
-        for (const auto& mesh : asset->Asset->m_Meshes)
+        for (const auto& mesh : asset->Asset->Meshes)
         {
             auto& modelRes = s_Data.Res.MeshMap2[mesh.RenderId];
             if (!modelRes.PtrMesh)
             {
                 continue;
             }
-            const auto* material = AssetManager::GetMaterial(mesh.M3Name);
-            if (material == nullptr)
+            const auto* materialAsset = AssetManager::GetMaterialAsset(mesh.MaterialId);
+            if (materialAsset == nullptr)
             {
-                material = AssetManager::GetDefaultMaterial();
+                materialAsset = AssetManager::GetDefaultMaterial();
             }
-            std::shared_ptr<VulkanTexture> baseColorTexture;
-            if (material->BaseColorTexture.Name.empty())
+            auto material = materialAsset->Asset;
+
+            AssetTextureC* baseColorTextureAsset;
+            if (material->BaseColorTexture.id == 0)
             {
-                baseColorTexture = AssetManager::GetDefaultTexture();
+                baseColorTextureAsset = AssetManager::GetDefaultTextureAsset();
             }
             else
             {
-                baseColorTexture = AssetManager::GetTexture(material->BaseColorTexture.Name);
+                baseColorTextureAsset =
+                    AssetManager::GetTextureAsset(material->BaseColorTexture.id);
             }
+            auto baseColorTexture = baseColorTextureAsset->Asset;
 
             auto& currentSet = rContext.descriptorSets[currentFrame];
             allocator.Allocate(rContext.pGraphicPipeline->GetDescriptorSetLayout(), currentSet);
@@ -347,103 +348,15 @@ namespace FooGame
             {
                 Backend::BindIndexBuffers(modelRes.IndexBuffer->GetBuffer(), 0,
                                           VK_INDEX_TYPE_UINT32);
-                Backend::DrawIndexed(modelRes.PtrMesh->m_Indices.size(), 1, 0, 0, 0);
+                Backend::DrawIndexed(modelRes.PtrMesh->Indices.size(), 1, 0, 0, 0);
             }
             else
             {
-                Backend::Draw(mesh.m_Vertices.size(), 1, 0, 0);
+                Backend::Draw(mesh.Vertices.size(), 1, 0, 0);
             }
             s_Data.FrameData.DrawCall++;
-            s_Data.FrameData.VertexCount += modelRes.PtrMesh->m_Vertices.size();
-            s_Data.FrameData.IndexCount  += modelRes.PtrMesh->m_Indices.size();
-        }
-    }
-    void Renderer3D::DrawModel(Model* model, const glm::mat4& transform)
-    {
-        auto currentFrame = Backend::GetCurrentFrame();
-        auto cmd          = Backend::GetCurrentCommandbuffer();
-        auto extent       = Backend::GetSwapchainExtent();
-        auto device       = Backend::GetRenderDevice()->GetVkDevice();
-
-        BindPipeline(cmd);
-
-        const auto& meshes = model->GetMeshes();
-        for (uint32_t i = 0; i < meshes.size(); i++)
-        {
-            const auto& mesh = meshes[i];
-            auto& modelRes   = s_Data.Res.MeshMap2[mesh.RenderId];
-
-            VkViewport viewport{};
-            viewport.x        = 0;
-            viewport.y        = 0;
-            viewport.width    = extent.width;
-            viewport.height   = extent.height;
-            viewport.minDepth = 0.0f;
-            viewport.maxDepth = 1.0f;
-            Backend::SetViewport(viewport);
-            VkRect2D scissor{
-                {                                    0,                                      0},
-                {static_cast<uint32_t>(viewport.width), static_cast<uint32_t>(viewport.height)}
-            };
-            Backend::SetScissor(scissor);
-
-            VkBuffer vertexBuffers[] = {modelRes.VertexBuffer->GetBuffer()};
-            VkDeviceSize offsets[]   = {0};
-            MeshPushConstants push{};
-            push.renderMatrix = transform;
-            auto allocator    = Backend::GetAllocatorHandle();
-            auto& currentSet  = rContext.descriptorSets[currentFrame];
-            allocator.Allocate(rContext.pGraphicPipeline->GetDescriptorSetLayout(), currentSet);
-            Backend::PushConstant(rContext.pGraphicPipeline->GetLayout(),
-                                  VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants), &push);
-            {
-                VkDescriptorBufferInfo descriptorBufferInfo{};
-                descriptorBufferInfo.buffer = rContext.uniformBuffers[currentFrame]->GetBuffer();
-                descriptorBufferInfo.offset = 0;
-                descriptorBufferInfo.range  = sizeof(UniformBufferObject);
-                std::vector<VkWriteDescriptorSet> descriptorWrites;
-                VkWriteDescriptorSet uniformSet{};
-
-                uniformSet.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                uniformSet.dstSet          = currentSet;
-                uniformSet.dstBinding      = 0;
-                uniformSet.dstArrayElement = 0;
-                uniformSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                uniformSet.descriptorCount = 1;
-                uniformSet.pBufferInfo     = &descriptorBufferInfo;
-                descriptorWrites.push_back(uniformSet);
-                // for (auto& image : model->Textures)
-                // {
-                //     VkWriteDescriptorSet imageSet{};
-                //     imageSet.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                //     imageSet.dstSet          = currentSet;
-                //     imageSet.dstBinding      = 1;
-                //     imageSet.dstArrayElement = 0;
-                //     imageSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                //     imageSet.descriptorCount = 1;
-                //     imageSet.pImageInfo      = &image->DescriptorInfo;
-                //     descriptorWrites.push_back(imageSet);
-                // }
-                Backend::UpdateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0,
-                                              nullptr);
-                VkDescriptorSet sets[] = {currentSet};
-                Backend::BindGraphicPipelineDescriptorSets(rContext.pGraphicPipeline->GetLayout(),
-                                                           0, 1, sets, 0, nullptr);
-            }
-            Backend::BindVertexBuffers(0, 1, vertexBuffers, offsets);
-            if (modelRes.IndexBuffer)
-            {
-                Backend::BindIndexBuffers(modelRes.IndexBuffer->GetBuffer(), 0,
-                                          VK_INDEX_TYPE_UINT32);
-                Backend::DrawIndexed(modelRes.PtrMesh->m_Indices.size(), 1, 0, 0, 0);
-            }
-            else
-            {
-                Backend::Draw(mesh.m_Vertices.size(), 1, 0, 0);
-            }
-            s_Data.FrameData.DrawCall++;
-            s_Data.FrameData.VertexCount += modelRes.PtrMesh->m_Vertices.size();
-            s_Data.FrameData.IndexCount  += modelRes.PtrMesh->m_Indices.size();
+            s_Data.FrameData.VertexCount += modelRes.PtrMesh->Vertices.size();
+            s_Data.FrameData.IndexCount  += modelRes.PtrMesh->Indices.size();
         }
     }
     void Renderer3D::BindPipeline(VkCommandBuffer cmd)

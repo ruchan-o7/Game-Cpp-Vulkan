@@ -1,7 +1,8 @@
 #pragma once
 #include <string>
 #include <filesystem>
-#include "src/Base.h"
+#include "../Base.h"
+#include <json.hpp>
 namespace FooGame
 {
     class File
@@ -16,6 +17,9 @@ namespace FooGame
             static std::filesystem::path GetImagesPath();
             static std::filesystem::path GetMaterialsPath();
             static std::filesystem::path GetSceneBasePath();
+
+            static void WriteJsonData(std::filesystem::path& path, const String& extension,
+                                      const nlohmann::json& data);
 
         public:
             static void OpenFileDialog(List<std::filesystem::path>& outPaths);

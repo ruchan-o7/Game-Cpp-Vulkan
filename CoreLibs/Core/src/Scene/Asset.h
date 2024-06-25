@@ -1,25 +1,27 @@
 #pragma once
 #include "../Base.h"
-
-enum class AssetStatus
-{
-    NONE,
-    WORKING,
-    READY,
-    FAILED,
-};
-template <typename AssetType>
-struct AssetContainer
-{
-        AssetStatus Status;
-        AssetType Asset;
-        std::string Path;
-};
+#include "../Core/UUID.h"
 namespace FooGame::Asset
 {
+    enum class AssetStatus
+    {
+        NONE,
+        WORKING,
+        READY,
+        FAILED,
+    };
+    template <typename AssetType>
+    struct AssetContainer
+    {
+            AssetStatus Status;
+            Shared<AssetType> Asset;
+            String Name;
+            UUID Id;
+    };
 
     struct TextureInfo
     {
+            UUID id = 0;
             String Name;
             float factor[4];
     };
@@ -33,12 +35,15 @@ namespace FooGame::Asset
     {
             String Name;
             TextureInfo BaseColorTexture;
-            String NormalTextureName;
+            // String NormalTextureName;
+            UUID NormalTextureId;
 
-            String MetallicTextureName;
+            // String MetallicTextureName;
+            UUID MetallicTextureId = 0;
             float MetallicFactor;
 
-            String RoughnessTextureName;
+            UUID RoughnessTextureId = 0;
+            // String RoughnessTextureName;
             float RoughnessFactor;
 
             TextureInfo EmissiveTexture;
@@ -66,17 +71,20 @@ namespace FooGame::Asset
     {
             String Name;
             String MaterialName;
+            UUID MaterialId;
             size_t VertexCount;
             size_t IndicesCount;
             List<float> Vertices;
             List<u32> Indices;
             size_t TotalSize;
+            // UUID Id;
     };
     struct FModel
     {
             String Name;
             u32 MeshCount = 1;
             List<FMesh> Meshes;
+            // UUID Id;
     };
 
 }  // namespace FooGame::Asset
