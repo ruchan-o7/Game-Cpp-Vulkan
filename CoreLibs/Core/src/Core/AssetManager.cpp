@@ -32,7 +32,6 @@ namespace FooGame
     std::mutex g_Texture_mutex;
     std::mutex g_Model_mutex;
     std::mutex g_Material_mutex;
-    std::mutex g_Renderer_mutex;
 
     using ModelName = std::string;
     std::unordered_map<ModelName, AssetContainer<std::shared_ptr<Model>>> s_ModelMap;
@@ -105,10 +104,8 @@ namespace FooGame
         auto model  = std::make_shared<Model>(std::move(meshes));
         model->Name = fmodel.Name;
         InsertModel(fmodel.Name, model);
-        {
-            std::scoped_lock<std::mutex> lock(g_Renderer_mutex);
-            Renderer3D::SubmitModel(model.get());
-        }
+
+        Backend::SubmitToRenderThread([=]() { Renderer3D::SubmitModel(model.get()); });
     }
 
     void AssetManager::LoadGLTFModel(GltfModel& gltfModel)

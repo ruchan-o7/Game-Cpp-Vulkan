@@ -22,6 +22,8 @@ namespace FooGame
             static void EndSingleTimeCommands(VkCommandBuffer& commandBuffer);
             static void BeginRenderpass(VkRenderPass& renderpass);
 
+            static void SubmitToRenderThread(const std::function<void()>& f);
+
             static bool OnWindowResized(WindowResizeEvent& event);
             static uint32_t GetCurrentFrame();
             static VkExtent2D GetSwapchainExtent();
@@ -70,6 +72,5 @@ namespace FooGame
         private:
             static void BeginDrawing();
             static void Submit();
-            static void InitImgui();
     };
 }  // namespace FooGame
