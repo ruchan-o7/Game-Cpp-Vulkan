@@ -25,12 +25,14 @@
 #include "../Scene/AssetSerializer.h"
 #include "../Base.h"
 #include "../Core/File.h"
+#include "src/Core/Assert.h"
 namespace FooGame
 {
 
     std::mutex g_Texture_mutex;
     std::mutex g_Model_mutex;
     std::mutex g_Material_mutex;
+    std::mutex g_Renderer_mutex;
 
     using ModelName = std::string;
     std::unordered_map<ModelName, AssetContainer<std::shared_ptr<Model>>> s_ModelMap;
@@ -66,12 +68,11 @@ namespace FooGame
     }
     void AssetManager::LoadModel(const Asset::FModel& fmodel)
     {
-        auto& asset = s_ModelMap[fmodel.Name];
-        if (asset.Status == AssetStatus::WORKING)
+        if (HasModelAssetExists(fmodel.Name))
         {
             return;
         }
-        asset.Status = AssetStatus::WORKING;
+
         List<Mesh> meshes;
         for (auto& m : fmodel.Meshes)
         {
@@ -101,11 +102,13 @@ namespace FooGame
             meshes.emplace_back(std::move(mesh));
         }
 
-        auto model   = std::make_shared<Model>(std::move(meshes));
-        model->Name  = fmodel.Name;
-        asset.Asset  = model;
-        asset.Status = AssetStatus::READY;
-        Renderer3D::SubmitModel(model.get());
+        auto model  = std::make_shared<Model>(std::move(meshes));
+        model->Name = fmodel.Name;
+        InsertModel(fmodel.Name, model);
+        {
+            std::scoped_lock<std::mutex> lock(g_Renderer_mutex);
+            Renderer3D::SubmitModel(model.get());
+        }
     }
 
     void AssetManager::LoadGLTFModel(GltfModel& gltfModel)
@@ -348,28 +351,30 @@ namespace FooGame
         asset.Status = AssetStatus::READY;
         asset.Asset  = m;
     }
-    AssetContainer<std::shared_ptr<Model>>& AssetManager::GetModelAsset(const std::string& name)
+    bool AssetManager::HasModelAssetExists(const std::string& name)
     {
-        return s_ModelMap[name];
+        if (s_ModelMap.find(name) != s_ModelMap.end())
+        {
+            return true;
+        }
+        return false;
     }
-    AssetContainer<std::shared_ptr<Mesh>>& AssetManager::GetMeshAsset(const std::string& name)
+
+    AssetContainer<std::shared_ptr<Model>>* AssetManager::GetModelAsset(const std::string& name)
     {
-        return s_MeshMap[name];
+        if (HasModelAssetExists(name))
+        {
+            return &s_ModelMap[name];
+        }
+        FOO_ASSERT("Asset could not found");
+        return nullptr;
     }
 
     std::shared_ptr<Model> AssetManager::GetModel(const std::string& name)
     {
-        if (s_ModelMap.find(name) != s_ModelMap.end())
+        if (HasModelExists(name))
         {
-            auto& asset = s_ModelMap[name];
-            if (asset.Status == AssetStatus::READY)
-            {
-                return s_ModelMap[name].Asset;
-            }
-            else if (asset.Status == AssetStatus::WORKING)
-            {
-                return nullptr;
-            }
+            return s_ModelMap[name].Asset;
         }
         return nullptr;
     }

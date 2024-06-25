@@ -40,9 +40,7 @@ namespace FooGame
         public:
             static std::shared_ptr<Model> GetModel(const std::string& name);
 
-            static AssetContainer<std::shared_ptr<Model>>& GetModelAsset(const std::string& name);
-
-            static AssetContainer<std::shared_ptr<Mesh>>& GetMeshAsset(const std::string& name);
+            static AssetContainer<std::shared_ptr<Model>>* GetModelAsset(const std::string& name);
 
             static Asset::FMaterial* GetMaterial(const std::string& name);
 
@@ -58,6 +56,7 @@ namespace FooGame
             static bool HasTextureExists(const std::string& name);
             static bool HasMaterialExists(const std::string& name);
             static bool HasModelExists(const std::string& name);
+            static bool HasModelAssetExists(const std::string& name);
 
         private:
             static void InsertTextureToVector(const std::shared_ptr<VulkanTexture>& pT,

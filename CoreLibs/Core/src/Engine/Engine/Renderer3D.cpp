@@ -257,117 +257,19 @@ namespace FooGame
         s_Data.Res.MeshMap2.clear();
     }
 
-    void Renderer3D::DrawMesh(const std::string& name, glm::mat4& transform)
-    {
-        if (name.empty())
-        {
-            FOO_ENGINE_WARN("Empty name string provided");
-            return;
-        }
-        auto& asset = AssetManager::GetMeshAsset(name);
-        if (asset.Status != AssetStatus::READY)
-        {
-            return;
-        }
-
-        if (asset.Asset->Name.empty())
-        {
-            return;
-        }
-
-        auto currentFrame = Backend::GetCurrentFrame();
-        auto cmd          = Backend::GetCurrentCommandbuffer();
-        auto extent       = Backend::GetSwapchainExtent();
-
-        MeshPushConstants push{};
-        push.renderMatrix = transform;
-        Backend::PushConstant(rContext.pGraphicPipeline->GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
-                              sizeof(MeshPushConstants), &push);
-        auto allocator = Backend::GetAllocatorHandle();
-        auto& modelRes = s_Data.Res.MeshMap2[asset.Asset->RenderId];
-        if (!modelRes.PtrMesh)
-        {
-            return;
-        }
-        const auto* material = AssetManager::GetMaterial(asset.Asset->M3Name);
-        if (material == nullptr)
-        {
-            material = AssetManager::GetDefaultMaterial();
-        }
-        std::shared_ptr<VulkanTexture> baseColorTexture;
-        if (material->BaseColorTexture.Name.empty())
-        {
-            baseColorTexture = AssetManager::GetDefaultTexture();
-        }
-        else
-        {
-            baseColorTexture = AssetManager::GetTexture(material->BaseColorTexture.Name);
-        }
-
-        auto& currentSet = rContext.descriptorSets[currentFrame];
-        allocator.Allocate(rContext.pGraphicPipeline->GetDescriptorSetLayout(), currentSet);
-
-        VkDescriptorBufferInfo descriptorBufferInfo{};
-        descriptorBufferInfo.buffer = rContext.uniformBuffers[currentFrame]->GetBuffer();
-        descriptorBufferInfo.offset = 0;
-        descriptorBufferInfo.range  = sizeof(UniformBufferObject);
-        std::vector<VkWriteDescriptorSet> descriptorWrites;
-        VkWriteDescriptorSet uniformSet{};
-
-        uniformSet.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        uniformSet.dstSet          = currentSet;
-        uniformSet.dstBinding      = 0;
-        uniformSet.dstArrayElement = 0;
-        uniformSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uniformSet.descriptorCount = 1;
-        uniformSet.pBufferInfo     = &descriptorBufferInfo;
-        descriptorWrites.push_back(uniformSet);
-
-        VkWriteDescriptorSet albedoSet{};
-        albedoSet.sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        albedoSet.dstSet          = currentSet;
-        albedoSet.dstBinding      = 1;
-        albedoSet.dstArrayElement = 0;
-        albedoSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        albedoSet.descriptorCount = 1;
-        albedoSet.pImageInfo      = &baseColorTexture->DescriptorInfo;
-        descriptorWrites.push_back(albedoSet);
-
-        Backend::UpdateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
-        VkDescriptorSet sets[] = {currentSet};
-        Backend::BindGraphicPipelineDescriptorSets(rContext.pGraphicPipeline->GetLayout(), 0, 1,
-                                                   sets, 0, nullptr);
-
-        VkBuffer vertexBuffers[] = {modelRes.VertexBuffer->GetBuffer()};
-        VkDeviceSize offsets[]   = {0};
-
-        Backend::BindVertexBuffers(0, 1, vertexBuffers, offsets);
-        if (modelRes.IndexBuffer)
-        {
-            Backend::BindIndexBuffers(modelRes.IndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
-            Backend::DrawIndexed(modelRes.PtrMesh->m_Indices.size(), 1, 0, 0, 0);
-        }
-        else
-        {
-            Backend::Draw(asset.Asset->m_Vertices.size(), 1, 0, 0);
-        }
-        s_Data.FrameData.DrawCall++;
-        s_Data.FrameData.VertexCount += modelRes.PtrMesh->m_Vertices.size();
-        s_Data.FrameData.IndexCount  += modelRes.PtrMesh->m_Indices.size();
-    }
     void Renderer3D::DrawModel(const std::string& name, const glm::mat4& transform)
     {
         if (name.empty() || name == "Empty Component")
         {
             return;
         }
-        auto& asset = AssetManager::GetModelAsset(name);
-        if (asset.Status != AssetStatus::READY)
+        auto* asset = AssetManager::GetModelAsset(name);
+        if (asset->Status != AssetStatus::READY)
         {
             return;
         }
 
-        if (asset.Asset->Name.empty())
+        if (asset->Asset->Name.empty())
         {
             return;
         }
@@ -380,7 +282,7 @@ namespace FooGame
         Backend::PushConstant(rContext.pGraphicPipeline->GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
                               sizeof(MeshPushConstants), &push);
         auto allocator = Backend::GetAllocatorHandle();
-        for (const auto& mesh : asset.Asset->m_Meshes)
+        for (const auto& mesh : asset->Asset->m_Meshes)
         {
             auto& modelRes = s_Data.Res.MeshMap2[mesh.RenderId];
             if (!modelRes.PtrMesh)
