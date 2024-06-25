@@ -10,6 +10,7 @@ namespace FooGame
     class RenderDevice;
     class VulkanBuffer;
     class VulkanTexture;
+
     class Backend
     {
         public:
@@ -36,7 +37,7 @@ namespace FooGame
 
             static RenderDevice* GetRenderDevice();
 
-            static void TransitionImageLayout(class VulkanImage* image, VkFormat format,
+            static void TransitionImageLayout(VkImage image, VkFormat format,
                                               VkImageLayout oldLayout, VkImageLayout newLayout);
             static void CopyBufferToImage(VulkanBuffer& source, VulkanTexture& destination);
 

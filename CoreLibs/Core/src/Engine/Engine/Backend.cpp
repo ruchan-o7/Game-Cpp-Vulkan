@@ -8,7 +8,6 @@
 #include "../Core/VulkanTexture.h"
 #include "../Core/VulkanBuffer.h"
 #include "../Core/VulkanCommandBuffer.h"
-#include <mutex>
 #include <vector>
 #include "../Core/VulkanRenderpass.h"
 #include "Types/DeletionQueue.h"
@@ -80,15 +79,14 @@ namespace FooGame
 
     bool Backend::OnWindowResized(WindowResizeEvent& event)
     {
+        FOO_ENGINE_TRACE("Window resized");
         comps.framebufferResized = true;
         frameData.fbWidth        = event.GetWidth();
         frameData.fbHeight       = event.GetHeight();
         return true;
     }
-    std::mutex mut;
     void Backend::EndSingleTimeCommands(VkCommandBuffer& commandBuffer)
     {
-        std::lock_guard<std::mutex> lock(mut);
         vkEndCommandBuffer(commandBuffer);
 
         VkSubmitInfo submitInfo{};
@@ -243,10 +241,6 @@ namespace FooGame
         renderPassInfo.pClearValues    = clearColor;
 
         vkCmdBeginRenderPass(cb, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        // ImGui_ImplVulkan_NewFrame();
-        // ImGui_ImplGlfw_NewFrame();
-        // ImGui::NewFrame();
     }
 
     void Backend::CopyBufferToImage(VulkanBuffer& source, VulkanTexture& destination)
@@ -262,10 +256,11 @@ namespace FooGame
         EndSingleTimeCommands(cmd);
     }
 
-    void Backend::TransitionImageLayout(class VulkanImage* image, VkFormat format,
-                                        VkImageLayout oldLayout, VkImageLayout newLayout)
+    void Backend::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout,
+                                        VkImageLayout newLayout)
     {
         auto cmd = BeginSingleTimeCommands();
+        DEFER(EndSingleTimeCommands(cmd));
 
         VkImageMemoryBarrier barrier{};
         barrier.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -273,7 +268,7 @@ namespace FooGame
         barrier.newLayout                       = newLayout;
         barrier.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image                           = image->GetImageHandle();
+        barrier.image                           = image;
         barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
         barrier.subresourceRange.baseMipLevel   = 0;
         barrier.subresourceRange.levelCount     = 1;
@@ -303,13 +298,12 @@ namespace FooGame
         }
         else
         {
-            throw std::invalid_argument("unsupported layout transition!");
+            FOO_ENGINE_WARN("unsupported layout transition!");
+            return;
         }
 
         vkCmdPipelineBarrier(cmd, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1,
                              &barrier);
-
-        EndSingleTimeCommands(cmd);
     }
 
     VkExtent2D Backend::GetSwapchainExtent()

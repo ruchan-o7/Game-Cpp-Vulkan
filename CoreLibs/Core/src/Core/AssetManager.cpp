@@ -296,12 +296,12 @@ namespace FooGame
         {
             std::lock_guard<std::mutex> lock(g_Texture_mutex);
 
-            Backend::TransitionImageLayout(vkImage.get(), VK_FORMAT_R8G8B8A8_SRGB,
+            Backend::TransitionImageLayout(vkImage->GetImageHandle(), VK_FORMAT_R8G8B8A8_SRGB,
                                            VK_IMAGE_LAYOUT_UNDEFINED,
                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
             Backend::CopyBufferToImage(stageBuffer, *vTexture);
-            Backend::TransitionImageLayout(vkImage.get(), VK_FORMAT_R8G8B8A8_SRGB,
+            Backend::TransitionImageLayout(vkImage->GetImageHandle(), VK_FORMAT_R8G8B8A8_SRGB,
                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }

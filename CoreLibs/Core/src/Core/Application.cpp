@@ -116,8 +116,7 @@ namespace FooGame
             return false;
         }
         m_Minimized = false;
-        // TODO: Notify Backend window resized
-        return false;
+        return Backend::OnWindowResized(e);
     }
     void Application::ExecuteMainThreadQueue()
     {

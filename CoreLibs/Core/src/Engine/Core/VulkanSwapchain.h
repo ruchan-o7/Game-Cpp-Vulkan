@@ -37,7 +37,6 @@ namespace ENGINE_NAMESPACE
             ~VulkanSwapchain();
 
         public:
-            void Resize(uint32_t newWidth, uint32_t newHeight);
             VkSurfaceKHR GetVkSurface() const { return m_VkSurface; }
             VkSwapchainKHR GetVkSwapchain() const { return m_VkSwapchain; }
             VkFormat GetImageFormat() const { return m_Desc.VkColorFormat; }

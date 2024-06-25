@@ -54,7 +54,6 @@ namespace ENGINE_NAMESPACE
     ImageAcquireResult VulkanSwapchain::AcquireNextImage()
     {
         auto device = m_wpRenderDevice->GetVkDevice();
-        // TODO Blocks execution in first
         VkResult result =
             vkWaitForFences(device, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT32_MAX);
 
@@ -408,35 +407,6 @@ namespace ENGINE_NAMESPACE
             shouldResize  = true;
         }
         return shouldResize;
-    }
-    void VulkanSwapchain::Resize(uint32_t newWidth, uint32_t newHeight)
-    {
-        bool recreateSwapchain = false;
-        if (ShouldResize(newWidth, newHeight))
-        {
-            recreateSwapchain = true;
-        }
-        if (recreateSwapchain)
-        {
-            auto pDevCtx = m_wpDeviceContext;
-            assert(pDevCtx && "Context has been released ");
-            if (pDevCtx)
-            {
-                try
-                {
-                    auto* pRawDevCtx = pDevCtx;
-                    RecreateVkSwapchain(pRawDevCtx);
-                    uint32_t imageIndex;
-                    auto res = AcquireNextImage();
-                    (void)res;
-                }
-                catch (const std::runtime_error&)
-                {
-                    FOO_ENGINE_ERROR("Failed to resize swap chain");
-                }
-            }
-        }
-        m_IsMinimized = (newWidth == 0 && newHeight == 0);
     }
 
     void VulkanSwapchain::CreateSurface()
