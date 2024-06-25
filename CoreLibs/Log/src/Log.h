@@ -10,17 +10,10 @@
 
 namespace FooGame
 {
-    enum class AppType
-    {
-        Game,
-        Editor,
-        Core,
-    };
-    // TODO: Make it thread safe
     class Log
     {
         public:
-            static void Init(AppType type);
+            static void Init();
             static std::shared_ptr<spdlog::async_logger>& GetCoreLogger() { return s_CoreLogger; }
             static std::shared_ptr<spdlog::async_logger>& GetEngineLogger()
             {

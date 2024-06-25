@@ -17,10 +17,10 @@ namespace FooGame
         return state == GLFW_PRESS || state == GLFW_REPEAT;
     }
 
-    bool Input::IsMouseButtonDown(MouseButton button)
+    bool Input::IsMouseButtonDown(MouseCode keycode)
     {
         GLFWwindow *windowHandle = Window::Get().GetWindowHandle();
-        int state                = glfwGetMouseButton(windowHandle, (int)button);
+        int state                = glfwGetMouseButton(windowHandle, keycode);
         return state == GLFW_PRESS;
     }
 
@@ -33,9 +33,9 @@ namespace FooGame
         return {(float)x, (float)y};
     }
 
-    void Input::SetCursorMode(CursorMode mode)
-    {
-        GLFWwindow *windowHandle = Window::Get().GetWindowHandle();
-        glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL + (int)mode);
-    }
+    // void Input::SetCursorMode(CursorMode mode)
+    // {
+    //     GLFWwindow *windowHandle = Window::Get().GetWindowHandle();
+    //     glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_NORMAL + (int)mode);
+    // }
 }  // namespace FooGame

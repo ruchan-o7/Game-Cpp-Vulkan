@@ -22,13 +22,13 @@ namespace FooGame
     template <typename T, typename... Args>
     Unique<T> CreateUnique(Args&&... args)
     {
-        return std::make_unique<T>(std::forward(args...));
+        return std::make_unique<T>(std::forward<Args>(args)...);
     }
 
     template <typename T, typename... Args>
     Unique<T> CreateShared(Args&&... args)
     {
-        return std::make_shared<T>(std::forward(args...));
+        return std::make_shared<T>(std::forward<Args>(args)...);
     }
 #define DELETE_COPY(x)               \
 public:                              \
@@ -87,6 +87,16 @@ public:                         \
     {                \
         [&] { F; }   \
     }
+#ifdef FOO_DEBUG
+#if defined(_WIN32)
+#define FOO_DEBUGBREAK() __debugbreak()
+#endif
+#define FOO_ENABLE_ASSERTS
+#else
+#define FOO_DEBUGBREAK()
+#endif
 
+#define FOO_EXPAND_MACRO(x)    x
+#define FOO_STRINGIFY_MACRO(x) #x
 }  // namespace FooGame
 #include "Util.h"

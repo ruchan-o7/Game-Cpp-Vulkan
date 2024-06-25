@@ -1,6 +1,5 @@
 #include "EditorLayer.h"
 #include "entt/entt.hpp"
-#include "imgui.h"
 #include <Core.h>
 #include <Log.h>
 #include <memory>
@@ -8,7 +7,7 @@
 namespace FooGame
 {
 
-    EditorLayer::EditorLayer(const CommandLineArgs& args)
+    EditorLayer::EditorLayer(const ApplicationCommandLineArgs& args)
         : Layer("Editor Layer"), m_Args(args), m_Scene(std::make_unique<Scene>())
     {
         FOO_EDITOR_INFO("Editor layer Created");
@@ -35,36 +34,23 @@ namespace FooGame
     }
     void EditorLayer::OnImGuiRender()
     {
-        DrawCameraUI();
         m_Panel->OnImgui();
-    }
-    void EditorLayer::DrawCameraUI()
-    {
-    }
-    void EditorLayer::OnRender()
-    {
-        m_Scene->RenderScene();
-        auto stats = Renderer3D::GetStats();
-        ImGui::Begin("3d scene stats");
-        ImGui::Text("Draw calls %i", stats.DrawCall);
-        ImGui::Text("Vertex count %llu", stats.VertexCount);
-        ImGui::Text("Index count %llu", stats.IndexCount);
-        ImGui::End();
-        Renderer3D::EndDraw();
     }
     void EditorLayer::OnUpdate(float ts)
     {
         m_Scene->OnUpdate(ts);
-        if (Input::IsKeyDown(KeyCode::F1))
+        if (Input::IsKeyDown(Key::F1))
         {
             SceneSerializer serializer{"Assets\\Scenes\\Prototype3\\Scene.json", m_Scene.get()};
             serializer.Serialize();
         }
+        m_Scene->RenderScene();
     }
     void EditorLayer::OnEvent(Event& e)
     {
         EventDispatcher dispatcher(e);
         dispatcher.Dispatch<MouseMovedEvent>(BIND_EVENT_FN(EditorLayer::OnMouseMoved));
+        dispatcher.Dispatch<MouseButtonPressedEvent>(BIND_EVENT_FN(EditorLayer::OnMousePressed));
     }
     bool EditorLayer::OnMousePressed(MouseButtonPressedEvent& event)
     {
@@ -73,8 +59,5 @@ namespace FooGame
     bool EditorLayer::OnMouseMoved(MouseMovedEvent& event)
     {
         return true;
-    }
-    void EditorLayer::UpdateCamera(float ts)
-    {
     }
 }  // namespace FooGame

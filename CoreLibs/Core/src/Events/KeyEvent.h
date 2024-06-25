@@ -29,8 +29,7 @@ namespace FooGame
             std::string ToString() const override
             {
                 std::stringstream ss;
-                ss << "KeyPressedEvent: " << m_KeyCode
-                   << " (repeat = " << m_IsRepeat << ")";
+                ss << "KeyPressedEvent: " << m_KeyCode << " (repeat = " << m_IsRepeat << ")";
                 return ss.str();
             }
 

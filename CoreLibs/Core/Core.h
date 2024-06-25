@@ -2,7 +2,15 @@
 #include "src/Core/UUID.h"
 #include "src/Core/Time.h"
 #include "src/Core/File.h"
+#include "src/Core/Window.h"
+#include "src/Core/ObjLoader.h"
+#include "src/Core/GltfLoader.h"
 #include "src/Core/AssetManager.h"
+#include "src/Core/Time.h"
+#include "src/Core/Thread.h"
+#include "src/Core/Assert.h"
+#include "src/Core/Layer.h"
+#include "src/Core/LayerStack.h"
 
 #include "src/Scene/Component.h"
 #include "src/Scene/Entity.h"
@@ -39,7 +47,7 @@
 #include "src/Events/ApplicationEvent.h"
 #include "src/Events/Event.h"
 #include "src/Events/KeyEvent.h"
-#include "src/Events/MouseMovedEvent.h"
+#include "src/Events/MouseEvent.h"
 
 #include "src/Engine/Geometry/Mesh.h"
 #include "src/Engine/Geometry/Model.h"
@@ -48,5 +56,3 @@
 
 #include "src/Input/Input.h"
 #include "src/Input/KeyCodes.h"
-
-#include "src/Core/Window.h"

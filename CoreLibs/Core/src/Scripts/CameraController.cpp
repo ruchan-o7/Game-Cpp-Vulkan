@@ -7,19 +7,19 @@ namespace FooGame::Script
 {
     void CameraController::OnUpdate(float ts)
     {
-        if (Input::IsKeyDown(KeyCode::W))
+        if (Input::IsKeyDown(Key::W))
         {
             m_pCamera->MoveUp();
         }
-        if (Input::IsKeyDown(KeyCode::S))
+        if (Input::IsKeyDown(Key::S))
         {
             m_pCamera->MoveDown();
         }
-        if (Input::IsKeyDown(KeyCode::D))
+        if (Input::IsKeyDown(Key::D))
         {
             m_pCamera->MoveRight();
         }
-        if (Input::IsKeyDown(KeyCode::A))
+        if (Input::IsKeyDown(Key::A))
         {
             m_pCamera->MoveLeft();
         }

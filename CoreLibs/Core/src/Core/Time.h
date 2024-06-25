@@ -13,7 +13,7 @@ namespace FooGame
             static void SetDeltaTime(double ts);
             static void UpdateCurrentTime();
             static void IncremenetFrameCount(uint64_t value = 1);
-            friend class Editor;
+            friend class Application;
             friend class Game;
     };
 }  // namespace FooGame

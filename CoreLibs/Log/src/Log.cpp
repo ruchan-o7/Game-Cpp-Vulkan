@@ -10,7 +10,7 @@ namespace FooGame
     std::shared_ptr<spdlog::async_logger> Log::s_GameLogger;
     std::shared_ptr<spdlog::details::thread_pool> Log::s_LoggerThreadPool;
 
-    void Log::Init(AppType type)
+    void Log::Init()
     {
         std::vector<spdlog::sink_ptr> logSinks;
         logSinks.emplace_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
@@ -34,26 +34,19 @@ namespace FooGame
         s_EngineLogger->set_level(spdlog::level::trace);
         s_EngineLogger->flush_on(spdlog::level::trace);
 
-        switch (type)
-        {
-            case AppType::Game:
-                s_GameLogger = std::make_shared<spdlog::async_logger>(
-                    "[GAME]", begin(logSinks), end(logSinks), s_LoggerThreadPool,
-                    spdlog::async_overflow_policy::block);
-                spdlog::register_logger(s_GameLogger);
-                s_GameLogger->set_level(spdlog::level::trace);
-                s_GameLogger->flush_on(spdlog::level::trace);
+        s_GameLogger = std::make_shared<spdlog::async_logger>("[GAME]", begin(logSinks),
+                                                              end(logSinks), s_LoggerThreadPool,
+                                                              spdlog::async_overflow_policy::block);
+        spdlog::register_logger(s_GameLogger);
+        s_GameLogger->set_level(spdlog::level::trace);
+        s_GameLogger->flush_on(spdlog::level::trace);
 
-                break;
-            case AppType::Editor:
-                s_EditorLogger = std::make_shared<spdlog::async_logger>(
-                    "[EDITOR]", begin(logSinks), end(logSinks), s_LoggerThreadPool,
-                    spdlog::async_overflow_policy::block);
-                spdlog::register_logger(s_EditorLogger);
-                s_EditorLogger->set_level(spdlog::level::trace);
-                s_EditorLogger->flush_on(spdlog::level::trace);
-                break;
-        }
+        s_EditorLogger = std::make_shared<spdlog::async_logger>(
+            "[EDITOR]", begin(logSinks), end(logSinks), s_LoggerThreadPool,
+            spdlog::async_overflow_policy::block);
+        spdlog::register_logger(s_EditorLogger);
+        s_EditorLogger->set_level(spdlog::level::trace);
+        s_EditorLogger->flush_on(spdlog::level::trace);
     }
 
 }  // namespace FooGame

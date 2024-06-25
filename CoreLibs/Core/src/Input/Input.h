@@ -1,5 +1,6 @@
 #pragma once
 #include "KeyCodes.h"
+#include "MouseCodes.h"
 #include <glm/glm.hpp>
 
 namespace FooGame
@@ -9,9 +10,12 @@ namespace FooGame
         public:
             static bool IsKeyDown(KeyCode keycode);
             static bool IsKeyReleased(KeyCode keycode);
-            static bool IsMouseButtonDown(MouseButton keycode);
+
+            static bool IsMouseButtonDown(MouseCode keycode);
+
             static glm::vec2 GetMousePosition();
-            static void SetCursorMode(CursorMode mode);
+
+            // static void SetCursorMode(Mouse::CursorMode mode);
     };
 
 }  // namespace FooGame

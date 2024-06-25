@@ -1,12 +1,17 @@
 #include "Window.h"
 #include "../Events/KeyEvent.h"
 #include "../Events/ApplicationEvent.h"
-#include "../Input/KeyCodes.h"
-#include "../Events/MouseMovedEvent.h"
+#include "GLFW/glfw3.h"
+#include "../Input/MouseCodes.h"
+#include "../Events/MouseEvent.h"
 #include <Log.h>
 namespace FooGame
 {
     static Window* s_Instance = nullptr;
+    static void GLFWErrorCallback(int err, const char* desc)
+    {
+        FOO_CORE_ERROR("GLFW Error ({0}): {1}", err, desc);
+    }
     Window& Window::Get()
     {
         return *s_Instance;
@@ -45,7 +50,7 @@ namespace FooGame
     }
     void Window::Init(const WindowProperties& props)
     {
-        FOO_ENGINE_INFO("Window creating");
+        FOO_ENGINE_TRACE("Window creating");
         m_Data.Height = props.Height;
         m_Data.Width  = props.Width;
         m_Data.Title  = props.Title;
@@ -58,14 +63,36 @@ namespace FooGame
             return;
         }
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
         m_WindowHandle =
             glfwCreateWindow(m_Data.Width, m_Data.Height, m_Data.Title.c_str(), nullptr, nullptr);
+
         glfwSetWindowUserPointer(m_WindowHandle, &m_Data);
+        glfwSetErrorCallback(GLFWErrorCallback);
         if (!glfwVulkanSupported())
         {
             FOO_ENGINE_CRITICAL("Vulkan not supported!");
             return;
         }
+
+        glfwSetWindowSizeCallback(m_WindowHandle,
+                                  [](GLFWwindow* window, int w, int h)
+                                  {
+                                      WindowData& data =
+                                          *(WindowData*)glfwGetWindowUserPointer(window);
+                                      data.Width  = w;
+                                      data.Height = h;
+                                      WindowResizeEvent e(w, h);
+                                      data.eventCallback(e);
+                                  });
+        glfwSetWindowCloseCallback(m_WindowHandle,
+                                   [](GLFWwindow* window)
+                                   {
+                                       WindowData& data =
+                                           *(WindowData*)glfwGetWindowUserPointer(window);
+                                       WindowCloseEvent e;
+                                       data.eventCallback(e);
+                                   });
         glfwSetKeyCallback(m_WindowHandle,
                            [](GLFWwindow* window, int key, int scancode, int action, int mods)
                            {
@@ -74,24 +101,32 @@ namespace FooGame
                                {
                                    case GLFW_PRESS:
                                    {
-                                       KeyPressedEvent event((KeyCode)key, 0);
+                                       KeyPressedEvent event(key, 0);
                                        data.eventCallback(event);
                                        break;
                                    }
                                    case GLFW_RELEASE:
                                    {
-                                       KeyReleasedEvent event((KeyCode)key);
+                                       KeyReleasedEvent event(key);
                                        data.eventCallback(event);
                                        break;
                                    }
                                    case GLFW_REPEAT:
                                    {
-                                       KeyPressedEvent event((KeyCode)key, true);
+                                       KeyPressedEvent event(key, true);
                                        data.eventCallback(event);
                                        break;
                                    }
                                }
                            });
+        glfwSetCharCallback(m_WindowHandle,
+                            [](GLFWwindow* window, unsigned int keycode)
+                            {
+                                WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+                                KeyTypedEvent e(keycode);
+                                data.eventCallback(e);
+                            });
+
         glfwSetFramebufferSizeCallback(m_WindowHandle,
                                        [](GLFWwindow* window, int width, int height)
                                        {

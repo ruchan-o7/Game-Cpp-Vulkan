@@ -123,7 +123,6 @@ namespace FooGame
     {
         if (!m_IsPaused || m_StepFrames-- > 0)
         {
-            // Update scripts
             {
                 m_Registry.view<ScriptComponent>().each(
                     [=](auto entity, ScriptComponent& nsc)

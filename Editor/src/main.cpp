@@ -1,19 +1,13 @@
-#include <exception>
 #include "Editor.h"
-#include <Log.h>
-int main(int argc, const char** argv)
+#include <src/Core/EntryPoint.h>
+namespace FooGame
 {
-    try
+
+    Application* CreateApplication(ApplicationCommandLineArgs args)
     {
-        FooGame::Editor editor{
-            {argc, argv}
-        };
-        editor.Run();
+        ApplicationSpecifications specs;
+        specs.Name            = "Level editor";
+        specs.CommandLineArgs = args;
+        return new Editor(specs);
     }
-    catch (const std::exception& e)
-    {
-        FOO_EDITOR_CRITICAL("Exception occured: \n \t {0}", e.what());
-        std::cin.get();
-    }
-    return 0;
-}
+}  // namespace FooGame

@@ -1,18 +1,17 @@
 #pragma once
 #include <Core.h>
+#include <src/Core/Application.h>
 #include <vector>
 namespace FooGame
 {
-    class Game
+    class Game : public Application
     {
         public:
-            Game();
+            Game(const ApplicationSpecifications& spec);
             ~Game();
-            void Run();
 
         private:
             std::vector<Scene*> m_Scenes;
-            Window* m_Window;
             PerspectiveCamera m_Camera;
 
         private:
@@ -20,15 +19,6 @@ namespace FooGame
 
         private:
             void Init();
-            void Shutdown();
-            void OnEvent(Event& e);
-            bool OnKeyEvent(KeyPressedEvent& key);
-            bool OnWindowResized(WindowResizeEvent& event);
-
-            bool OnMouseMoved(MouseMovedEvent& event);
-            bool OnMouseScroll(MouseScrolledEvent& event);
-            bool OnMousePressed(MouseButtonPressedEvent& event);
-            bool OnMouseRelease(MouseButtonReleasedEvent& event);
     };
 
 }  // namespace FooGame

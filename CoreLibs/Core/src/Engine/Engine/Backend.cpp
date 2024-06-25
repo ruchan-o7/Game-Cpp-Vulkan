@@ -55,20 +55,19 @@ namespace FooGame
     {
         return frameData.currentFrame;
     }
-    static void check_vk_result(VkResult err)
-    {
-        if (err == 0)
-        {
-            return;
-        }
-        fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
-        if (err < 0)
-        {
-            abort();
-        }
-    }
-    ImGui_ImplVulkanH_Window g_MainWindowData;
-    static VkDescriptorPool g_ImguiPool = nullptr;
+    // static void check_vk_result(VkResult err)
+    // {
+    //     if (err == 0)
+    //     {
+    //         return;
+    //     }
+    //     fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
+    //     if (err < 0)
+    //     {
+    //         abort();
+    //     }
+    // }
+    // static VkDescriptorPool g_ImguiPool = nullptr;
     VkRenderPass Backend::GetRenderPass()
     {
         return bContext.pRenderPass->GetRenderPass();
@@ -209,17 +208,17 @@ namespace FooGame
         bContext.DescriptorAllocatorPool->SetPoolSizeMultiplier(VK_DESCRIPTOR_TYPE_SAMPLER, 2);
         bContext.DescriptorAllocatorPool->SetPoolSizeMultiplier(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
                                                                 2);
-        InitImgui();
+        // InitImgui();
 
-        comps.deletionQueue.PushFunction(
-            [&](VkDevice d)
-            {
-                ImGui_ImplVulkan_Shutdown();
-                ImGui_ImplGlfw_Shutdown();
-                ImGui::DestroyContext();
-
-                vkDestroyDescriptorPool(d, g_ImguiPool, nullptr);
-            });
+        // comps.deletionQueue.PushFunction(
+        //     [&](VkDevice d)
+        //     {
+        //         ImGui_ImplVulkan_Shutdown();
+        //         ImGui_ImplGlfw_Shutdown();
+        //         ImGui::DestroyContext();
+        //
+        //         vkDestroyDescriptorPool(d, g_ImguiPool, nullptr);
+        //     });
         BeginDrawing();
     }
 
@@ -256,9 +255,9 @@ namespace FooGame
 
         vkCmdBeginRenderPass(cb, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        ImGui_ImplVulkan_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+        // ImGui_ImplVulkan_NewFrame();
+        // ImGui_ImplGlfw_NewFrame();
+        // ImGui::NewFrame();
     }
 
     void Backend::CopyBufferToImage(VulkanBuffer& source, VulkanTexture& destination)
@@ -370,8 +369,8 @@ namespace FooGame
     {
         bContext.DescriptorAllocatorPool->Flip();
         auto cb = GetCurrentCommandbuffer();
-        ImGui::Render();
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cb);
+        // ImGui::Render();
+        // ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cb);
         vkCmdEndRenderPass(cb);
         VK_CALL(vkEndCommandBuffer(cb));
         VkResult res;
@@ -396,59 +395,59 @@ namespace FooGame
     }
     void Backend::InitImgui()
     {
-        auto device                       = bContext.pRenderDevice->GetVkDevice();
-        VkDescriptorPoolSize pool_sizes[] = {
-            {               VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
-            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
-            {         VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
-            {         VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
-            {  VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
-            {  VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
-            {        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
-            {        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
-            {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
-            {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
-            {      VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}
-        };
-
-        VkDescriptorPoolCreateInfo pool_info = {};
-        pool_info.sType                      = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        pool_info.flags                      = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-        pool_info.maxSets                    = 1000;
-        pool_info.poolSizeCount              = ARRAY_COUNT(pool_sizes);
-        pool_info.pPoolSizes                 = pool_sizes;
-
-        VK_CALL(vkCreateDescriptorPool(bContext.pRenderDevice->GetVkDevice(), &pool_info, nullptr,
-                                       &g_ImguiPool));
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGuiIO& io     = ImGui::GetIO();
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-        ImGui::StyleColorsDark();
-
-        ImGui_ImplGlfw_InitForVulkan(comps.windowHandle, false);
-
-        auto queueProps = bContext.pRenderDevice->GetPhysicalDevice()->GetQueueProperties();
-
-        auto graphics =
-            bContext.pRenderDevice->GetPhysicalDevice()->FindQueueFamily(VK_QUEUE_GRAPHICS_BIT);
-
-        ImGui_ImplVulkan_InitInfo init_info = {};
-        init_info.Instance                  = bContext.pRenderDevice->GetVkInstance();
-        init_info.PhysicalDevice            = bContext.pRenderDevice->GetVkPhysicalDevice();
-        init_info.Device                    = bContext.pRenderDevice->GetVkDevice();
-        init_info.Queue       = bContext.pRenderDevice->GetLogicalDevice()->GetQueue(0, graphics);
-        init_info.QueueFamily = graphics;
-        init_info.DescriptorPool  = g_ImguiPool;
-        init_info.RenderPass      = bContext.pRenderPass->GetRenderPass();
-        init_info.Subpass         = 0;
-        init_info.MinImageCount   = 2;
-        init_info.ImageCount      = 2;
-        init_info.CheckVkResultFn = check_vk_result;
-        init_info.MSAASamples     = VK_SAMPLE_COUNT_1_BIT;
-
-        ImGui_ImplVulkan_Init(&init_info);
-        ImGui_ImplVulkan_CreateFontsTexture();
+        // auto device                       = bContext.pRenderDevice->GetVkDevice();
+        // VkDescriptorPoolSize pool_sizes[] = {
+        //     {               VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
+        //     {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+        //     {         VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
+        //     {         VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
+        //     {  VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
+        //     {  VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
+        //     {        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
+        //     {        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
+        //     {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
+        //     {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
+        //     {      VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}
+        // };
+        //
+        // VkDescriptorPoolCreateInfo pool_info = {};
+        // pool_info.sType                      = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        // pool_info.flags                      = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        // pool_info.maxSets                    = 1000;
+        // pool_info.poolSizeCount              = ARRAY_COUNT(pool_sizes);
+        // pool_info.pPoolSizes                 = pool_sizes;
+        //
+        // VK_CALL(vkCreateDescriptorPool(bContext.pRenderDevice->GetVkDevice(), &pool_info,
+        // nullptr,
+        //                                &g_ImguiPool));
+        // IMGUI_CHECKVERSION();
+        // ImGui::CreateContext();
+        // ImGuiIO& io     = ImGui::GetIO();
+        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+        // ImGui::StyleColorsDark();
+        //
+        // ImGui_ImplGlfw_InitForVulkan(comps.windowHandle, false);
+        //
+        // auto queueProps = bContext.pRenderDevice->GetPhysicalDevice()->GetQueueProperties();
+        //
+        // auto graphics =
+        //     bContext.pRenderDevice->GetPhysicalDevice()->FindQueueFamily(VK_QUEUE_GRAPHICS_BIT);
+        //
+        // ImGui_ImplVulkan_InitInfo init_info = {};
+        // init_info.Instance                  = bContext.pRenderDevice->GetVkInstance();
+        // init_info.PhysicalDevice            = bContext.pRenderDevice->GetVkPhysicalDevice();
+        // init_info.Device                    = bContext.pRenderDevice->GetVkDevice();
+        // init_info.Queue       = bContext.pRenderDevice->GetLogicalDevice()->GetQueue(0,
+        // graphics); init_info.QueueFamily = graphics; init_info.DescriptorPool  = g_ImguiPool;
+        // init_info.RenderPass      = bContext.pRenderPass->GetRenderPass();
+        // init_info.Subpass         = 0;
+        // init_info.MinImageCount   = 2;
+        // init_info.ImageCount      = 2;
+        // init_info.CheckVkResultFn = check_vk_result;
+        // init_info.MSAASamples     = VK_SAMPLE_COUNT_1_BIT;
+        //
+        // ImGui_ImplVulkan_Init(&init_info);
+        // ImGui_ImplVulkan_CreateFontsTexture();
     }
     VkCommandPool Backend::GetCommandPool()
     {
