@@ -73,17 +73,6 @@ public:                         \
     FOO_ENGINE_CRITICAL("This function deprecated: {0}, {1}", __FILE__, __LINE__); \
     assert(0)
 
-#define DEFER(x)   \
-    Defer defer_   \
-    {              \
-        [&] { x; } \
-    }
-
-#define DEFER_(F, C) \
-    Defer defer_##C  \
-    {                \
-        [&] { F; }   \
-    }
 #ifdef FOO_DEBUG
 #if defined(_WIN32)
 #define FOO_DEBUGBREAK() __debugbreak()
@@ -95,5 +84,10 @@ public:                         \
 
 #define FOO_EXPAND_MACRO(x)    x
 #define FOO_STRINGIFY_MACRO(x) #x
+
+#define CONCATANATE_MACROS(x, y)  x##y
+#define CONCATANATE_MACROS2(x, y) CONCATANATE_MACROS(x, y)
+
+#define DEFER(x) Defer CONCATANATE_MACROS2(defer, __LINE__)([&] { x; });
 }  // namespace FooGame
 #include "Util.h"

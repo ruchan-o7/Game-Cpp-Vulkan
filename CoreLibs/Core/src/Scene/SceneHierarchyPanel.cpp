@@ -35,18 +35,19 @@ namespace FooGame
             auto& materials = AssetManager::GetAllMaterials();
             auto avail      = ImGui::GetContentRegionAvail();
             ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
-            Defer pc{[&] { ImGui::PopStyleVar(); }};
+            DEFER(ImGui::PopStyleVar());
             ImGui::BeginChild("material_list", ImVec2(avail.x, 200), ImGuiChildFlags_Border,
                               ImGuiWindowFlags_MenuBar);
-            Defer cd{[&] { ImGui::EndChild(); }};
+
+            DEFER(ImGui::EndChild());
             {
                 ImGui::BeginMenuBar();
 
-                Defer mbd{[&] { ImGui::EndMenuBar(); }};
+                DEFER(ImGui::EndMenuBar());
 
                 if (ImGui::BeginMenu("File"))
                 {
-                    Defer mc{[&] { ImGui::EndMenu(); }};
+                    DEFER(ImGui::EndMenu());
                     if (ImGui::MenuItem("Add Material"))
                     {
                         auto* newMat                  = new Asset::FMaterial;
@@ -149,10 +150,10 @@ namespace FooGame
     {
         auto avail = ImGui::GetContentRegionAvail();
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
-        Defer pc{[&] { ImGui::PopStyleVar(); }};
+        DEFER(ImGui::PopStyleVar());
         ImGui::BeginChild("material_props", avail, ImGuiChildFlags_Border,
                           ImGuiWindowFlags_MenuBar);
-        Defer cd{[&] { ImGui::EndChild(); }};
+        DEFER(ImGui::EndChild());
 
         char buffer[256];
         memset(buffer, 0, sizeof(buffer));
@@ -543,13 +544,13 @@ namespace FooGame
                     auto model = assetModel->Asset;
 
                     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
-                    Defer d_1{[&] { ImGui::PopStyleVar(); }};
+                    DEFER(ImGui::PopStyleVar());
                     ImGui::BeginChild("model_meshes", ImGui::GetContentRegionAvail(),
                                       ImGuiChildFlags_Border);
-                    Defer d_2{[&] { ImGui::EndChild(); }};
+                    DEFER(ImGui::EndChild());
                     if (ImGui::BeginTable("materials_", 4))
                     {
-                        Defer td{[&] { ImGui::EndTable(); }};
+                        DEFER(ImGui::EndTable());
                         for (size_t i = 0; i < model->Meshes.size(); i++)
                         {
                             ImGui::PushID(i);
@@ -566,7 +567,7 @@ namespace FooGame
                             }
                             if (ImGui::BeginPopup("change_mat_pop"))
                             {
-                                Defer dd_{[&] { ImGui::EndPopup(); }};
+                                DEFER(ImGui::EndPopup());
                                 ImGui::SeparatorText("All Materials");
                                 auto materials = AssetManager::GetAllMaterials();
                                 for (auto& [id, mat] : materials)
