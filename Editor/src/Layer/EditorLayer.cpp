@@ -18,7 +18,7 @@ namespace FooGame
         SceneSerializer serializer("Assets\\Scenes\\Prototype3\\Scene.json", m_Scene.get());
         serializer.DeSerialize();
 
-        auto mv = m_Scene->GetAllEntitiesWith<MeshRendererComponent>().each();
+        auto mv = m_Scene->GetAllEntitiesWith<ModelRendererComponent>().each();
 
         auto entt = m_Scene->GetPrimaryCameraEntity();
         if (entt)

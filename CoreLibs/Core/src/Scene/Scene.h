@@ -43,6 +43,8 @@ namespace FooGame
             void RenderScene();
             void IMGUI();
 
+            const UUID GetId() const { return m_Id; }
+
         private:
             template <typename T>
             void OnComponentAdded(Entity entity, T& component);
@@ -56,6 +58,7 @@ namespace FooGame
 
             std::unordered_map<UUID, entt::entity> m_EntityMap;
             std::string m_Name;
+            UUID m_Id;
 
             friend class Entity;
             friend class SceneSerializer;

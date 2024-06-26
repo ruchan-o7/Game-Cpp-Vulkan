@@ -55,14 +55,10 @@ namespace FooGame
                         newMat->BaseColorTexture.Name = DEFAULT_TEXTURE_NAME;
                         newMat->BaseColorTexture.id   = 111;  // DEFAULT_TEXTURE_ID;
 
-                        AssetMaterialC amc;
-                        amc.Name   = newMat->Name;
-                        amc.Id     = UUID();
-                        amc.Asset  = Shared<Asset::FMaterial>(newMat);
-                        amc.Status = Asset::AssetStatus::READY;
+                        auto id = UUID();
 
-                        AssetManager::AddMaterial(amc);
-                        m_SelectedMaterial = amc.Id;
+                        AssetManager::AddMaterial(Shared<Asset::FMaterial>(newMat), id);
+                        m_SelectedMaterial = id;
                     }
                     if (ImGui::MenuItem("Add Texture"))
                     {
@@ -386,7 +382,7 @@ namespace FooGame
         {
             DisplayAddComponentEntry<CameraComponent>("Camera");
             DisplayAddComponentEntry<ScriptComponent>("Script");
-            DisplayAddComponentEntry<MeshRendererComponent>("Mesh Renderer");
+            DisplayAddComponentEntry<ModelRendererComponent>("Mesh Renderer");
 
             ImGui::EndPopup();
         }
@@ -464,11 +460,12 @@ namespace FooGame
                     ImGui::EndPopup();
                 }
             });
-        DrawComponent<MeshRendererComponent>(
+        auto& sceneMaterials = AssetManager::GetAllMaterials();
+        DrawComponent<ModelRendererComponent>(
             "Mesh Renderer", entity,
-            [](MeshRendererComponent& component)
+            [&](ModelRendererComponent& component)
             {
-                auto assetModel = AssetManager::GetModelAsset(component.ModelId);
+                auto assetModel = AssetManager::GetModelAsset(component.AssetModelId);
 
                 ImGui::Text("Model: %s",
                             assetModel == nullptr ? "No model" : assetModel->Name.c_str());
@@ -503,9 +500,8 @@ namespace FooGame
                                 if (objModel)
                                 {
                                     UUID id;
-                                    UUID idd = id;
                                     AssetManager::LoadObjModel(std::move(objModel), id);
-                                    component.ModelId = idd;
+                                    component.AssetModelId = id;
                                 }
                             }
                         }
@@ -532,7 +528,7 @@ namespace FooGame
                                 auto gltfModel = loader.Load();
                                 UUID id;
                                 AssetManager::LoadGLTFModel(*gltfModel, id);
-                                component.ModelId = id;
+                                component.AssetModelId = id;
                             }
                         }
                         ImGui::EndPopup();
@@ -553,13 +549,18 @@ namespace FooGame
                         DEFER(ImGui::EndTable());
                         for (size_t i = 0; i < model->Meshes.size(); i++)
                         {
+                            if (!AssetManager::HasMaterialExists(model->Meshes[i].MaterialId))
+                            {
+                                model->Meshes[i].MaterialId = DEFAULT_MATERIAL_ID;
+                            }
                             ImGui::PushID(i);
                             ImGui::TableNextColumn();
                             ImGui::Text("%zu: ", i);
                             ImGui::TableNextColumn();
                             ImGui::Text("%s", model->Meshes[i].Name.c_str());
                             ImGui::TableNextColumn();
-                            ImGui::Text("%s", model->Meshes[i].MaterialName.c_str());
+                            ImGui::Text("%s",
+                                        sceneMaterials[model->Meshes[i].MaterialId].Name.c_str());
                             ImGui::TableNextColumn();
                             if (ImGui::Button("Change Material"))
                             {
@@ -569,44 +570,19 @@ namespace FooGame
                             {
                                 DEFER(ImGui::EndPopup());
                                 ImGui::SeparatorText("All Materials");
-                                auto materials = AssetManager::GetAllMaterials();
-                                for (auto& [id, mat] : materials)
+                                for (auto& [id, mat] : sceneMaterials)
                                 {
                                     if (ImGui::Selectable(mat.Name.c_str()))
                                     {
-                                        model->Meshes[i].MaterialName = mat.Asset->Name;
-                                        model->Meshes[i].MaterialId   = id;
+                                        model->Meshes[i].MaterialId = id;
                                     }
                                 }
                             }
 
-                            // if (ImGui::Selectable(meshNames[i]))
-                            // {
-                            //     if (ImGui::Button("Change Material"))
-                            //     {
-                            //         ImGui::OpenPopup("mesh_change_mat_popup");
-                            //     }
-                            //     ImGui::SameLine();
-                            //     if (ImGui::BeginPopup("mesh_change_mat_popup"))
-                            //     {
-                            //         Defer d_3{[&] { ImGui::EndPopup(); }};
-                            //         ImGui::SeparatorText("All Materials");
-                            //         auto materials = AssetManager::GetAllMaterials();
-                            //         for (auto& [name, mat] : materials)
-                            //         {
-                            //             if (ImGui::Selectable(name.c_str()))
-                            //             {
-                            //                 model->m_Meshes[i].M3Name = name;
-                            //             }
-                            //         }
-                            //     }
-                            // }
                             ImGui::PopID();
                         }
                     }
                 }
-
-                // ImGui::PopItemWidth();
             });
     }
     void SceneHierarchyPanel::SetSelectedEntity(Entity e)

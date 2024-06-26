@@ -6,12 +6,14 @@
 #include "../Core/AssetManager.h"
 #include "../Core/Time.h"
 #include "../Events/Event.h"
+#include "../Profile/Profiling.h"
 #include <imgui.h>
 namespace FooGame
 {
     Application* Application::s_Instance = nullptr;
     Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec)
     {
+        FOO_PROFILE_FUNCTION();
         FOO_ASSERT(!s_Instance, "Application already exists!");
         s_Instance = this;
 

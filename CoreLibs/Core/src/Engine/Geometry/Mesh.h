@@ -16,8 +16,9 @@ namespace FooGame
             {
                 Vertices     = std::move(o.Vertices);
                 Indices      = std::move(o.Indices);
-                MaterialName = std::move(o.MaterialName);
                 Name         = std::move(o.Name);
+                MaterialId   = std::move(o.MaterialId);
+                o.MaterialId = 111;
                 RenderId     = o.RenderId;
                 o.RenderId   = -1;
             }
@@ -25,13 +26,14 @@ namespace FooGame
             {
                 if (this != &other)
                 {
-                    this->MaterialName = std::move(other.MaterialName);
-                    this->Name         = std::move(other.Name);
-                    this->Indices      = std::move(other.Indices);
-                    this->Vertices     = std::move(other.Vertices);
-                    this->RenderId     = other.RenderId;
+                    this->Name       = std::move(other.Name);
+                    this->Indices    = std::move(other.Indices);
+                    this->Vertices   = std::move(other.Vertices);
+                    this->RenderId   = other.RenderId;
+                    this->MaterialId = other.MaterialId;
 
-                    other.RenderId = 0;
+                    other.RenderId   = 0;
+                    other.MaterialId = 111;
                 }
                 return *this;
             }
@@ -41,7 +43,6 @@ namespace FooGame
             Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
             std::vector<Vertex> Vertices;
             std::vector<uint32_t> Indices;
-            std::string MaterialName;
             u64 MaterialId;
             std::string Name;
             uint32_t RenderId;

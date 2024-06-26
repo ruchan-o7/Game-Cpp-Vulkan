@@ -1,6 +1,7 @@
 #pragma once
 #include "../Base.h"
 #include "../Core/UUID.h"
+#include "../Config.h"
 namespace FooGame::Asset
 {
     enum class AssetStatus
@@ -21,7 +22,7 @@ namespace FooGame::Asset
 
     struct TextureInfo
     {
-            UUID id = 0;
+            UUID id = DEFAULT_TEXTURE_ID;
             String Name;
             float factor[4];
     };
@@ -35,15 +36,12 @@ namespace FooGame::Asset
     {
             String Name;
             TextureInfo BaseColorTexture;
-            // String NormalTextureName;
             UUID NormalTextureId;
 
-            // String MetallicTextureName;
-            UUID MetallicTextureId = 0;
+            UUID MetallicTextureId = DEFAULT_TEXTURE_ID;
             float MetallicFactor;
 
-            UUID RoughnessTextureId = 0;
-            // String RoughnessTextureName;
+            UUID RoughnessTextureId = DEFAULT_TEXTURE_ID;
             float RoughnessFactor;
 
             TextureInfo EmissiveTexture;
@@ -57,6 +55,7 @@ namespace FooGame::Asset
         RGBA8,
         RGB8,
     };
+    /// Texture basically
     struct FImage
     {
             String Name;
@@ -65,7 +64,6 @@ namespace FooGame::Asset
             u32 Height;
             u8 ChannelCount;
             TextureFormat Format;
-            std::string BufferPath;
     };
     struct FMesh
     {
@@ -77,14 +75,12 @@ namespace FooGame::Asset
             List<float> Vertices;
             List<u32> Indices;
             size_t TotalSize;
-            // UUID Id;
     };
     struct FModel
     {
             String Name;
             u32 MeshCount = 1;
             List<FMesh> Meshes;
-            // UUID Id;
     };
 
 }  // namespace FooGame::Asset

@@ -45,11 +45,11 @@ namespace FooGame
                        glm::scale(glm::mat4(1.0f), Scale);
             }
     };
-    struct MeshRendererComponent
+    struct ModelRendererComponent
     {
-            UUID ModelId;
-            MeshRendererComponent()                             = default;
-            MeshRendererComponent(const MeshRendererComponent&) = default;
+            UUID AssetModelId                                     = 0;
+            ModelRendererComponent()                              = default;
+            ModelRendererComponent(const ModelRendererComponent&) = default;
     };
     class ScriptableEntity;
     struct ScriptComponent;
@@ -146,7 +146,7 @@ namespace FooGame
     {
     };
 
-    using AllComponents = ComponentGroup<TransformComponent, TagComponent, MeshRendererComponent,
+    using AllComponents = ComponentGroup<TransformComponent, TagComponent, ModelRendererComponent,
                                          ScriptComponent, CameraComponent>;
 
 }  // namespace FooGame

@@ -17,6 +17,8 @@
 #include "../Scripts/CameraController.h"
 #include "../Core/File.h"
 #include "../Config.h"
+#include "src/Core/Assert.h"
+#include "src/Log.h"
 
 namespace FooGame
 {
@@ -34,7 +36,7 @@ namespace FooGame
     {
         if (!entity.HasComponent<IDComponent>())
         {
-            uint64_t id             = entity.GetComponent<IDComponent>().ID;
+            u64 id                  = entity.GetComponent<IDComponent>().ID;
             sceneEntitiesNode["id"] = id;
         }
         if (!entity.HasComponent<TagComponent>())
@@ -54,12 +56,14 @@ namespace FooGame
                 {      "scale",          {transform.Scale.x, transform.Scale.y, transform.Scale.z}}
             });
         }
-        if (!entity.HasComponent<MeshRendererComponent>())
+        if (!entity.HasComponent<ModelRendererComponent>())
         {
-            auto mesh = entity.GetComponent<MeshRendererComponent>();
-
+            auto mrc    = entity.GetComponent<ModelRendererComponent>();
+            u64 modelId = mrc.AssetModelId;
+            auto* asset = AssetManager::GetModelAsset(modelId);
+            FOO_ASSERT(asset, "Referenced asset is null");
             sceneEntitiesNode["meshComponent"] = json::object({
-                {"modelId", (u64)mesh.ModelId},
+                {"modelId", modelId},
             });
         }
         if (!entity.HasComponent<ScriptComponent>())
@@ -118,8 +122,8 @@ namespace FooGame
             auto meshComponentJson = entityJson["meshComponent"];
             if (!meshComponentJson.empty())
             {
-                auto& mc   = deserializedEntity.AddComponent<MeshRendererComponent>();
-                mc.ModelId = meshComponentJson["modelId"].get<u64>();
+                auto& mc        = deserializedEntity.AddComponent<ModelRendererComponent>();
+                mc.AssetModelId = meshComponentJson["modelId"].get<u64>();
             }
         }
         componentExists = entityJson.contains("scriptComponent");
@@ -158,6 +162,8 @@ namespace FooGame
     {
         json scene;
         scene["name"] = m_pScene->m_Name.empty() ? "New Scene" : m_pScene->m_Name;
+        scene["id"]   = (u64)m_pScene->m_Id;
+
         json imageAssetsJson;
         json materialAssetsJson;
         json modelAssetsJson;
@@ -170,33 +176,42 @@ namespace FooGame
         ImageSerializer is;
         MaterialSerializer mats;
 
-        std::set<u64> materialIdsToSerialize;
-        std::set<u64> imageIdsToSerialize;
-
-        auto CreateAssetItemJson = [&](const String& name, u64 id)
+        auto CreateAssetItemJson = [](const String& name, u64 id)
         {
             json a;
             a["name"] = name;
             a["id"]   = id;
             return a;
         };
-        auto AddMaterialIdIfNotEmpty = [&](u64 id) { materialIdsToSerialize.insert(id); };
-        auto AddImageNameIfNotEmpty  = [&](u64 id) { imageIdsToSerialize.insert(id); };
+        std::set<u64> materialIdsToSerialize;
+        std::set<u64> imageIdsToSerialize;
+
+        auto AddMaterialId = [&](u64 id)
+        {
+            if (id != DEFAULT_MATERIAL_ID)
+            {
+                materialIdsToSerialize.insert(id);
+            }
+        };
+        auto AddImageId = [&](u64 id) { imageIdsToSerialize.insert(id); };
 
         /// MESH
-        auto meshRendererComponents = m_pScene->GetAllEntitiesWith<MeshRendererComponent>();
+        auto meshRendererComponents = m_pScene->GetAllEntitiesWith<ModelRendererComponent>();
         meshRendererComponents.each(
-            [&](MeshRendererComponent& c)
+            [&](ModelRendererComponent& c)
             {
-                auto* modelAsset = AssetManager::GetModelAsset(c.ModelId);
+                auto* modelAsset = AssetManager::GetModelAsset(c.AssetModelId);
                 if (modelAsset == nullptr)
                 {
                     return;
                 }
-                auto model = modelAsset->Asset;
-                u64 id     = modelAsset->Id;
+                auto model       = modelAsset->Asset;
+                u64 assetId      = modelAsset->Id;
+                String assetName = modelAsset->Name;
 
-                json assetItem = CreateAssetItemJson(modelAsset->Name, id);
+                FOO_CORE_TRACE("Model asset deserializing:\tId:{0}\t Name:{1}", assetName, assetId);
+
+                json assetItem = CreateAssetItemJson(modelAsset->Name, assetId);
                 modelAssetsJson.push_back(assetItem);
 
                 Asset::FModel fmodel;
@@ -205,11 +220,10 @@ namespace FooGame
                 fmodel.Name      = model->Name;
                 for (auto& mesh : model->Meshes)
                 {
-                    AddMaterialIdIfNotEmpty(mesh.MaterialId);
+                    AddMaterialId(mesh.MaterialId);
 
                     Asset::FMesh fmesh;
                     fmesh.Name         = mesh.Name;
-                    fmesh.MaterialName = mesh.MaterialName;
                     fmesh.IndicesCount = mesh.Indices.size();
                     fmesh.VertexCount  = mesh.Vertices.size();
                     fmesh.MaterialId   = mesh.MaterialId;
@@ -217,7 +231,7 @@ namespace FooGame
                     fmesh.TotalSize = mesh.Vertices.size() * 11 * sizeof(float) +
                                       mesh.Indices.size() * sizeof(u32);
                     fmesh.Indices = mesh.Indices;
-                    fmesh.Vertices.reserve(mesh.Vertices.size() * 11);
+                    fmesh.Vertices.reserve(mesh.Vertices.size() * 11);  // 5041695147045127021
                     for (size_t i = 0; i < mesh.Vertices.size(); i++)
                     {
                         auto& v = mesh.Vertices[i];
@@ -252,10 +266,10 @@ namespace FooGame
             json assetItem = CreateAssetItemJson(materialAsset->Name, id);
             materialAssetsJson.push_back(assetItem);
 
-            AddImageNameIfNotEmpty(materialAsset->Asset->BaseColorTexture.id);
-            AddImageNameIfNotEmpty(materialAsset->Asset->NormalTextureId);
-            AddImageNameIfNotEmpty(materialAsset->Asset->RoughnessTextureId);
-            AddImageNameIfNotEmpty(materialAsset->Asset->MetallicTextureId);
+            AddImageId(materialAsset->Asset->BaseColorTexture.id);
+            AddImageId(materialAsset->Asset->NormalTextureId);
+            AddImageId(materialAsset->Asset->RoughnessTextureId);
+            AddImageId(materialAsset->Asset->MetallicTextureId);
 
             FMatJsons.emplace_back(std::move(mats.Serialize(*materialAsset->Asset)));
         }
@@ -328,28 +342,34 @@ namespace FooGame
     {
         if (!std::filesystem::exists(m_ScenePath))
         {
-            m_pScene->m_Name = "New scene";
+            m_pScene->m_Name = DEFAULT_SCENE_NAME;
+            m_pScene->m_Id   = UUID();
+            FOO_CORE_WARN("No scene file found, creating new one");
             return;
         }
-        std::ifstream is(m_ScenePath);
-        Defer defer{[&] { is.close(); }};
         json sceneJson;
-        try
+        String sceneName;
         {
-            sceneJson = json::parse(is);
+            std::ifstream is(m_ScenePath);
+            DEFER(is.close());
+            try
+            {
+                sceneJson = json::parse(is);
+            }
+            catch (const std::exception& e)
+            {
+                FOO_CORE_ERROR("Can not load scene {0}", e.what());
+                return;
+            }
+            sceneName = sceneJson["name"].get<String>();
+            if (sceneName.empty())
+            {
+                FOO_CORE_WARN("Scene does not has sceneName. Setting as 'New Scene'");
+                sceneName = "New Scene";
+            }
         }
-        catch (const std::exception& e)
-        {
-            FOO_CORE_ERROR("Can not load scene {0}", e.what());
-            return;
-        }
-        auto name = sceneJson["name"].get<String>();
-        if (name.empty())
-        {
-            FOO_CORE_ERROR("Scene does not has name");
-            return;
-        }
-        m_pScene->m_Name        = name;
+        m_pScene->m_Name        = sceneName;
+        m_pScene->m_Id          = sceneJson["id"].get<u64>();
         auto assetsJson         = sceneJson["assets"];
         auto imageAssetsJson    = assetsJson["images"];
         auto materialAssetsJson = assetsJson["materials"];
@@ -372,7 +392,12 @@ namespace FooGame
         List<FimageAsset> fimages;
         List<FModelAsset> fModels;
 
-        FOO_CORE_TRACE("Opening scene: {0}", m_pScene->m_Name);
+        FOO_CORE_TRACE("Scene deserializing ({0})", m_pScene->m_Name);
+        auto PrintJsonParseExceptionError = [](const String& name, const std::exception& e)
+        {
+            FOO_CORE_ERROR("Error occured while parsing asset ({0}), here is error detail: {1}",
+                           name, e.what());
+        };
 
         if (!materialAssetsJson.empty())
         {
@@ -381,9 +406,12 @@ namespace FooGame
                 UUID id          = mAssetJson["id"].get<u64>();
                 String assetName = mAssetJson["name"];
 
+                FOO_CORE_TRACE("Material asset deserializing\t ID:{0} \t Name:{1}", (u64)id,
+                               assetName);
+
                 std::filesystem::path assetMaterialDataPath = File::GetMaterialsPath() / assetName;
 
-                assetMaterialDataPath.replace_extension(".fmat");
+                assetMaterialDataPath.replace_extension(FMATERIAL_ASSET_EXTENSION);
                 if (!std::filesystem::exists(assetMaterialDataPath))
                 {
                     FOO_CORE_WARN("Material does not exists: {0},\n Searched path: {1}", assetName,
@@ -392,19 +420,28 @@ namespace FooGame
                 }
 
                 std::ifstream is{assetMaterialDataPath};
-                Defer defer{[&] { is.close(); }};
-                json matJ             = json::parse(is);
+                DEFER(is.close());
+                json matJ;
+                try
+                {
+                    matJ = json::parse(is);
+                }
+                catch (const std::exception& e)
+                {
+                    PrintJsonParseExceptionError(assetName, e);
+                    continue;
+                }
+
                 Asset::FMaterial fMat = std::move(mats.DeSerialize(matJ));
 
                 auto* pfmat = new Asset::FMaterial(fMat);
-                AssetMaterialC amc;
-                amc.Name   = name;
-                amc.Id     = id;
-                amc.Asset  = Shared<Asset::FMaterial>(pfmat);
-                amc.Status = Asset::AssetStatus::READY;
 
-                AssetManager::AddMaterial(amc);
+                AssetManager::AddMaterial(Shared<Asset::FMaterial>(pfmat), id);
             }
+        }
+        else
+        {
+            FOO_CORE_TRACE("No material asset registered");
         }
 
         if (!modelAssetsJson.empty())
@@ -414,8 +451,11 @@ namespace FooGame
                 UUID id          = mAssetJson["id"].get<u64>();
                 String assetName = mAssetJson["name"];
 
+                FOO_CORE_TRACE("Model asset deserializing\t ID:{0} \t Name:{1}", (u64)id,
+                               assetName);
+
                 std::filesystem::path assetModelDataPath = File::GetModelsPath() / assetName;
-                assetModelDataPath.replace_extension(".fmodel");
+                assetModelDataPath.replace_extension(FMODEL_ASSET_EXTENSION);
 
                 if (!std::filesystem::exists(assetModelDataPath))
                 {
@@ -425,33 +465,56 @@ namespace FooGame
                 }
 
                 std::ifstream is{assetModelDataPath};
-                Defer defer{[&] { is.close(); }};
-                json modelAssetJsonData = json::parse(is);
-                auto fM                 = std::move(ms.DeSerialize(modelAssetJsonData));
+                DEFER(is.close());
+                json modelAssetJsonData;
+                try
+                {
+                    modelAssetJsonData = json::parse(is);
+                }
+                catch (const std::exception& e)
+                {
+                    PrintJsonParseExceptionError(assetName, e);
+                    continue;
+                }
+                auto fM = std::move(ms.DeSerialize(modelAssetJsonData));
                 FModelAsset fmodel;
                 fmodel.id    = id;
                 fmodel.model = std::move(fM);
                 fModels.emplace_back(std::move(fmodel));
             }
         }
+        else
+        {
+            FOO_CORE_TRACE("No model asset registered");
+        }
         if (!imageAssetsJson.empty())
         {
             for (auto& imj : imageAssetsJson)
             {
-                UUID id                                  = imj["id"].get<u64>();
-                String assetName                         = imj["name"];
+                UUID id          = imj["id"].get<u64>();
+                String assetName = imj["name"];
+                FOO_CORE_TRACE("Image asset deserializing\t ID:{0} \t Name:{1}", (u64)id,
+                               assetName);
                 std::filesystem::path assetModelDataPath = File::GetImagesPath() / assetName;
-                assetModelDataPath.replace_extension(".fimg");
+                assetModelDataPath.replace_extension(FIMAGE_ASSET_EXTENSION);
                 if (!std::filesystem::exists(assetModelDataPath))
                 {
-                    FOO_CORE_WARN("Model does not exists: {0},\n Searched path: {1}", assetName,
+                    FOO_CORE_WARN("Image does not exists: {0},\n Searched path: {1}", assetName,
                                   assetModelDataPath.string());
                     continue;
                 }
                 std::ifstream is{assetModelDataPath};
                 DEFER(is.close());
-
-                json fimJ   = json::parse(is, nullptr, false);
+                json fimJ;
+                try
+                {
+                    fimJ = json::parse(is);
+                }
+                catch (const std::exception& e)
+                {
+                    PrintJsonParseExceptionError(assetName, e);
+                    continue;
+                }
                 auto fimage = ims.DeSerialize(fimJ);
                 FimageAsset asset;
                 asset.id    = id;
@@ -459,8 +522,12 @@ namespace FooGame
                 fimages.emplace_back(std::move(asset));
             }
         }
+        else
+        {
+            FOO_CORE_TRACE("No image asset registered");
+        }
         List<std::future<void>> futures;
-#if 1
+#if 0
 #define ASYNC(x) futures.emplace_back(std::async(std::launch::async, [&] { x; }))
 #else
 #define ASYNC(x) x;
@@ -478,10 +545,19 @@ namespace FooGame
         auto entities = sceneJson["entities"];
         if (!entities.empty())
         {
+            FOO_CORE_TRACE("Starting deserialize entities");
             for (auto entity : entities)
             {
                 DeSerializeEntity(entity, m_pScene, futures);
             }
+        }
+        else
+        {
+            FOO_CORE_TRACE("No entity entry found!");
+        }
+        if (futures.size() > 0)
+        {
+            FOO_CORE_TRACE("Loading registered assets asyncly");
         }
         for (auto& f : futures)
         {

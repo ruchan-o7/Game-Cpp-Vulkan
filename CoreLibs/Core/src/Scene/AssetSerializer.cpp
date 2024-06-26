@@ -95,7 +95,6 @@ namespace FooGame
                 j["format"] = "RGB8";
                 break;
         }
-        j["bufferPath"] = image.BufferPath;
 
         return j;
     }
@@ -108,7 +107,6 @@ namespace FooGame
         i.Height       = json["height"];
         i.ChannelCount = json["channelCount"];
         i.Format       = Asset::TextureFormat::RGBA8;
-        i.BufferPath   = json["bufferPath"];
         return i;
     }
     nlohmann::json ModelSerializer::Serialize(const Asset::FModel& model)

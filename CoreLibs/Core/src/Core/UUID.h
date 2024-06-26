@@ -1,5 +1,5 @@
 #pragma once
-#include <cstdint>
+#include "../Base.h"
 #include <cstring>
 namespace FooGame
 {
@@ -7,13 +7,13 @@ namespace FooGame
     {
         public:
             UUID();
-            UUID(uint64_t uuid);
+            UUID(u64 uuid);
             UUID(const UUID&) = default;
 
-            operator uint64_t() const { return m_UUID; }
+            operator u64() const { return m_UUID; }
 
         private:
-            uint64_t m_UUID;
+            u64 m_UUID;
     };
 
 }  // namespace FooGame
@@ -26,7 +26,7 @@ namespace std
     template <>
     struct hash<FooGame::UUID>
     {
-            std::size_t operator()(const FooGame::UUID& uuid) const { return (uint64_t)uuid; }
+            std::size_t operator()(const FooGame::UUID& uuid) const { return (u64)uuid; }
     };
 
 }  // namespace std

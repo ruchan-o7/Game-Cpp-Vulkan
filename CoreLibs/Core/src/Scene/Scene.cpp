@@ -197,11 +197,14 @@ namespace FooGame
         {
             Renderer3D::BeginScene(*mainCamera);
         }
-        m_Registry.view<TransformComponent, MeshRendererComponent>().each(
-            [=](TransformComponent& transform, MeshRendererComponent& comp)
+        m_Registry.view<TransformComponent, ModelRendererComponent>().each(
+            [=](TransformComponent& transform, ModelRendererComponent& comp)
             {
-                auto tt = transform.GetTransform();
-                Renderer3D::DrawModel(comp.ModelId, tt);
+                if (comp.AssetModelId == 0)
+                {
+                    return;
+                }
+                Renderer3D::DrawModel(comp.AssetModelId, transform.GetTransform());
             });
     }
     void Scene::IMGUI()
@@ -233,8 +236,8 @@ namespace FooGame
     {
     }
     template <>
-    void Scene::OnComponentAdded<MeshRendererComponent>(Entity entity,
-                                                        MeshRendererComponent& component)
+    void Scene::OnComponentAdded<ModelRendererComponent>(Entity entity,
+                                                         ModelRendererComponent& component)
     {
     }
     template <>

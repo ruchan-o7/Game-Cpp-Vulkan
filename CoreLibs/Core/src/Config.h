@@ -3,6 +3,8 @@
 #define DEFAULT_MATERIAL_NAME "Default Material"
 #define DEFAULT_TEXTURE_NAME  "Default Texture"
 
+#define DEFAULT_SCENE_NAME "New Scene"
+
 #define DEFAULT_MATERIAL_ID 111
 #define DEFAULT_TEXTURE_ID  111
 

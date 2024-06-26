@@ -45,7 +45,7 @@ namespace FooGame
 
             static void CreateDefaultTexture();
 
-            static void AddMaterial(const AssetMaterialC& material);
+            static void AddMaterial(Shared<Asset::FMaterial> material, UUID id);
 
         public:
             static AssetModelC* GetModelAsset(UUID id);

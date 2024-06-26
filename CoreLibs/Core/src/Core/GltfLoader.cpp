@@ -67,7 +67,6 @@ namespace FooGame
             for (const auto& primitive : mesh.primitives)
             {
                 auto& material            = model->Materials[primitive.material];
-                tempMesh.MaterialName     = material.Name;
                 uint32_t firstIndex       = static_cast<uint32_t>(tempMesh.Indices.size());
                 uint32_t vertexStart      = static_cast<uint32_t>(tempMesh.Vertices.size());
                 uint32_t indexCount       = 0;
