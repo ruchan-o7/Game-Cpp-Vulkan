@@ -1,33 +1,53 @@
 {
     "assets": {
         "images": [
-            "viking_room",
-            "avocado_normal",
-            "avocado_base",
-            "avocado_metallic"
+            {
+                "id": 4432504476578526645,
+                "name": "avocado_base"
+            },
+            {
+                "id": 7943506979372887645,
+                "name": "viking_room.png"
+            },
+            {
+                "id": 17729977864492472976,
+                "name": "avocado_metallic"
+            }
         ],
         "materials": [
-            "VM",
-            "2256_Avocado_d"
+            {
+                "id": 5453329125433347452,
+                "name": "viko meto"
+            },
+            {
+                "id": 16993017305781272386,
+                "name": "Avo Meto"
+            }
         ],
         "models": [
-            "viking_room.obj",
-            "Avocado2.glb"
+            {
+                "id": 4753301911707407562,
+                "name": "viking_room.obj"
+            },
+            {
+                "id": 2908614145218657825,
+                "name": "Avocado2.glb"
+            }
         ]
     },
     "entities": [
         {
-            "id": 4901485977135763663,
+            "id": 2753559607781566158,
             "meshComponent": {
-                "model": "viking_room.obj"
+                "modelId": 4753301911707407562
             },
             "tagComponent": {
-                "tag": "VIKING"
+                "tag": "Viko"
             },
             "transformComponent": {
                 "rotation": [
                     -1.5707963705062866,
-                    0.0,
+                    -2.094395160675049,
                     0.0
                 ],
                 "scale": [
@@ -44,15 +64,15 @@
         },
         {
             "cameraComponent": {
-                "fixedAspectRatio": false,
+                "fixedAspectRatio": true,
                 "primary": true
             },
-            "id": 13624598332543171232,
+            "id": 4774508053207189927,
             "scriptComponent": [
                 "CameraController"
             ],
             "tagComponent": {
-                "tag": "CAMERA"
+                "tag": "Main Camera"
             },
             "transformComponent": {
                 "rotation": [
@@ -67,23 +87,23 @@
                 ],
                 "translation": [
                     0.0,
-                    0.0,
-                    0.0
+                    0.6000000238418579,
+                    -2.0
                 ]
             }
         },
         {
-            "id": 12521184461450340299,
+            "id": 13765222501824589348,
             "meshComponent": {
-                "model": "Avocado2.glb"
+                "modelId": 2908614145218657825
             },
             "tagComponent": {
-                "tag": "AVACADO"
+                "tag": "Avo"
             },
             "transformComponent": {
                 "rotation": [
                     0.0,
-                    0.0,
+                    2.366666555404663,
                     0.0
                 ],
                 "scale": [
@@ -92,12 +112,13 @@
                     1.0
                 ],
                 "translation": [
-                    0.0,
-                    0.0,
+                    1.100000023841858,
+                    0.20000000298023224,
                     0.0
                 ]
             }
         }
     ],
-    "name": "Prototype"
+    "id": 12051706170003356235,
+    "name": "New Scene"
 }

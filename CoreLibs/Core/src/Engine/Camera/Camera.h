@@ -4,83 +4,26 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-namespace FooGame {
-  class Camera {
-	public:
-	  enum CameraType {
-		lookat,
-		firstperson
-	  };
-	  CameraType type = CameraType::firstperson;
+namespace FooGame
+{
+    struct Camera
+    {
+            enum class Type
+            {
+                FirstPerson,
+                LookAt
+            };
+            Type type = Type::FirstPerson;
 
-	  glm::vec3 Rotation       = glm::vec3();
-	  glm::vec3 Position       = glm::vec3();
-	  glm::vec4 ViewPos        = glm::vec4();
-	  glm::vec2 LastMouseState = glm::vec2();
-	  glm::vec3 Front          = glm::vec3();
+            glm::vec3 Rotation = glm::vec3();
+            glm::vec3 Position = glm::vec3();
+            glm::vec3 Front    = glm::vec3();
+            float Fov = 90, Aspect = 16.0f / 9.f, ZNear = 0.01f, ZFar = 1000.0f;
 
-	  float RotationSpeed = 0.01f;
-	  float MovementSpeed = 0.01f;
+            glm::mat4 Perspective, View;
+            bool FlipY = true;
 
-	  float Fov, Aspect;
-	  float ZNear, ZFar;
-	  bool  flipY = true;
-	  struct {
-		  glm::mat4 Perspective;
-		  glm::mat4 View;
-	  } matrices;
-	  void MoveUp();
-	  void MoveDown();
-	  void MoveLeft();
-	  void MoveRight();
+            void UpdateMatrix();
+    };
 
-	  void UpdateViewMatrix();
-
-	  const float GetNearClip() const { return ZNear; }
-
-	  const float GetFarClip() const { return ZFar; }
-
-	  void setPerspective(float fov, float aspect, float znear, float zfar);
-
-	  void updateAspectRatio(float aspect);
-
-	  void SetPosition(glm::vec3 position) {
-		this->Position = position;
-		UpdateViewMatrix();
-	  }
-	  void SetFov(float fov);
-	  void SetRotation(glm::vec3 rotation) {
-		this->Rotation = rotation;
-		UpdateViewMatrix();
-	  }
-
-	  void Rotate(glm::vec3 delta) {
-		this->Rotation += delta;
-		UpdateViewMatrix();
-	  }
-
-	  void SetTranslatin(glm::vec3 translation) {
-		this->Position = translation;
-		UpdateViewMatrix();
-	  };
-
-	  void Translate(glm::vec3 delta) {
-		this->Position += delta;
-		UpdateViewMatrix();
-	  }
-
-	  void SetRotationSpeed(float rotationSpeed) {
-		this->RotationSpeed = rotationSpeed;
-	  }
-
-	  void SetMovementSpeed(float movementSpeed) {
-		this->MovementSpeed = movementSpeed;
-	  }
-
-	  void Update(float deltaTime);
-
-	private:
-	  void  CalculatePerspective();
-	  float MoveSpeed_;
-  };
 }  // namespace FooGame

@@ -148,8 +148,8 @@ namespace FooGame
     void Renderer3D::BeginScene(const Camera& camera)
     {
         UniformBufferObject ubd{};
-        ubd.View       = camera.matrices.View;
-        ubd.Projection = camera.matrices.Perspective;
+        ubd.View       = camera.View;
+        ubd.Projection = camera.Perspective;
         UpdateUniformData(ubd);
 
         auto extent = Backend::GetSwapchainExtent();

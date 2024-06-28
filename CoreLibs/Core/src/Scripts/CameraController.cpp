@@ -3,65 +3,68 @@
 #include "../Engine/Camera/Camera.h"
 #include <Core.h>
 #include <imgui.h>
+
 namespace FooGame::Script
 {
     void CameraController::OnUpdate(float ts)
     {
+        auto Rotation = m_pTransform->Rotation;
+        auto Front    = m_pCamera->Front;
         if (Input::IsKeyDown(Key::W))
         {
-            m_pCamera->MoveUp();
+            m_pTransform->Translation += Front * MovementSpeed;
         }
         if (Input::IsKeyDown(Key::S))
         {
-            m_pCamera->MoveDown();
+            m_pTransform->Translation -= Front * MovementSpeed;
         }
         if (Input::IsKeyDown(Key::D))
         {
-            m_pCamera->MoveRight();
+            m_pTransform->Translation +=
+                glm::normalize(glm::cross(Front, glm::vec3(0.0f, 1.0f, 0.0f))) * MovementSpeed;
         }
         if (Input::IsKeyDown(Key::A))
         {
-            m_pCamera->MoveLeft();
+            m_pTransform->Translation -=
+                glm::normalize(glm::cross(Front, glm::vec3(0.0f, 1.0f, 0.0f))) * MovementSpeed;
         }
+        m_pCamera->Position = m_pTransform->Translation;
+
         ImGui::Begin("Camera");
-        auto cameraPos = m_pCamera->Position;
-        float pos[3]   = {cameraPos.x, cameraPos.y, cameraPos.z};
-        float fov      = m_pCamera->Fov;
-        float rot[3]   = {
-            m_pCamera->Rotation.x,
-            m_pCamera->Rotation.y,
-            m_pCamera->Rotation.z,
+        float frontArray[3] = {
+            Front.x,
+            Front.y,
+            Front.z,
         };
-        float front[3] = {
-            m_pCamera->Front.x,
-            m_pCamera->Front.y,
-            m_pCamera->Front.z,
+        float rotArr[3] = {
+            m_pTransform->Rotation.x,
+            m_pTransform->Rotation.y,
+            m_pTransform->Rotation.z,
         };
 
-        ImGui::DragFloat("Movement Speed", &m_pCamera->MovementSpeed, 0.1f, 0.1f, 5.0f);
-        ImGui::DragFloat("Rotation Speed", &m_pCamera->RotationSpeed, 0.1f, 0.1f, 5.0f);
-        ImGui::Checkbox("Flip y", &m_pCamera->flipY);
-        ImGui::DragFloat("Fov", &fov, 0.1f, 0.1f, 179.0f);
-        ImGui::DragFloat3("Position", pos, 0.1f, -1000.0f, 1000.0f);
-        ImGui::DragFloat3("Rotation", rot, 0.1f, -1000.0f, 1000.0f);
-        ImGui::DragFloat("ZNear", &m_pCamera->ZNear, 0.01f, 0.0f, 1000000.0f);
-        ImGui::DragFloat("ZFar", &m_pCamera->ZFar, 0.01f, 0.0f, 1000000.0f);
+        ImGui::DragFloat3("Rotation", rotArr, 0.1f, -10000.f, 10000.0f);
+        ImGui::DragFloat3("Front Vector", frontArray, 0.1f, -10000.f, 10000.0f);
+        ImGui::DragFloat("Movement Speed", &MovementSpeed, 0.1f, 0.1f, 15.0f);
+        ImGui::DragFloat("Rotation Speed", &RotationSpeed, 0.1f, 0.1f, 15.0f);
+        ImGui::Checkbox("Flip y", &FlipY);
+        ImGui::DragFloat("Fov", &m_pCamera->Fov, 0.1f, 0.1f, 179.0f);
         ImGui::End();
-        m_pCamera->Update(ts);
+        m_pTransform->Rotation[0] = rotArr[0];
+        m_pTransform->Rotation[1] = rotArr[1];
+        m_pTransform->Rotation[2] = rotArr[2];
 
-        m_pCamera->SetPosition(glm::vec3{pos[0], pos[1], pos[2]});
-        m_pCamera->SetRotation(glm::vec3(rot[0], rot[1], rot[2]));
-        m_pCamera->SetFov(fov);
+        m_pCamera->Rotation = m_pTransform->Rotation;
+
+        auto& window      = Window::Get();
+        m_pCamera->Aspect = (float)window.GetWidth() / (float)window.GetHeight();
+        m_pCamera->UpdateMatrix();
     }
     void CameraController::OnCreate()
     {
-        m_pCamera    = GetComponent<CameraComponent>().pCamera;
-        m_pTransform = &GetComponent<TransformComponent>();
-        m_pCamera->setPerspective(60.0f, (float)1600.0f / (float)900.0f, 0.1f, 512.0f);
-        m_pCamera->SetRotation(glm::vec3(-12.0f, 159.0f, 0.0f));
-        m_pCamera->SetTranslatin(glm::vec3(0.0f, 0.5f, 0.5f));
-        m_pCamera->MovementSpeed = 0.1f;
-        m_pCamera->Fov           = 90.f;
-        m_pCamera->type          = Camera::CameraType::firstperson;
+        m_pCamera           = GetComponent<CameraComponent>().pCamera;
+        m_pTransform        = &GetComponent<TransformComponent>();
+        m_pCamera->Position = m_pTransform->Translation;
+        m_pCamera->Rotation = m_pTransform->Rotation;
+        m_pCamera->type     = Camera::Type::FirstPerson;
     }
 }  // namespace FooGame::Script
