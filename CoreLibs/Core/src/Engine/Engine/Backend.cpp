@@ -79,7 +79,6 @@ namespace FooGame
 
     bool Backend::OnWindowResized(WindowResizeEvent& event)
     {
-        FOO_ENGINE_TRACE("Window resized");
         comps.framebufferResized = true;
         frameData.fbWidth        = event.GetWidth();
         frameData.fbHeight       = event.GetHeight();
