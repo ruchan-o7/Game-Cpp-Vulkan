@@ -574,6 +574,8 @@ namespace FooGame
                                 {
                                     if (ImGui::Selectable(mat.Name.c_str()))
                                     {
+                                        model->Meshes[i].DrawSpecs[0].MaterialId =
+                                            id;  // TODO: Make it per mesh
                                         model->Meshes[i].MaterialId = id;
                                     }
                                 }

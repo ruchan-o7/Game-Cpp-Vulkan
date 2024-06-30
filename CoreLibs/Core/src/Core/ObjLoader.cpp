@@ -1,7 +1,9 @@
 #include "ObjLoader.h"
 #include <tiny_obj_loader.h>
 #include "../Engine/Geometry/Mesh.h"
-#include "src/Scene/Asset.h"
+#include "../Config.h"
+#include "../Scene/Asset.h"
+#include "../Engine/Geometry/Vertex.h"
 #include <Log.h>
 
 namespace FooGame
@@ -17,7 +19,7 @@ namespace FooGame
         List<tinyobj::material_t> objMaterials;
         String warn, err;
         List<Vertex> vertices;
-        List<uint32_t> indices;
+        List<u32> indices;
         List<Mesh> meshes;
 
         auto objPath        = m_Path.string();
@@ -35,7 +37,10 @@ namespace FooGame
         for (const auto& shape : shapes)
         {
             Mesh mesh;
-            mesh.Name = shape.name;
+            mesh.Name       = shape.name;
+            u32 firstIndex  = static_cast<u32>(vertices.size());
+            u32 vertexStart = static_cast<u32>(indices.size());
+            u32 indexCount  = 0;
 
             for (const auto& index : shape.mesh.indices)
             {
@@ -73,15 +78,24 @@ namespace FooGame
                 {
                     vertex.Normal = {1.0f, 1.0f, 1.0f};
                 }
-                mesh.Vertices.emplace_back(std::move(vertex));
-                mesh.Indices.push_back(mesh.Indices.size());
+                vertices.emplace_back(std::move(vertex));
+                indices.push_back(indices.size());
             }
+            indexCount += static_cast<u32>(indices.size());
+            DrawPrimitive p{};
+            p.FirstIndex = firstIndex;
+            p.IndexCount = indexCount;
+            p.MaterialId = DEFAULT_MATERIAL_ID;
+            mesh.DrawSpecs.emplace_back(std::move(p));
             meshes.emplace_back(std::move(mesh));
         }
         ObjModel* model  = new ObjModel;
         model->Materials = std::move(materials);
         model->Meshes    = std::move(meshes);
         model->Name      = m_Path.filename().string();
+        model->Vertices  = std::move(vertices);
+        model->Indices   = std::move(indices);
+
         enum TEXTURE_INDICES
         {
             ALBEDO    = 0,

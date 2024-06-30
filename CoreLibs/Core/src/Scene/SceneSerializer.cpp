@@ -18,7 +18,7 @@
 #include "../Core/File.h"
 #include "../Config.h"
 #include "src/Core/Assert.h"
-#include "src/Log.h"
+#include "src/Scene/ObjectConverters/ModelConverter.h"
 
 namespace FooGame
 {
@@ -193,7 +193,13 @@ namespace FooGame
                 materialIdsToSerialize.insert(id);
             }
         };
-        auto AddImageId = [&](u64 id) { imageIdsToSerialize.insert(id); };
+        auto AddImageId = [&](u64 id)
+        {
+            if (id != DEFAULT_TEXTURE_ID)
+            {
+                imageIdsToSerialize.insert(id);
+            }
+        };
 
         /// MESH
         auto meshRendererComponents = m_pScene->GetAllEntitiesWith<ModelRendererComponent>();
@@ -214,43 +220,13 @@ namespace FooGame
                 json assetItem = CreateAssetItemJson(modelAsset->Name, assetId);
                 modelAssetsJson.push_back(assetItem);
 
-                Asset::FModel fmodel;
-
-                fmodel.MeshCount = model->Meshes.size();
-                fmodel.Name      = model->Name;
-                for (auto& mesh : model->Meshes)
+                Asset::FModel fmodel = ModelToFModel(*model);
+                for (const auto& fmesh : fmodel.Meshes)
                 {
-                    AddMaterialId(mesh.MaterialId);
-
-                    Asset::FMesh fmesh;
-                    fmesh.Name         = mesh.Name;
-                    fmesh.IndicesCount = mesh.Indices.size();
-                    fmesh.VertexCount  = mesh.Vertices.size();
-                    fmesh.MaterialId   = mesh.MaterialId;
-
-                    fmesh.TotalSize = mesh.Vertices.size() * 11 * sizeof(float) +
-                                      mesh.Indices.size() * sizeof(u32);
-                    fmesh.Indices = mesh.Indices;
-                    fmesh.Vertices.reserve(mesh.Vertices.size() * 11);  // 5041695147045127021
-                    for (size_t i = 0; i < mesh.Vertices.size(); i++)
+                    for (const auto& p : fmesh.Primitives)
                     {
-                        auto& v = mesh.Vertices[i];
-                        fmesh.Vertices.push_back(v.Position.x);
-                        fmesh.Vertices.push_back(v.Position.y);
-                        fmesh.Vertices.push_back(v.Position.z);
-
-                        fmesh.Vertices.push_back(v.Normal.x);
-                        fmesh.Vertices.push_back(v.Normal.y);
-                        fmesh.Vertices.push_back(v.Normal.z);
-
-                        fmesh.Vertices.push_back(v.Color.x);
-                        fmesh.Vertices.push_back(v.Color.y);
-                        fmesh.Vertices.push_back(v.Color.z);
-
-                        fmesh.Vertices.push_back(v.TexCoord.x);
-                        fmesh.Vertices.push_back(v.TexCoord.y);
+                        AddMaterialId(p.MaterialId);
                     }
-                    fmodel.Meshes.emplace_back(std::move(fmesh));
                 }
                 FModelJsons.emplace_back(ms.Serialize(fmodel));
             });

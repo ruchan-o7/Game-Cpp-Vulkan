@@ -8,11 +8,14 @@ namespace FooGame
     struct Model;
     struct Mesh;
     struct Material;
+    struct Vertex;
     struct ObjModel
     {
             List<Mesh> Meshes;
             List<Asset::FMaterial> Materials;
             std::string Name;
+            List<Vertex> Vertices;
+            List<u32> Indices;
     };
     class ObjLoader
     {

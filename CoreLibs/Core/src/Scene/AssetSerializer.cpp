@@ -1,6 +1,7 @@
 #include "AssetSerializer.h"
 #include "Asset.h"
 #include "json.hpp"
+#include "src/Engine/Geometry/Mesh.h"
 namespace FooGame
 {
     nlohmann::json MaterialSerializer::Serialize(const Asset::FMaterial& mat)
@@ -113,19 +114,25 @@ namespace FooGame
     {
         using json = nlohmann::json;
         json j;
-        j["name"]      = model.Name;
-        j["meshCount"] = model.MeshCount;
+        j["name"]         = model.Name;
+        j["meshCount"]    = model.MeshCount;
+        j["vertexCount"]  = model.VertexCount;
+        j["indicesCount"] = model.IndicesCount;
+        j["totalSize"]    = model.TotalSize;
+        j["vertices"]     = model.Vertices;
+        j["indices"]      = model.Indices;
         for (auto& mesh : model.Meshes)
         {
             json m;
-            m["name"]         = mesh.Name;
-            m["materialName"] = mesh.MaterialName;
-            m["materialId"]   = (u64)mesh.MaterialId;
-            m["vertexCount"]  = mesh.VertexCount;
-            m["indicesCount"] = mesh.IndicesCount;
-            m["totalSize"]    = mesh.TotalSize;
-            m["vertices"]     = mesh.Vertices;
-            m["indices"]      = mesh.Indices;
+            m["name"] = mesh.Name;
+            for (const auto& pr : mesh.Primitives)
+            {
+                json pJ;
+                pJ["materialId"] = (u64)pr.MaterialId;
+                pJ["firstIndex"] = pr.FirstIndex;
+                pJ["indexCount"] = pr.IndexCount;
+                m["primitives"].push_back(pJ);
+            }
             j["meshes"].push_back(m);
         }
         return j;
@@ -133,22 +140,30 @@ namespace FooGame
     Asset::FModel ModelSerializer::DeSerialize(const nlohmann::json& json)
     {
         Asset::FModel m;
-        m.Name      = json["name"];
-        m.MeshCount = json["meshCount"];
+        m.Name         = json["name"];
+        m.MeshCount    = json["meshCount"];
+        m.TotalSize    = json["totalSize"];
+        m.VertexCount  = json["vertexCount"];
+        m.IndicesCount = json["indicesCount"];
+        List<float> ve = json["vertices"];
+        List<u32> in   = json["indices"];
+        m.Vertices     = std::move(ve);
+        m.Indices      = std::move(in);
 
         for (auto& mj : json["meshes"])
         {
             Asset::FMesh mesh;
-            mesh.Name         = mj["name"];
-            mesh.MaterialName = mj["materialName"];
-            mesh.MaterialId   = mj["materialId"].get<u64>();
-            mesh.VertexCount  = mj["vertexCount"];
-            mesh.IndicesCount = mj["indicesCount"];
-            mesh.TotalSize    = mj["totalSize"];
-            List<float> ve    = mj["vertices"];
-            List<u32> in      = mj["indices"];
-            mesh.Vertices     = std::move(ve);
-            mesh.Indices      = std::move(in);
+            mesh.Name = mj["name"];
+            mesh.Primitives.reserve(mj["primitives"].size());
+            for (const auto& p : mj["primitives"])
+            {
+                DrawPrimitive pr;
+                pr.IndexCount = p["indexCount"];
+                pr.FirstIndex = p["firstIndex"];
+                pr.MaterialId = p["materialId"].get<u64>();
+                mesh.Primitives.push_back(pr);
+            }
+
             m.Meshes.emplace_back(std::move(mesh));
         }
 

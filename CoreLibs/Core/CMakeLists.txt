@@ -9,6 +9,8 @@ find_package(Vulkan REQUIRED)
 file(GLOB_RECURSE CORE_SOURCES
 	"src/Scene/*.h"
 	"src/Scene/*.cpp"
+	"src/Scene/ObjectConverters/*.h"
+	"src/Scene/ObjectConverters/*.cpp"
 
 	"src/ImGui/*.cpp"
 

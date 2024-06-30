@@ -1,5 +1,4 @@
 #pragma once
-#include "../Geometry/Model.h"
 #include "../Engine/Types/GraphicTypes.h"
 #include "../../Core/UUID.h"
 struct VkCommandBuffer_T;
@@ -32,9 +31,6 @@ namespace FooGame
             static void DrawModel(UUID id, const glm::mat4& transform);
 
         public:
-            static void SubmitMesh(Mesh& mesh);
-            static void SubmitMesh(Mesh* mesh);
-            static void SubmitModel(Model* model);
             static void SubmitModel(UUID id);
 
         private:

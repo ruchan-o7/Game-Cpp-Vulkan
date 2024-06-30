@@ -2,6 +2,7 @@
 #include "../Base.h"
 #include "../Core/UUID.h"
 #include "../Config.h"
+#include "../Engine/Geometry/Mesh.h"
 namespace FooGame::Asset
 {
     enum class AssetStatus
@@ -68,19 +69,18 @@ namespace FooGame::Asset
     struct FMesh
     {
             String Name;
-            String MaterialName;
-            UUID MaterialId;
-            size_t VertexCount;
-            size_t IndicesCount;
-            List<float> Vertices;
-            List<u32> Indices;
-            size_t TotalSize;
+            List<DrawPrimitive> Primitives;
     };
     struct FModel
     {
             String Name;
-            u32 MeshCount = 1;
             List<FMesh> Meshes;
+            List<float> Vertices;
+            List<u32> Indices;
+            size_t TotalSize;
+            size_t VertexCount;
+            size_t IndicesCount;
+            u32 MeshCount = 1;
     };
 
 }  // namespace FooGame::Asset

@@ -2,72 +2,42 @@
     "assets": {
         "images": [
             {
-                "id": 4432504476578526645,
+                "id": 239276036510675986,
                 "name": "avocado_base"
             },
             {
-                "id": 7943506979372887645,
+                "id": 14677506999537020555,
                 "name": "viking_room.png"
-            },
-            {
-                "id": 17729977864492472976,
-                "name": "avocado_metallic"
             }
         ],
         "materials": [
             {
-                "id": 5453329125433347452,
-                "name": "viko meto"
+                "id": 3115009298591073876,
+                "name": "Viko meto"
             },
             {
-                "id": 16993017305781272386,
-                "name": "Avo Meto"
+                "id": 9275990808572249322,
+                "name": "2256_Avocado_d"
             }
         ],
         "models": [
             {
-                "id": 4753301911707407562,
+                "id": 12185468877844796896,
                 "name": "viking_room.obj"
             },
             {
-                "id": 2908614145218657825,
-                "name": "Avocado2.glb"
+                "id": 5442261457261396690,
+                "name": "Avocado2"
             }
         ]
     },
     "entities": [
         {
-            "id": 2753559607781566158,
-            "meshComponent": {
-                "modelId": 4753301911707407562
-            },
-            "tagComponent": {
-                "tag": "Viko"
-            },
-            "transformComponent": {
-                "rotation": [
-                    -1.5707963705062866,
-                    -2.094395160675049,
-                    0.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "translation": [
-                    0.0,
-                    0.0,
-                    0.0
-                ]
-            }
-        },
-        {
             "cameraComponent": {
                 "fixedAspectRatio": true,
                 "primary": true
             },
-            "id": 4774508053207189927,
+            "id": 14273139910489074300,
             "scriptComponent": [
                 "CameraController"
             ],
@@ -87,23 +57,23 @@
                 ],
                 "translation": [
                     0.0,
-                    0.6000000238418579,
+                    0.0,
                     -2.0
                 ]
             }
         },
         {
-            "id": 13765222501824589348,
+            "id": 16747895462101926685,
             "meshComponent": {
-                "modelId": 2908614145218657825
+                "modelId": 12185468877844796896
             },
             "tagComponent": {
-                "tag": "Avo"
+                "tag": "Viking"
             },
             "transformComponent": {
                 "rotation": [
                     0.0,
-                    2.366666555404663,
+                    0.0,
                     0.0
                 ],
                 "scale": [
@@ -112,8 +82,34 @@
                     1.0
                 ],
                 "translation": [
-                    1.100000023841858,
-                    0.20000000298023224,
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        {
+            "id": 10196748017841001790,
+            "meshComponent": {
+                "modelId": 5442261457261396690
+            },
+            "tagComponent": {
+                "tag": "Avocado"
+            },
+            "transformComponent": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0,
                     0.0
                 ]
             }
