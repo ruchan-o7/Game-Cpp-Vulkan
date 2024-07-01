@@ -2,7 +2,6 @@
 #include "../../Base.h"
 namespace FooGame
 {
-
     Asset::FModel ModelToFModel(const Model& input)
     {
         Asset::FModel fmodel;
@@ -35,20 +34,7 @@ namespace FooGame
         }
         fmodel.Indices = input.Indices;
         fmodel.Meshes.reserve(input.Meshes.size());
-        for (const auto& m : input.Meshes)
-        {
-            Asset::FMesh fmesh;
-            fmesh.Name = m.Name;
-            for (const auto& d : m.DrawSpecs)
-            {
-                DrawPrimitive primitive;
-                primitive.MaterialId = d.MaterialId;
-                primitive.FirstIndex = d.FirstIndex;
-                primitive.IndexCount = d.IndexCount;
-                fmesh.Primitives.push_back(primitive);
-            }
-            fmodel.Meshes.push_back(fmesh);
-        }
+        fmodel.Meshes = input.Meshes;
         return fmodel;
     }
     Unique<Model> FModelToModel(const Asset::FModel& input)
@@ -56,13 +42,7 @@ namespace FooGame
         Model* model   = new Model();
         model->Name    = input.Name;
         model->Indices = input.Indices;
-        for (const auto& mesh : input.Meshes)
-        {
-            Mesh m;
-            m.Name      = mesh.Name;
-            m.DrawSpecs = mesh.Primitives;
-            model->Meshes.push_back(m);
-        }
+        model->Meshes  = input.Meshes;
         model->Vertices.reserve(input.VertexCount);
         for (size_t i = 0; i < input.VertexCount * 11; i += 11)
         {

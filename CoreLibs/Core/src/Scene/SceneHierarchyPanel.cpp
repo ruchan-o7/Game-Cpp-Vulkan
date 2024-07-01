@@ -525,9 +525,8 @@ namespace FooGame
                             for (auto& g : gltfs)
                             {
                                 GltfLoader loader{g.string(), g.extension() == ".glb"};
-                                auto gltfModel = loader.Load();
                                 UUID id;
-                                AssetManager::LoadGLTFModel(*gltfModel, id);
+                                AssetManager::LoadGLTFModelAsync(loader, id);
                                 component.AssetModelId = id;
                             }
                         }
@@ -544,46 +543,46 @@ namespace FooGame
                     ImGui::BeginChild("model_meshes", ImGui::GetContentRegionAvail(),
                                       ImGuiChildFlags_Border);
                     DEFER(ImGui::EndChild());
-                    if (ImGui::BeginTable("materials_", 4))
-                    {
-                        DEFER(ImGui::EndTable());
-                        for (size_t i = 0; i < model->Meshes.size(); i++)
-                        {
-                            if (!AssetManager::HasMaterialExists(model->Meshes[i].MaterialId))
-                            {
-                                model->Meshes[i].MaterialId = DEFAULT_MATERIAL_ID;
-                            }
-                            ImGui::PushID(i);
-                            ImGui::TableNextColumn();
-                            ImGui::Text("%zu: ", i);
-                            ImGui::TableNextColumn();
-                            ImGui::Text("%s", model->Meshes[i].Name.c_str());
-                            ImGui::TableNextColumn();
-                            ImGui::Text("%s",
-                                        sceneMaterials[model->Meshes[i].MaterialId].Name.c_str());
-                            ImGui::TableNextColumn();
-                            if (ImGui::Button("Change Material"))
-                            {
-                                ImGui::OpenPopup("change_mat_pop");
-                            }
-                            if (ImGui::BeginPopup("change_mat_pop"))
-                            {
-                                DEFER(ImGui::EndPopup());
-                                ImGui::SeparatorText("All Materials");
-                                for (auto& [id, mat] : sceneMaterials)
-                                {
-                                    if (ImGui::Selectable(mat.Name.c_str()))
-                                    {
-                                        model->Meshes[i].DrawSpecs[0].MaterialId =
-                                            id;  // TODO: Make it per mesh
-                                        model->Meshes[i].MaterialId = id;
-                                    }
-                                }
-                            }
+                    // if (ImGui::BeginTable("materials_", 4))
+                    // {
+                    //     DEFER(ImGui::EndTable());
+                    //     for (size_t i = 0; i < model->Meshes.size(); i++)
+                    //     {
+                    //         if (!AssetManager::HasMaterialExists(model->Meshes[i].MaterialId))
+                    //         {
+                    //             model->Meshes[i].MaterialId = DEFAULT_MATERIAL_ID;
+                    //         }
+                    //         ImGui::PushID(i);
+                    //         ImGui::TableNextColumn();
+                    //         ImGui::Text("%zu: ", i);
+                    //         ImGui::TableNextColumn();
+                    //         ImGui::Text("%s", model->Meshes[i].Name.c_str());
+                    //         ImGui::TableNextColumn();
+                    //         ImGui::Text("%s",
+                    //                     sceneMaterials[model->Meshes[i].MaterialId].Name.c_str());
+                    //         ImGui::TableNextColumn();
+                    //         if (ImGui::Button("Change Material"))
+                    //         {
+                    //             ImGui::OpenPopup("change_mat_pop");
+                    //         }
+                    //         if (ImGui::BeginPopup("change_mat_pop"))
+                    //         {
+                    //             DEFER(ImGui::EndPopup());
+                    //             ImGui::SeparatorText("All Materials");
+                    //             for (auto& [id, mat] : sceneMaterials)
+                    //             {
+                    //                 if (ImGui::Selectable(mat.Name.c_str()))
+                    //                 {
+                    //                     model->Meshes[i].DrawSpecs[0].MaterialId =
+                    //                         id;  // TODO: Make it per mesh
+                    //                     model->Meshes[i].MaterialId = id;
+                    //                 }
+                    //             }
+                    //         }
 
-                            ImGui::PopID();
-                        }
-                    }
+                    //         ImGui::PopID();
+                    //     }
+                    // }
                 }
             });
     }

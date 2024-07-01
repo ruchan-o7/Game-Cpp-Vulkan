@@ -122,22 +122,20 @@ namespace FooGame
     {
         if (!m_IsPaused || m_StepFrames-- > 0)
         {
-            {
-                m_Registry.view<ScriptComponent>().each(
-                    [=](auto entity, ScriptComponent& nsc)
+            m_Registry.view<ScriptComponent>().each(
+                [=](auto entity, ScriptComponent& nsc)
+                {
+                    for (auto& [name, sc] : nsc.Scripts)
                     {
-                        for (auto& [name, sc] : nsc.Scripts)
+                        if (!sc->Instance)
                         {
-                            if (!sc->Instance)
-                            {
-                                sc->Instance           = sc->InstantiateScript();
-                                sc->Instance->m_Entity = Entity{entity, this};
-                                sc->Instance->OnCreate();
-                            }
-                            sc->Instance->OnUpdate(ts);
+                            sc->Instance           = sc->InstantiateScript();
+                            sc->Instance->m_Entity = Entity{entity, this};
+                            sc->Instance->OnCreate();
                         }
-                    });
-            }
+                        sc->Instance->OnUpdate(ts);
+                    }
+                });
         }
     }
 

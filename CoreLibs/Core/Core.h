@@ -49,7 +49,6 @@
 #include "src/Events/KeyEvent.h"
 #include "src/Events/MouseEvent.h"
 
-#include "src/Engine/Geometry/Mesh.h"
 #include "src/Engine/Geometry/Model.h"
 #include "src/Engine/Geometry/QuadVertex.h"
 #include "src/Engine/Geometry/Vertex.h"

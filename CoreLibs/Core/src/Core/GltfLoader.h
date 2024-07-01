@@ -1,10 +1,7 @@
 #pragma once
 #include "../Base.h"
-#include "../Engine/Geometry/Mesh.h"
 #include "pch.h"
 #include <glm/glm.hpp>
-#include "../Core/UUID.h"
-#include "../Config.h"
 #include "../Engine/Geometry/Vertex.h"
 namespace FooGame
 {
@@ -16,45 +13,37 @@ namespace FooGame
             String Name;
             u32 Width, Height;
             i32 ComponentCount;
-            UUID imageId = DEFAULT_TEXTURE_ID;
+    };
+    struct GltfTexture
+    {
+            i32 imageIndex;
     };
 
     struct GltfMaterialSource
     {
             String Name;
             glm::vec4 BaseColorFactor = glm::vec4(1.0f);
-            u32 BaseColorTexIndex;
-            UUID Id = DEFAULT_MATERIAL_ID;
-            // String BaseColorTextureName;
-            // float BaseColorTextureFactor[4];
-            //
-            // String NormalTextureName;
-            //
-            // String RoughnessTextureName;
-            // float RoughnessFactor;
-            //
-            // String MetallicTextureName;
-            // float MetallicFactor;
+            u32 BaseColorTextureIndex;
     };
     struct GltfPrimitive
     {
             u32 firstIndex;
             u32 indexCount;
             i32 materialIndex;
+            // glm::mat4 TransformMatrix;
     };
     struct GltfMesh
     {
             String Name;
-            glm::mat4 TransformMatrix;
             List<GltfPrimitive> primitives;
     };
-    struct Node
+    struct GltfNode
     {
-            Node* Parent;
-            List<Node*> Children;
+            GltfNode* Parent;
+            List<GltfNode*> Children;
             GltfMesh Mesh;
             glm::mat4 Matrix;
-            ~Node()
+            ~GltfNode()
             {
                 for (auto& c : Children)
                 {
@@ -68,8 +57,8 @@ namespace FooGame
             List<GltfMesh> Meshes;
             List<GltfImageSource> ImageSources;
             List<GltfMaterialSource> Materials;
-            List<i32> Textures;
-            List<Node*> Nodes;
+            List<GltfTexture> Textures;
+            List<GltfNode*> Nodes;
             List<Vertex> Vertices;
             List<u32> Indices;
             ~GltfModel()

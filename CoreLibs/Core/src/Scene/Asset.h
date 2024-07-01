@@ -1,8 +1,8 @@
 #pragma once
+#include <pch.h>
 #include "../Base.h"
 #include "../Core/UUID.h"
 #include "../Config.h"
-#include "../Engine/Geometry/Mesh.h"
 namespace FooGame::Asset
 {
     enum class AssetStatus
@@ -66,10 +66,17 @@ namespace FooGame::Asset
             u8 ChannelCount;
             TextureFormat Format;
     };
+    struct DrawPrimitive
+    {
+            u32 FirstIndex  = 0;
+            u32 IndexCount  = 0;
+            UUID MaterialId = 0;
+    };
     struct FMesh
     {
             String Name;
             List<DrawPrimitive> Primitives;
+            glm::mat4 Transform;
     };
     struct FModel
     {

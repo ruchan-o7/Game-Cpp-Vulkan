@@ -430,7 +430,7 @@ namespace FooGame
                 FOO_CORE_TRACE("Model asset deserializing\t ID:{0} \t Name:{1}", (u64)id,
                                assetName);
 
-                std::filesystem::path assetModelDataPath = File::GetModelsPath() / assetName;
+                auto assetModelDataPath = File::GetModelsPath() / assetName;
                 assetModelDataPath.replace_extension(FMODEL_ASSET_EXTENSION);
 
                 if (!std::filesystem::exists(assetModelDataPath))

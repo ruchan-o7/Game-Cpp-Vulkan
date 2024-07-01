@@ -14,7 +14,6 @@ namespace FooGame
     struct ObjModel;
 
     using AssetModelC    = Asset::AssetContainer<Model>;
-    using AssetMeshC     = Asset::AssetContainer<Mesh>;
     using AssetTextureC  = Asset::AssetContainer<VulkanTexture>;
     using AssetMaterialC = Asset::AssetContainer<Asset::FMaterial>;
 
@@ -34,7 +33,7 @@ namespace FooGame
         public:
             static void LoadModel(const Asset::FModel& fmodel, UUID id);
             static void LoadGLTFModel(GltfModel& gltfModel, UUID id);
-            static void LoadGLTFModelAsync(String path, String name, bool isGlb);
+            static void LoadGLTFModelAsync(GltfLoader loader, UUID id);
 
             static void LoadObjModel(Unique<ObjModel> objModel, UUID id);
 
@@ -64,7 +63,6 @@ namespace FooGame
 
             static bool HasTextureExists(UUID id);
             static bool HasMaterialExists(UUID id);
-            // static bool HasModelExists( Strig& name);
             static bool HasModelAssetExists(UUID id);
 
         private:
