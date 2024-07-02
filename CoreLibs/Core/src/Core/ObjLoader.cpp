@@ -37,6 +37,7 @@ namespace FooGame
         {
             Asset::FMesh mesh;
             mesh.Name       = shape.name;
+            mesh.Transform  = glm::mat4(1.f);
             u32 firstIndex  = static_cast<u32>(vertices.size());
             u32 vertexStart = static_cast<u32>(indices.size());
             u32 indexCount  = 0;
