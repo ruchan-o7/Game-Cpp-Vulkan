@@ -9,7 +9,6 @@
 #include <filesystem>
 #include "../Engine/Core/VulkanTexture.h"
 #include "../Base.h"
-#include "../Engine/Geometry/Model.h"
 #include "../Core/AssetManager.h"
 #include "../Scene/Component.h"
 #include "../Scripts/Rotate.h"
@@ -17,8 +16,8 @@
 #include "../Scripts/CameraController.h"
 #include "../Core/File.h"
 #include "../Config.h"
-#include "src/Core/Assert.h"
-#include "src/Scene/ObjectConverters/ModelConverter.h"
+#include "../Core/Assert.h"
+#include "../Scene/ObjectConverters/ModelConverter.h"
 
 namespace FooGame
 {
@@ -94,8 +93,7 @@ namespace FooGame
         String tag;
         bool componentExists = false;
 
-        componentExists = entityJson.contains("tagComponent");
-        // TODO: Add assertion
+        componentExists   = entityJson.contains("tagComponent");
         auto tagComponent = entityJson["tagComponent"];
         if (!tagComponent.empty())
         {
@@ -202,6 +200,7 @@ namespace FooGame
         };
 
         /// MESH
+        FOO_CORE_TRACE("Asset Models Serializing");
         auto meshRendererComponents = m_pScene->GetAllEntitiesWith<ModelRendererComponent>();
         meshRendererComponents.each(
             [&](ModelRendererComponent& c)
@@ -230,7 +229,10 @@ namespace FooGame
                 }
                 FModelJsons.emplace_back(ms.Serialize(fmodel));
             });
+        FOO_CORE_TRACE("Asset Models serialization done!");
+
         /// MATERIALS
+        FOO_CORE_TRACE("Asset Materials serializing");
         for (auto& materialId : materialIdsToSerialize)
         {
             auto* materialAsset = AssetManager::GetMaterialAsset(materialId);
@@ -249,11 +251,14 @@ namespace FooGame
 
             FMatJsons.emplace_back(std::move(mats.Serialize(*materialAsset->Asset)));
         }
+        FOO_CORE_TRACE("Asset Materials serialization done");
+
         /// IMAGES
+        FOO_CORE_TRACE("Asset Images serializing");
         for (auto& imageId : imageIdsToSerialize)
         {
             auto* imageAsset = AssetManager::GetTextureAsset(imageId);
-            if (!imageAsset || imageId == DEFAULT_TEXTURE_ID || imageId == 0)
+            if (imageAsset->Id == DEFAULT_TEXTURE_ID || imageId == 0)
             {
                 continue;
             }
@@ -277,6 +282,8 @@ namespace FooGame
             }
             FImageJsons.push_back(is.Serialize(fimg));
         }
+        FOO_CORE_TRACE("Asset Images serialization done!");
+
         scene["assets"]["images"]    = imageAssetsJson;
         scene["assets"]["materials"] = materialAssetsJson;
         scene["assets"]["models"]    = modelAssetsJson;
