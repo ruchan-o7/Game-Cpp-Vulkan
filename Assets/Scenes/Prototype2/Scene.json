@@ -1,0 +1,689 @@
+{
+    "entities": [
+        {
+            "cameraComponent": {
+                "fixedAspectRatio": true,
+                "primary": true
+            },
+            "id": 3332061642483347496,
+            "scriptComponent": [
+                "CameraController"
+            ],
+            "tagComponent": {
+                "tag": "Camera"
+            },
+            "transformComponent": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.09000000357627869,
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        {
+            "id": 3263328598297060330,
+            "meshComponent": {
+                "material": "Viking material",
+                "modelPath": "Models\\Avocado.glb"
+            },
+            "scriptComponent": [
+                "ScaleYoink",
+                "RotateScript"
+            ],
+            "tagComponent": {
+                "tag": "Avocado"
+            },
+            "transformComponent": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    -8.156379699707031,
+                    12.0,
+                    12.0
+                ],
+                "translation": [
+                    -0.5786091089248657,
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        {
+            "id": 3263328598497060330,
+            "meshComponent": {
+                "material": "Viking material",
+                "modelPath": "Models\\viking_room.obj"
+            },
+            "tagComponent": {
+                "tag": "Viking"
+            },
+            "transformComponent": {
+                "rotation": [
+                    -1.5,
+                    1.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.9534403085708618,
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        {
+            "id": 7954746054582625731,
+            "meshComponent": {
+                "material": "arch_stone_wall_01",
+                "modelPath": "Models\\sponza.glb"
+            },
+            "tagComponent": {
+                "tag": "SPONZA"
+            },
+            "transformComponent": {
+                "rotation": [
+                    1.5707963705062866,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            }
+        }
+    ],
+    "materials": [
+        {
+            "fromGlb": true,
+            "name": "roof",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_roof_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "vase",
+            "normalTexture": {
+                "name": "vase_bump"
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "vase_dif",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "Material__25",
+            "normalTexture": {
+                "name": "lion_bump"
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "lion",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "chain",
+            "normalTexture": {
+                "name": "chain_texture_bump"
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "chain_texture-chain_texture_mask",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.7763931751251221
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "fabric_f",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_curtain_green_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.9900000095367432
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "fabric_a",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_fabric_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.9900000095367432
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "fabric_d",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_fabric_blue_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.9900000095367432
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "vase_hanging",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "vase_hanging",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.7763931751251221
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "flagpole",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_flagpole_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "Material__47",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "",
+                "baseColorTexturePath": "",
+                "metallicFactor": 1.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 1.0
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "arch",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_arch_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.800000011920929
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "floor",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_floor_a_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.7354248762130737
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "fabric_g",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_curtain_blue_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.9900000095367432
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "2256_Avocado_d",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "",
+                "baseColorTexturePath": "",
+                "metallicFactor": 1.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 1.0
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "Material__57",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "vase_plant-vase_plant_mask",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "fabric_c",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_curtain_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.9900000095367432
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "column_a",
+            "normalTexture": {
+                "name": "sponza_column_a_bump"
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_column_a_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "fabric_e",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_fabric_green_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.9900000095367432
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "leaf",
+            "normalTexture": {
+                "name": "sponza_thorn_bump"
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_thorn_diff-sponza_thorn_mask",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "column_b",
+            "normalTexture": {
+                "name": "sponza_column_b_bump"
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_column_b_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": false,
+            "name": "Viking material",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "viking_room.png",
+                "baseColorTexturePath": "Textures\\viking_room.png",
+                "metallicFactor": 1.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 1.0
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "vase_round",
+            "normalTexture": {
+                "name": "vase_round_bump"
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "vase_round",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "Material__298",
+            "normalTexture": {
+                "name": "background_bump"
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "background",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "column_c",
+            "normalTexture": {
+                "name": "sponza_column_c_bump"
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_column_c_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "bricks",
+            "normalTexture": {
+                "name": "spnza_bricks_a_bump"
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "spnza_bricks_a_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "ceiling",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_ceiling_a_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        },
+        {
+            "fromGlb": true,
+            "name": "details",
+            "normalTexture": {
+                "name": ""
+            },
+            "pbrMetallicRougness": {
+                "baseColorFactor": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "baseColorTextureName": "sponza_details_diff",
+                "baseColorTexturePath": "",
+                "metallicFactor": 0.0,
+                "metallicRoughnessTextureName": "",
+                "metallicRoughnessTexturePath": "",
+                "roughnessFactor": 0.8999999761581421
+            }
+        }
+    ],
+    "name": "Prototype scene"
+}

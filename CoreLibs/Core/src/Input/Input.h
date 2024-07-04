@@ -1,0 +1,21 @@
+#pragma once
+#include "KeyCodes.h"
+#include "MouseCodes.h"
+#include <glm/glm.hpp>
+
+namespace FooGame
+{
+    class Input
+    {
+        public:
+            static bool IsKeyDown(KeyCode keycode);
+            static bool IsKeyReleased(KeyCode keycode);
+
+            static bool IsMouseButtonDown(MouseCode keycode);
+
+            static glm::vec2 GetMousePosition();
+
+            // static void SetCursorMode(Mouse::CursorMode mode);
+    };
+
+}  // namespace FooGame

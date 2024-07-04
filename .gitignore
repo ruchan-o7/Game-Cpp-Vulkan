@@ -15,3 +15,14 @@ imgui.ini
 *.sln
 Shaders/*.spv
 CMakeSettings.json
+imgui.ini
+Assets/Shaders/vert.spv
+Assets/Shaders/frag.spv
+Assets/Models/textures
+Assets/Models/*.bin
+Assets/Models/*.gltf
+Assets/Models/*.obj
+Assets/Models/*.mtl
+Assets/Scenes/*
+Assets/Scenes/Prototype2/Assets
+Assets/Scenes/Prototype3/Assets

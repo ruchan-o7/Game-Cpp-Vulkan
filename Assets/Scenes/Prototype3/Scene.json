@@ -1,0 +1,120 @@
+{
+    "assets": {
+        "images": [
+            {
+                "id": 239276036510675986,
+                "name": "avocado_base"
+            },
+            {
+                "id": 14677506999537020555,
+                "name": "viking_room.png"
+            }
+        ],
+        "materials": [
+            {
+                "id": 3115009298591073876,
+                "name": "Viko meto"
+            },
+            {
+                "id": 9275990808572249322,
+                "name": "2256_Avocado_d"
+            }
+        ],
+        "models": [
+            {
+                "id": 12185468877844796896,
+                "name": "viking_room.obj"
+            },
+            {
+                "id": 5442261457261396690,
+                "name": "Avocado2"
+            }
+        ]
+    },
+    "entities": [
+        {
+            "cameraComponent": {
+                "fixedAspectRatio": true,
+                "primary": true
+            },
+            "id": 14273139910489074300,
+            "scriptComponent": [
+                "CameraController"
+            ],
+            "tagComponent": {
+                "tag": "Main Camera"
+            },
+            "transformComponent": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0,
+                    -2.0
+                ]
+            }
+        },
+        {
+            "id": 16747895462101926685,
+            "meshComponent": {
+                "modelId": 12185468877844796896
+            },
+            "tagComponent": {
+                "tag": "Viking"
+            },
+            "transformComponent": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            }
+        },
+        {
+            "id": 10196748017841001790,
+            "meshComponent": {
+                "modelId": 5442261457261396690
+            },
+            "tagComponent": {
+                "tag": "Avocado"
+            },
+            "transformComponent": {
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "translation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ]
+            }
+        }
+    ],
+    "id": 12051706170003356235,
+    "name": "New Scene"
+}

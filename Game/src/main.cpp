@@ -1,6 +1,12 @@
 #include "Game.h"
-int main()
+#include <src/Core/EntryPoint.h>
+namespace FooGame
 {
-    FooGame::Game game{};
-    game.Run();
-}
+    Application* CreateApplication(ApplicationCommandLineArgs args)
+    {
+        ApplicationSpecifications specs;
+        specs.Name            = "Level editor";
+        specs.CommandLineArgs = args;
+        return new Game(specs);
+    }
+}  // namespace FooGame
