@@ -8,7 +8,7 @@ project(Game
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	add_compile_definitions(FOO_DEBUG)
 endif()
-
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 
