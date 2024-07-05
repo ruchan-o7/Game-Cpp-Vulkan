@@ -24,3 +24,5 @@ Assets/Models/*.gltf
 Assets/Models/*.obj
 Assets/Models/*.mtl
 Assets/Scenes/Prototype2/Assets
+Assets/Scenes/Prototype3/*
+Assets/Scenes/*
