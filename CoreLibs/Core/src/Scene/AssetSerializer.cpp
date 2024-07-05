@@ -1,7 +1,9 @@
 #include "AssetSerializer.h"
 #include "Asset.h"
+#include "glm/ext/matrix_transform.hpp"
+#include "glm/fwd.hpp"
+#include "glm/gtc/type_ptr.hpp"
 #include "json.hpp"
-#include "src/Engine/Geometry/Mesh.h"
 namespace FooGame
 {
     nlohmann::json MaterialSerializer::Serialize(const Asset::FMaterial& mat)
@@ -52,11 +54,11 @@ namespace FooGame
         mat.BaseColorTexture.factor[3] = json["baseColorTexture"]["factor"][3];
 
         mat.MetallicTextureId = json["metallicColorTexture"]["id"].get<u64>();
-        mat.MetallicFactor    = 1.0;  // TODO Change it after deserialize properly
+        mat.MetallicFactor    = 1.0;  // TODO: Change it after deserialize properly
                                       // json["metallicColorTexture"]["factor"];
 
         mat.RoughnessTextureId = json["roughnessColorTexture"]["id"].get<u64>();
-        mat.RoughnessFactor    = 1.0;  // TODO json["roughnessColorTexture"]["factor"];
+        mat.RoughnessFactor    = 1.0;  // TODO: json["roughnessColorTexture"]["factor"];
 
         mat.EmissiveTexture.id        = json["emissiveColorTexture"]["id"].get<u64>();
         mat.EmissiveTexture.factor[0] = json["emissiveColorTexture"]["factor"][0];
@@ -133,6 +135,15 @@ namespace FooGame
                 pJ["indexCount"] = pr.IndexCount;
                 m["primitives"].push_back(pJ);
             }
+            float matrices[4][4];
+            for (i32 i = 0; i < 4; i++)
+            {
+                for (i32 j = 0; j < 4; j++)
+                {
+                    matrices[i][j] = mesh.Transform[i][j];
+                }
+            }
+            m["transform"] = matrices;
             j["meshes"].push_back(m);
         }
         return j;
@@ -149,21 +160,35 @@ namespace FooGame
         List<u32> in   = json["indices"];
         m.Vertices     = std::move(ve);
         m.Indices      = std::move(in);
+        m.Meshes.reserve(json["meshes"].size());
 
         for (auto& mj : json["meshes"])
         {
             Asset::FMesh mesh;
-            mesh.Name = mj["name"];
+            String name = mj["name"].get<String>();
+            if (!name.empty())
+            {
+                mesh.Name = name;
+            }
+            List<List<float>> transformVec = mj["transform"];
+            glm::mat4 transform;
+            for (i32 i = 0; i < 4; i++)
+            {
+                for (i32 j = 0; j < 4; j++)
+                {
+                    transform[i][j] = transformVec[i][j];
+                }
+            }
+            mesh.Transform = transform;
             mesh.Primitives.reserve(mj["primitives"].size());
             for (const auto& p : mj["primitives"])
             {
-                DrawPrimitive pr;
+                Asset::DrawPrimitive pr;
                 pr.IndexCount = p["indexCount"];
                 pr.FirstIndex = p["firstIndex"];
                 pr.MaterialId = p["materialId"].get<u64>();
                 mesh.Primitives.push_back(pr);
             }
-
             m.Meshes.emplace_back(std::move(mesh));
         }
 

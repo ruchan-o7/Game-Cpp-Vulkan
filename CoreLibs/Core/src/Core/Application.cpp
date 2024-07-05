@@ -104,6 +104,7 @@ namespace FooGame
             m_Window->PollEvents();
             Backend::SwapBuffers();
         }
+        Backend::WaitIdle();
     }
     bool Application::OnWindowClose(WindowCloseEvent& e)
     {

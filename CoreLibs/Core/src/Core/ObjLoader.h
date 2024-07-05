@@ -1,5 +1,4 @@
 #pragma once
-#include <string>
 #include "../Scene/Asset.h"
 #include "../Base.h"
 
@@ -11,9 +10,9 @@ namespace FooGame
     struct Vertex;
     struct ObjModel
     {
-            List<Mesh> Meshes;
+            List<Asset::FMesh> Meshes;
             List<Asset::FMaterial> Materials;
-            std::string Name;
+            String Name;
             List<Vertex> Vertices;
             List<u32> Indices;
     };

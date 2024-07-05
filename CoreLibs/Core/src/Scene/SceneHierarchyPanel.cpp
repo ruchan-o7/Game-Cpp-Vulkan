@@ -157,7 +157,7 @@ namespace FooGame
         auto* materialAsset = AssetManager::GetMaterialAsset(m_SelectedMaterial);
         auto material       = materialAsset->Asset;
         strncpy_s(buffer, sizeof(buffer), material->Name.c_str(), sizeof(buffer));
-        if (materialAsset->Id != 111)  // DEFAULT MATERIAL ID
+        if (materialAsset->Id != DEFAULT_MATERIAL_ID)
         {
             if (ImGui::InputText("##Name", buffer, sizeof(buffer)))
             {
@@ -525,9 +525,8 @@ namespace FooGame
                             for (auto& g : gltfs)
                             {
                                 GltfLoader loader{g.string(), g.extension() == ".glb"};
-                                auto gltfModel = loader.Load();
                                 UUID id;
-                                AssetManager::LoadGLTFModel(*gltfModel, id);
+                                AssetManager::LoadGLTFModelAsync(loader, id);
                                 component.AssetModelId = id;
                             }
                         }
@@ -539,49 +538,62 @@ namespace FooGame
                 {
                     auto model = assetModel->Asset;
 
-                    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
-                    DEFER(ImGui::PopStyleVar());
-                    ImGui::BeginChild("model_meshes", ImGui::GetContentRegionAvail(),
-                                      ImGuiChildFlags_Border);
-                    DEFER(ImGui::EndChild());
-                    if (ImGui::BeginTable("materials_", 4))
+                    ImGui::Text("Total vertex count: %zu", model->Vertices.size());
+                    ImGui::Text("Total index count: %zu", model->Indices.size());
+                    ImGui::Text("Total Mesh count: %zu", model->Meshes.size());
+                    i32 primitiveCount = 0;
+                    for (const auto& m : model->Meshes)
                     {
-                        DEFER(ImGui::EndTable());
-                        for (size_t i = 0; i < model->Meshes.size(); i++)
+                        for (const auto& p : m.Primitives)
                         {
-                            if (!AssetManager::HasMaterialExists(model->Meshes[i].MaterialId))
+                            primitiveCount++;
+                        }
+                    }
+                    ImGui::Text("Total primitive count: %i", primitiveCount);
+                    if (ImGui::TreeNode("Meshes"))
+                    {
+                        i32 meshCount = model->Meshes.size();
+                        DEFER(ImGui::TreePop());
+                        auto size = ImGui::GetContentRegionAvail();
+                        for (size_t meshIndex = 0; meshIndex < meshCount; meshIndex++)
+                        {
+                            auto& mesh = model->Meshes[meshIndex];
+
+                            if (ImGui::TreeNode(mesh.Name.c_str()))
                             {
-                                model->Meshes[i].MaterialId = DEFAULT_MATERIAL_ID;
-                            }
-                            ImGui::PushID(i);
-                            ImGui::TableNextColumn();
-                            ImGui::Text("%zu: ", i);
-                            ImGui::TableNextColumn();
-                            ImGui::Text("%s", model->Meshes[i].Name.c_str());
-                            ImGui::TableNextColumn();
-                            ImGui::Text("%s",
-                                        sceneMaterials[model->Meshes[i].MaterialId].Name.c_str());
-                            ImGui::TableNextColumn();
-                            if (ImGui::Button("Change Material"))
-                            {
-                                ImGui::OpenPopup("change_mat_pop");
-                            }
-                            if (ImGui::BeginPopup("change_mat_pop"))
-                            {
-                                DEFER(ImGui::EndPopup());
-                                ImGui::SeparatorText("All Materials");
-                                for (auto& [id, mat] : sceneMaterials)
+                                size_t primitiveCount = mesh.Primitives.size();
+                                DEFER(ImGui::TreePop());
+                                for (size_t primitiveIndex = 0; primitiveIndex < primitiveCount;
+                                     primitiveIndex++)
                                 {
-                                    if (ImGui::Selectable(mat.Name.c_str()))
+                                    auto& primitive =
+                                        model->Meshes[meshIndex].Primitives[primitiveIndex];
+                                    auto materialId = primitive.MaterialId;
+                                    auto* material  = AssetManager::GetMaterialAsset(materialId);
+                                    if (ImGui::TreeNode("", "Primitive Index: %zu", primitiveIndex))
                                     {
-                                        model->Meshes[i].DrawSpecs[0].MaterialId =
-                                            id;  // TODO: Make it per mesh
-                                        model->Meshes[i].MaterialId = id;
+                                        DEFER(ImGui::TreePop());
+                                        ImGui::Text("Material: %s", material->Name.c_str());
+                                        ImGui::SameLine();
+                                        if (ImGui::Button("Change"))
+                                        {
+                                            ImGui::OpenPopup("change_material_popup");
+                                        }
+                                        if (ImGui::BeginPopup("change_material_popup"))
+                                        {
+                                            DEFER(ImGui::EndPopup());
+                                            ImGui::SeparatorText("Materials");
+                                            for (const auto& [id, asset] : sceneMaterials)
+                                            {
+                                                if (ImGui::Selectable(asset.Name.c_str()))
+                                                {
+                                                    primitive.MaterialId = id;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
-
-                            ImGui::PopID();
                         }
                     }
                 }

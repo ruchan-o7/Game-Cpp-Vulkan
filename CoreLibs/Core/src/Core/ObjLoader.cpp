@@ -1,6 +1,5 @@
 #include "ObjLoader.h"
 #include <tiny_obj_loader.h>
-#include "../Engine/Geometry/Mesh.h"
 #include "../Config.h"
 #include "../Scene/Asset.h"
 #include "../Engine/Geometry/Vertex.h"
@@ -20,7 +19,7 @@ namespace FooGame
         String warn, err;
         List<Vertex> vertices;
         List<u32> indices;
-        List<Mesh> meshes;
+        List<Asset::FMesh> meshes;
 
         auto objPath        = m_Path.string();
         auto objBasePath    = m_Path.parent_path();
@@ -36,8 +35,9 @@ namespace FooGame
 
         for (const auto& shape : shapes)
         {
-            Mesh mesh;
+            Asset::FMesh mesh;
             mesh.Name       = shape.name;
+            mesh.Transform  = glm::mat4(1.f);
             u32 firstIndex  = static_cast<u32>(vertices.size());
             u32 vertexStart = static_cast<u32>(indices.size());
             u32 indexCount  = 0;
@@ -82,11 +82,11 @@ namespace FooGame
                 indices.push_back(indices.size());
             }
             indexCount += static_cast<u32>(indices.size());
-            DrawPrimitive p{};
+            Asset::DrawPrimitive p{};
             p.FirstIndex = firstIndex;
             p.IndexCount = indexCount;
             p.MaterialId = DEFAULT_MATERIAL_ID;
-            mesh.DrawSpecs.emplace_back(std::move(p));
+            mesh.Primitives.emplace_back(p);
             meshes.emplace_back(std::move(mesh));
         }
         ObjModel* model  = new ObjModel;
@@ -103,7 +103,6 @@ namespace FooGame
             ROUGHNESS = 2,
             NORMAL    = 3,
         };
-        // model->textureIndices = {ALBEDO, METALIC, ROUGHNESS, NORMAL};
         return std::unique_ptr<ObjModel>(model);
     }
     List<Asset::FMaterial> ProcessMaterial(const List<tinyobj::material_t>& objMaterials)

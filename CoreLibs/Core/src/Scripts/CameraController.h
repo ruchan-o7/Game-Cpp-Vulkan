@@ -1,7 +1,6 @@
 #pragma once
 #include "../Scene/ScriptableEntity.h"
 #include "../Scene/Component.h"
-#include "../Scene/ScriptableEntity.h"
 
 namespace FooGame
 {

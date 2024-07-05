@@ -1,21 +1,19 @@
 #include "GltfLoader.h"
 #include <tiny_gltf.h>
-#include "File.h"
 #include <Log.h>
-#include <cstddef>
-#include <cstring>
 #include <glm/gtc/type_ptr.hpp>
-#include <string>
+#include "File.h"
 #include "glm/ext/matrix_transform.hpp"
-#include "src/Engine/Geometry/Vertex.h"
+#include "../Engine/Geometry/Vertex.h"
 
 namespace FooGame
 {
     // TODO: Delete alloacted buffer in destructor
     static void ProcessGLTFImages(List<tinygltf::Image>& images, List<GltfImageSource>& out);
 
-    static void ProcessGLTFMaterial(const List<tinygltf::Material>& gltfModel,
-                                    List<GltfMaterialSource>& out);
+    static void ProcessGLTFMaterial(const List<tinygltf::Material>& input,
+                                    List<GltfMaterialSource>& out,
+                                    const List<GltfImageSource>& images);
 
     bool ReadFile(tinygltf::Model& input, const std::string& path, bool isGlb);
     GltfLoader::GltfLoader(const std::filesystem::path& path, bool isGlb)
@@ -31,10 +29,11 @@ namespace FooGame
             m_EligibleToLoad = true;
         }
     }
-    void ProcessNode(const tinygltf::Node& inputNode, const tinygltf::Model& input, Node* parent,
-                     List<Vertex>& vertices, List<u32>& indices, List<Node*>& nodes)
+    void ProcessNode(const tinygltf::Node& inputNode, const tinygltf::Model& input,
+                     GltfNode* parent, List<Vertex>& vertices, List<u32>& indices,
+                     List<GltfNode*>& nodes)
     {
-        auto* node   = new Node();
+        auto* node   = new GltfNode();
         node->Matrix = glm::mat4(1.0f);
         node->Parent = parent;
         if (inputNode.translation.size() == 3)
@@ -69,11 +68,12 @@ namespace FooGame
         if (inputNode.mesh > -1)
         {
             const auto& mesh = input.meshes[inputNode.mesh];
+            node->Mesh.primitives.reserve(mesh.primitives.size());
             for (size_t i = 0; i < mesh.primitives.size(); i++)
             {
                 const auto& glTFPrimitive = mesh.primitives[i];
-                u32 firstIndex            = static_cast<u32>(vertices.size());
-                u32 vertexStart           = static_cast<u32>(indices.size());
+                u32 firstIndex            = static_cast<u32>(indices.size());
+                u32 vertexStart           = static_cast<u32>(vertices.size());
                 u32 indexCount            = 0;
                 // Vertices
                 {
@@ -178,7 +178,8 @@ namespace FooGame
                 primitive.firstIndex    = firstIndex;
                 primitive.indexCount    = indexCount;
                 primitive.materialIndex = glTFPrimitive.material;
-                node->Mesh.Name         = mesh.name;
+                // primitive.TransformMatrix = node->Matrix;
+                node->Mesh.Name = mesh.name;
                 node->Mesh.primitives.push_back(primitive);
             }
         }
@@ -209,12 +210,12 @@ namespace FooGame
             return nullptr;
         }
         ProcessGLTFImages(gltfInput.images, model->ImageSources);
-        ProcessGLTFMaterial(gltfInput.materials, model->Materials);
+        ProcessGLTFMaterial(gltfInput.materials, model->Materials, model->ImageSources);
 
         model->Textures.resize(gltfInput.textures.size());
         for (size_t i = 0; i < model->Textures.size(); i++)
         {
-            model->Textures[i] = gltfInput.textures[i].source;
+            model->Textures[i].imageIndex = gltfInput.textures[i].source;
         }
 
         const auto& scene = gltfInput.scenes[0];
@@ -229,6 +230,7 @@ namespace FooGame
 
     void ProcessGLTFImages(List<tinygltf::Image>& images, List<GltfImageSource>& out)
     {
+        out.reserve(images.size());
         for (auto& gltfImage : images)
         {
             unsigned char* imageBuffer = nullptr;
@@ -277,88 +279,28 @@ namespace FooGame
             out.emplace_back(std::move(source));
         }
     }
-    void ProcessGLTFMaterial(const List<tinygltf::Material>& input, List<GltfMaterialSource>& out)
+    void ProcessGLTFMaterial(const List<tinygltf::Material>& input, List<GltfMaterialSource>& out,
+                             const List<GltfImageSource>& images)
     {
-        out.resize(input.size());
+        out.reserve(input.size());
         for (size_t i = 0; i < input.size(); i++)
         {
-            auto& gltfMaterial = input[i];
-            out[i].Name        = input[i].name;
+            auto& gMat = input[i];
+            GltfMaterialSource s;
+            s.Name = gMat.name;
 
-            if (gltfMaterial.values.find("baseColorFactor") != gltfMaterial.values.end())
+            if (gMat.values.find("baseColorFactor") != gMat.values.end())
             {
-                out[i].BaseColorFactor =
-                    glm::make_vec4(gltfMaterial.values.at("baseColorFactor").ColorFactor().data());
+                s.BaseColorFactor =
+                    glm::make_vec4(gMat.values.at("baseColorFactor").ColorFactor().data());
             }
-            if (gltfMaterial.values.find("baseColorTexture") != gltfMaterial.values.end())
+            if (gMat.values.find("baseColorTexture") != gMat.values.end())
             {
-                out[i].BaseColorTexIndex =
-                    gltfMaterial.values.at("baseColorTexture").TextureIndex();
+                s.BaseColorTextureIndex = gMat.values.at("baseColorTexture").TextureIndex();
             }
+
+            out.push_back(s);
         }
-#if 0 
-        const auto& gMats     = gltfModel.materials;
-        const auto& gImages   = gltfModel.images;
-        const auto& gTextures = gltfModel.textures;
-        size_t index          = 0;
-        auto sceneName        = gltfModel.scenes[0].name + "_";
-        for (auto& m : gMats)
-        {
-            GltfMaterialSource mt;
-            mt.Name = m.name;
-            if (m.pbrMetallicRoughness.baseColorTexture.index != -1)
-            {
-                auto& texture = gTextures[m.pbrMetallicRoughness.baseColorTexture.index];
-
-                auto gBaseColorTexture = gImages[texture.source];
-                auto baseColorTextureName =
-                    gBaseColorTexture.name.empty() ? gBaseColorTexture.uri : gBaseColorTexture.name;
-                mt.BaseColorTextureName = File::ExtractFileName(baseColorTextureName);
-                if (mt.BaseColorTextureName.empty())
-                {
-                    mt.BaseColorTextureName = std::string(sceneName + std::to_string(index));
-                    index++;
-                }
-                mt.BaseColorTextureFactor[0] = m.pbrMetallicRoughness.baseColorFactor[0];
-                mt.BaseColorTextureFactor[1] = m.pbrMetallicRoughness.baseColorFactor[1];
-                mt.BaseColorTextureFactor[2] = m.pbrMetallicRoughness.baseColorFactor[2];
-                mt.BaseColorTextureFactor[3] = m.pbrMetallicRoughness.baseColorFactor[3];
-
-                mt.MetallicFactor  = m.pbrMetallicRoughness.metallicFactor;
-                mt.RoughnessFactor = m.pbrMetallicRoughness.roughnessFactor;
-            }
-            if (m.pbrMetallicRoughness.metallicRoughnessTexture.index != -1)
-            {
-                auto& texture = gTextures[m.pbrMetallicRoughness.metallicRoughnessTexture.index];
-
-                auto& metallicRoughness = gImages[texture.source];
-                mt.MetallicTextureName  = metallicRoughness.name.empty()
-                                              ? File::ExtractFileName(metallicRoughness.uri)
-                                              : metallicRoughness.name;
-
-                if (mt.MetallicTextureName.empty())
-                {
-                    mt.MetallicTextureName = std::string(sceneName + std::to_string(index));
-                    index++;
-                }
-            }
-            if (m.normalTexture.index != -1)
-            {
-                auto& texture       = gTextures[m.normalTexture.index];
-                auto& normalTexture = gImages[texture.source];
-                auto normalTexturename =
-                    normalTexture.name.empty() ? normalTexture.uri : normalTexture.name;
-                if (normalTexturename.empty())
-                {
-                    normalTexturename = std::string(sceneName + std::to_string(index));
-                    index++;
-                }
-
-                mt.NormalTextureName = File::ExtractFileName(normalTexturename);
-            }
-            out.push_back(mt);
-        }
-#endif
     }
     bool ReadFile(tinygltf::Model& input, const std::string& path, bool isGlb)
     {

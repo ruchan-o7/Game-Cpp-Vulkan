@@ -1,22 +1,17 @@
 #include "Renderer3D.h"
 #include "Backend.h"
-#include <cassert>
-#include <cstddef>
-#include <cstdint>
-#include <memory>
-#include <unordered_map>
+#include <Log.h>
+#include <imgui.h>
 #include "Shader.h"
-#include "../Core/VulkanPipeline.h"
 #include "Types/DeletionQueue.h"
+#include "../Core/VulkanPipeline.h"
 #include "../Core/RenderDevice.h"
 #include "../Core/VulkanBuffer.h"
 #include "../Camera/PerspectiveCamera.h"
 #include "../Camera/Camera.h"
-#include <imgui.h>
-#include "src/Core/AssetManager.h"
-#include "src/Engine/Core/VulkanTexture.h"
-#include "src/Engine/Engine/Types/GraphicTypes.h"
-#include <Log.h>
+#include "../../Core/AssetManager.h"
+#include "../../Engine/Core/VulkanTexture.h"
+#include "../../Engine/Engine/Types/GraphicTypes.h"
 namespace FooGame
 {
 #define VERT_SHADER          "Assets/Shaders/vert.spv"
@@ -149,7 +144,7 @@ namespace FooGame
             iInfo.pRenderDevice   = Backend::GetRenderDevice();
             iInfo.BufferData.Data = model->Indices.data();
             iInfo.BufferData.Size = indicesSize;
-            iInfo.Name            = "Mesh ib";
+            iInfo.Name            = "Mesh ib" + model->Name;
             ib                    = VulkanBuffer::CreateIndexBuffer(iInfo);
         }
 
@@ -243,10 +238,6 @@ namespace FooGame
         auto currentFrame = Backend::GetCurrentFrame();
         auto cmd          = Backend::GetCurrentCommandbuffer();
 
-        MeshPushConstants push{};
-        push.renderMatrix = transform;
-        Backend::PushConstant(rContext.pGraphicPipeline->GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
-                              sizeof(MeshPushConstants), &push);
         auto allocator = Backend::GetAllocatorHandle();
         auto exists    = s_Data.Res.Exists(asset->Asset->RenderId);
         if (!exists)
@@ -258,8 +249,13 @@ namespace FooGame
 
         for (const auto& mesh : asset->Asset->Meshes)
         {
-            for (const auto& primitive : mesh.DrawSpecs)
+            for (const auto& primitive : mesh.Primitives)
             {
+                MeshPushConstants push{};
+                push.renderMatrix = transform * mesh.Transform;
+                Backend::PushConstant(rContext.pGraphicPipeline->GetLayout(),
+                                      VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants),
+                                      &push);
                 const auto* materialAsset = AssetManager::GetMaterialAsset(primitive.MaterialId);
                 if (materialAsset == nullptr)
                 {
@@ -267,16 +263,9 @@ namespace FooGame
                 }
                 auto material = materialAsset->Asset;
 
-                AssetTextureC* baseColorTextureAsset;
-                if (material->BaseColorTexture.id == 0)
-                {
-                    baseColorTextureAsset = AssetManager::GetDefaultTextureAsset();
-                }
-                else
-                {
-                    baseColorTextureAsset =
-                        AssetManager::GetTextureAsset(material->BaseColorTexture.id);
-                }
+                AssetTextureC* baseColorTextureAsset =
+                    AssetManager::GetTextureAsset(material->BaseColorTexture.id);
+
                 auto baseColorTexture = baseColorTextureAsset->Asset;
 
                 auto& currentSet = rContext.descriptorSets[currentFrame];
