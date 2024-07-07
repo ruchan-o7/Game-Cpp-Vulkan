@@ -81,7 +81,7 @@ namespace FooGame
             ExecuteMainThreadQueue();
             if (!m_Minimized)
             {
-                m_ImGuiLayer->Begin();
+                m_ImGuiLayer->Begin(&m_MenuBarCallback);
                 for (Layer* l : m_LayerStack)
                 {
                     l->OnUpdate(ts);
@@ -129,5 +129,9 @@ namespace FooGame
             f();
         }
         m_MainThreadQueue.clear();
+    }
+    void Application::SetMenubarCallback(const std::function<void()>& callback)
+    {
+        m_MenuBarCallback = callback;
     }
 }  // namespace FooGame

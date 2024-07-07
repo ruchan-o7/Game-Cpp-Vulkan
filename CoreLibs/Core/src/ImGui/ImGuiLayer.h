@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include "../Core/Layer.h"
 #include "../Events/Event.h"
 namespace FooGame
@@ -13,7 +14,7 @@ namespace FooGame
             virtual void OnDetach() override;
             virtual void OnEvent(Event& e) override;
 
-            void Begin();
+            void Begin(std::function<void()>* callback = nullptr);
             void End();
 
             void BlockEvents(bool block) { m_BlockEvents = block; }

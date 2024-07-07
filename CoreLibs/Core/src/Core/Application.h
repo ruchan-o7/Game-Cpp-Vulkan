@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <mutex>
 #include "../Core/Assert.h"
 #include "../Core/Window.h"
@@ -50,6 +51,7 @@ namespace FooGame
 
             void SubmitToMainThread(const std::function<void()>& function);
             void ExecuteMainThreadQueue();
+            void SetMenubarCallback(const std::function<void()>& callback);
 
         private:
             void Run();
@@ -65,6 +67,7 @@ namespace FooGame
             LayerStack m_LayerStack;
             float m_LastFrameTime = 0.0f;
 
+            std::function<void()> m_MenuBarCallback;
             List<std::function<void()>> m_MainThreadQueue;
             std::mutex m_MainThreadQueueMutex;
 

@@ -10,6 +10,18 @@ namespace FooGame
     {
         Init();
         PushLayer(new EditorLayer(spec.CommandLineArgs));
+        SetMenubarCallback(
+            [&]()
+            {
+                if (ImGui::BeginMenu("File"))
+                {
+                    DEFER(ImGui::EndMenu());
+
+                    if (ImGui::MenuItem("Foo"))
+                    {
+                    }
+                }
+            });
     }
     void Editor::Init()
     {
