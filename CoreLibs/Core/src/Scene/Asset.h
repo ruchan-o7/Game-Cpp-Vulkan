@@ -35,6 +35,7 @@ namespace FooGame::Asset
     };
     struct FMaterial
     {
+            UUID Id;
             String Name;
             TextureInfo BaseColorTexture;
             UUID NormalTextureId;
@@ -74,6 +75,7 @@ namespace FooGame::Asset
             u32 Height;
             u8 ChannelCount;
             TextureFormat Format;
+            UUID Id;
     };
     struct DrawPrimitive
     {
@@ -97,6 +99,7 @@ namespace FooGame::Asset
             size_t VertexCount;
             size_t IndicesCount;
             u32 MeshCount = 1;
+            UUID Id;
     };
 
 }  // namespace FooGame::Asset

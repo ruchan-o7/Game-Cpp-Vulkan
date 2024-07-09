@@ -18,9 +18,11 @@ namespace FooGame
             void DrawEntityNode(Entity entity);
             void DrawComponents(Entity entity);
             void DrawMaterial();
-            void DrawMaterialSection();
+            void DrawImage();
+            void DrawModel();
             void DrawAssets();
             void RefreshAssetFiles();
+            void DrawAssetProperty();
 
         private:
             Scene* m_pScene;

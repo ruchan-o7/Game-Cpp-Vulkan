@@ -19,8 +19,21 @@
 #include "../Core/GltfLoader.h"
 #include "../Config.h"
 #include "../Engine/Engine/Renderer3D.h"
+#include "../Scene/AssetSerializer.h"
+#include "backends/imgui_impl_vulkan.h"
+#include "../Engine/Core/VulkanTexture.h"
+#include "src/Core/Assert.h"
+#include "vulkan/vulkan_core.h"
+#include <nlohmann/json.hpp>
 namespace FooGame
 {
+    enum class AssetType
+    {
+        Material,
+        Image,
+        Model
+    };
+    template <class Type>
     struct AssetFile
     {
             std::filesystem::path Asset;
@@ -28,14 +41,22 @@ namespace FooGame
 
             String AssetStr;
             String ExtraStr;
+            Type AssetFile;
+            bool IsLoaded           = false;
+            UUID Id                 = 0;
+            VkDescriptorSet Preview = VK_NULL_HANDLE;
     };
     static std::filesystem::path materialsDir;
     static std::filesystem::path imagesDir;
     static std::filesystem::path modelsDir;
     static const std::string scriptNames[] = {"RotateScript", "ScaleYoink", "CameraController"};
-    List<AssetFile> imageFiles;
-    List<AssetFile> modelFiles;
-    List<AssetFile> materialFiles;
+    List<AssetFile<Asset::FImage>> imageFiles;
+    List<AssetFile<Asset::FModel>> modelFiles;
+    List<AssetFile<Asset::FMaterial>> materialFiles;
+
+    AssetType m_SelectedAssetType;
+    i32 m_SelectedAssetFileIndex = -1;
+
     SceneHierarchyPanel::SceneHierarchyPanel(Scene* context)
     {
         SetContext(context);
@@ -53,9 +74,10 @@ namespace FooGame
     void SceneHierarchyPanel::RefreshAssetFiles()
     {
         // Images
+
         for (auto& f : std::filesystem::directory_iterator(imagesDir))
         {
-            AssetFile af;
+            AssetFile<Asset::FImage> af;
             DEFER(imageFiles.emplace_back(std::move(af)));
             if (f.path().extension() == FIMAGE_ASSET_EXTENSION)
             {
@@ -65,14 +87,18 @@ namespace FooGame
             }
             if (f.path().extension() == FIMAGE_BUFFER_EXTENSION)
             {
-                af.Extra    = f.path();
-                af.ExtraStr = af.Extra.filename().replace_extension().string();
+                imageFiles[imageFiles.size() - 1].Extra = f.path();
+                imageFiles[imageFiles.size() - 1].ExtraStr =
+                    f.path().filename().replace_extension().string();
+                // af.Extra    = f.path();
+                //
+                // af.ExtraStr = af.Extra.filename().replace_extension().string();
             }
         }
         // Materials
         for (auto& f : std::filesystem::directory_iterator(materialsDir))
         {
-            AssetFile af;
+            AssetFile<Asset::FMaterial> af;
             DEFER(materialFiles.emplace_back(std::move(af)));
             if (f.path().extension() == FMATERIAL_ASSET_EXTENSION)
             {
@@ -84,7 +110,7 @@ namespace FooGame
         // Models
         for (auto& f : std::filesystem::directory_iterator(modelsDir))
         {
-            AssetFile af;
+            AssetFile<Asset::FModel> af;
             DEFER(modelFiles.emplace_back(std::move(af)));
             if (f.path().extension() == FMODEL_ASSET_EXTENSION)
             {
@@ -123,110 +149,76 @@ namespace FooGame
             if (ImGui::BeginTabItem("Materials"))
             {
                 DEFER(ImGui::EndTabItem());
-                for (const auto& m : materialFiles)
+                for (size_t i = 0; i < materialFiles.size(); i++)
                 {
-                    ImGui::Text("%s", m.AssetStr.c_str());
+                    if (ImGui::Selectable(materialFiles[i].AssetStr.c_str()))
+                    {
+                        m_SelectedAssetFileIndex = i;
+                        m_SelectedAssetType      = AssetType::Material;
+                        if (!materialFiles[i].IsLoaded)
+                        {
+                            std::ifstream is{materialFiles[i].Asset};
+                            DEFER(is.close());
+                            nlohmann::json js = nlohmann::json::parse(is);
+                            MaterialSerializer ms;
+                            materialFiles[i].AssetFile = std::move(ms.DeSerialize(js));
+                            materialFiles[i].IsLoaded  = true;
+                        }
+                    }
                 }
             }
             if (ImGui::BeginTabItem("Images"))
             {
                 DEFER(ImGui::EndTabItem());
 
-                for (const auto& i : imageFiles)
+                for (size_t i = 0; i < imageFiles.size(); i++)
                 {
-                    ImGui::Text("%s", i.AssetStr.c_str());
+                    auto& imFile = imageFiles[i];
+
+                    if (ImGui::Selectable(imFile.AssetStr.c_str()))
+                    {
+                        m_SelectedAssetFileIndex = i;
+                        m_SelectedAssetType      = AssetType::Image;
+                        if (!imFile.IsLoaded)
+                        {
+                            std::ifstream is{imFile.Asset};
+                            DEFER(is.close());
+                            nlohmann::json js = nlohmann::json::parse(is);
+                            ImageSerializer ms;
+                            imFile.AssetFile = std::move(ms.DeSerialize(js));
+                            imFile.IsLoaded  = true;
+                        }
+                    }
                 }
             }
             if (ImGui::BeginTabItem("Models"))
             {
                 DEFER(ImGui::EndTabItem());
-                for (const auto& m : modelFiles)
+                for (size_t i = 0; i < modelFiles.size(); i++)
                 {
-                    ImGui::Text("%s", m.AssetStr.c_str());
-                }
-            }
-        }
-    }
-    void SceneHierarchyPanel::DrawMaterialSection()
-    {
-        ImGui::Begin("Scene materials");
-        {
-            auto& materials = AssetManager::GetAllMaterials();
-            auto avail      = ImGui::GetContentRegionAvail();
-            ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
-            DEFER(ImGui::PopStyleVar());
-            ImGui::BeginChild("material_list", ImVec2(avail.x, 200), ImGuiChildFlags_Border,
-                              ImGuiWindowFlags_MenuBar);
-
-            DEFER(ImGui::EndChild());
-            {
-                ImGui::BeginMenuBar();
-
-                DEFER(ImGui::EndMenuBar());
-
-                if (ImGui::BeginMenu("File"))
-                {
-                    DEFER(ImGui::EndMenu());
-                    if (ImGui::MenuItem("Add Material"))
+                    if (ImGui::Selectable(modelFiles[i].AssetStr.c_str()))
                     {
-                        auto* newMat                  = new Asset::FMaterial;
-                        newMat->Name                  = "New Material";
-                        newMat->BaseColorTexture.Name = DEFAULT_TEXTURE_NAME;
-                        newMat->BaseColorTexture.id   = 111;  // DEFAULT_TEXTURE_ID;
-
-                        auto id = UUID();
-
-                        AssetManager::AddMaterial(Shared<Asset::FMaterial>(newMat), id);
-                        m_SelectedMaterial = id;
-                    }
-                    if (ImGui::MenuItem("Add Texture"))
-                    {
-                        List<std::filesystem::path> outPaths;
-                        File::OpenFileDialog(outPaths);
-                        for (auto& p : outPaths)
+                        m_SelectedAssetFileIndex = i;
+                        m_SelectedAssetType      = AssetType::Model;
+                        if (!modelFiles[i].IsLoaded)
                         {
-                            auto extension = p.extension().string();
-                            if (extension != ".png" || extension != ".jpg" || extension != ".jpeg")
-                            {
-                                AssetManager::LoadExternalImage(p);
-                            }
+                            std::ifstream is{modelFiles[i].Asset};
+                            DEFER(is.close());
+                            nlohmann::json js = nlohmann::json::parse(is);
+                            ModelSerializer ms;
+                            modelFiles[i].AssetFile = std::move(ms.DeSerialize(js));
+                            modelFiles[i].IsLoaded  = true;
                         }
                     }
                 }
             }
-            u64 willDeleteMat = 0;
-            for (auto& [id, mat] : materials)
-            {
-                if (ImGui::Selectable(mat.Name.c_str()))
-                {
-                    m_SelectedMaterial = id;
-                }
-                if (ImGui::BeginPopupContextItem())
-                {
-                    if (ImGui::Button("Remove material"))
-                    {
-                        willDeleteMat = id;
-                        ImGui::CloseCurrentPopup();
-                    }
-                    ImGui::EndPopup();
-                }
-            }
-            if (willDeleteMat != 0)
-            {
-                materials.extract(willDeleteMat);
-                m_SelectedMaterial = 0;
-            }
         }
-        if (m_SelectedMaterial != 0)
-        {
-            DrawMaterial();
-        }
-        ImGui::End();
     }
 
     void SceneHierarchyPanel::OnImgui()
     {
         ImGui::Begin("Scene hierarchy");
+        DEFER(ImGui::End());
         if (m_pScene)
         {
             m_pScene->m_Registry.view<TransformComponent>().each(
@@ -250,47 +242,69 @@ namespace FooGame
             }
         }
         ImGui::Begin("Properties");
+        DEFER(ImGui::End());
         if (m_SelectionContext)
         {
             DrawComponents(m_SelectionContext);
         }
 
-        DrawMaterialSection();
+        // DrawMaterialSection();
+        ImGui::Begin("Asset properties");
+        DEFER(ImGui::End());
 
-        ImGui::End();
-
-        ImGui::End();
-
+        DrawAssetProperty();
         DrawAssets();
+    }
+    void SceneHierarchyPanel::DrawAssetProperty()
+    {
+        if (m_SelectedAssetFileIndex == -1)
+        {
+            return;
+        }
+        switch (m_SelectedAssetType)
+        {
+            case AssetType::Material:
+            {
+                DrawMaterial();
+                break;
+            }
+            case AssetType::Image:
+            {
+                DrawImage();
+                break;
+            }
+            case AssetType::Model:
+            {
+                DrawModel();
+                break;
+            }
+        }
     }
     void SceneHierarchyPanel::DrawMaterial()
     {
         auto avail = ImGui::GetContentRegionAvail();
-        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
-        DEFER(ImGui::PopStyleVar());
-        ImGui::BeginChild("material_props", avail, ImGuiChildFlags_Border,
-                          ImGuiWindowFlags_MenuBar);
-        DEFER(ImGui::EndChild());
 
         char buffer[256];
         memset(buffer, 0, sizeof(buffer));
         ImGui::SeparatorText("Material Properties");
-        auto* materialAsset = AssetManager::GetMaterialAsset(m_SelectedMaterial);
-        auto material       = materialAsset->Asset;
-        strncpy_s(buffer, sizeof(buffer), material->Name.c_str(), sizeof(buffer));
-        if (materialAsset->Id != DEFAULT_MATERIAL_ID)
+        // auto* materialAsset = AssetManager::GetMaterialAsset(m_SelectedMaterial);
+        // auto material       = materialAsset->Asset;
+        auto& materialFile = materialFiles[m_SelectedAssetFileIndex];
+        auto& material     = materialFile.AssetFile;
+        strncpy_s(buffer, sizeof(buffer), material.Name.c_str(), sizeof(buffer));
+        if (materialFile.Id != DEFAULT_MATERIAL_ID)
         {
             if (ImGui::InputText("##Name", buffer, sizeof(buffer)))
             {
-                material->Name      = std::string(buffer);
-                materialAsset->Name = std::string(buffer);
+                material.Name = std::string(buffer);
+                // materialAsset->Name = std::string(buffer);
             }
         }
         else
         {
-            ImGui::Text("%s", material->Name.c_str());
+            ImGui::Text("%s", material.Name.c_str());
         }
-        ImGui::Text("Base color: %s", material->BaseColorTexture.Name.c_str());
+        ImGui::Text("Base color: %s", material.BaseColorTexture.Name.c_str());
         ImGui::SameLine();
         if (ImGui::Button("Change"))
         {
@@ -299,16 +313,71 @@ namespace FooGame
         if (ImGui::BeginPopup("texture_popup_base"))
         {
             ImGui::SeparatorText("All Textures");
+            DEFER(ImGui::EndPopup());
             auto textures = AssetManager::GetAllImages();
             for (auto& [id, tex] : textures)
             {
                 if (ImGui::Selectable(tex.Name.c_str()))
                 {
-                    material->BaseColorTexture.id   = id;
-                    material->BaseColorTexture.Name = String(tex.Name);
+                    material.BaseColorTexture.id   = id;
+                    material.BaseColorTexture.Name = String(tex.Name);
                 }
             }
-            ImGui::EndPopup();
+        }
+    }
+    void SceneHierarchyPanel::DrawImage()
+    {
+        char buffer[256];
+        memset(buffer, 0, sizeof(buffer));
+        ImGui::SeparatorText("Image Properties");
+        auto& imageFile = imageFiles[m_SelectedAssetFileIndex];
+        auto& image     = imageFile.AssetFile;
+        strncpy_s(buffer, sizeof(buffer), image.Name.c_str(), sizeof(buffer));
+        if (imageFile.Id != DEFAULT_MATERIAL_ID || imageFile.Id != 0)
+        {
+            if (ImGui::InputText("##Name", buffer, sizeof(buffer)))
+            {
+                image.Name = std::string(buffer);
+                // materialAsset->Name = std::string(buffer);
+            }
+            if (imageFile.Preview == VK_NULL_HANDLE)
+            {
+                FOO_CORE_INFO("Image asset preview is null so uploading");
+
+                AssetManager::LoadFIMG(imageFile.AssetFile, imageFile.Id);
+
+                auto& loadedImage = AssetManager::GetTextureAsset(imageFile.Id)->Asset;
+
+                imageFile.Preview = ImGui_ImplVulkan_AddTexture(
+                    loadedImage->DescriptorInfo.sampler, loadedImage->DescriptorInfo.imageView,
+                    loadedImage->DescriptorInfo.imageLayout);
+                FOO_ASSERT(imageFile.Preview != VK_NULL_HANDLE);
+            }
+            ImGui::Image(imageFile.Preview, ImVec2(100, 100));
+        }
+        else
+        {
+            ImGui::Text("%s", image.Name.c_str());
+        }
+    }
+    void SceneHierarchyPanel::DrawModel()
+    {
+        char buffer[256];
+        memset(buffer, 0, sizeof(buffer));
+        ImGui::SeparatorText("Model Properties");
+        auto& modelFile = modelFiles[m_SelectedAssetFileIndex];
+        auto& model     = modelFile.AssetFile;
+        strncpy_s(buffer, sizeof(buffer), model.Name.c_str(), sizeof(buffer));
+        if (modelFile.Id != DEFAULT_MATERIAL_ID)
+        {
+            if (ImGui::InputText("##Name", buffer, sizeof(buffer)))
+            {
+                model.Name = std::string(buffer);
+            }
+        }
+        else
+        {
+            ImGui::Text("%s", model.Name.c_str());
         }
     }
     void SceneHierarchyPanel::DrawEntityNode(Entity entity)

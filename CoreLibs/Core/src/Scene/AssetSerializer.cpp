@@ -1,8 +1,5 @@
 #include "AssetSerializer.h"
 #include "Asset.h"
-#include "glm/ext/matrix_transform.hpp"
-#include "glm/fwd.hpp"
-#include "glm/gtc/type_ptr.hpp"
 #include "json.hpp"
 namespace FooGame
 {
@@ -11,6 +8,7 @@ namespace FooGame
         using json = nlohmann::json;
         json j;
         j["name"]                  = mat.Name;
+        j["id"]                    = (u64)mat.Id;
         j["baseColorTexture"]      = json::object({
             {    "id", (u64)mat.BaseColorTexture.id},
             {"factor",  mat.BaseColorTexture.factor}
@@ -45,8 +43,8 @@ namespace FooGame
     Asset::FMaterial MaterialSerializer::DeSerialize(const nlohmann::json& json)
     {
         Asset::FMaterial mat;
-        mat.Name = json["name"];
-
+        mat.Name                       = json["name"];
+        mat.Id                         = json["id"].get<u64>();
         mat.BaseColorTexture.id        = json["baseColorTexture"]["id"].get<u64>();
         mat.BaseColorTexture.factor[0] = json["baseColorTexture"]["factor"][0];
         mat.BaseColorTexture.factor[1] = json["baseColorTexture"]["factor"][1];
@@ -84,6 +82,7 @@ namespace FooGame
     {
         using json = nlohmann::json;
         json j;
+        j["id"]           = (u64)image.Id;
         j["name"]         = image.Name;
         j["size"]         = image.Size;
         j["width"]        = image.Width;
@@ -105,6 +104,7 @@ namespace FooGame
     {
         Asset::FImage i;
         i.Name         = json["name"];
+        i.Id           = json["id"].get<u64>();
         i.Size         = json["size"];
         i.Width        = json["width"];
         i.Height       = json["height"];
@@ -123,6 +123,7 @@ namespace FooGame
         j["totalSize"]    = model.TotalSize;
         j["vertices"]     = model.Vertices;
         j["indices"]      = model.Indices;
+        j["id"]           = (u64)model.Id;
         for (auto& mesh : model.Meshes)
         {
             json m;
@@ -156,6 +157,7 @@ namespace FooGame
         m.TotalSize    = json["totalSize"];
         m.VertexCount  = json["vertexCount"];
         m.IndicesCount = json["indicesCount"];
+        m.Id           = json["id"].get<u64>();
         List<float> ve = json["vertices"];
         List<u32> in   = json["indices"];
         m.Vertices     = std::move(ve);
