@@ -78,11 +78,11 @@ namespace FooGame
         for (auto& f : std::filesystem::directory_iterator(imagesDir))
         {
             AssetFile<Asset::FImage> af;
-            DEFER(imageFiles.emplace_back(std::move(af)));
             if (f.path().extension() == FIMAGE_ASSET_EXTENSION)
             {
                 af.Asset    = f.path();
                 af.AssetStr = af.Asset.filename().replace_extension().string();
+                imageFiles.emplace_back(std::move(af));
                 continue;
             }
             if (f.path().extension() == FIMAGE_BUFFER_EXTENSION)
@@ -90,9 +90,6 @@ namespace FooGame
                 imageFiles[imageFiles.size() - 1].Extra = f.path();
                 imageFiles[imageFiles.size() - 1].ExtraStr =
                     f.path().filename().replace_extension().string();
-                // af.Extra    = f.path();
-                //
-                // af.ExtraStr = af.Extra.filename().replace_extension().string();
             }
         }
         // Materials
@@ -140,6 +137,10 @@ namespace FooGame
                 }
                 if (ImGui::Selectable("Add Image/Texture"))
                 {
+                    auto image = File::OpenFileDialog(
+                        "Image file (*.png;*.jpg;*.jpeg)\0*.png\0*.jpg\0*.jpeg");
+                    AssetManager::LoadExternalImage(image);
+                    RefreshAssetFiles();
                 }
                 if (ImGui::Selectable("Add Model"))
                 {
@@ -354,6 +355,9 @@ namespace FooGame
                 FOO_ASSERT(imageFile.Preview != VK_NULL_HANDLE);
             }
             ImGui::Image(imageFile.Preview, ImVec2(100, 100));
+            ImGui::SameLine();
+            ImGui::Text("Width: %d", imageFile.AssetFile.Width);
+            ImGui::Text("Height: %d", imageFile.AssetFile.Height);
         }
         else
         {
