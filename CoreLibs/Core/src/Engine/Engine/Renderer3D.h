@@ -1,6 +1,7 @@
 #pragma once
 #include "../Engine/Types/GraphicTypes.h"
 #include "../../Core/UUID.h"
+#include "src/Engine/Core/VulkanPipeline.h"
 struct VkCommandBuffer_T;
 typedef VkCommandBuffer_T* VkCommandBuffer;
 namespace FooGame
@@ -29,6 +30,7 @@ namespace FooGame
 
         public:
             static void DrawModel(UUID id, const glm::mat4& transform);
+            static VulkanPipeline* GetPipeline();
 
         public:
             static void SubmitModel(UUID id);

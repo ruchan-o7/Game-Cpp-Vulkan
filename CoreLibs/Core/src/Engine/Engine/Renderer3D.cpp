@@ -28,15 +28,7 @@ namespace FooGame
     {
             std::unique_ptr<VulkanBuffer> VertexBuffer = nullptr;
             std::unique_ptr<VulkanBuffer> IndexBuffer  = nullptr;
-            // Mesh* PtrMesh                              = nullptr;
-            Model* PtrModel = nullptr;
-    };
-    struct StaticMeshContainer
-    {
-            std::vector<std::unique_ptr<VulkanTexture>> VertexBuffer;
-            std::vector<std::unique_ptr<VulkanTexture>> IndexBuffer;
-            size_t TotalSize = 0;
-            // todo some sort of data structure for keeping indexes offsets etc
+            Model* PtrModel                            = nullptr;
     };
 
     struct RenderData
@@ -74,6 +66,10 @@ namespace FooGame
     RendererContext rContext{};
     static RenderData s_Data;
     static bool g_IsInitialized = false;
+    VulkanPipeline* Renderer3D::GetPipeline()
+    {
+        return rContext.pGraphicPipeline.get();
+    }
     void Renderer3D::Init(class RenderDevice* pRenderDevice)
     {
         assert(!g_IsInitialized && "Do not init renderer3d twice!");

@@ -1,5 +1,4 @@
 #include "ImGuiLayer.h"
-#include "GLFW/glfw3.h"
 #include "imgui.h"
 #include <vulkan/vulkan.h>
 #include "../Engine/Engine/Backend.h"
