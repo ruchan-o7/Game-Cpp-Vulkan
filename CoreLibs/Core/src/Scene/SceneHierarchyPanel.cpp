@@ -2,6 +2,7 @@
 #include <pch.h>
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <filesystem>
 #include "Entity.h"
 #include "Scene.h"
 #include "Component.h"
@@ -17,16 +18,134 @@
 #include "../Scene/Asset.h"
 #include "../Core/GltfLoader.h"
 #include "../Config.h"
+#include "../Engine/Engine/Renderer3D.h"
 namespace FooGame
 {
+    struct AssetFile
+    {
+            std::filesystem::path Asset;
+            std::filesystem::path Extra;
+
+            String AssetStr;
+            String ExtraStr;
+    };
+    static std::filesystem::path materialsDir;
+    static std::filesystem::path imagesDir;
+    static std::filesystem::path modelsDir;
     static const std::string scriptNames[] = {"RotateScript", "ScaleYoink", "CameraController"};
+    List<AssetFile> imageFiles;
+    List<AssetFile> modelFiles;
+    List<AssetFile> materialFiles;
     SceneHierarchyPanel::SceneHierarchyPanel(Scene* context)
     {
         SetContext(context);
+        materialsDir = File::GetMaterialsPath();
+        imagesDir    = File::GetImagesPath();
+        modelsDir    = File::GetModelsPath();
+        RefreshAssetFiles();
     }
+
     void SceneHierarchyPanel::SetContext(Scene* context)
     {
         m_pScene = context;
+    }
+
+    void SceneHierarchyPanel::RefreshAssetFiles()
+    {
+        // Images
+        for (auto& f : std::filesystem::directory_iterator(imagesDir))
+        {
+            AssetFile af;
+            DEFER(imageFiles.emplace_back(std::move(af)));
+            if (f.path().extension() == FIMAGE_ASSET_EXTENSION)
+            {
+                af.Asset    = f.path();
+                af.AssetStr = af.Asset.filename().replace_extension().string();
+                continue;
+            }
+            if (f.path().extension() == FIMAGE_BUFFER_EXTENSION)
+            {
+                af.Extra    = f.path();
+                af.ExtraStr = af.Extra.filename().replace_extension().string();
+            }
+        }
+        // Materials
+        for (auto& f : std::filesystem::directory_iterator(materialsDir))
+        {
+            AssetFile af;
+            DEFER(materialFiles.emplace_back(std::move(af)));
+            if (f.path().extension() == FMATERIAL_ASSET_EXTENSION)
+            {
+                af.Asset    = f.path();
+                af.AssetStr = af.Asset.filename().replace_extension().string();
+            }
+        }
+
+        // Models
+        for (auto& f : std::filesystem::directory_iterator(modelsDir))
+        {
+            AssetFile af;
+            DEFER(modelFiles.emplace_back(std::move(af)));
+            if (f.path().extension() == FMODEL_ASSET_EXTENSION)
+            {
+                af.Asset    = f.path();
+                af.AssetStr = af.Asset.filename().replace_extension().string();
+            }
+        }
+    }
+    void SceneHierarchyPanel::DrawAssets()
+    {
+        ImGui::Begin("Assets");
+        DEFER(ImGui::End());
+        if (ImGui::BeginTabBar("_assets_panel_"))
+        {
+            DEFER(ImGui::EndTabBar());
+
+            if (ImGui::BeginPopupContextItem("_assets_pop_context_"))
+            {
+                DEFER(ImGui::EndPopup());
+                if (ImGui::Selectable("Refresh"))
+                {
+                    RefreshAssetFiles();
+                }
+
+                if (ImGui::Selectable("Add Material"))
+                {
+                }
+                if (ImGui::Selectable("Add Image/Texture"))
+                {
+                }
+                if (ImGui::Selectable("Add Model"))
+                {
+                }
+            }
+
+            if (ImGui::BeginTabItem("Materials"))
+            {
+                DEFER(ImGui::EndTabItem());
+                for (const auto& m : materialFiles)
+                {
+                    ImGui::Text("%s", m.AssetStr.c_str());
+                }
+            }
+            if (ImGui::BeginTabItem("Images"))
+            {
+                DEFER(ImGui::EndTabItem());
+
+                for (const auto& i : imageFiles)
+                {
+                    ImGui::Text("%s", i.AssetStr.c_str());
+                }
+            }
+            if (ImGui::BeginTabItem("Models"))
+            {
+                DEFER(ImGui::EndTabItem());
+                for (const auto& m : modelFiles)
+                {
+                    ImGui::Text("%s", m.AssetStr.c_str());
+                }
+            }
+        }
     }
     void SceneHierarchyPanel::DrawMaterialSection()
     {
@@ -141,6 +260,8 @@ namespace FooGame
         ImGui::End();
 
         ImGui::End();
+
+        DrawAssets();
     }
     void SceneHierarchyPanel::DrawMaterial()
     {

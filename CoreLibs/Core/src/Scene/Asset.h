@@ -51,6 +51,15 @@ namespace FooGame::Asset
             float AlphaCutOff   = 0.5f;
             bool DoubleSided    = false;
     };
+    static FMaterial* CreateNewMaterial()
+    {
+        auto* m                  = new FMaterial;
+        m->Name                  = "New Material";
+        m->BaseColorTexture.Name = DEFAULT_TEXTURE_NAME;
+        m->BaseColorTexture.id   = DEFAULT_TEXTURE_ID;
+
+        return m;
+    }
     enum class TextureFormat
     {
         RGBA8,

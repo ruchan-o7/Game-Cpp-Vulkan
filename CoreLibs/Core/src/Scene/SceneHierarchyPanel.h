@@ -1,5 +1,4 @@
 #pragma once
-#include <string_view>
 #include "Entity.h"
 namespace FooGame
 {
@@ -20,6 +19,8 @@ namespace FooGame
             void DrawComponents(Entity entity);
             void DrawMaterial();
             void DrawMaterialSection();
+            void DrawAssets();
+            void RefreshAssetFiles();
 
         private:
             Scene* m_pScene;
