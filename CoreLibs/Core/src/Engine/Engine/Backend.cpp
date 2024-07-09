@@ -13,7 +13,6 @@
 #include "Types/DeletionQueue.h"
 #include "src/Core/Application.h"
 #include "src/Engine/Core/Types.h"
-#include "vulkan/vulkan_core.h"
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <backends/imgui_impl_glfw.h>
@@ -23,9 +22,9 @@ namespace FooGame
 {
     struct FrameStatistics
     {
-            uint32_t currentFrame = 0;
-            int32_t fbWidth       = 0;
-            int32_t fbHeight      = 0;
+            u32 currentFrame = 0;
+            i32 fbWidth      = 0;
+            i32 fbHeight     = 0;
     };
     struct EngineComponents
     {
@@ -42,16 +41,16 @@ namespace FooGame
             VulkanRenderPass* pRenderPass       = nullptr;
             EngineCreateInfo engineCi;
             SwapchainDescription sDesc{};
-            std::vector<FramebufferWrapper> FrameBuffers;
+            List<FramebufferWrapper> FrameBuffers;
             CommandPoolWrapper commandPool;
-            std::unique_ptr<vke::DescriptorAllocatorPool> DescriptorAllocatorPool;
-            std::vector<VkCommandBuffer> commandBuffers;
+            Unique<vke::DescriptorAllocatorPool> DescriptorAllocatorPool;
+            List<VkCommandBuffer> commandBuffers;
     };
     BackendContext bContext{};
     FrameStatistics frameData{};
     EngineComponents comps{};
 
-    uint32_t Backend::GetCurrentFrame()
+    u32 Backend::GetCurrentFrame()
     {
         return frameData.currentFrame;
     }
@@ -180,31 +179,20 @@ namespace FooGame
         allocInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         allocInfo.commandPool        = bContext.commandPool;
         allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = (uint32_t)bContext.commandBuffers.size();
+        allocInfo.commandBufferCount = (u32)bContext.commandBuffers.size();
 
         for (int i = 0; i < 2; i++)
         {
             bContext.commandBuffers[i] = bContext.pRenderDevice->AllocateCommandBuffer(allocInfo);
         }
 
-        bContext.DescriptorAllocatorPool = std::unique_ptr<vke::DescriptorAllocatorPool>(
+        bContext.DescriptorAllocatorPool = Unique<vke::DescriptorAllocatorPool>(
             vke::DescriptorAllocatorPool::Create(bContext.pRenderDevice->GetVkDevice()));
         bContext.DescriptorAllocatorPool->SetPoolSizeMultiplier(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                                                                 2);
         bContext.DescriptorAllocatorPool->SetPoolSizeMultiplier(VK_DESCRIPTOR_TYPE_SAMPLER, 2);
         bContext.DescriptorAllocatorPool->SetPoolSizeMultiplier(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
                                                                 2);
-        // InitImgui();
-
-        // comps.deletionQueue.PushFunction(
-        //     [&](VkDevice d)
-        //     {
-        //         ImGui_ImplVulkan_Shutdown();
-        //         ImGui_ImplGlfw_Shutdown();
-        //         ImGui::DestroyContext();
-        //
-        //         vkDestroyDescriptorPool(d, g_ImguiPool, nullptr);
-        //     });
         BeginDrawing();
     }
 
@@ -390,7 +378,7 @@ namespace FooGame
         VK_CALL(vkCreateDescriptorSetLayout(bContext.pRenderDevice->GetVkDevice(), &info, nullptr,
                                             &layout));
     }
-    void Backend::BindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, VkBuffer* buffer,
+    void Backend::BindVertexBuffers(u32 firstBinding, u32 bindingCount, VkBuffer* buffer,
                                     size_t* offsets)
     {
         vkCmdBindVertexBuffers(GetCurrentCommandbuffer(), firstBinding, bindingCount, buffer,
@@ -400,14 +388,13 @@ namespace FooGame
     {
         vkCmdBindIndexBuffer(GetCurrentCommandbuffer(), buffer, offset, indexType);
     }
-    void Backend::DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
-                              int32_t vertexOffset, uint32_t firstInstance)
+    void Backend::DrawIndexed(u32 indexCount, u32 instanceCount, u32 firstIndex, i32 vertexOffset,
+                              u32 firstInstance)
     {
         vkCmdDrawIndexed(GetCurrentCommandbuffer(), indexCount, instanceCount, firstIndex,
                          vertexOffset, firstInstance);
     }
-    void Backend::Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
-                       uint32_t firstInstance)
+    void Backend::Draw(u32 vertexCount, u32 instanceCount, u32 firstVertex, u32 firstInstance)
     {
         vkCmdDraw(GetCurrentCommandbuffer(), vertexCount, instanceCount, firstVertex,
                   firstInstance);
@@ -425,24 +412,24 @@ namespace FooGame
     {
         vkCmdSetScissor(GetCurrentCommandbuffer(), 0, 1, &scissor);
     }
-    void Backend::PushConstant(const VkPipelineLayout& layout, VkShaderStageFlags stage,
-                               uint32_t offset, uint32_t size, const void* data)
+    void Backend::PushConstant(const VkPipelineLayout& layout, VkShaderStageFlags stage, u32 offset,
+                               u32 size, const void* data)
     {
         vkCmdPushConstants(GetCurrentCommandbuffer(), layout, stage, offset, size, data);
     }
-    void Backend::UpdateDescriptorSets(int32_t descriptorWriteCount,
+    void Backend::UpdateDescriptorSets(i32 descriptorWriteCount,
                                        const VkWriteDescriptorSet* pDescriptorWrites,
-                                       int32_t descriptorCopyCount,
+                                       i32 descriptorCopyCount,
                                        const VkCopyDescriptorSet* pDescriptorCopies)
     {
         vkUpdateDescriptorSets(bContext.pRenderDevice->GetVkDevice(), descriptorWriteCount,
                                pDescriptorWrites, descriptorCopyCount, pDescriptorCopies);
     }
-    void Backend::BindGraphicPipelineDescriptorSets(VkPipelineLayout layout, uint32_t firstSet,
-                                                    uint32_t descriptorSetCount,
+    void Backend::BindGraphicPipelineDescriptorSets(VkPipelineLayout layout, u32 firstSet,
+                                                    u32 descriptorSetCount,
                                                     const VkDescriptorSet* pDescriptorSets,
-                                                    uint32_t dynamicOffsetCount,
-                                                    const uint32_t* pDynamicOffsets)
+                                                    u32 dynamicOffsetCount,
+                                                    const u32* pDynamicOffsets)
     {
         vkCmdBindDescriptorSets(GetCurrentCommandbuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, layout,
                                 firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount,

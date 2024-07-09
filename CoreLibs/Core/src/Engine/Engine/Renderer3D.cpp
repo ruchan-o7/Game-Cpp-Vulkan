@@ -26,18 +26,18 @@ namespace FooGame
 
     struct MeshDrawData2
     {
-            std::unique_ptr<VulkanBuffer> VertexBuffer = nullptr;
-            std::unique_ptr<VulkanBuffer> IndexBuffer  = nullptr;
-            Model* PtrModel                            = nullptr;
+            Unique<VulkanBuffer> VertexBuffer = nullptr;
+            Unique<VulkanBuffer> IndexBuffer  = nullptr;
+            Model* PtrModel                   = nullptr;
     };
 
     struct RenderData
     {
             struct Resources
             {
-                    std::unordered_map<uint32_t, MeshDrawData2> MeshMap2;
-                    uint32_t FreeIndex                  = 0;
-                    std::shared_ptr<Model> DefaultModel = nullptr;
+                    Hashmap<u32, MeshDrawData2> MeshMap2;
+                    u32 FreeIndex              = 0;
+                    Shared<Model> DefaultModel = nullptr;
                     DeletionQueue deletionQueue;
                     bool Exists(UUID id)
                     {
@@ -59,8 +59,8 @@ namespace FooGame
     };
     struct RendererContext
     {
-            std::vector<std::unique_ptr<VulkanBuffer>> uniformBuffers{2};
-            std::unique_ptr<VulkanPipeline> pGraphicPipeline;
+            std::vector<Unique<VulkanBuffer>> uniformBuffers{2};
+            Unique<VulkanPipeline> pGraphicPipeline;
             VkDescriptorSet descriptorSets[3];
     };
     RendererContext rContext{};
@@ -77,7 +77,7 @@ namespace FooGame
         auto* device    = pRenderDevice->GetVkDevice();
         g_IsInitialized = true;
 
-        for (uint32_t i = 0; i < 2; i++)
+        for (u32 i = 0; i < 2; i++)
         {
             VulkanBuffer::BuffDesc desc{};
             desc.pRenderDevice   = pRenderDevice;
@@ -132,7 +132,7 @@ namespace FooGame
         vInfo.Name            = "Model vb: " + model->Name;
         auto vb               = VulkanBuffer::CreateVertexBuffer(vInfo);
 
-        std::unique_ptr<VulkanBuffer> ib;
+        Unique<VulkanBuffer> ib;
         if (model->Indices.size() != 0)
         {
             size_t indicesSize = sizeof(model->Indices[0]) * model->Indices.size();
@@ -180,8 +180,7 @@ namespace FooGame
         Backend::SetViewport(viewport);
 
         VkRect2D scissor{};
-        scissor.extent = {static_cast<uint32_t>(viewport.width),
-                          static_cast<uint32_t>(viewport.height)};
+        scissor.extent = {static_cast<u32>(viewport.width), static_cast<u32>(viewport.height)};
         scissor.offset = {0, 0};
         Backend::SetScissor(scissor);
     }
