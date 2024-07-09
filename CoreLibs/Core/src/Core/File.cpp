@@ -1,8 +1,9 @@
 #include "File.h"
-#include <cstddef>
-#include <filesystem>
-#include "src/Base.h"
-#include <GLFW/glfw3.h>
+#include <pch.h>
+#include "../Base.h"
+#include "../Core/Application.h"
+#include "../Core/Window.h"
+#include <commdlg.h>
 #include <combaseapi.h>
 #include <objbase.h>
 #include <winerror.h>
@@ -79,6 +80,31 @@ namespace FooGame
         MessageBoxW(NULL, (const wchar_t*)msg, L"File Path", MB_OK);
     }
 
+    String File::OpenFileDialog(const char* filter)
+    {
+        OPENFILENAMEA ofn;
+        CHAR szFile[260]     = {0};
+        CHAR currentDir[256] = {0};
+        ZeroMemory(&ofn, sizeof(OPENFILENAME));
+        ofn.lStructSize = sizeof(OPENFILENAME);
+        ofn.hwndOwner   = Application::Get().GetWindow().GetWin32NativeHandle();
+        ofn.lpstrFile   = szFile;
+        ofn.nMaxFile    = sizeof(szFile);
+        if (GetCurrentDirectoryA(256, currentDir))
+        {
+            ofn.lpstrInitialDir = currentDir;
+        }
+        ofn.lpstrFilter  = filter;
+        ofn.nFilterIndex = 1;
+        ofn.Flags        = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+
+        if (GetOpenFileNameA(&ofn) == TRUE)
+        {
+            return ofn.lpstrFile;
+        }
+
+        return std::string();
+    }
     void File::OpenFileDialog(List<std::filesystem::path>& outPaths)
     {
         HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);

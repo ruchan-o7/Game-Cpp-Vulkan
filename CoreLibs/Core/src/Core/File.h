@@ -23,6 +23,7 @@ namespace FooGame
 
         public:
             static void OpenFileDialog(List<std::filesystem::path>& outPaths);
+            static String OpenFileDialog(const char* filter = nullptr);
             static void OpenMessageBox(const char* msg);
 
         public:
