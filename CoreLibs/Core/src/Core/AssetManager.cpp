@@ -255,9 +255,14 @@ namespace FooGame
             CreateFimageAssetFile(imageName, imageSize, texWidth, texHeight, pixels, id);
         LoadFIMG(fimage, id);
     }
+#define WRITE_AS_JPG
     void AssetManager::WriteBmpFile(const std::filesystem::path& path, void* data, int w, int h)
     {
+#ifdef WRITE_AS_JPG
+        stbi_write_jpg(path.string().c_str(), w, h, STBI_rgb_alpha, data, 80);
+#else
         stbi_write_bmp(path.string().c_str(), w, h, STBI_rgb_alpha, data);
+#endif
     }
     Asset::FImage AssetManager::CreateFimageAssetFile(const String& assetName, size_t imageSize,
                                                       i32 w, i32 h, void* pixelData, UUID id)
