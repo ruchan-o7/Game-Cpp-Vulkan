@@ -11,6 +11,7 @@ namespace FooGame
             void OnImgui();
             void SetSelectedEntity(Entity e);
             Entity GetSelectedEntity();
+            void SaveState();
 
         private:
             template <typename T>

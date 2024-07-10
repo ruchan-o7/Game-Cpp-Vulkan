@@ -15,6 +15,7 @@ namespace FooGame
             void OnUpdate(float ts) override;
             void OnImGuiRender() override;
             void OnEvent(Event& event) override;
+            void Save();
 
         private:
             // PerspectiveCamera m_Camera;

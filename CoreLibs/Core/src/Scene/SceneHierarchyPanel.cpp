@@ -22,8 +22,8 @@
 #include "../Scene/AssetSerializer.h"
 #include "backends/imgui_impl_vulkan.h"
 #include "../Engine/Core/VulkanTexture.h"
-#include "src/Core/Assert.h"
-#include "vulkan/vulkan_core.h"
+#include "../Core/Assert.h"
+#include "../Engine/Engine/Backend.h"
 #include <nlohmann/json.hpp>
 namespace FooGame
 {
@@ -116,6 +116,20 @@ namespace FooGame
             }
         }
     }
+    void SceneHierarchyPanel::SaveState()
+    {
+        for (auto& ifi : imageFiles)
+        {
+        }
+        for (auto& mf : materialFiles)
+        {
+        }
+        for (auto& mf : modelFiles)
+        {
+        }
+        // TODO: implement save system
+    }
+
     void SceneHierarchyPanel::DrawAssets()
     {
         ImGui::Begin("Assets");
@@ -339,7 +353,6 @@ namespace FooGame
             if (ImGui::InputText("##Name", buffer, sizeof(buffer)))
             {
                 image.Name = std::string(buffer);
-                // materialAsset->Name = std::string(buffer);
             }
             if (imageFile.Preview == VK_NULL_HANDLE)
             {

@@ -9,7 +9,8 @@ namespace FooGame
     Editor::Editor(const ApplicationSpecifications& spec) : Application(spec)
     {
         Init();
-        PushLayer(new EditorLayer(spec.CommandLineArgs));
+        auto* el = new EditorLayer(spec.CommandLineArgs);
+        PushLayer(el);
         SetMenubarCallback(
             [&]()
             {
@@ -17,8 +18,13 @@ namespace FooGame
                 {
                     DEFER(ImGui::EndMenu());
 
-                    if (ImGui::MenuItem("Foo"))
+                    if (ImGui::MenuItem("Save"))
                     {
+                        el->Save();
+                    }
+                    if (ImGui::MenuItem("Exit"))
+                    {
+                        Close();
                     }
                 }
             });

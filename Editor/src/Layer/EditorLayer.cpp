@@ -57,6 +57,10 @@ namespace FooGame
         }
         m_Scene->RenderScene();
     }
+    void EditorLayer::Save()
+    {
+        m_Panel->SaveState();
+    }
     void EditorLayer::OnEvent(Event& e)
     {
         EventDispatcher dispatcher(e);
