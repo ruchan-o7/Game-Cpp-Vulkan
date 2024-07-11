@@ -28,6 +28,6 @@ namespace FooGame
         private:
             Scene* m_pScene;
             Entity m_SelectionContext;
-            u64 m_SelectedMaterial = 0;
+            // u64 m_SelectedMaterial = 0;
     };
 }  // namespace FooGame

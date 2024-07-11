@@ -64,6 +64,11 @@ namespace FooGame
         return s_TextureMap;
     }
 
+    const ModelRegistery& AssetManager::GetAllModels()
+    {
+        return s_ModelMap;
+    }
+
     void AssetManager::LoadModel(const Asset::FModel& fmodel, UUID id)
     {
         if (HasModelAssetExists(id))

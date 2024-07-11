@@ -24,7 +24,11 @@
 #include "../Engine/Core/VulkanTexture.h"
 #include "../Core/Assert.h"
 #include "../Engine/Engine/Backend.h"
+#include "../Scene/ObjectConverters/ModelConverter.h"
 #include <nlohmann/json.hpp>
+/// TODO: Refactor asset storage system
+///  .FOO_ASSET_EXTENSION should store only meta-data for asset
+///  .ACTUAL_DATA should store original data
 namespace FooGame
 {
     enum class AssetType
@@ -34,7 +38,7 @@ namespace FooGame
         Model
     };
     template <class Type>
-    struct AssetFile
+    struct AssetFile  // TODO: This should point to asset manager for single source of truth
     {
             std::filesystem::path Asset;
             std::filesystem::path Extra;
@@ -73,8 +77,11 @@ namespace FooGame
 
     void SceneHierarchyPanel::RefreshAssetFiles()
     {
-        // Images
+        imageFiles.clear();  // previews must free
+        materialFiles.clear();
+        modelFiles.clear();
 
+        // Images
         for (auto& f : std::filesystem::directory_iterator(imagesDir))
         {
             AssetFile<Asset::FImage> af;
@@ -121,13 +128,24 @@ namespace FooGame
         for (auto& ifi : imageFiles)
         {
         }
-        for (auto& mf : materialFiles)
+        for (auto& [id, asset] : AssetManager::GetAllMaterials())
         {
+            if (id == DEFAULT_MATERIAL_ID)
+            {
+                continue;
+            }
+            MaterialSerializer ms;
+            auto j    = ms.Serialize(*asset.Asset);
+            auto path = materialsDir / asset.Asset->Name;
+            File::WriteJsonData(path, FMATERIAL_ASSET_EXTENSION, j);
         }
-        for (auto& mf : modelFiles)
+        for (auto& [id, asset] : AssetManager::GetAllModels())
         {
+            ModelSerializer ms;
+            auto j    = ms.Serialize(ModelToFModel(*asset.Asset));
+            auto path = modelsDir / asset.Asset->Name;
+            File::WriteJsonData(path, FMODEL_ASSET_EXTENSION, j);
         }
-        // TODO: implement save system
     }
 
     void SceneHierarchyPanel::DrawAssets()
@@ -148,6 +166,13 @@ namespace FooGame
 
                 if (ImGui::Selectable("Add Material"))
                 {
+                    // TODO: Show modal
+                    auto* mat = Asset::CreateNewMaterial();
+                    auto id   = UUID();
+                    mat->Id   = id;
+                    MaterialSerializer ms;
+
+                    AssetManager::AddMaterial(Shared<Asset::FMaterial>(mat), id);
                 }
                 if (ImGui::Selectable("Add Image/Texture"))
                 {
@@ -158,6 +183,26 @@ namespace FooGame
                 }
                 if (ImGui::Selectable("Add Model"))
                 {
+                    auto modelPathStr = File::OpenFileDialog(
+                        "Model file (*.obj;*.gltf;*.glb)\0*.obj\0*.gltf\0*.glb");
+                    auto modelPath = std::filesystem::path(modelPathStr);
+                    if (modelPath.extension() == ".glb" || modelPath.extension() == ".gltf")
+                    {
+                        UUID id = UUID();
+                        GltfLoader loader{modelPath, modelPath.extension() == ".glb"};
+                        auto pModel = loader.Load();
+                        AssetManager::LoadGLTFModel(*pModel, id);
+                    }
+                    else if (modelPath.extension() == ".obj")
+                    {
+                        UUID id = UUID();
+                        ObjLoader loader{modelPath};
+                        auto pModel = loader.LoadModel();
+                        AssetManager::LoadObjModel(std::move(pModel), id);
+                    }
+                    else
+                    {
+                    }
                 }
             }
 
@@ -170,14 +215,19 @@ namespace FooGame
                     {
                         m_SelectedAssetFileIndex = i;
                         m_SelectedAssetType      = AssetType::Material;
-                        if (!materialFiles[i].IsLoaded)
+                        auto& m                  = materialFiles[i];
+                        if (!m.IsLoaded)
                         {
-                            std::ifstream is{materialFiles[i].Asset};
+                            std::ifstream is{m.Asset};
                             DEFER(is.close());
                             nlohmann::json js = nlohmann::json::parse(is);
                             MaterialSerializer ms;
-                            materialFiles[i].AssetFile = std::move(ms.DeSerialize(js));
-                            materialFiles[i].IsLoaded  = true;
+                            m.AssetFile = std::move(ms.DeSerialize(js));
+                            m.IsLoaded  = true;
+                            m.Id        = m.AssetFile.Id;
+                            AssetManager::AddMaterial(
+                                Shared<Asset::FMaterial>(new Asset::FMaterial(m.AssetFile)),
+                                m.AssetFile.Id);
                         }
                     }
                 }
@@ -223,6 +273,8 @@ namespace FooGame
                             ModelSerializer ms;
                             modelFiles[i].AssetFile = std::move(ms.DeSerialize(js));
                             modelFiles[i].IsLoaded  = true;
+                            modelFiles[i].Id        = modelFiles[i].AssetFile.Id;
+                            AssetManager::LoadModel(modelFiles[i].AssetFile, modelFiles[i].Id);
                         }
                     }
                 }
@@ -245,7 +297,7 @@ namespace FooGame
             if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
             {
                 m_SelectionContext = {};
-                m_SelectedMaterial = 0;
+                // m_SelectedMaterial = 0;
             }
             if (ImGui::BeginPopupContextWindow())
             {
@@ -302,24 +354,22 @@ namespace FooGame
         char buffer[256];
         memset(buffer, 0, sizeof(buffer));
         ImGui::SeparatorText("Material Properties");
-        // auto* materialAsset = AssetManager::GetMaterialAsset(m_SelectedMaterial);
-        // auto material       = materialAsset->Asset;
-        auto& materialFile = materialFiles[m_SelectedAssetFileIndex];
-        auto& material     = materialFile.AssetFile;
-        strncpy_s(buffer, sizeof(buffer), material.Name.c_str(), sizeof(buffer));
-        if (materialFile.Id != DEFAULT_MATERIAL_ID)
+        auto& mId           = materialFiles[m_SelectedAssetFileIndex].Id;
+        auto* materialAsset = AssetManager::GetMaterialAsset(mId);
+        auto material       = materialAsset->Asset;
+        strncpy_s(buffer, sizeof(buffer), material->Name.c_str(), sizeof(buffer));
+        if (material->Id != DEFAULT_MATERIAL_ID)
         {
             if (ImGui::InputText("##Name", buffer, sizeof(buffer)))
             {
-                material.Name = std::string(buffer);
-                // materialAsset->Name = std::string(buffer);
+                material->Name = std::string(buffer);
             }
         }
         else
         {
-            ImGui::Text("%s", material.Name.c_str());
+            ImGui::Text("%s", material->Name.c_str());
         }
-        ImGui::Text("Base color: %s", material.BaseColorTexture.Name.c_str());
+        ImGui::Text("Base color: %s", material->BaseColorTexture.Name.c_str());
         ImGui::SameLine();
         if (ImGui::Button("Change"))
         {
@@ -334,8 +384,8 @@ namespace FooGame
             {
                 if (ImGui::Selectable(tex.Name.c_str()))
                 {
-                    material.BaseColorTexture.id   = id;
-                    material.BaseColorTexture.Name = String(tex.Name);
+                    material->BaseColorTexture.id   = id;
+                    material->BaseColorTexture.Name = String(tex.Name);
                 }
             }
         }
@@ -678,124 +728,76 @@ namespace FooGame
                             assetModel == nullptr ? "No model" : assetModel->Name.c_str());
                 if (!assetModel)
                 {
-                    if (ImGui::BeginPopupContextWindow())
+                    if (ImGui::Button("Choose Model"))
                     {
-                        if (ImGui::MenuItem("Load Obj"))
+                        ImGui::OpenPopup("_select_model_");
+                    }
+                    if (ImGui::BeginPopup("_select_model_"))
+                    {
+                        DEFER(ImGui::EndPopup());
+                        ImGui::SeparatorText("Models");
+                        for (const auto& [id, asset] : AssetManager::GetAllModels())
                         {
-                            List<std::filesystem::path> objs;
-                            File::OpenFileDialog(objs);
-                            bool isOk = false;
-                            for (auto& o : objs)
+                            if (ImGui::Selectable(asset.Name.c_str()))
                             {
-                                if (o.extension() != ".obj")
-                                {
-                                    File::OpenMessageBox("Selected item is not obj");
-                                    isOk = false;
-                                    break;
-                                }
-                                isOk = true;
-                            }
-                            if (!isOk)
-                            {
-                                return;
-                            }
-                            for (auto& o : objs)
-                            {
-                                auto fileNameStr = o.filename().string();
-                                ObjLoader loader{o};
-                                auto objModel = loader.LoadModel();
-                                if (objModel)
-                                {
-                                    UUID id;
-                                    AssetManager::LoadObjModel(std::move(objModel), id);
-                                    component.AssetModelId = id;
-                                }
-                            }
-                        }
-                        if (ImGui::MenuItem("Load Gltf"))
-                        {
-                            List<std::filesystem::path> gltfs;
-                            File::OpenFileDialog(gltfs);
-                            bool isOk = false;
-                            for (auto& g : gltfs)
-                            {
-                                if (g.extension() == ".glb" || g.extension() == ".gltf")
-                                {
-                                    isOk = true;
-                                    break;
-                                }
-                            }
-                            if (!isOk)
-                            {
-                                return;
-                            }
-                            for (auto& g : gltfs)
-                            {
-                                GltfLoader loader{g.string(), g.extension() == ".glb"};
-                                UUID id;
-                                AssetManager::LoadGLTFModelAsync(loader, id);
                                 component.AssetModelId = id;
                             }
                         }
-                        ImGui::EndPopup();
                     }
                     return;
                 }
-                else
+                auto model = assetModel->Asset;
+
+                ImGui::Text("Total vertex count: %zu", model->Vertices.size());
+                ImGui::Text("Total index count: %zu", model->Indices.size());
+                ImGui::Text("Total Mesh count: %zu", model->Meshes.size());
+                i32 primitiveCount = 0;
+                for (const auto& m : model->Meshes)
                 {
-                    auto model = assetModel->Asset;
-
-                    ImGui::Text("Total vertex count: %zu", model->Vertices.size());
-                    ImGui::Text("Total index count: %zu", model->Indices.size());
-                    ImGui::Text("Total Mesh count: %zu", model->Meshes.size());
-                    i32 primitiveCount = 0;
-                    for (const auto& m : model->Meshes)
+                    for (const auto& p : m.Primitives)
                     {
-                        for (const auto& p : m.Primitives)
-                        {
-                            primitiveCount++;
-                        }
+                        primitiveCount++;
                     }
-                    ImGui::Text("Total primitive count: %i", primitiveCount);
-                    if (ImGui::TreeNode("Meshes"))
+                }
+                ImGui::Text("Total primitive count: %i", primitiveCount);
+                if (ImGui::TreeNode("Meshes"))
+                {
+                    i32 meshCount = model->Meshes.size();
+                    DEFER(ImGui::TreePop());
+                    auto size = ImGui::GetContentRegionAvail();
+                    for (size_t meshIndex = 0; meshIndex < meshCount; meshIndex++)
                     {
-                        i32 meshCount = model->Meshes.size();
-                        DEFER(ImGui::TreePop());
-                        auto size = ImGui::GetContentRegionAvail();
-                        for (size_t meshIndex = 0; meshIndex < meshCount; meshIndex++)
-                        {
-                            auto& mesh = model->Meshes[meshIndex];
+                        auto& mesh = model->Meshes[meshIndex];
 
-                            if (ImGui::TreeNode(mesh.Name.c_str()))
+                        if (ImGui::TreeNode(mesh.Name.c_str()))
+                        {
+                            size_t primitiveCount = mesh.Primitives.size();
+                            DEFER(ImGui::TreePop());
+                            for (size_t primitiveIndex = 0; primitiveIndex < primitiveCount;
+                                 primitiveIndex++)
                             {
-                                size_t primitiveCount = mesh.Primitives.size();
-                                DEFER(ImGui::TreePop());
-                                for (size_t primitiveIndex = 0; primitiveIndex < primitiveCount;
-                                     primitiveIndex++)
+                                auto& primitive =
+                                    model->Meshes[meshIndex].Primitives[primitiveIndex];
+                                auto materialId = primitive.MaterialId;
+                                auto* material  = AssetManager::GetMaterialAsset(materialId);
+                                if (ImGui::TreeNode("", "Primitive Index: %zu", primitiveIndex))
                                 {
-                                    auto& primitive =
-                                        model->Meshes[meshIndex].Primitives[primitiveIndex];
-                                    auto materialId = primitive.MaterialId;
-                                    auto* material  = AssetManager::GetMaterialAsset(materialId);
-                                    if (ImGui::TreeNode("", "Primitive Index: %zu", primitiveIndex))
+                                    DEFER(ImGui::TreePop());
+                                    ImGui::Text("Material: %s", material->Name.c_str());
+                                    ImGui::SameLine();
+                                    if (ImGui::Button("Change"))
                                     {
-                                        DEFER(ImGui::TreePop());
-                                        ImGui::Text("Material: %s", material->Name.c_str());
-                                        ImGui::SameLine();
-                                        if (ImGui::Button("Change"))
+                                        ImGui::OpenPopup("change_material_popup");
+                                    }
+                                    if (ImGui::BeginPopup("change_material_popup"))
+                                    {
+                                        DEFER(ImGui::EndPopup());
+                                        ImGui::SeparatorText("Materials");
+                                        for (const auto& [id, asset] : sceneMaterials)
                                         {
-                                            ImGui::OpenPopup("change_material_popup");
-                                        }
-                                        if (ImGui::BeginPopup("change_material_popup"))
-                                        {
-                                            DEFER(ImGui::EndPopup());
-                                            ImGui::SeparatorText("Materials");
-                                            for (const auto& [id, asset] : sceneMaterials)
+                                            if (ImGui::Selectable(asset.Name.c_str()))
                                             {
-                                                if (ImGui::Selectable(asset.Name.c_str()))
-                                                {
-                                                    primitive.MaterialId = id;
-                                                }
+                                                primitive.MaterialId = id;
                                             }
                                         }
                                     }

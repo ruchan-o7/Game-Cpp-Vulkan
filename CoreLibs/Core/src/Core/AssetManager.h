@@ -61,6 +61,8 @@ namespace FooGame
 
             static const TextureRegistery& GetAllImages();
 
+            static const ModelRegistery& GetAllModels();
+
             static bool HasTextureExists(UUID id);
             static bool HasMaterialExists(UUID id);
             static bool HasModelAssetExists(UUID id);

@@ -70,6 +70,8 @@ namespace FooGame
                 ImageSources.clear();
                 Meshes.clear();
                 Materials.clear();
+                Vertices.clear();
+                Indices.clear();
             }
     };
     class GltfLoader

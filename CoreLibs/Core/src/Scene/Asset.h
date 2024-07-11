@@ -41,10 +41,10 @@ namespace FooGame::Asset
             UUID NormalTextureId;
 
             UUID MetallicTextureId = DEFAULT_TEXTURE_ID;
-            float MetallicFactor;
+            float MetallicFactor   = 1.0f;
 
             UUID RoughnessTextureId = DEFAULT_TEXTURE_ID;
-            float RoughnessFactor;
+            float RoughnessFactor   = 1.0f;
 
             TextureInfo EmissiveTexture;
 
