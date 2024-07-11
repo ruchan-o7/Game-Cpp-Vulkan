@@ -14,10 +14,8 @@
 #include "../../Engine/Engine/Types/GraphicTypes.h"
 namespace FooGame
 {
-#define VERT_SHADER          "Assets/Shaders/vert.spv"
-#define FRAG_SHADER          "Assets/Shaders/frag.spv"
-#define MODEL_PATH           "Assets/Model/viking_room.obj"
-#define DEFAULT_TEXTURE_PATH "Assets/Textures/texture.jpg"
+#define UNLIT_VERT_SHADER "Assets/Shaders/vert.spv"
+#define UNLIT_FRAG_SHADER "Assets/Shaders/frag.spv"
     struct MeshPushConstants
     {
             glm::vec4 data;
@@ -60,7 +58,7 @@ namespace FooGame
     struct RendererContext
     {
             std::vector<Unique<VulkanBuffer>> uniformBuffers{2};
-            Unique<VulkanPipeline> pGraphicPipeline;
+            Unique<VulkanPipeline> UnLitPipeline;
             VkDescriptorSet descriptorSets[3];
     };
     RendererContext rContext{};
@@ -68,7 +66,7 @@ namespace FooGame
     static bool g_IsInitialized = false;
     VulkanPipeline* Renderer3D::GetPipeline()
     {
-        return rContext.pGraphicPipeline.get();
+        return rContext.UnLitPipeline.get();
     }
     void Renderer3D::Init(class RenderDevice* pRenderDevice)
     {
@@ -94,23 +92,23 @@ namespace FooGame
         {
             auto logicalDevice = pRenderDevice->GetLogicalDevice();
             Shader vert{
-                {VERT_SHADER, ShaderStage::VERTEX, logicalDevice}
+                {UNLIT_VERT_SHADER, ShaderStage::VERTEX, logicalDevice}
             };
             Shader frag{
-                {FRAG_SHADER, ShaderStage::FRAGMENT, logicalDevice}
+                {UNLIT_FRAG_SHADER, ShaderStage::FRAGMENT, logicalDevice}
             };
             VulkanPipeline::CreateInfo ci{};
             ci.RenderPass = Backend::GetRenderPass();
             ci.ShaderStages.push_back(vert.CreateInfo());
             ci.ShaderStages.push_back(frag.CreateInfo());
-            ci.PushConstantCount      = 1;
-            ci.PushConstantSize       = sizeof(MeshPushConstants);
-            ci.SampleCount            = 1;
-            ci.wpLogicalDevice        = pRenderDevice->GetLogicalDevice();
-            ci.CullMode               = CULL_MODE_BACK;
-            ci.VertexAttributes       = Vertex::GetAttributeDescriptionList();
-            ci.VertexBindings         = {Vertex::GetBindingDescription()};
-            rContext.pGraphicPipeline = std::make_unique<VulkanPipeline>(ci);
+            ci.PushConstantCount   = 1;
+            ci.PushConstantSize    = sizeof(MeshPushConstants);
+            ci.SampleCount         = 1;
+            ci.wpLogicalDevice     = pRenderDevice->GetLogicalDevice();
+            ci.CullMode            = CULL_MODE_BACK;
+            ci.VertexAttributes    = Vertex::GetAttributeDescriptionList();
+            ci.VertexBindings      = {Vertex::GetBindingDescription()};
+            rContext.UnLitPipeline = std::make_unique<VulkanPipeline>(ci);
         }
     }
 
@@ -248,7 +246,7 @@ namespace FooGame
             {
                 MeshPushConstants push{};
                 push.renderMatrix = transform * mesh.Transform;
-                Backend::PushConstant(rContext.pGraphicPipeline->GetLayout(),
+                Backend::PushConstant(rContext.UnLitPipeline->GetLayout(),
                                       VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants),
                                       &push);
                 const auto* materialAsset = AssetManager::GetMaterialAsset(primitive.MaterialId);
@@ -264,7 +262,7 @@ namespace FooGame
                 auto baseColorTexture = baseColorTextureAsset->Asset;
 
                 auto& currentSet = rContext.descriptorSets[currentFrame];
-                allocator.Allocate(rContext.pGraphicPipeline->GetDescriptorSetLayout(), currentSet);
+                allocator.Allocate(rContext.UnLitPipeline->GetDescriptorSetLayout(), currentSet);
 
                 VkDescriptorBufferInfo descriptorBufferInfo{};
                 descriptorBufferInfo.buffer = rContext.uniformBuffers[currentFrame]->GetBuffer();
@@ -295,8 +293,8 @@ namespace FooGame
                 Backend::UpdateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0,
                                               nullptr);
                 VkDescriptorSet sets[] = {currentSet};
-                Backend::BindGraphicPipelineDescriptorSets(rContext.pGraphicPipeline->GetLayout(),
-                                                           0, 1, sets, 0, nullptr);
+                Backend::BindGraphicPipelineDescriptorSets(rContext.UnLitPipeline->GetLayout(), 0,
+                                                           1, sets, 0, nullptr);
 
                 VkBuffer vertexBuffers[] = {modelRes.VertexBuffer->GetBuffer()};
                 VkDeviceSize offsets[]   = {0};
@@ -321,7 +319,7 @@ namespace FooGame
     }
     void Renderer3D::BindPipeline(VkCommandBuffer cmd)
     {
-        Backend::BindGraphicPipeline(rContext.pGraphicPipeline->GetPipeline());
+        Backend::BindGraphicPipeline(rContext.UnLitPipeline->GetPipeline());
     }
 
     void Renderer3D::Shutdown()
@@ -336,7 +334,7 @@ namespace FooGame
                 data.IndexBuffer.reset();
             }
         }
-        rContext.pGraphicPipeline.reset();
+        rContext.UnLitPipeline.reset();
         s_Data.Res.MeshMap2.clear();
     }
     void Renderer3D::UpdateUniformData(UniformBufferObject& ubd)
