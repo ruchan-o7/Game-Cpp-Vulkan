@@ -1,6 +1,5 @@
 #include "AssetSerializer.h"
-#include "Asset.h"
-#include "json.hpp"
+#include "../Engine/Geometry/Model.h"
 namespace FooGame
 {
     nlohmann::json MaterialSerializer::Serialize(const Asset::FMaterial& mat)
@@ -112,30 +111,24 @@ namespace FooGame
         i.Format       = Asset::TextureFormat::RGBA8;
         return i;
     }
-    nlohmann::json ModelSerializer::Serialize(const Asset::FModel& model)
+    nlohmann::json ModelSerializer::Serialize(const Model& model)
     {
         using json = nlohmann::json;
         json j;
-        j["name"]         = model.Name;
-        j["meshCount"]    = model.MeshCount;
-        j["vertexCount"]  = model.VertexCount;
-        j["indicesCount"] = model.IndicesCount;
-        j["totalSize"]    = model.TotalSize;
-        j["vertices"]     = model.Vertices;
-        j["indices"]      = model.Indices;
         j["id"]           = (u64)model.Id;
+        j["name"]         = model.Name;
+        j["createTime"] = model.CreateTime;
+        j["lastChangeTime"] = model.LastChangeTime;
+
+        j["byteSize"]    = model.Stats.ByteSize;
+        j["vertexCount"]  = model.Stats.VertexCount;
+        j["indexCount"] = model.Stats.IndexCount;
+        j["meshCount"]    = model.Stats.MeshCount;
+        j["primitiveCount"]    = model.Stats.PrimitiveCount;
+        j["modelPath"]    = model.ModelPath;
         for (auto& mesh : model.Meshes)
         {
             json m;
-            m["name"] = mesh.Name;
-            for (const auto& pr : mesh.Primitives)
-            {
-                json pJ;
-                pJ["materialId"] = (u64)pr.MaterialId;
-                pJ["firstIndex"] = pr.FirstIndex;
-                pJ["indexCount"] = pr.IndexCount;
-                m["primitives"].push_back(pJ);
-            }
             float matrices[4][4];
             for (i32 i = 0; i < 4; i++)
             {
@@ -145,28 +138,39 @@ namespace FooGame
                 }
             }
             m["transform"] = matrices;
+            m["name"] = mesh.Name;
+            for (const auto& pr : mesh.Primitives)
+            {
+                json pJ;
+                pJ["materialId"] = (u64)pr.MaterialId;
+                pJ["firstIndex"] = pr.FirstIndex;
+                pJ["indexCount"] = pr.IndexCount;
+                m["primitives"].push_back(pJ);
+            }
             j["meshes"].push_back(m);
         }
         return j;
     }
-    Asset::FModel ModelSerializer::DeSerialize(const nlohmann::json& json)
+    Model ModelSerializer::DeSerialize(const nlohmann::json& json)
     {
-        Asset::FModel m;
-        m.Name         = json["name"];
-        m.MeshCount    = json["meshCount"];
-        m.TotalSize    = json["totalSize"];
-        m.VertexCount  = json["vertexCount"];
-        m.IndicesCount = json["indicesCount"];
+        Model m;
         m.Id           = json["id"].get<u64>();
-        List<float> ve = json["vertices"];
-        List<u32> in   = json["indices"];
-        m.Vertices     = std::move(ve);
-        m.Indices      = std::move(in);
-        m.Meshes.reserve(json["meshes"].size());
+        m.Name         = json["name"];
+        m.CreateTime         = json["createTime"];
+        m.LastChangeTime         = json["lastChangeTime"];
+        m.Stats.ByteSize    = json["totalSize"];
+        m.Stats.VertexCount  = json["vertexCount"];
+        m.Stats.IndexCount = json["indexCount"];
+        m.Stats.MeshCount    = json["meshCount"];
+        m.Stats.PrimitiveCount    = json["primitiveCount"];
+        m.ModelPath = json["modelPath"];
+        
+        
+        m.Meshes.reserve(m.Stats.MeshCount);
 
         for (auto& mj : json["meshes"])
         {
-            Asset::FMesh mesh;
+            Mesh mesh;
             String name = mj["name"].get<String>();
             if (!name.empty())
             {
@@ -185,7 +189,7 @@ namespace FooGame
             mesh.Primitives.reserve(mj["primitives"].size());
             for (const auto& p : mj["primitives"])
             {
-                Asset::DrawPrimitive pr;
+                Mesh::Primitive pr;
                 pr.IndexCount = p["indexCount"];
                 pr.FirstIndex = p["firstIndex"];
                 pr.MaterialId = p["materialId"].get<u64>();
@@ -193,7 +197,6 @@ namespace FooGame
             }
             m.Meshes.emplace_back(std::move(mesh));
         }
-
         return m;
     }
 }  // namespace FooGame

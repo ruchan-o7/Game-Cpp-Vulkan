@@ -1,6 +1,7 @@
 #pragma once
 #include "../Scene/Asset.h"
 #include "../Base.h"
+#include "../Engine/Geometry/Mesh.h"
 
 namespace FooGame
 {
@@ -10,7 +11,7 @@ namespace FooGame
     struct Vertex;
     struct ObjModel
     {
-            List<Asset::FMesh> Meshes;
+            List<Mesh> Meshes;
             List<Asset::FMaterial> Materials;
             String Name;
             List<Vertex> Vertices;

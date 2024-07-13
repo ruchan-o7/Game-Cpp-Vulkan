@@ -4,6 +4,6 @@
 #include "../../Base.h"
 namespace FooGame
 {
-    Asset::FModel ModelToFModel(const Model& input);
-    Unique<Model> FModelToModel(const Asset::FModel& input);
+    // Asset::FModel ModelToFModel(const Model& input);
+    // Unique<Model> FModelToModel(const Asset::FModel& input);
 }  // namespace FooGame

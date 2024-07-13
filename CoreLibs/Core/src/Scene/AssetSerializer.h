@@ -1,9 +1,9 @@
 #pragma once
-#include "../Base.h"
 #include "Asset.h"
 #include <json.hpp>
 namespace FooGame
 {
+    struct Model;
     class MaterialSerializer
     {
         public:
@@ -19,7 +19,7 @@ namespace FooGame
     class ModelSerializer
     {
         public:
-            nlohmann::json Serialize(const Asset::FModel& model);
-            Asset::FModel DeSerialize(const nlohmann::json& json);
+            nlohmann::json Serialize(const Model& model);
+            Model DeSerialize(const nlohmann::json& json);
     };
 }  // namespace FooGame

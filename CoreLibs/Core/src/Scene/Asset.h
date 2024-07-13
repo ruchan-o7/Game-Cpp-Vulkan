@@ -3,6 +3,7 @@
 #include "../Base.h"
 #include "../Core/UUID.h"
 #include "../Config.h"
+#include "src/Engine/Core/VulkanTexture.h"
 namespace FooGame::Asset
 {
     enum class AssetStatus
@@ -16,9 +17,13 @@ namespace FooGame::Asset
     struct AssetContainer
     {
             AssetStatus Status;
-            Shared<AssetType> Asset;
-            String Name;
-            UUID Id;
+            AssetType Asset;
+    };
+    template <>
+    struct AssetContainer<VulkanTexture>
+    {
+            AssetStatus Status;
+            Shared<VulkanTexture> Asset;
     };
 
     struct TextureInfo
@@ -75,30 +80,6 @@ namespace FooGame::Asset
             u32 Height;
             u8 ChannelCount;
             TextureFormat Format;
-            UUID Id;
-    };
-    struct DrawPrimitive
-    {
-            u32 FirstIndex  = 0;
-            u32 IndexCount  = 0;
-            UUID MaterialId = 0;
-    };
-    struct FMesh
-    {
-            String Name;
-            List<DrawPrimitive> Primitives;
-            glm::mat4 Transform;
-    };
-    struct FModel
-    {
-            String Name;
-            List<FMesh> Meshes;
-            List<float> Vertices;
-            List<u32> Indices;
-            size_t TotalSize;
-            size_t VertexCount;
-            size_t IndicesCount;
-            u32 MeshCount = 1;
             UUID Id;
     };
 

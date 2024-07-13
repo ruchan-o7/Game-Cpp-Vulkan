@@ -1,29 +1,27 @@
 #pragma once
-#include "Vertex.h"
+#include "Mesh.h"
 #include "../../Base.h"
-#include "../../Scene/Asset.h"
-namespace FooGame
+namespace ENGINE_NAMESPACE
 {
     struct Model
     {
-            DELETE_COPY(Model);
-            Model& operator=(Model&& o)
-            {
-                if (this != &o)
-                {
-                    this->Meshes = std::move(o.Meshes);
-                    this->Name   = std::move(o.Name);
-                    // TODO:
-                }
-                return *this;
-            }
             Model() = default;
 
-            List<Asset::FMesh> Meshes;
-            List<Vertex> Vertices;
-            List<u32> Indices;
-            String Name  = "Unspecified Model Name";
-            u32 RenderId = 0;
+            UUID Id;
+            String Name = "Unnamed model";
+            String LastChangeTime;
+            String CreateTime;
+            List<Mesh> Meshes;
+            String ModelPath;
+
+            struct Statistics
+            {
+                    size_t ByteSize       = 0;
+                    size_t VertexCount    = 0;
+                    size_t IndexCount     = 0;
+                    size_t MeshCount      = 0;
+                    size_t PrimitiveCount = 0;
+            } Stats;
     };
 
-}  // namespace FooGame
+}  // namespace ENGINE_NAMESPACE

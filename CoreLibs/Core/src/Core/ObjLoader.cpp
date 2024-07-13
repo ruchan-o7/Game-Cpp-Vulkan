@@ -19,7 +19,7 @@ namespace FooGame
         String warn, err;
         List<Vertex> vertices;
         List<u32> indices;
-        List<Asset::FMesh> meshes;
+        List<Mesh> meshes;
 
         auto objPath        = m_Path.string();
         auto objBasePath    = m_Path.parent_path();
@@ -35,7 +35,7 @@ namespace FooGame
 
         for (const auto& shape : shapes)
         {
-            Asset::FMesh mesh;
+            Mesh mesh;
             mesh.Name       = shape.name;
             mesh.Transform  = glm::mat4(1.f);
             u32 firstIndex  = static_cast<u32>(vertices.size());
@@ -82,7 +82,7 @@ namespace FooGame
                 indices.push_back(indices.size());
             }
             indexCount += static_cast<u32>(indices.size());
-            Asset::DrawPrimitive p{};
+            Mesh::Primitive p{};
             p.FirstIndex = firstIndex;
             p.IndexCount = indexCount;
             p.MaterialId = DEFAULT_MATERIAL_ID;
