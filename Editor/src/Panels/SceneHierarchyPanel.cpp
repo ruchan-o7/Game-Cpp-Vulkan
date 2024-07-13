@@ -6,40 +6,11 @@
 #include <nlohmann/json.hpp>
 namespace FooGame
 {
-    enum class AssetType
-    {
-        Material,
-        Image,
-        Model
-    };
-    template <class Type>
-    struct AssetFile
-    {
-            std::filesystem::path Asset;
-            std::filesystem::path Extra;
-
-            String AssetStr;
-            String ExtraStr;
-            Type AssetFile;
-            bool IsLoaded           = false;
-            UUID Id                 = 0;
-            VkDescriptorSet Preview = VK_NULL_HANDLE;
-    };
-    static std::filesystem::path materialsDir;
-    static std::filesystem::path imagesDir;
-    static std::filesystem::path modelsDir;
     static const std::string scriptNames[] = {"RotateScript", "ScaleYoink", "CameraController"};
-
-    AssetType m_SelectedAssetType;
-    i32 m_SelectedAssetFileIndex = -1;
 
     SceneHierarchyPanel::SceneHierarchyPanel(Scene* context)
     {
         SetContext(context);
-        materialsDir = File::GetMaterialsPath();
-        imagesDir    = File::GetImagesPath();
-        modelsDir    = File::GetModelsPath();
-        RefreshAssetFiles();
     }
 
     void SceneHierarchyPanel::SetContext(Scene* context)
@@ -47,63 +18,14 @@ namespace FooGame
         m_pScene = context;
     }
 
-    void SceneHierarchyPanel::RefreshAssetFiles()
-    {
-    }
-    void SceneHierarchyPanel::DrawAssets()
-    {
-        ImGui::Begin("Assets");
-        DEFER(ImGui::End());
-        if (ImGui::BeginTabBar("_assets_panel_"))
-        {
-            DEFER(ImGui::EndTabBar());
-
-            if (ImGui::BeginPopupContextItem("_assets_pop_context_"))
-            {
-                DEFER(ImGui::EndPopup());
-                if (ImGui::Selectable("Refresh"))
-                {
-                    RefreshAssetFiles();
-                }
-
-                if (ImGui::Selectable("Add Material"))
-                {
-                }
-                if (ImGui::Selectable("Add Image/Texture"))
-                {
-                    auto image = File::OpenFileDialog(
-                        "Image file (*.png;*.jpg;*.jpeg)\0*.png\0*.jpg\0*.jpeg");
-                    AssetManager::LoadExternalImage(image);
-                    RefreshAssetFiles();
-                }
-                if (ImGui::Selectable("Add Model"))
-                {
-                }
-            }
-
-            if (ImGui::BeginTabItem("Materials"))
-            {
-                DEFER(ImGui::EndTabItem());
-            }
-            if (ImGui::BeginTabItem("Images"))
-            {
-                DEFER(ImGui::EndTabItem());
-            }
-            if (ImGui::BeginTabItem("Models"))
-            {
-                DEFER(ImGui::EndTabItem());
-            }
-        }
-    }
-
     void SceneHierarchyPanel::OnImgui()
     {
         ImGui::Begin("Scene hierarchy");
         DEFER(ImGui::End());
-        if (m_pScene)
+        if (m_pScene != nullptr)
         {
             m_pScene->m_Registry.view<TransformComponent>().each(
-                [&](auto entityID, auto transform)
+                [&](auto entityID, auto /*transform*/)
                 {
                     Entity entity{entityID, m_pScene};
                     DrawEntityNode(entity);
@@ -128,73 +50,6 @@ namespace FooGame
         {
             DrawComponents(m_SelectionContext);
         }
-
-        // DrawMaterialSection();
-        ImGui::Begin("Asset properties");
-        DEFER(ImGui::End());
-
-        DrawAssetProperty();
-        DrawAssets();
-    }
-    void SceneHierarchyPanel::DrawAssetProperty()
-    {
-        if (m_SelectedAssetFileIndex == -1)
-        {
-            return;
-        }
-        switch (m_SelectedAssetType)
-        {
-            case AssetType::Material:
-            {
-                DrawMaterial();
-                break;
-            }
-            case AssetType::Image:
-            {
-                DrawImage();
-                break;
-            }
-            case AssetType::Model:
-            {
-                DrawModel();
-                break;
-            }
-        }
-    }
-    void SceneHierarchyPanel::DrawMaterial()
-    {
-        auto avail = ImGui::GetContentRegionAvail();
-
-        char buffer[256];
-        memset(buffer, 0, sizeof(buffer));
-        ImGui::SeparatorText("Material Properties");
-
-        ImGui::SameLine();
-        if (ImGui::Button("Change"))
-        {
-            ImGui::OpenPopup("texture_popup_base");
-        }
-        if (ImGui::BeginPopup("texture_popup_base"))
-        {
-            ImGui::SeparatorText("All Textures");
-            DEFER(ImGui::EndPopup());
-            auto textures = AssetManager::GetAllImages();
-            for (auto& [id, tex] : textures)
-            {
-            }
-        }
-    }
-    void SceneHierarchyPanel::DrawImage()
-    {
-        char buffer[256];
-        memset(buffer, 0, sizeof(buffer));
-        ImGui::SeparatorText("Image Properties");
-    }
-    void SceneHierarchyPanel::DrawModel()
-    {
-        char buffer[256];
-        memset(buffer, 0, sizeof(buffer));
-        ImGui::SeparatorText("Model Properties");
     }
     void SceneHierarchyPanel::DrawEntityNode(Entity entity)
     {
