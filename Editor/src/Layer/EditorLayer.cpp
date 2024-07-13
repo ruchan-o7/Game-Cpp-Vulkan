@@ -1,5 +1,6 @@
 #include "EditorLayer.h"
 #include "entt/entt.hpp"
+#include "../Panels/SceneHierarchyPanel.h"
 #include <Core.h>
 #include <Log.h>
 #include <memory>
@@ -37,7 +38,7 @@ namespace FooGame
 
             sc.Bind("CameraController");
         }
-        m_Panel = new SceneHierarchyPanel(m_Scene.get());
+        m_HierarchyPanel = new SceneHierarchyPanel(m_Scene.get());
     }
     void EditorLayer::OnDetach()
     {
@@ -45,7 +46,7 @@ namespace FooGame
     }
     void EditorLayer::OnImGuiRender()
     {
-        m_Panel->OnImgui();
+        m_HierarchyPanel->OnImgui();
     }
     void EditorLayer::OnUpdate(float ts)
     {

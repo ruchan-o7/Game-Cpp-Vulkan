@@ -21,7 +21,7 @@ namespace FooGame
             Camera m_Camera2;
             std::unique_ptr<Scene> m_Scene;
             ApplicationCommandLineArgs m_Args;
-            SceneHierarchyPanel* m_Panel;
+            SceneHierarchyPanel* m_HierarchyPanel;
 
         private:
             bool OnMouseMoved(MouseMovedEvent& event);
