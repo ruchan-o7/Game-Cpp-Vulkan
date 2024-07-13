@@ -3,6 +3,7 @@
 #include "../Base.h"
 #include "../Core/Application.h"
 #include "../Core/Window.h"
+#include "json.hpp"
 #include <commdlg.h>
 #include <combaseapi.h>
 #include <objbase.h>
@@ -10,6 +11,7 @@
 #include <shobjidl.h>
 #include <winscard.h>
 #include <winuser.h>
+#include <fstream>
 namespace FooGame
 {
     static std::filesystem::path m_SceneBasePath, m_AssetPath, m_ModelsPath, m_ImagesPath,
@@ -152,5 +154,11 @@ namespace FooGame
         std::ofstream o{path};
         DEFER(o.close(););
         o << std::setw(4) << data << std::endl;
+    }
+    void File::ReadJsonData(const Path& path, nlohmann::json& out)
+    {
+        std::ifstream is{path};
+        DEFER(is.close());
+        out = nlohmann::json::parse(is, nullptr, false);
     }
 }  // namespace FooGame

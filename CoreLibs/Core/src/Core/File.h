@@ -7,22 +7,25 @@ namespace FooGame
 {
     class File
     {
-        public:
-            static void SetSceneBasePath(const std::filesystem::path& p);
+            using Path = std::filesystem::path;
 
         public:
-            static std::filesystem::path GetCWD();
-            static std::filesystem::path GetAssetPath();
-            static std::filesystem::path GetModelsPath();
-            static std::filesystem::path GetImagesPath();
-            static std::filesystem::path GetMaterialsPath();
-            static std::filesystem::path GetSceneBasePath();
+            static void SetSceneBasePath(const Path& p);
 
-            static void WriteJsonData(std::filesystem::path& path, const String& extension,
+        public:
+            static Path GetCWD();
+            static Path GetAssetPath();
+            static Path GetModelsPath();
+            static Path GetImagesPath();
+            static Path GetMaterialsPath();
+            static Path GetSceneBasePath();
+
+            static void WriteJsonData(Path& path, const String& extension,
                                       const nlohmann::json& data);
+            static void ReadJsonData(const Path& path, nlohmann::json& out);
 
         public:
-            static void OpenFileDialog(List<std::filesystem::path>& outPaths);
+            static void OpenFileDialog(List<Path>& outPaths);
             static String OpenFileDialog(const char* filter = nullptr);
             static void OpenMessageBox(const char* msg);
 
