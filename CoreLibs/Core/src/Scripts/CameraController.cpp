@@ -1,8 +1,9 @@
 #include "CameraController.h"
 #include "../Scene/Component.h"
 #include "../Engine/Camera/Camera.h"
-#include <Core.h>
 #include <imgui.h>
+#include "../Input/Input.h"
+#include "../Core/Window.h"
 
 namespace FooGame::Script
 {
