@@ -17,7 +17,6 @@
 #include "src/Scene/Scene.h"
 #include "src/Scene/ScriptableEntity.h"
 #include "src/Scene/SceneSerializer.h"
-#include "src/Scene/SceneHierarchyPanel.h"
 
 #include "src/Engine/Camera/Camera.h"
 #include "src/Engine/Camera/PerspectiveCamera.h"
