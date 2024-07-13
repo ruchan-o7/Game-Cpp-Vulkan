@@ -1,9 +1,10 @@
 #pragma once
 #include <memory>
+#include <utility>
 #include "VulkanLogicalDevice.h"
 #include "Types.h"
 #include "Utils/VulkanObjectWrapper.h"
-#include "src/Scene/SceneSerializer.h"
+#include "../../Core/UUID.h"
 namespace ENGINE_NAMESPACE
 {
     class VulkanImage
@@ -58,7 +59,7 @@ namespace ENGINE_NAMESPACE
             struct CreateInfo
             {
                     VkExtent2D Extent;
-                    VkFormat Format;
+                    VkFormat Format = VK_FORMAT_UNDEFINED;
                     VkImageTiling Tiling = VK_IMAGE_TILING_OPTIMAL;
                     VkImageUsageFlags UsageFlags;
                     VkImageAspectFlagBits AspectFlags;
@@ -72,6 +73,19 @@ namespace ENGINE_NAMESPACE
 
         public:
             VulkanTexture(const VulkanTexture::CreateInfo& info);
+            VulkanTexture& operator=(VulkanTexture&& o){
+                if(this != &o){
+                    this->DescriptorInfo = std::move(o.DescriptorInfo);
+                    this->m_Info = std::move(o.m_Info);
+                    this->m_Image = std::move(o.m_Image);
+                    this->m_ImageView = std::move(o.m_ImageView);
+                    this->m_Sampler = std::move(m_Sampler);
+                }
+                return *this;
+            }
+            VulkanTexture(VulkanTexture&& o)=default;
+            VulkanTexture()=default;
+            UUID Id;
 
             std::shared_ptr<VulkanImage> GetImage() const { return m_Image; }
             VkImageAspectFlagBits GetAspect() const { return m_Info.AspectFlags; }
