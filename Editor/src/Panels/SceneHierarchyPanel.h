@@ -1,5 +1,5 @@
 #pragma once
-#include "Entity.h"
+#include <Core.h>
 namespace FooGame
 {
     class Scene;

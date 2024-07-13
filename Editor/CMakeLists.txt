@@ -7,6 +7,8 @@ message("Configuring ${PROJECT_NAME}")
 file(GLOB_RECURSE EDITOR_SOURCES
 	"src/*.h"
 	"src/*.cpp"
+	"src/Layer/*.cpp"
+	"src/Panels/*.cpp"
 )
 add_executable("${PROJECT_NAME}" "${EDITOR_SOURCES};")
 
@@ -16,7 +18,6 @@ target_include_directories("${PROJECT_NAME}" PUBLIC
 	"${CORE_INCLUDE_DIR}"
 	"${LOG_INCLUDE_DIR}"
 	"${TINY_OBJ_LOADER_INCLUDE_DIR}"
-	"src"
 )
 
 set_property(TARGET "${PROJECT_NAME}" PROPERTY FOLDER "Editor")
@@ -24,6 +25,7 @@ set_property(TARGET "${PROJECT_NAME}" PROPERTY FOLDER "Editor")
 set_target_properties("${PROJECT_NAME}" PROPERTIES CXX_STANDARD 17)
 
 target_link_libraries("${PROJECT_NAME}" Core Log)
+
 add_compile_definitions(
 	$<$<CONFIG:Debug>:FOO_DEBUG>
 )
