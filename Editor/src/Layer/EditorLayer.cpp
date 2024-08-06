@@ -1,8 +1,9 @@
 #include "EditorLayer.h"
 #include "entt/entt.hpp"
 #include "../Panels/SceneHierarchyPanel.h"
-#include <Core.h>
+#include "../Panels/SceneAssetPanel.h"
 #include <Log.h>
+#include <filesystem>
 #include <memory>
 
 namespace FooGame
@@ -39,6 +40,7 @@ namespace FooGame
             sc.Bind("CameraController");
         }
         m_HierarchyPanel = new SceneHierarchyPanel(m_Scene.get());
+        m_AssetPanel     = new AssetPanel(std::filesystem::current_path());
     }
     void EditorLayer::OnDetach()
     {
@@ -47,6 +49,7 @@ namespace FooGame
     void EditorLayer::OnImGuiRender()
     {
         m_HierarchyPanel->OnImgui();
+        m_AssetPanel->OnImGui();
     }
     void EditorLayer::OnUpdate(float ts)
     {

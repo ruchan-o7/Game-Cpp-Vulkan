@@ -5,6 +5,7 @@
 namespace FooGame
 {
     class SceneHierarchyPanel;
+    class AssetPanel;
     class EditorLayer final : public Layer
     {
         public:
@@ -22,6 +23,7 @@ namespace FooGame
             std::unique_ptr<Scene> m_Scene;
             ApplicationCommandLineArgs m_Args;
             SceneHierarchyPanel* m_HierarchyPanel;
+            AssetPanel* m_AssetPanel;
 
         private:
             bool OnMouseMoved(MouseMovedEvent& event);

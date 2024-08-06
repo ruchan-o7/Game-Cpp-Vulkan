@@ -3,6 +3,7 @@
 #include "../Scene/Asset.h"
 #include "../Base.h"
 #include "../Engine/Geometry/Model.h"
+#include "../Engine/Geometry/Vertex.h"
 namespace FooGame
 {
     class Mesh;
@@ -17,12 +18,9 @@ namespace FooGame
     using AssetTextureC  = Asset::AssetContainer<VulkanTexture>;
     using AssetMaterialC = Asset::AssetContainer<Asset::FMaterial>;
 
-    using Name = std::string;
-    using Id   = u64;
-
-    using ModelRegistery    = Hashmap<Id, AssetModelC>;
-    using TextureRegistery  = Hashmap<Id, AssetTextureC>;
-    using MaterialRegistery = Hashmap<Id, AssetMaterialC>;
+    using ModelRegistery    = Hashmap<UUID, AssetModelC>;
+    using TextureRegistery  = Hashmap<UUID, AssetTextureC>;
+    using MaterialRegistery = Hashmap<UUID, AssetMaterialC>;
 
     class AssetManager
     {
@@ -31,7 +29,8 @@ namespace FooGame
             static void DeInit();
 
         public:
-            static void LoadModel(const Asset::FModel& fmodel, UUID id);
+            static void LoadModel(Model& fmodel, UUID id, List<Vertex>&& vertices,
+                                  List<u32>&& indices);
             static void LoadGLTFModel(GltfModel& gltfModel, UUID id);
             static void LoadGLTFModelAsync(GltfLoader loader, UUID id);
 
@@ -44,7 +43,7 @@ namespace FooGame
 
             static void CreateDefaultTexture();
 
-            static void AddMaterial(Shared<Asset::FMaterial> material, UUID id);
+            static void AddMaterial(Asset::FMaterial&& material);
 
         public:
             static AssetModelC* GetModelAsset(UUID id);
@@ -60,15 +59,16 @@ namespace FooGame
             static MaterialRegistery& GetAllMaterials();
 
             static const TextureRegistery& GetAllImages();
+            static ModelRegistery& GetAllModels();
 
             static bool HasTextureExists(UUID id);
             static bool HasMaterialExists(UUID id);
             static bool HasModelAssetExists(UUID id);
 
         private:
-            static void InsertTextureAsset(const Shared<VulkanTexture>& pT, UUID id);
+            static void InsertTextureAsset(Shared<VulkanTexture> t, UUID id);
             static void InsertMaterialAsset(const Asset::FMaterial& m);
-            static void InsertModelAsset(Shared<Model> m, UUID id);
+            static void InsertModelAsset(Model&& m, UUID id);
             // clang-format off
             static Asset::FImage CreateFimageAssetFile(
                 const String& assetName,

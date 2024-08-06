@@ -10,6 +10,7 @@ namespace FooGame
     class PerspectiveCamera;
     class Camera;
     struct Pipeline;
+    struct Vertex;
     struct FrameStatistics
     {
             uint32_t DrawCall    = 0;
@@ -33,7 +34,8 @@ namespace FooGame
             static VulkanPipeline* GetPipeline();
 
         public:
-            static void SubmitModel(UUID id);
+            static void SubmitModel(UUID id, const List<Vertex>& vertices,
+                                    const List<u32>& indices);
 
         private:
             static void BindPipeline(VkCommandBuffer cmd);

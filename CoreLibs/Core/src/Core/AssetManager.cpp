@@ -7,6 +7,7 @@
 #include <pch.h>
 #include <cstddef>
 #include <filesystem>
+#include <utility>
 #include "ObjLoader.h"
 #include "Thread.h"
 #include "../Engine/Geometry/Model.h"
@@ -27,7 +28,7 @@
 #include "../Core/UUID.h"
 #include "../Config.h"
 #include "../Core/Application.h"
-#include "../Scene/ObjectConverters/ModelConverter.h"
+#include "../Engine/Core/VulkanTexture.h"
 namespace FooGame
 {
     std::mutex g_Texture_mutex;
@@ -63,18 +64,22 @@ namespace FooGame
     {
         return s_TextureMap;
     }
+    ModelRegistery& AssetManager::GetAllModels()
+    {
+        return s_ModelMap;
+    }
 
-    void AssetManager::LoadModel(const Asset::FModel& fmodel, UUID id)
+    void AssetManager::LoadModel(Model& fmodel, UUID id, List<Vertex>&& vertices,
+                                 List<u32>&& indices)
     {
         if (HasModelAssetExists(id))
         {
             return;
         }
-        Shared<Model> model = FModelToModel(fmodel);
+        InsertModelAsset(std::move(fmodel), id);
 
-        InsertModelAsset(model, id);
-
-        Backend::SubmitToRenderThread([=]() { Renderer3D::SubmitModel(id); });
+        Backend::SubmitToRenderThread(  // TODO: copying maybe much better
+            [&]() { Renderer3D::SubmitModel(id, std::move(vertices), std::move(indices)); });
     }
     void AssetManager::LoadGLTFModelAsync(GltfLoader loader, UUID id)
     {
@@ -100,12 +105,12 @@ namespace FooGame
                 ConvertGltfNodeToMesh(node, model, matAndId);
             }
         }
-        Asset::FMesh mesh;
+        Mesh mesh;
         mesh.Name      = input->Mesh.Name;
         mesh.Transform = input->Matrix;
         for (const auto& p : input->Mesh.primitives)
         {
-            Asset::DrawPrimitive dp;
+            Mesh::Primitive dp;
             dp.FirstIndex = p.firstIndex;
             dp.IndexCount = p.indexCount;
             dp.MaterialId = matAndId[p.materialIndex].id;
@@ -153,52 +158,51 @@ namespace FooGame
         {
             const auto& gMat = gltfModel.Materials[i];
 
-            auto tai   = texAndIds[gMat.BaseColorTextureIndex];
-            auto* fmat = new Asset::FMaterial();
+            auto tai = texAndIds[gMat.BaseColorTextureIndex];
+            Asset::FMaterial fmat{};
             IndexAndId iai;
             iai.index = i;
             iai.id    = UUID();
             matAndId.push_back(iai);
 
-            fmat->RoughnessTextureId = DEFAULT_TEXTURE_ID;
+            fmat.RoughnessTextureId = DEFAULT_TEXTURE_ID;
 
-            fmat->BaseColorTexture.id   = tai.id;
-            fmat->BaseColorTexture.Name = GetTextureAsset(tai.id)->Name;
-            fmat->MetallicTextureId     = DEFAULT_TEXTURE_ID;
-            fmat->NormalTextureId       = DEFAULT_TEXTURE_ID;
+            fmat.BaseColorTexture.id   = tai.id;
+            fmat.BaseColorTexture.Name = GetTextureAsset(tai.id)->Asset->GetName();
+            fmat.MetallicTextureId     = DEFAULT_TEXTURE_ID;
+            fmat.NormalTextureId       = DEFAULT_TEXTURE_ID;
 
-            fmat->BaseColorTexture.factor[0] = gMat.BaseColorFactor[0];
-            fmat->BaseColorTexture.factor[1] = gMat.BaseColorFactor[1];
-            fmat->BaseColorTexture.factor[2] = gMat.BaseColorFactor[2];
-            fmat->BaseColorTexture.factor[3] = gMat.BaseColorFactor[3];
+            fmat.BaseColorTexture.factor[0] = gMat.BaseColorFactor[0];
+            fmat.BaseColorTexture.factor[1] = gMat.BaseColorFactor[1];
+            fmat.BaseColorTexture.factor[2] = gMat.BaseColorFactor[2];
+            fmat.BaseColorTexture.factor[3] = gMat.BaseColorFactor[3];
 
-            fmat->Name = gMat.Name;
+            fmat.Name = gMat.Name;
 
-            AddMaterial(Shared<Asset::FMaterial>(fmat), iai.id);
+            AddMaterial(std::move(fmat));
         }
-        auto* model     = new Model();
-        model->Name     = gltfModel.Name;
-        model->Vertices = std::move(gltfModel.Vertices);
-        model->Indices  = std::move(gltfModel.Indices);
+        Model model{};
+        model.Name = gltfModel.Name;
         if (gltfModel.Nodes.size() > 0)
         {
             GltfNode* rootNode = gltfModel.Nodes[0];
-            ConvertGltfNodeToMesh(rootNode, model, matAndId);
+            ConvertGltfNodeToMesh(rootNode, &model, matAndId);
         }
+        InsertModelAsset(std::move(model), id);
 
-        InsertModelAsset(Shared<Model>(model), id);
-
-        Application::Get().SubmitToMainThread([=] { Renderer3D::SubmitModel(id); });
+        Application::Get().SubmitToMainThread(
+            [=] { Renderer3D::SubmitModel(id, gltfModel.Vertices, gltfModel.Indices); });
     }
     void AssetManager::LoadObjModel(Unique<ObjModel> objModel, UUID id)
     {
-        auto model      = std::make_shared<Model>();
-        model->Meshes   = std::move(objModel->Meshes);
-        model->Name     = objModel->Name;
-        model->Vertices = std::move(objModel->Vertices);
-        model->Indices  = std::move(objModel->Indices);
-        InsertModelAsset(model, id);
-        Application::Get().SubmitToMainThread([=]() { Renderer3D::SubmitModel(id); });
+        Model model{};
+        model.Meshes = std::move(objModel->Meshes);
+        model.Name   = objModel->Name;
+        InsertModelAsset(std::move(model), id);
+        auto vertices = objModel->Vertices;
+        auto indices  = objModel->Indices;
+        Application::Get().SubmitToMainThread([=]()
+                                              { Renderer3D::SubmitModel(id, vertices, indices); });
     }
     void AssetManager::LoadFIMG(const Asset::FImage& fimage, UUID id)
     {
@@ -333,14 +337,12 @@ namespace FooGame
 
     size_t g_UnnamedImagesCount = 0;
 
-    void AssetManager::InsertTextureAsset(const Shared<VulkanTexture>& pT, UUID id)
+    void AssetManager::InsertTextureAsset(Shared<VulkanTexture> t, UUID id)
     {
         std::lock_guard<std::mutex> lock(g_Texture_mutex);
         if (!HasTextureExists(id))
         {
-            s_TextureMap.insert(TextureRegistery::value_type{
-                id, {Asset::AssetStatus::READY, pT, pT->GetName(), id}
-            });
+            s_TextureMap[id] = AssetTextureC{Asset::AssetStatus::READY, t};
         }
     }
 
@@ -353,21 +355,21 @@ namespace FooGame
         return nullptr;
     }
 
-    void AssetManager::AddMaterial(Shared<Asset::FMaterial> material, UUID id)
+    void AssetManager::AddMaterial(Asset::FMaterial&& material)
     {
         std::lock_guard<std::mutex> lock(g_Material_mutex);
-        if (!HasMaterialExists(id))
+        if (!HasMaterialExists(material.Id))
         {
             s_MaterialMap.insert(MaterialRegistery::value_type{
-                id, {Asset::AssetStatus::READY, material, material->Name, id}
+                material.Id, {Asset::AssetStatus::READY, material}
             });
         }
     }
 
-    void AssetManager::InsertModelAsset(Shared<Model> m, UUID id)
+    void AssetManager::InsertModelAsset(Model&& m, UUID id)
     {
         std::lock_guard<std::mutex> lock(g_Model_mutex);
-        s_ModelMap[id] = {Asset::AssetStatus::READY, m, m->Name, id};
+        s_ModelMap[id] = {Asset::AssetStatus::READY, std::move(m)};
     }
     bool AssetManager::HasModelAssetExists(UUID id)
     {
@@ -414,13 +416,14 @@ namespace FooGame
         LoadTexture(DEFAULT_TEXTURE_NAME, (unsigned char*)data, sizeof(data), 1, 1,
                     DEFAULT_TEXTURE_ID);
         Asset::FMaterial m;
+        m.Id                 = DEFAULT_MATERIAL_ID;
         m.Name               = DEFAULT_MATERIAL_NAME;
         m.NormalTextureId    = DEFAULT_TEXTURE_ID;
         m.MetallicTextureId  = DEFAULT_TEXTURE_ID;
         m.RoughnessTextureId = DEFAULT_TEXTURE_ID;
 
         m.BaseColorTexture.id = DEFAULT_TEXTURE_ID;
-        AddMaterial(Shared<Asset::FMaterial>(new Asset::FMaterial(m)), DEFAULT_MATERIAL_ID);
+        AddMaterial(std::move(m));
         g_IsDefaulTextureInitialized = true;
     }
     bool AssetManager::HasTextureExists(UUID id)

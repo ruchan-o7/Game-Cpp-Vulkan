@@ -24,24 +24,23 @@ namespace FooGame
             glm::mat4 renderMatrix;
     };
 
-    struct MeshDrawData2
+    struct MeshDrawData
     {
-            Unique<VulkanBuffer> VertexBuffer = nullptr;
-            Unique<VulkanBuffer> IndexBuffer  = nullptr;
-            Model* PtrModel                   = nullptr;
+            Unique<VulkanBuffer> VertexBuffer;
+            Unique<VulkanBuffer> IndexBuffer;
+            size_t VertexCount = 0;
+            size_t IndexCount  = 0;
     };
 
     struct RenderData
     {
             struct Resources
             {
-                    Hashmap<u32, MeshDrawData2> MeshMap2;
-                    u32 FreeIndex              = 0;
-                    Shared<Model> DefaultModel = nullptr;
+                    Hashmap<UUID, MeshDrawData> SubmittedModels;
                     DeletionQueue deletionQueue;
                     bool Exists(UUID id)
                     {
-                        if (MeshMap2.find(id) != MeshMap2.end())
+                        if (SubmittedModels.find(id) != SubmittedModels.end())
                         {
                             return true;
                         }
@@ -114,40 +113,42 @@ namespace FooGame
         }
     }
 
-    void Renderer3D::SubmitModel(UUID id)
+    void Renderer3D::SubmitModel(UUID id, const List<Vertex>& vertices, const List<u32>& indices)
     {
+        if (s_Data.Res.Exists(id))
+        {
+            return;
+        }
         auto modelAsset = AssetManager::GetModelAsset(id);
         if (modelAsset == nullptr)
         {
             FOO_ENGINE_WARN("Submitted model asset is null");
             return;
         }
-        auto model = modelAsset->Asset;
+        auto& model = modelAsset->Asset;
 
-        size_t vertexSize = sizeof(model->Vertices[0]) * model->Vertices.size();
+        size_t vertexSize = sizeof(Vertex) * vertices.size();
         VulkanBuffer::BuffDesc vInfo{};
         vInfo.pRenderDevice   = Backend::GetRenderDevice();
-        vInfo.BufferData.Data = model->Vertices.data();
+        vInfo.BufferData.Data = (void*)vertices.data();
         vInfo.BufferData.Size = vertexSize;
-        vInfo.Name            = "Model vb: " + model->Name;
+        vInfo.Name            = "Model vb: " + model.Name;
         auto vb               = VulkanBuffer::CreateVertexBuffer(vInfo);
 
         Unique<VulkanBuffer> ib;
-        if (model->Indices.size() != 0)
+        if (indices.size() != 0)
         {
-            size_t indicesSize = sizeof(model->Indices[0]) * model->Indices.size();
+            size_t indicesSize = sizeof(indices[0]) * indices.size();
             VulkanBuffer::BuffDesc iInfo{};
             iInfo.pRenderDevice   = Backend::GetRenderDevice();
-            iInfo.BufferData.Data = model->Indices.data();
+            iInfo.BufferData.Data = (void*)indices.data();
             iInfo.BufferData.Size = indicesSize;
-            iInfo.Name            = "Mesh ib" + model->Name;
+            iInfo.Name            = "Mesh ib" + model.Name;
             ib                    = VulkanBuffer::CreateIndexBuffer(iInfo);
         }
 
-        s_Data.Res.MeshMap2[s_Data.Res.FreeIndex] = {std::move(vb), std::move(ib), model.get()};
-
-        model->RenderId = s_Data.Res.FreeIndex;
-        s_Data.Res.FreeIndex++;
+        s_Data.Res.SubmittedModels[id] = {std::move(vb), std::move(ib), vertices.size(),
+                                          indices.size()};
     }
     FrameStatistics Renderer3D::GetStats()
     {
@@ -202,7 +203,7 @@ namespace FooGame
 
     void Renderer3D::ClearBuffers()
     {
-        for (auto& [id, data] : s_Data.Res.MeshMap2)
+        for (auto& [id, data] : s_Data.Res.SubmittedModels)
         {
             if (data.IndexBuffer)
             {
@@ -210,7 +211,7 @@ namespace FooGame
             }
             data.VertexBuffer.reset();
         }
-        s_Data.Res.MeshMap2.clear();
+        s_Data.Res.SubmittedModels.clear();
     }
 
     void Renderer3D::DrawModel(UUID id, const glm::mat4& transform)
@@ -225,7 +226,7 @@ namespace FooGame
             return;
         }
 
-        if (asset->Asset->Name.empty())
+        if (asset->Asset.Name.empty())
         {
             return;
         }
@@ -234,15 +235,15 @@ namespace FooGame
         auto cmd          = Backend::GetCurrentCommandbuffer();
 
         auto allocator = Backend::GetAllocatorHandle();
-        auto exists    = s_Data.Res.Exists(asset->Asset->RenderId);
+        auto exists    = s_Data.Res.Exists(id);
         if (!exists)
         {
             return;
         }
 
-        auto& modelRes = s_Data.Res.MeshMap2[asset->Asset->RenderId];
+        auto& modelRes = s_Data.Res.SubmittedModels[id];
 
-        for (const auto& mesh : asset->Asset->Meshes)
+        for (const auto& mesh : asset->Asset.Meshes)
         {
             for (const auto& primitive : mesh.Primitives)
             {
@@ -259,9 +260,9 @@ namespace FooGame
                 auto material = materialAsset->Asset;
 
                 AssetTextureC* baseColorTextureAsset =
-                    AssetManager::GetTextureAsset(material->BaseColorTexture.id);
+                    AssetManager::GetTextureAsset(material.BaseColorTexture.id);
 
-                auto baseColorTexture = baseColorTextureAsset->Asset;
+                auto& baseColorTexture = baseColorTextureAsset->Asset;
 
                 auto& currentSet = rContext.descriptorSets[currentFrame];
                 allocator.Allocate(rContext.pGraphicPipeline->GetDescriptorSetLayout(), currentSet);
@@ -311,11 +312,11 @@ namespace FooGame
                 }
                 else
                 {
-                    Backend::Draw(modelRes.PtrModel->Vertices.size(), 1, primitive.FirstIndex, 0);
+                    Backend::Draw(modelRes.VertexCount, 1, primitive.FirstIndex, 0);
                 }
                 s_Data.FrameData.DrawCall++;
-                s_Data.FrameData.VertexCount += modelRes.PtrModel->Vertices.size();
-                s_Data.FrameData.IndexCount  += modelRes.PtrModel->Indices.size();
+                s_Data.FrameData.VertexCount += modelRes.VertexCount;
+                s_Data.FrameData.IndexCount  += modelRes.IndexCount;
             }
         }
     }
@@ -326,9 +327,9 @@ namespace FooGame
 
     void Renderer3D::Shutdown()
     {
-        auto device = Backend::GetRenderDevice()->GetVkDevice();  // Api::GetVkDevice();
+        auto device = Backend::GetRenderDevice()->GetVkDevice();
         s_Data.Res.deletionQueue.Flush(device);
-        for (auto& [index, data] : s_Data.Res.MeshMap2)
+        for (auto& [index, data] : s_Data.Res.SubmittedModels)
         {
             data.VertexBuffer.reset();
             if (data.IndexBuffer)
@@ -337,7 +338,7 @@ namespace FooGame
             }
         }
         rContext.pGraphicPipeline.reset();
-        s_Data.Res.MeshMap2.clear();
+        s_Data.Res.SubmittedModels.clear();
     }
     void Renderer3D::UpdateUniformData(UniformBufferObject& ubd)
     {

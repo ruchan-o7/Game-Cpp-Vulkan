@@ -6,7 +6,7 @@ namespace FooGame
     class SceneHierarchyPanel
     {
         public:
-            SceneHierarchyPanel(Scene* context);
+            explicit SceneHierarchyPanel(Scene* context);
             void SetContext(Scene* context);
             void OnImgui();
             void SetSelectedEntity(Entity e);
@@ -17,12 +17,6 @@ namespace FooGame
             void DisplayAddComponentEntry(const std::string& entryName);
             void DrawEntityNode(Entity entity);
             void DrawComponents(Entity entity);
-            void DrawMaterial();
-            void DrawImage();
-            void DrawModel();
-            void DrawAssets();
-            void RefreshAssetFiles();
-            void DrawAssetProperty();
 
         private:
             Scene* m_pScene;

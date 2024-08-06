@@ -210,24 +210,24 @@ namespace FooGame
                 {
                     return;
                 }
-                auto model       = modelAsset->Asset;
-                u64 assetId      = modelAsset->Id;
-                String assetName = modelAsset->Name;
+                auto& model      = modelAsset->Asset;
+                u64 assetId      = model.Id;
+                String assetName = model.Name;
 
                 FOO_CORE_TRACE("Model asset deserializing:\tId:{0}\t Name:{1}", assetName, assetId);
 
-                json assetItem = CreateAssetItemJson(modelAsset->Name, assetId);
+                json assetItem = CreateAssetItemJson(assetName, assetId);
                 modelAssetsJson.push_back(assetItem);
 
-                Asset::FModel fmodel = ModelToFModel(*model);
-                for (const auto& fmesh : fmodel.Meshes)
+                // Asset::FModel fmodel = ModelToFModel(*model);
+                for (const auto& fmesh : model.Meshes)
                 {
                     for (const auto& p : fmesh.Primitives)
                     {
                         AddMaterialId(p.MaterialId);
                     }
                 }
-                FModelJsons.emplace_back(ms.Serialize(fmodel));
+                FModelJsons.emplace_back(ms.Serialize(model));
             });
         FOO_CORE_TRACE("Asset Models serialization done!");
 
@@ -240,16 +240,17 @@ namespace FooGame
             {
                 continue;
             }
-            u64 id         = materialAsset->Id;
-            json assetItem = CreateAssetItemJson(materialAsset->Name, id);
+            u64 id           = materialAsset->Asset.Id;
+            String assetName = materialAsset->Asset.Name;
+            json assetItem   = CreateAssetItemJson(assetName, id);
             materialAssetsJson.push_back(assetItem);
 
-            AddImageId(materialAsset->Asset->BaseColorTexture.id);
-            AddImageId(materialAsset->Asset->NormalTextureId);
-            AddImageId(materialAsset->Asset->RoughnessTextureId);
-            AddImageId(materialAsset->Asset->MetallicTextureId);
+            AddImageId(materialAsset->Asset.BaseColorTexture.id);
+            AddImageId(materialAsset->Asset.NormalTextureId);
+            AddImageId(materialAsset->Asset.RoughnessTextureId);
+            AddImageId(materialAsset->Asset.MetallicTextureId);
 
-            FMatJsons.emplace_back(std::move(mats.Serialize(*materialAsset->Asset)));
+            FMatJsons.emplace_back(std::move(mats.Serialize(materialAsset->Asset)));
         }
         FOO_CORE_TRACE("Asset Materials serialization done");
 
@@ -257,13 +258,13 @@ namespace FooGame
         FOO_CORE_TRACE("Asset Images serializing");
         for (auto& imageId : imageIdsToSerialize)
         {
-            auto* imageAsset = AssetManager::GetTextureAsset(imageId);
-            if (imageAsset->Id == DEFAULT_TEXTURE_ID || imageId == 0)
+            if (imageId == 0)
             {
                 continue;
             }
-            auto imageName = imageAsset->Name;
-            u64 id         = imageAsset->Id;
+            auto* imageAsset = AssetManager::GetTextureAsset(imageId);
+            auto imageName   = imageAsset->Asset->GetName();
+            u64 id           = imageAsset->Asset->Id;
             imageAssetsJson.emplace_back(std::move(CreateAssetItemJson(imageName, id)));
 
             Asset::FImage fimg;
@@ -369,7 +370,7 @@ namespace FooGame
         };
         struct FModelAsset
         {
-                Asset::FModel model;
+                Model model;
                 UUID id;
         };
         List<FimageAsset> fimages;
@@ -417,9 +418,7 @@ namespace FooGame
 
                 Asset::FMaterial fMat = std::move(mats.DeSerialize(matJ));
 
-                auto* pfmat = new Asset::FMaterial(fMat);
-
-                AssetManager::AddMaterial(Shared<Asset::FMaterial>(pfmat), id);
+                AssetManager::AddMaterial(std::move(fMat));
             }
         }
         else
@@ -521,7 +520,8 @@ namespace FooGame
         }
         for (size_t i = 0; i < fModels.size(); i++)
         {
-            ASYNC(AssetManager::LoadModel(fModels[i].model, fModels[i].id));
+            ASYNC(AssetManager::LoadModel(fModels[i].model, fModels[i].id, {},
+                                          {}));  // TODO: Parse model file
         }
 #undef ASYNC
 
