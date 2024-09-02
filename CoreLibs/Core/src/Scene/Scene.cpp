@@ -177,7 +177,9 @@ namespace FooGame
     std::string dummy;
     void Scene::RenderScene()
     {
-        Camera* mainCamera = nullptr;
+        Camera* mainCamera       = nullptr;
+        VulkanPipeline* pipeline = nullptr;
+        Renderer3D::BindUnLitPipeline();
         glm::mat4 cameraTransform;
         {
             auto view = m_Registry.view<TransformComponent, CameraComponent>();

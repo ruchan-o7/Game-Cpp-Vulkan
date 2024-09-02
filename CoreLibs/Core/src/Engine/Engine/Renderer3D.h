@@ -21,9 +21,10 @@ namespace FooGame
         public:
             static void Init(class RenderDevice* pRenderDevice);
             static void EndDraw();
-            static void BeginScene(const PerspectiveCamera& camera);
             static void BeginScene(const Camera& camera);
             static void BeginScene(const glm::mat4& view, const glm::mat4& projection);
+            static void BindUnLitPipeline();
+            static void BindLitPipeline();
             static void Shutdown();
             static void ClearBuffers();
             static FrameStatistics GetStats();
@@ -36,7 +37,6 @@ namespace FooGame
             static void SubmitModel(UUID id);
 
         private:
-            static void BindPipeline(VkCommandBuffer cmd);
             static void UpdateUniformData(UniformBufferObject& ubd);
     };
 }  // namespace FooGame

@@ -7,15 +7,15 @@
 #include "../Core/VulkanPipeline.h"
 #include "../Core/RenderDevice.h"
 #include "../Core/VulkanBuffer.h"
-#include "../Camera/PerspectiveCamera.h"
 #include "../Camera/Camera.h"
 #include "../../Core/AssetManager.h"
 #include "../../Engine/Core/VulkanTexture.h"
 #include "../../Engine/Engine/Types/GraphicTypes.h"
+#include "../../Core/Assert.h"
 namespace FooGame
 {
-#define UNLIT_VERT_SHADER "Assets/Shaders/vert.spv"
-#define UNLIT_FRAG_SHADER "Assets/Shaders/frag.spv"
+#define UNLIT_VERT_SHADER "Assets/Shaders/unlit.vert.spv"
+#define UNLIT_FRAG_SHADER "Assets/Shaders/unlit.frag.spv"
     struct MeshPushConstants
     {
             glm::vec4 data;
@@ -59,7 +59,9 @@ namespace FooGame
     {
             std::vector<Unique<VulkanBuffer>> uniformBuffers{2};
             Unique<VulkanPipeline> UnLitPipeline;
+            Unique<VulkanPipeline> LitPipeline;
             VkDescriptorSet descriptorSets[3];
+            VulkanPipeline* CurrentPipeline = nullptr;
     };
     RendererContext rContext{};
     static RenderData s_Data;
@@ -157,16 +159,24 @@ namespace FooGame
         s_Data.FrameData.VertexCount = 0;
         s_Data.FrameData.IndexCount  = 0;
     }
+    void Renderer3D::BindUnLitPipeline()
+    {
+        rContext.CurrentPipeline = rContext.UnLitPipeline.get();
+        Backend::BindGraphicPipeline(rContext.UnLitPipeline->GetPipeline());
+    }
+    void Renderer3D::BindLitPipeline()
+    {
+        Backend::BindGraphicPipeline(rContext.LitPipeline->GetPipeline());
+    }
     void Renderer3D::BeginScene(const Camera& camera)
     {
-        UniformBufferObject ubd{};
-        ubd.View       = camera.View;
-        ubd.Projection = camera.Perspective;
-        UpdateUniformData(ubd);
+        BeginScene(camera.View, camera.Perspective);
+
+        FOO_ASSERT(rContext.CurrentPipeline != nullptr, "No current pipeline bound!");
+        Backend::BindGraphicPipeline(rContext.CurrentPipeline->GetPipeline());
 
         auto extent = Backend::GetSwapchainExtent();
         auto cmd    = Backend::GetCurrentCommandbuffer();
-        BindPipeline(cmd);
 
         VkViewport viewport{};
         viewport.x        = 0;
@@ -181,14 +191,6 @@ namespace FooGame
         scissor.extent = {static_cast<u32>(viewport.width), static_cast<u32>(viewport.height)};
         scissor.offset = {0, 0};
         Backend::SetScissor(scissor);
-    }
-    void Renderer3D::BeginScene(const PerspectiveCamera& camera)
-    {
-        UniformBufferObject ubd{};
-
-        ubd.View       = camera.GetView();
-        ubd.Projection = camera.GetProjection();
-        UpdateUniformData(ubd);
     }
     void Renderer3D::BeginScene(const glm::mat4& view, const glm::mat4& projection)
     {
@@ -316,10 +318,6 @@ namespace FooGame
                 s_Data.FrameData.IndexCount  += modelRes.PtrModel->Indices.size();
             }
         }
-    }
-    void Renderer3D::BindPipeline(VkCommandBuffer cmd)
-    {
-        Backend::BindGraphicPipeline(rContext.UnLitPipeline->GetPipeline());
     }
 
     void Renderer3D::Shutdown()
