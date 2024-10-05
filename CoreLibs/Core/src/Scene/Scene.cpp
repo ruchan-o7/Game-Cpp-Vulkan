@@ -82,9 +82,9 @@ namespace FooGame
         auto idView = srcSceneRegistry.view<IDComponent>();
         for (auto e : idView)
         {
-            UUID uuid = srcSceneRegistry.get<IDComponent>(e).ID;
-            // const auto& name = srcSceneRegistry.get<TagComponent>(e).Tag;
-            Entity newEntity = newScene->CreateEntityWithUUID(uuid, "name");
+            UUID uuid        = srcSceneRegistry.get<IDComponent>(e).ID;
+            const auto& name = srcSceneRegistry.get<TagComponent>(e).Tag;
+            Entity newEntity = newScene->CreateEntityWithUUID(uuid, name);
             enttMap[uuid]    = (entt::entity)newEntity;
         }
 
