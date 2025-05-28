@@ -1,13 +1,11 @@
 #include "SceneSerializer.h"
 #include <pch.h>
-#include "Log.h"
 #include "AssetSerializer.h"
 #include "Entity.h"
 #include "Asset.h"
 #include <stb_image.h>
 #include <cstddef>
 #include <filesystem>
-#include "../Engine/Core/VulkanTexture.h"
 #include "../Base.h"
 #include "../Core/AssetManager.h"
 #include "../Scene/Component.h"
@@ -15,9 +13,8 @@
 #include "../Scripts/ScaleYoink.h"
 #include "../Scripts/CameraController.h"
 #include "../Core/File.h"
+#include "../Core/Log.h"
 #include "../Config.h"
-#include "../Core/Assert.h"
-#include "../Scene/ObjectConverters/ModelConverter.h"
 
 namespace FooGame
 {
@@ -59,11 +56,11 @@ namespace FooGame
         {
             auto mrc    = entity.GetComponent<ModelRendererComponent>();
             u64 modelId = mrc.AssetModelId;
-            auto* asset = AssetManager::GetModelAsset(modelId);
-            FOO_ASSERT(asset, "Referenced asset is null");
-            sceneEntitiesNode["meshComponent"] = json::object({
-                {"modelId", modelId},
-            });
+            // auto* asset = AssetManager::GetModelAsset(modelId);
+            // FOO_ASSERT(asset, "Referenced asset is null");
+            // sceneEntitiesNode["meshComponent"] = json::object({
+            //     {"modelId", modelId},
+            // });
         }
         if (!entity.HasComponent<ScriptComponent>())
         {
@@ -205,29 +202,30 @@ namespace FooGame
         meshRendererComponents.each(
             [&](ModelRendererComponent& c)
             {
-                auto* modelAsset = AssetManager::GetModelAsset(c.AssetModelId);
-                if (modelAsset == nullptr)
-                {
-                    return;
-                }
-                auto model       = modelAsset->Asset;
-                u64 assetId      = modelAsset->Id;
-                String assetName = modelAsset->Name;
-
-                FOO_CORE_TRACE("Model asset deserializing:\tId:{0}\t Name:{1}", assetName, assetId);
-
-                json assetItem = CreateAssetItemJson(modelAsset->Name, assetId);
-                modelAssetsJson.push_back(assetItem);
-
-                Asset::FModel fmodel = ModelToFModel(*model);
-                for (const auto& fmesh : fmodel.Meshes)
-                {
-                    for (const auto& p : fmesh.Primitives)
-                    {
-                        AddMaterialId(p.MaterialId);
-                    }
-                }
-                FModelJsons.emplace_back(ms.Serialize(fmodel));
+                // auto* modelAsset = AssetManager::GetModelAsset(c.AssetModelId);
+                // if (modelAsset == nullptr)
+                //{
+                //     return;
+                // }
+                // auto model       = modelAsset->Asset;
+                // u64 assetId      = modelAsset->Id;
+                // String assetName = modelAsset->Name;
+                //
+                // FOO_CORE_TRACE("Model asset deserializing:\tId:{0}\t Name:{1}", assetName,
+                // assetId);
+                //
+                // json assetItem = CreateAssetItemJson(modelAsset->Name, assetId);
+                // modelAssetsJson.push_back(assetItem);
+                //
+                // Asset::FModel fmodel = ModelToFModel(*model);
+                // for (const auto& fmesh : fmodel.Meshes)
+                //{
+                //     for (const auto& p : fmesh.Primitives)
+                //     {
+                //         AddMaterialId(p.MaterialId);
+                //     }
+                // }
+                // FModelJsons.emplace_back(ms.Serialize(fmodel));
             });
         FOO_CORE_TRACE("Asset Models serialization done!");
 
@@ -266,21 +264,21 @@ namespace FooGame
             u64 id         = imageAsset->Id;
             imageAssetsJson.emplace_back(std::move(CreateAssetItemJson(imageName, id)));
 
-            Asset::FImage fimg;
-            fimg.Name         = imageName;
-            fimg.Size         = imageAsset->Asset->m_Info.Size;
-            fimg.Width        = imageAsset->Asset->m_Info.Width;
-            fimg.Height       = imageAsset->Asset->m_Info.Height;
-            fimg.ChannelCount = imageAsset->Asset->m_Info.ChannelCount;
-            if (imageAsset->Asset->m_Info.Format == VK_FORMAT_R8G8B8A8_SRGB)
-            {
-                fimg.Format = Asset::TextureFormat::RGBA8;
-            }
-            else
-            {
-                fimg.Format = Asset::TextureFormat::RGB8;
-            }
-            FImageJsons.push_back(is.Serialize(fimg));
+            // Asset::FImage fimg;
+            // fimg.Name         = imageName;
+            // fimg.Size         = imageAsset->Asset->m_Info.Size;
+            // fimg.Width        = imageAsset->Asset->m_Info.Width;
+            // fimg.Height       = imageAsset->Asset->m_Info.Height;
+            // fimg.ChannelCount = imageAsset->Asset->m_Info.ChannelCount;
+            // if (imageAsset->Asset->m_Info.Format == VK_FORMAT_R8G8B8A8_SRGB)
+            //{
+            //     fimg.Format = Asset::TextureFormat::RGBA8;
+            // }
+            // else
+            //{
+            //     fimg.Format = Asset::TextureFormat::RGB8;
+            // }
+            // FImageJsons.push_back(is.Serialize(fimg));
         }
         FOO_CORE_TRACE("Asset Images serialization done!");
 

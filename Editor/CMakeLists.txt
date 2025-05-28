@@ -14,7 +14,6 @@ target_include_directories("${PROJECT_NAME}" PUBLIC
 	"${ENTT_INCLUDE_DIR}"
 	"${GLM_INCLUDE_DIR}"
 	"${CORE_INCLUDE_DIR}"
-	"${LOG_INCLUDE_DIR}"
 	"${TINY_OBJ_LOADER_INCLUDE_DIR}"
 	"src"
 )
@@ -23,7 +22,7 @@ set_property(TARGET "${PROJECT_NAME}" PROPERTY FOLDER "Editor")
 
 set_target_properties("${PROJECT_NAME}" PROPERTIES CXX_STANDARD 17)
 
-target_link_libraries("${PROJECT_NAME}" Core Log)
+target_link_libraries("${PROJECT_NAME}" Core)
 add_compile_definitions(
 	$<$<CONFIG:Debug>:FOO_DEBUG>
 )

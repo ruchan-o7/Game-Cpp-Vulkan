@@ -4,10 +4,7 @@ project(Game
 message("----------")
 message("Configuring ${PROJECT_NAME}")
 
-set(GAME_SOURCES
-	"src/main.cpp"
-	"src/Game.cpp"
-	)
+set(GAME_SOURCES "src/main.cpp" "src/Game.cpp")
 
 add_executable("${PROJECT_NAME}" "${GAME_SOURCES}")
 

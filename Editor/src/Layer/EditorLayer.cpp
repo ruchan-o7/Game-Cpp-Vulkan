@@ -1,7 +1,6 @@
 #include "EditorLayer.h"
 #include "entt/entt.hpp"
 #include <Core.h>
-#include "Log.h"
 #include <memory>
 
 namespace FooGame
@@ -23,17 +22,17 @@ namespace FooGame
         auto entt = m_Scene->GetPrimaryCameraEntity();
         if (entt)
         {
-            auto& cameraComp   = entt.GetComponent<CameraComponent>();
-            cameraComp.pCamera = &m_Camera2;
+            auto& cameraComp = entt.GetComponent<CameraComponent>();
+            // cameraComp.pCamera = &m_Camera2;
         }
         else
         {
             auto mainCameraEntity = m_Scene->CreateEntity("Main Camera");
             auto& cam             = mainCameraEntity.AddComponent<CameraComponent>();
-            cam.pCamera           = &m_Camera2;
-            cam.Primary           = true;
-            cam.FixedAspectRatio  = true;
-            auto& sc              = mainCameraEntity.AddComponent<ScriptComponent>();
+            // cam.pCamera           = &m_Camera2;
+            cam.Primary          = true;
+            cam.FixedAspectRatio = true;
+            auto& sc             = mainCameraEntity.AddComponent<ScriptComponent>();
 
             sc.Bind("CameraController");
         }
@@ -41,7 +40,7 @@ namespace FooGame
     }
     void EditorLayer::OnDetach()
     {
-        Renderer3D::ClearBuffers();
+        // Renderer3D::ClearBuffers();
     }
     void EditorLayer::OnImGuiRender()
     {

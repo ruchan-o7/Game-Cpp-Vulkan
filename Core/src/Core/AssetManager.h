@@ -2,7 +2,7 @@
 #include <filesystem>
 #include "../Scene/Asset.h"
 #include "../Base.h"
-#include "../Engine/Geometry/Model.h"
+
 namespace FooGame
 {
     class Mesh;
@@ -13,14 +13,14 @@ namespace FooGame
     class GltfModel;
     struct ObjModel;
 
-    using AssetModelC    = Asset::AssetContainer<Model>;
+    // using AssetModelC    = Asset::AssetContainer<Model>;
     using AssetTextureC  = Asset::AssetContainer<VulkanTexture>;
     using AssetMaterialC = Asset::AssetContainer<Asset::FMaterial>;
 
     using Name = std::string;
     using Id   = u64;
 
-    using ModelRegistery    = Hashmap<Id, AssetModelC>;
+    // using ModelRegistery    = Hashmap<Id, AssetModelC>;
     using TextureRegistery  = Hashmap<Id, AssetTextureC>;
     using MaterialRegistery = Hashmap<Id, AssetMaterialC>;
 
@@ -47,7 +47,7 @@ namespace FooGame
             static void AddMaterial(Shared<Asset::FMaterial> material, UUID id);
 
         public:
-            static AssetModelC* GetModelAsset(UUID id);
+            // static AssetModelC* GetModelAsset(UUID id);
 
             static AssetMaterialC* GetMaterialAsset(const u64& id);
 
@@ -68,7 +68,7 @@ namespace FooGame
         private:
             static void InsertTextureAsset(const Shared<VulkanTexture>& pT, UUID id);
             static void InsertMaterialAsset(const Asset::FMaterial& m);
-            static void InsertModelAsset(Shared<Model> m, UUID id);
+            // static void InsertModelAsset(Shared<Model> m, UUID id);
             // clang-format off
             static Asset::FImage CreateFimageAssetFile(
                 const String& assetName,

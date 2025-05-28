@@ -63,7 +63,6 @@ target_include_directories("${PROJECT_NAME}" PUBLIC
 	"${STB_INCLUDE_DIR}"
 	"${JSON_INCLUDE_DIR}"
 	"${ENTT_INCLUDE_DIR}"
-	"${LOG_INCLUDE_DIR}"
 	"${IMGUI_SRC_DIR}"
 	"${Vulkan_INCLUDE_DIRS}"
 	"${TINYGLTF_INCLUDE_DIR}"
@@ -74,9 +73,7 @@ target_include_directories("${PROJECT_NAME}" PUBLIC
 set_target_properties("${PROJECT_NAME}" PROPERTIES CXX_STANDARD 17)
 
 target_link_libraries("${PROJECT_NAME}" PUBLIC
-	glfw glm Log
-	"${Vulkan_LIBRARIES}"
-	 EnTT::EnTT nlohmann_json
+	glfw glm "${Vulkan_LIBRARIES}" EnTT::EnTT nlohmann_json
 )
 
 add_compile_definitions( $<$<CONFIG:Debug>:FOO_DEBUG>)

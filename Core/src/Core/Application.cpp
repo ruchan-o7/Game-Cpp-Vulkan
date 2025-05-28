@@ -1,7 +1,5 @@
 #include "Application.h"
 #include <mutex>
-#include "../Engine/Engine/Backend.h"
-#include "../Engine/Engine/Renderer3D.h"
 #include "../ImGui/ImGuiLayer.h"
 #include "../Core/AssetManager.h"
 #include "../Core/Time.h"
@@ -28,8 +26,8 @@ namespace FooGame
         m_Window = CreateUnique<Window>(props);
         m_Window->SetOnEventFunction(BIND_EVENT_FN(Application::OnEvent));
 
-        Backend::Init(*m_Window);
-        Renderer3D::Init(Backend::GetRenderDevice());
+        // Backend::Init(*m_Window);
+        // Renderer3D::Init(Backend::GetRenderDevice());
         AssetManager::Init();
 
         m_ImGuiLayer = new ImGuiLayer;
@@ -38,8 +36,8 @@ namespace FooGame
     Application::~Application()
     {
         AssetManager::DeInit();
-        Renderer3D::Shutdown();
-        Backend::Shutdown();
+        // Renderer3D::Shutdown();
+        // Backend::Shutdown();
     }
     void Application::PushLayer(Layer* layer)
     {
@@ -86,14 +84,14 @@ namespace FooGame
                 {
                     l->OnUpdate(ts);
                 }
-                auto stats = Renderer3D::GetStats();
-
-                Renderer3D::EndDraw();
-                ImGui::Begin("3d scene stats");
-                ImGui::Text("Draw calls %i", stats.DrawCall);
-                ImGui::Text("Vertex count %llu", stats.VertexCount);
-                ImGui::Text("Index count %llu", stats.IndexCount);
-                ImGui::End();
+                // auto stats = Renderer3D::GetStats();
+                //
+                // Renderer3D::EndDraw();
+                // ImGui::Begin("3d scene stats");
+                // ImGui::Text("Draw calls %i", stats.DrawCall);
+                // ImGui::Text("Vertex count %llu", stats.VertexCount);
+                // ImGui::Text("Index count %llu", stats.IndexCount);
+                // ImGui::End();
 
                 for (Layer* l : m_LayerStack)
                 {
@@ -102,9 +100,9 @@ namespace FooGame
                 m_ImGuiLayer->End();
             }
             m_Window->PollEvents();
-            Backend::SwapBuffers();
+            // Backend::SwapBuffers();
         }
-        Backend::WaitIdle();
+        // Backend::WaitIdle();
     }
     bool Application::OnWindowClose(WindowCloseEvent& e)
     {
@@ -119,7 +117,8 @@ namespace FooGame
             return false;
         }
         m_Minimized = false;
-        return Backend::OnWindowResized(e);
+        return false;
+        // return Backend::OnWindowResized(e);
     }
     void Application::ExecuteMainThreadQueue()
     {

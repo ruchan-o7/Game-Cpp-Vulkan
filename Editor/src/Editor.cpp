@@ -1,9 +1,10 @@
 #include "Editor.h"
-#include <Core.h>
-#include <nlohmann/json.hpp>
 #include "Layer/EditorLayer.h"
-#include "Log.h"
+
+#include <Core.h>
 #include <imgui.h>
+#include <nlohmann/json.hpp>
+
 namespace FooGame
 {
     Editor::Editor(const ApplicationSpecifications& spec) : Application(spec)

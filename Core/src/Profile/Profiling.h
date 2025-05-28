@@ -7,7 +7,8 @@
 #include <sstream>
 #include <thread>
 #include "../Base.h"
-#include "src/Log.h"
+#include "../Core/Log.h"
+
 namespace FooGame
 {
     using FloatingPointMicroSeconds = std::chrono::duration<double, std::micro>;

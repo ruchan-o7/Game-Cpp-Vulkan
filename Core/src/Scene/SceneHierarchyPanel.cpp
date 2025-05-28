@@ -1,5 +1,4 @@
 #include "SceneHierarchyPanel.h"
-#include <pch.h>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <filesystem>
@@ -13,16 +12,10 @@
 #include "../Scripts/ScaleYoink.h"
 #include "../Base.h"
 #include "../Core/File.h"
-#include "../Core/ObjLoader.h"
 #include "../Base.h"
 #include "../Scene/Asset.h"
-#include "../Core/GltfLoader.h"
 #include "../Config.h"
-#include "../Engine/Engine/Renderer3D.h"
 #include "../Scene/AssetSerializer.h"
-#include "backends/imgui_impl_vulkan.h"
-#include "../Engine/Core/VulkanTexture.h"
-#include "src/Core/Assert.h"
 #include "vulkan/vulkan_core.h"
 #include <nlohmann/json.hpp>
 namespace FooGame
@@ -343,16 +336,16 @@ namespace FooGame
             }
             if (imageFile.Preview == VK_NULL_HANDLE)
             {
-                FOO_CORE_INFO("Image asset preview is null so uploading");
-
-                AssetManager::LoadFIMG(imageFile.AssetFile, imageFile.Id);
-
-                auto& loadedImage = AssetManager::GetTextureAsset(imageFile.Id)->Asset;
-
-                imageFile.Preview = ImGui_ImplVulkan_AddTexture(
-                    loadedImage->DescriptorInfo.sampler, loadedImage->DescriptorInfo.imageView,
-                    loadedImage->DescriptorInfo.imageLayout);
-                FOO_ASSERT(imageFile.Preview != VK_NULL_HANDLE);
+                // FOO_CORE_INFO("Image asset preview is null so uploading");
+                //
+                // AssetManager::LoadFIMG(imageFile.AssetFile, imageFile.Id);
+                //
+                // auto& loadedImage = AssetManager::GetTextureAsset(imageFile.Id)->Asset;
+                //
+                // imageFile.Preview = ImGui_ImplVulkan_AddTexture(
+                //     loadedImage->DescriptorInfo.sampler, loadedImage->DescriptorInfo.imageView,
+                //     loadedImage->DescriptorInfo.imageLayout);
+                // FOO_ASSERT(imageFile.Preview != VK_NULL_HANDLE);
             }
             ImGui::Image(imageFile.Preview, ImVec2(100, 100));
             ImGui::SameLine();
@@ -655,143 +648,171 @@ namespace FooGame
                 }
             });
         auto& sceneMaterials = AssetManager::GetAllMaterials();
-        DrawComponent<ModelRendererComponent>(
-            "Mesh Renderer", entity,
-            [&](ModelRendererComponent& component)
-            {
-                auto assetModel = AssetManager::GetModelAsset(component.AssetModelId);
+        DrawComponent<ModelRendererComponent>("Mesh Renderer", entity,
+                                              [&](ModelRendererComponent& component)
+                                              {
+                                                  // auto assetModel =
+                                                  // AssetManager::GetModelAsset(component.AssetModelId);
 
-                ImGui::Text("Model: %s",
-                            assetModel == nullptr ? "No model" : assetModel->Name.c_str());
-                if (!assetModel)
-                {
-                    if (ImGui::BeginPopupContextWindow())
-                    {
-                        if (ImGui::MenuItem("Load Obj"))
-                        {
-                            List<std::filesystem::path> objs;
-                            File::OpenFileDialog(objs);
-                            bool isOk = false;
-                            for (auto& o : objs)
-                            {
-                                if (o.extension() != ".obj")
-                                {
-                                    File::OpenMessageBox("Selected item is not obj");
-                                    isOk = false;
-                                    break;
-                                }
-                                isOk = true;
-                            }
-                            if (!isOk)
-                            {
-                                return;
-                            }
-                            for (auto& o : objs)
-                            {
-                                auto fileNameStr = o.filename().string();
-                                ObjLoader loader{o};
-                                auto objModel = loader.LoadModel();
-                                if (objModel)
-                                {
-                                    UUID id;
-                                    AssetManager::LoadObjModel(std::move(objModel), id);
-                                    component.AssetModelId = id;
-                                }
-                            }
-                        }
-                        if (ImGui::MenuItem("Load Gltf"))
-                        {
-                            List<std::filesystem::path> gltfs;
-                            File::OpenFileDialog(gltfs);
-                            bool isOk = false;
-                            for (auto& g : gltfs)
-                            {
-                                if (g.extension() == ".glb" || g.extension() == ".gltf")
-                                {
-                                    isOk = true;
-                                    break;
-                                }
-                            }
-                            if (!isOk)
-                            {
-                                return;
-                            }
-                            for (auto& g : gltfs)
-                            {
-                                GltfLoader loader{g.string(), g.extension() == ".glb"};
-                                UUID id;
-                                AssetManager::LoadGLTFModelAsync(loader, id);
-                                component.AssetModelId = id;
-                            }
-                        }
-                        ImGui::EndPopup();
-                    }
-                    return;
-                }
-                else
-                {
-                    auto model = assetModel->Asset;
-
-                    ImGui::Text("Total vertex count: %zu", model->Vertices.size());
-                    ImGui::Text("Total index count: %zu", model->Indices.size());
-                    ImGui::Text("Total Mesh count: %zu", model->Meshes.size());
-                    i32 primitiveCount = 0;
-                    for (const auto& m : model->Meshes)
-                    {
-                        for (const auto& p : m.Primitives)
-                        {
-                            primitiveCount++;
-                        }
-                    }
-                    ImGui::Text("Total primitive count: %i", primitiveCount);
-                    if (ImGui::TreeNode("Meshes"))
-                    {
-                        i32 meshCount = model->Meshes.size();
-                        DEFER(ImGui::TreePop());
-                        auto size = ImGui::GetContentRegionAvail();
-                        for (size_t meshIndex = 0; meshIndex < meshCount; meshIndex++)
-                        {
-                            auto& mesh = model->Meshes[meshIndex];
-
-                            if (ImGui::TreeNode(mesh.Name.c_str()))
-                            {
-                                size_t primitiveCount = mesh.Primitives.size();
-                                DEFER(ImGui::TreePop());
-                                for (size_t primitiveIndex = 0; primitiveIndex < primitiveCount;
-                                     primitiveIndex++)
-                                {
-                                    auto& primitive =
-                                        model->Meshes[meshIndex].Primitives[primitiveIndex];
-                                    auto materialId = primitive.MaterialId;
-                                    auto* material  = AssetManager::GetMaterialAsset(materialId);
-                                    if (ImGui::TreeNode("", "Primitive Index: %zu", primitiveIndex))
-                                    {
-                                        DEFER(ImGui::TreePop());
-                                        ImGui::Text("Material: %s", material->Name.c_str());
-                                        ImGui::SameLine();
-                                        if (ImGui::Button("Change"))
-                                        {
-                                            ImGui::OpenPopup("change_material_popup");
-                                        }
-                                        if (ImGui::BeginPopup("change_material_popup"))
-                                        {
-                                            DEFER(ImGui::EndPopup());
-                                            ImGui::SeparatorText("Materials");
-                                            for (const auto& [id, asset] : sceneMaterials)
-                                            {
-                                                if (ImGui::Selectable(asset.Name.c_str()))
-                                                {
-                                                    primitive.MaterialId = id;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            });
+                                                  // ImGui::Text("Model: %s",
+                                                  //             assetModel == nullptr ? "No model"
+                                                  //             : assetModel->Name.c_str());
+                                                  // if (!assetModel)
+                                                  //{
+                                                  //     if (ImGui::BeginPopupContextWindow())
+                                                  //     {
+                                                  //         if (ImGui::MenuItem("Load Obj"))
+                                                  //         {
+                                                  //             List<std::filesystem::path> objs;
+                                                  //             File::OpenFileDialog(objs);
+                                                  //             bool isOk = false;
+                                                  //             for (auto& o : objs)
+                                                  //             {
+                                                  //                 if (o.extension() != ".obj")
+                                                  //                 {
+                                                  //                     File::OpenMessageBox("Selected
+                                                  //                     item is not obj"); isOk =
+                                                  //                     false; break;
+                                                  //                 }
+                                                  //                 isOk = true;
+                                                  //             }
+                                                  //             if (!isOk)
+                                                  //             {
+                                                  //                 return;
+                                                  //             }
+                                                  //             for (auto& o : objs)
+                                                  //             {
+                                                  //                 auto fileNameStr =
+                                                  //                 o.filename().string();
+                                                  //                 ObjLoader loader{o};
+                                                  //                 auto objModel =
+                                                  //                 loader.LoadModel(); if
+                                                  //                 (objModel)
+                                                  //                 {
+                                                  //                     UUID id;
+                                                  //                     AssetManager::LoadObjModel(std::move(objModel),
+                                                  //                     id); component.AssetModelId
+                                                  //                     = id;
+                                                  //                 }
+                                                  //             }
+                                                  //         }
+                                                  //         if (ImGui::MenuItem("Load Gltf"))
+                                                  //         {
+                                                  //             List<std::filesystem::path> gltfs;
+                                                  //             File::OpenFileDialog(gltfs);
+                                                  //             bool isOk = false;
+                                                  //             for (auto& g : gltfs)
+                                                  //             {
+                                                  //                 if (g.extension() == ".glb" ||
+                                                  //                 g.extension() == ".gltf")
+                                                  //                 {
+                                                  //                     isOk = true;
+                                                  //                     break;
+                                                  //                 }
+                                                  //             }
+                                                  //             if (!isOk)
+                                                  //             {
+                                                  //                 return;
+                                                  //             }
+                                                  //             for (auto& g : gltfs)
+                                                  //             {
+                                                  //                 GltfLoader loader{g.string(),
+                                                  //                 g.extension() == ".glb"}; UUID
+                                                  //                 id;
+                                                  //                 AssetManager::LoadGLTFModelAsync(loader,
+                                                  //                 id); component.AssetModelId =
+                                                  //                 id;
+                                                  //             }
+                                                  //         }
+                                                  //         ImGui::EndPopup();
+                                                  //     }
+                                                  //     return;
+                                                  // }
+                                                  // else
+                                                  //{
+                                                  //     auto model = assetModel->Asset;
+                                                  //
+                                                  //     ImGui::Text("Total vertex count: %zu",
+                                                  //     model->Vertices.size()); ImGui::Text("Total
+                                                  //     index count: %zu", model->Indices.size());
+                                                  //     ImGui::Text("Total Mesh count: %zu",
+                                                  //     model->Meshes.size()); i32 primitiveCount =
+                                                  //     0; for (const auto& m : model->Meshes)
+                                                  //     {
+                                                  //         for (const auto& p : m.Primitives)
+                                                  //         {
+                                                  //             primitiveCount++;
+                                                  //         }
+                                                  //     }
+                                                  //     ImGui::Text("Total primitive count: %i",
+                                                  //     primitiveCount); if
+                                                  //     (ImGui::TreeNode("Meshes"))
+                                                  //     {
+                                                  //         i32 meshCount = model->Meshes.size();
+                                                  //         DEFER(ImGui::TreePop());
+                                                  //         auto size =
+                                                  //         ImGui::GetContentRegionAvail(); for
+                                                  //         (size_t meshIndex = 0; meshIndex <
+                                                  //         meshCount; meshIndex++)
+                                                  //         {
+                                                  //             auto& mesh =
+                                                  //             model->Meshes[meshIndex];
+                                                  //
+                                                  //             if
+                                                  //             (ImGui::TreeNode(mesh.Name.c_str()))
+                                                  //             {
+                                                  //                 size_t primitiveCount =
+                                                  //                 mesh.Primitives.size();
+                                                  //                 DEFER(ImGui::TreePop());
+                                                  //                 for (size_t primitiveIndex = 0;
+                                                  //                 primitiveIndex <
+                                                  //                 primitiveCount;
+                                                  //                      primitiveIndex++)
+                                                  //                 {
+                                                  //                     auto& primitive =
+                                                  //                         model->Meshes[meshIndex].Primitives[primitiveIndex];
+                                                  //                     auto materialId =
+                                                  //                     primitive.MaterialId; auto*
+                                                  //                     material  =
+                                                  //                     AssetManager::GetMaterialAsset(materialId);
+                                                  //                     if (ImGui::TreeNode("",
+                                                  //                     "Primitive Index: %zu",
+                                                  //                     primitiveIndex))
+                                                  //                     {
+                                                  //                         DEFER(ImGui::TreePop());
+                                                  //                         ImGui::Text("Material:
+                                                  //                         %s",
+                                                  //                         material->Name.c_str());
+                                                  //                         ImGui::SameLine();
+                                                  //                         if
+                                                  //                         (ImGui::Button("Change"))
+                                                  //                         {
+                                                  //                             ImGui::OpenPopup("change_material_popup");
+                                                  //                         }
+                                                  //                         if
+                                                  //                         (ImGui::BeginPopup("change_material_popup"))
+                                                  //                         {
+                                                  //                             DEFER(ImGui::EndPopup());
+                                                  //                             ImGui::SeparatorText("Materials");
+                                                  //                             for (const auto&
+                                                  //                             [id, asset] :
+                                                  //                             sceneMaterials)
+                                                  //                             {
+                                                  //                                 if
+                                                  //                                 (ImGui::Selectable(asset.Name.c_str()))
+                                                  //                                 {
+                                                  //                                     primitive.MaterialId
+                                                  //                                     = id;
+                                                  //                                 }
+                                                  //                             }
+                                                  //                         }
+                                                  //                     }
+                                                  //                 }
+                                                  //             }
+                                                  //         }
+                                                  //     }
+                                                  // }
+                                              });
     }
     void SceneHierarchyPanel::SetSelectedEntity(Entity e)
     {

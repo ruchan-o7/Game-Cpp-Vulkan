@@ -4,6 +4,7 @@
 
 namespace FooGame
 {
+
     class SceneHierarchyPanel;
     class EditorLayer final : public Layer
     {
@@ -18,7 +19,7 @@ namespace FooGame
 
         private:
             // PerspectiveCamera m_Camera;
-            Camera m_Camera2;
+            // Camera m_Camera2;
             std::unique_ptr<Scene> m_Scene;
             ApplicationCommandLineArgs m_Args;
             SceneHierarchyPanel* m_Panel;

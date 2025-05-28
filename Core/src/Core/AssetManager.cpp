@@ -1,5 +1,8 @@
 #include "AssetManager.h"
 #include "Log.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image.h>
 #include <stb_image_write.h>
 #include <tiny_gltf.h>
@@ -9,14 +12,7 @@
 #include <filesystem>
 #include "ObjLoader.h"
 #include "Thread.h"
-#include "../Engine/Geometry/Model.h"
-#include "../Engine/Core/VulkanTexture.h"
-#include "../Engine/Engine/Backend.h"
 #include "../Base.h"
-#include "../Engine/Core/Types.h"
-#include "../Engine/Core/VulkanBuffer.h"
-#include "../Engine/Engine/Renderer3D.h"
-#include "../Engine/Engine/Renderer3D.h"
 #include "../Scene/Asset.h"
 #include "../Base.h"
 #include "../Core/GltfLoader.h"
@@ -26,15 +22,14 @@
 #include "../Core/Assert.h"
 #include "../Core/UUID.h"
 #include "../Config.h"
-#include "../Core/Application.h"
-#include "../Scene/ObjectConverters/ModelConverter.h"
+
 namespace FooGame
 {
     std::mutex g_Texture_mutex;
     std::mutex g_Model_mutex;
     std::mutex g_Material_mutex;
 
-    ModelRegistery s_ModelMap;
+    // ModelRegistery s_ModelMap;
     TextureRegistery s_TextureMap;
     MaterialRegistery s_MaterialMap;
 
@@ -66,15 +61,15 @@ namespace FooGame
 
     void AssetManager::LoadModel(const Asset::FModel& fmodel, UUID id)
     {
-        if (HasModelAssetExists(id))
-        {
-            return;
-        }
-        Shared<Model> model = FModelToModel(fmodel);
-
-        InsertModelAsset(model, id);
-
-        Backend::SubmitToRenderThread([=]() { Renderer3D::SubmitModel(id); });
+        // if (HasModelAssetExists(id))
+        //{
+        //     return;
+        // }
+        // Shared<Model> model = FModelToModel(fmodel);
+        //
+        // InsertModelAsset(model, id);
+        //
+        // Backend::SubmitToRenderThread([=]() { Renderer3D::SubmitModel(id); });
     }
     void AssetManager::LoadGLTFModelAsync(GltfLoader loader, UUID id)
     {
@@ -111,7 +106,7 @@ namespace FooGame
             dp.MaterialId = matAndId[p.materialIndex].id;
             mesh.Primitives.push_back(dp);
         }
-        model->Meshes.push_back(mesh);
+        // model->Meshes.push_back(mesh);
     }
 
     void AssetManager::LoadGLTFModel(GltfModel& gltfModel, UUID id)
@@ -176,29 +171,29 @@ namespace FooGame
 
             AddMaterial(Shared<Asset::FMaterial>(fmat), iai.id);
         }
-        auto* model     = new Model();
-        model->Name     = gltfModel.Name;
-        model->Vertices = std::move(gltfModel.Vertices);
-        model->Indices  = std::move(gltfModel.Indices);
-        if (gltfModel.Nodes.size() > 0)
-        {
-            GltfNode* rootNode = gltfModel.Nodes[0];
-            ConvertGltfNodeToMesh(rootNode, model, matAndId);
-        }
-
-        InsertModelAsset(Shared<Model>(model), id);
-
-        Application::Get().SubmitToMainThread([=] { Renderer3D::SubmitModel(id); });
+        // auto* model     = new Model();
+        // model->Name     = gltfModel.Name;
+        // model->Vertices = std::move(gltfModel.Vertices);
+        // model->Indices  = std::move(gltfModel.Indices);
+        // if (gltfModel.Nodes.size() > 0)
+        //{
+        //    GltfNode* rootNode = gltfModel.Nodes[0];
+        //    ConvertGltfNodeToMesh(rootNode, model, matAndId);
+        //}
+        //
+        // InsertModelAsset(Shared<Model>(model), id);
+        //
+        // Application::Get().SubmitToMainThread([=] { Renderer3D::SubmitModel(id); });
     }
     void AssetManager::LoadObjModel(Unique<ObjModel> objModel, UUID id)
     {
-        auto model      = std::make_shared<Model>();
-        model->Meshes   = std::move(objModel->Meshes);
-        model->Name     = objModel->Name;
-        model->Vertices = std::move(objModel->Vertices);
-        model->Indices  = std::move(objModel->Indices);
-        InsertModelAsset(model, id);
-        Application::Get().SubmitToMainThread([=]() { Renderer3D::SubmitModel(id); });
+        // auto model      = std::make_shared<Model>();
+        // model->Meshes   = std::move(objModel->Meshes);
+        // model->Name     = objModel->Name;
+        // model->Vertices = std::move(objModel->Vertices);
+        // model->Indices  = std::move(objModel->Indices);
+        // InsertModelAsset(model, id);
+        // Application::Get().SubmitToMainThread([=]() { Renderer3D::SubmitModel(id); });
     }
     void AssetManager::LoadFIMG(const Asset::FImage& fimage, UUID id)
     {
@@ -283,52 +278,52 @@ namespace FooGame
     void AssetManager::LoadTexture(const String& name, unsigned char* buffer, size_t size,
                                    i32 width, i32 height, UUID id)
     {
-        auto* pRenderDevice        = Backend::GetRenderDevice();
-        const auto* physicalDevice = pRenderDevice->GetPhysicalDevice();
-        VulkanBuffer::BuffDesc stageDesc{};
-        stageDesc.pRenderDevice   = pRenderDevice;
-        stageDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
-        stageDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
-        stageDesc.Name            = std::string("SB Texture: ") + name;
-        stageDesc.BufferData.Data = nullptr;
-        stageDesc.BufferData.Size = size;
-
-        VulkanBuffer stageBuffer{stageDesc};
-        stageBuffer.MapMemory();
-        stageBuffer.UpdateData(buffer, size);
-        stageBuffer.UnMapMemory();
-
-        VulkanTexture::CreateInfo ci{};
-        ci.pRenderDevice = pRenderDevice;
-        ci.MaxAnisotropy = physicalDevice->GetDeviceProperties().limits.maxSamplerAnisotropy;
-        ci.Name          = name;
-        ci.AspectFlags   = VK_IMAGE_ASPECT_COLOR_BIT;
-        ci.Format        = VK_FORMAT_R8G8B8A8_SRGB;
-        ci.MemoryPropertiesFlags = Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY;
-        ci.Tiling                = VK_IMAGE_TILING_LINEAR;
-        ci.UsageFlags            = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
-                        VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        ci.Extent       = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
-        ci.Size         = size;
-        ci.Width        = width;
-        ci.Height       = height;
-        ci.ChannelCount = STBI_rgb_alpha;
-
-        auto* vTexture = new VulkanTexture{ci};
-        auto vkImage   = vTexture->GetImage();
-        {
-            std::lock_guard<std::mutex> lock(g_Texture_mutex);
-
-            Backend::TransitionImageLayout(vkImage->GetImageHandle(), VK_FORMAT_R8G8B8A8_SRGB,
-                                           VK_IMAGE_LAYOUT_UNDEFINED,
-                                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-            Backend::CopyBufferToImage(stageBuffer, *vTexture);
-            Backend::TransitionImageLayout(vkImage->GetImageHandle(), VK_FORMAT_R8G8B8A8_SRGB,
-                                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        }
-        InsertTextureAsset(Shared<VulkanTexture>(vTexture), id);
+        // auto* pRenderDevice        = Backend::GetRenderDevice();
+        // const auto* physicalDevice = pRenderDevice->GetPhysicalDevice();
+        // VulkanBuffer::BuffDesc stageDesc{};
+        // stageDesc.pRenderDevice   = pRenderDevice;
+        // stageDesc.Usage           = Vulkan::BUFFER_USAGE_TRANSFER_SOURCE;
+        // stageDesc.MemoryFlag      = Vulkan::BUFFER_MEMORY_FLAG_CPU_VISIBLE;
+        // stageDesc.Name            = std::string("SB Texture: ") + name;
+        // stageDesc.BufferData.Data = nullptr;
+        // stageDesc.BufferData.Size = size;
+        //
+        // VulkanBuffer stageBuffer{stageDesc};
+        // stageBuffer.MapMemory();
+        // stageBuffer.UpdateData(buffer, size);
+        // stageBuffer.UnMapMemory();
+        //
+        // VulkanTexture::CreateInfo ci{};
+        // ci.pRenderDevice = pRenderDevice;
+        // ci.MaxAnisotropy = physicalDevice->GetDeviceProperties().limits.maxSamplerAnisotropy;
+        // ci.Name          = name;
+        // ci.AspectFlags   = VK_IMAGE_ASPECT_COLOR_BIT;
+        // ci.Format        = VK_FORMAT_R8G8B8A8_SRGB;
+        // ci.MemoryPropertiesFlags = Vulkan::BUFFER_MEMORY_FLAG_GPU_ONLY;
+        // ci.Tiling                = VK_IMAGE_TILING_LINEAR;
+        // ci.UsageFlags            = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
+        //                 VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        // ci.Extent       = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+        // ci.Size         = size;
+        // ci.Width        = width;
+        // ci.Height       = height;
+        // ci.ChannelCount = STBI_rgb_alpha;
+        //
+        // auto* vTexture = new VulkanTexture{ci};
+        // auto vkImage   = vTexture->GetImage();
+        //{
+        //     std::lock_guard<std::mutex> lock(g_Texture_mutex);
+        //
+        //     Backend::TransitionImageLayout(vkImage->GetImageHandle(), VK_FORMAT_R8G8B8A8_SRGB,
+        //                                    VK_IMAGE_LAYOUT_UNDEFINED,
+        //                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        //
+        //     Backend::CopyBufferToImage(stageBuffer, *vTexture);
+        //     Backend::TransitionImageLayout(vkImage->GetImageHandle(), VK_FORMAT_R8G8B8A8_SRGB,
+        //                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        //                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        // }
+        // InsertTextureAsset(Shared<VulkanTexture>(vTexture), id);
     }
 
     size_t g_UnnamedImagesCount = 0;
@@ -338,9 +333,9 @@ namespace FooGame
         std::lock_guard<std::mutex> lock(g_Texture_mutex);
         if (!HasTextureExists(id))
         {
-            s_TextureMap.insert(TextureRegistery::value_type{
-                id, {Asset::AssetStatus::READY, pT, pT->GetName(), id}
-            });
+            // s_TextureMap.insert(TextureRegistery::value_type{
+            //     id, {Asset::AssetStatus::READY, pT, pT->GetName(), id}
+            // });
         }
     }
 
@@ -364,30 +359,30 @@ namespace FooGame
         }
     }
 
-    void AssetManager::InsertModelAsset(Shared<Model> m, UUID id)
-    {
-        std::lock_guard<std::mutex> lock(g_Model_mutex);
-        s_ModelMap[id] = {Asset::AssetStatus::READY, m, m->Name, id};
-    }
-    bool AssetManager::HasModelAssetExists(UUID id)
-    {
-        if (s_ModelMap.find(id) != s_ModelMap.end())
-        {
-            return true;
-        }
-        return false;
-    }
-
-    AssetModelC* AssetManager::GetModelAsset(UUID id)
-    {
-        if (HasModelAssetExists(id))
-        {
-            return &s_ModelMap[id];
-        }
-        FOO_ASSERT("Asset could not found");
-        return nullptr;
-    }
-
+    // void AssetManager::InsertModelAsset(Shared<Model> m, UUID id)
+    //{
+    //     std::lock_guard<std::mutex> lock(g_Model_mutex);
+    //     s_ModelMap[id] = {Asset::AssetStatus::READY, m, m->Name, id};
+    // }
+    // bool AssetManager::HasModelAssetExists(UUID id)
+    //{
+    //     if (s_ModelMap.find(id) != s_ModelMap.end())
+    //     {
+    //         return true;
+    //     }
+    //     return false;
+    // }
+    //
+    // AssetModelC* AssetManager::GetModelAsset(UUID id)
+    //{
+    //     if (HasModelAssetExists(id))
+    //     {
+    //         return &s_ModelMap[id];
+    //     }
+    //     FOO_ASSERT("Asset could not found");
+    //     return nullptr;
+    // }
+    //
     AssetTextureC* AssetManager::GetTextureAsset(u64 id)
     {
         if (HasTextureExists(id))

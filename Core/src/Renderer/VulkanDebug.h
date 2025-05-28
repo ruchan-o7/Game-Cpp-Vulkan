@@ -1,8 +1,8 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include <string>
-#include "../../../Base.h"
-namespace ENGINE_NAMESPACE
+#include "../Base.h"
+namespace fg
 {
 
     // Loads the debug utils functions and initialized the debug callback.
@@ -78,4 +78,4 @@ namespace ENGINE_NAMESPACE
     std::string VkAccessFlagsToString  (VkAccessFlags    Flags);
     const char* VkObjectTypeToString   (VkObjectType ObjectType);
     // clang-format on
-}  // namespace ENGINE_NAMESPACE
+}  // namespace fg

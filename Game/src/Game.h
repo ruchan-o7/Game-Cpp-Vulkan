@@ -12,7 +12,7 @@ namespace FooGame
 
         private:
             std::vector<Scene*> m_Scenes;
-            PerspectiveCamera m_Camera;
+            // PerspectiveCamera m_Camera;
 
         private:
             float m_DeltaTime = 0.01f;

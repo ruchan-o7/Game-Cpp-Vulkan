@@ -1,8 +1,9 @@
 #pragma once
-#include <pch.h>
 #include "../Base.h"
 #include "../Core/UUID.h"
 #include "../Config.h"
+#include "glm/mat4x4.hpp"
+
 namespace FooGame::Asset
 {
     enum class AssetStatus

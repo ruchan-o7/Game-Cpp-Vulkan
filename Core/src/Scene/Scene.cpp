@@ -2,13 +2,11 @@
 #include <imgui.h>
 #include <memory>
 #include <nlohmann/json.hpp>
-#include "../Scene/Entity.h"
-#include "../Scene/ScriptableEntity.h"
-#include "../Scene/Component.h"
-#include "../Scene/ScriptableEntity.h"
-#include "../Engine/Camera/Camera.h"
-#include "../Engine/Engine/Renderer3D.h"
-#include "../Scene/Scene.h"
+#include "Entity.h"
+#include "ScriptableEntity.h"
+#include "Component.h"
+#include "ScriptableEntity.h"
+
 namespace FooGame
 {
 
@@ -193,7 +191,7 @@ namespace FooGame
         }
         if (mainCamera)
         {
-            Renderer3D::BeginScene(*mainCamera);
+            // Renderer3D::BeginScene(*mainCamera);
         }
         m_Registry.view<TransformComponent, ModelRendererComponent>().each(
             [=](TransformComponent& transform, ModelRendererComponent& comp)
@@ -202,7 +200,7 @@ namespace FooGame
                 {
                     return;
                 }
-                Renderer3D::DrawModel(comp.AssetModelId, transform.GetTransform());
+                // Renderer3D::DrawModel(comp.AssetModelId, transform.GetTransform());
             });
     }
     void Scene::IMGUI()

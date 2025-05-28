@@ -1,10 +1,11 @@
 #include "GltfLoader.h"
+#define TINYGLTF_IMPLEMENTATION
 #include <tiny_gltf.h>
 #include "Log.h"
 #include <glm/gtc/type_ptr.hpp>
 #include "File.h"
 #include "glm/ext/matrix_transform.hpp"
-#include "../Engine/Geometry/Vertex.h"
+// #include "../Engine/Geometry/Vertex.h"
 
 namespace FooGame
 {
@@ -117,15 +118,15 @@ namespace FooGame
 
                     for (size_t v = 0; v < vertexCount; v++)
                     {
-                        Vertex vert{};
-                        vert.Position = glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f);
-                        vert.Normal   = glm::normalize(
-                            glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3])
-                                                      : glm::vec3(0.0f)));
-                        vert.TexCoord = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2])
-                                                        : glm::vec3(0.0f);
-                        vert.Color    = glm::vec3(1.0f);
-                        vertices.push_back(vert);
+                        // Vertex vert{};
+                        // vert.Position = glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f);
+                        // vert.Normal   = glm::normalize(
+                        //     glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3])
+                        //                               : glm::vec3(0.0f)));
+                        // vert.TexCoord = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2])
+                        //                                 : glm::vec3(0.0f);
+                        // vert.Color    = glm::vec3(1.0f);
+                        // vertices.push_back(vert);
                     }
                 }
                 // INDICES

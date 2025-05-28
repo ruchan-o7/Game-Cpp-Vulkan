@@ -1,11 +1,14 @@
 #pragma once
 #include "../Base.h"
-#include "pch.h"
 #include <glm/glm.hpp>
-#include "../Engine/Geometry/Vertex.h"
+
 namespace FooGame
 {
     struct Material;
+    struct Vertex
+    {
+    };
+
     struct GltfImageSource
     {
             unsigned char* ImageBuffer;
