@@ -3,7 +3,7 @@
 #include "../Config.h"
 #include "../Scene/Asset.h"
 #include "../Engine/Geometry/Vertex.h"
-#include <Log.h>
+#include "Log.h"
 
 namespace FooGame
 {

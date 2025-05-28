@@ -1,19 +1,19 @@
 [submodule "external/glfw"]
-	path = external/glfw
+	path = Core/external/glfw
 	url = https://github.com/glfw/glfw.git
 [submodule "external/glm"]
-	path = external/glm
+	path = Core/external/glm
 	url = https://github.com/g-truc/glm
 [submodule "external/imgui"]
-	path = external/imgui
+	path = Core/external/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = docking
 [submodule "external/entt"]
-	path = external/entt
+	path = Core/external/entt
 	url = https://github.com/skypjack/entt
 [submodule "external/json"]
-	path = external/json
+	path = Core/external/json
 	url = https://github.com/nlohmann/json.git
 [submodule "external/tinygltf"]
-	path = external/tinygltf
+	path = Core/external/tinygltf
 	url = https://github.com/syoyo/tinygltf.git

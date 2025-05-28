@@ -1,6 +1,6 @@
 #include "GltfLoader.h"
 #include <tiny_gltf.h>
-#include <Log.h>
+#include "Log.h"
 #include <glm/gtc/type_ptr.hpp>
 #include "File.h"
 #include "glm/ext/matrix_transform.hpp"
