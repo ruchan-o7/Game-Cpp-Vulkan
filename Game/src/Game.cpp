@@ -1,6 +1,6 @@
 #include "Game.h"
 #include <Core.h>
-#include <Log.h>
+#include "Log.h"
 #define GLM_ENABLE_EXPERIMENTAL
 namespace FooGame
 {

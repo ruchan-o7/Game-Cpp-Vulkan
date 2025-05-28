@@ -1,7 +1,7 @@
 #include "EditorLayer.h"
 #include "entt/entt.hpp"
 #include <Core.h>
-#include <Log.h>
+#include "Log.h"
 #include <memory>
 
 namespace FooGame
