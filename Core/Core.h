@@ -5,6 +5,7 @@
 #include "src/Core/Window.h"
 #include "src/Core/ObjLoader.h"
 #include "src/Core/GltfLoader.h"
+#include "src/Core/Log.h"
 #include "src/Core/AssetManager.h"
 #include "src/Core/Time.h"
 #include "src/Core/Thread.h"
