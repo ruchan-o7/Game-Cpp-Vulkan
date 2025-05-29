@@ -5,132 +5,200 @@
 #include "../Core/Time.h"
 #include "../Events/Event.h"
 #include "../Profile/Profiling.h"
+#include "GLFW/glfw3.h"
+#include "src/Core/Log.h"
+#include "src/Events/KeyEvent.h"
+#include "src/Events/MouseEvent.h"
+#include "src/Renderer/Renderer.h"
 #include <imgui.h>
-namespace FooGame
-{
-    Application* Application::s_Instance = nullptr;
-    Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec)
-    {
-        FOO_PROFILE_FUNCTION();
-        FOO_ASSERT(!s_Instance, "Application already exists!");
-        s_Instance = this;
+namespace FooGame {
 
-        if (!m_Specs.WorkingDirectory.empty())
-        {
-            std::filesystem::current_path(m_Specs.WorkingDirectory);
-        }
+Application* Application::s_Instance = nullptr;
 
-        WindowProperties props;
-        props.Title = m_Specs.Name;
+static void GLFWErrorCallback(int err, const char* desc) {
+  FOO_CORE_ERROR("GLFW Error ({0}): {1}", err, desc);
+}
 
-        m_Window = CreateUnique<Window>(props);
-        m_Window->SetOnEventFunction(BIND_EVENT_FN(Application::OnEvent));
+Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) {
+  FOO_PROFILE_FUNCTION();
+  FOO_ASSERT(!s_Instance, "Application already exists!");
+  s_Instance = this;
 
-        // Backend::Init(*m_Window);
-        // Renderer3D::Init(Backend::GetRenderDevice());
-        AssetManager::Init();
+  if (!m_Specs.WorkingDirectory.empty()) {
+    std::filesystem::current_path(m_Specs.WorkingDirectory);
+  }
 
-        m_ImGuiLayer = new ImGuiLayer;
-        PushLayer(m_ImGuiLayer);
-    }
-    Application::~Application()
-    {
-        AssetManager::DeInit();
-        // Renderer3D::Shutdown();
-        // Backend::Shutdown();
-    }
-    void Application::PushLayer(Layer* layer)
-    {
-        m_LayerStack.PushOverlay(layer);
-        layer->OnAttach();
-    }
-    void Application::Close()
-    {
-        m_Running = false;
-    }
+  if (!glfwInit()) {
+    const char* msg = nullptr;
+    glfwGetError(&msg);
+    FOO_ENGINE_ERROR("Can not initialize glfw! Err: {}, Terminating!", msg);
+    Close();
+  }
 
-    void Application::SubmitToMainThread(const std::function<void()>& f)
-    {
-        std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
-        m_MainThreadQueue.emplace_back(f);
-    }
-    void Application::OnEvent(Event& e)
-    {
-        EventDispatcher dispatcher{e};
-        dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(Application::OnWindowClose));
-        dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(Application::OnWindowResize));
-        for (auto it = m_LayerStack.begin(); it != m_LayerStack.end(); ++it)
-        {
-            if (e.Handled)
-            {
-                break;
-            }
-            (*it)->OnEvent(e);
-        }
-    }
-    void Application::Run()
-    {
-        while (m_Running)
-        {
-            Time::UpdateCurrentTime();
-            auto time       = Time::CurrentTime();
-            float ts        = time - m_LastFrameTime;
-            m_LastFrameTime = time;
-            ExecuteMainThreadQueue();
-            if (!m_Minimized)
-            {
-                m_ImGuiLayer->Begin(&m_MenuBarCallback);
-                for (Layer* l : m_LayerStack)
-                {
-                    l->OnUpdate(ts);
-                }
-                // auto stats = Renderer3D::GetStats();
-                //
-                // Renderer3D::EndDraw();
-                // ImGui::Begin("3d scene stats");
-                // ImGui::Text("Draw calls %i", stats.DrawCall);
-                // ImGui::Text("Vertex count %llu", stats.VertexCount);
-                // ImGui::Text("Index count %llu", stats.IndexCount);
-                // ImGui::End();
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-                for (Layer* l : m_LayerStack)
-                {
-                    l->OnImGuiRender();
-                }
-                m_ImGuiLayer->End();
-            }
-            m_Window->PollEvents();
-            // Backend::SwapBuffers();
-        }
-        // Backend::WaitIdle();
+  m_Window = glfwCreateWindow(1600, 900, spec.Name.c_str(), nullptr, nullptr);
+
+  glfwSetWindowUserPointer(m_Window, this);
+  glfwSetErrorCallback(GLFWErrorCallback);
+  if (!glfwVulkanSupported()) {
+    FOO_ENGINE_CRITICAL("Vulkan not supported!");
+    return;
+  }
+
+  m_Renderer = fg::Renderer::Create(m_Window, nullptr);
+
+  AssetManager::Init();
+
+  m_ImGuiLayer = new ImGuiLayer;
+  PushLayer(m_ImGuiLayer);
+
+  glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int w, int h) {
+    Application& data = *(Application*)glfwGetWindowUserPointer(window);
+    WindowResizeEvent e(w, h);
+    data.OnEvent(e);
+  });
+  glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window) {
+    Application& data = *(Application*)glfwGetWindowUserPointer(window);
+    WindowCloseEvent e;
+    data.OnEvent(e);
+  });
+  glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+    Application& data = *(Application*)glfwGetWindowUserPointer(window);
+    switch (action) {
+      case GLFW_PRESS: {
+        KeyPressedEvent event(key, 0);
+        data.OnEvent(event);
+        break;
+      }
+      case GLFW_RELEASE: {
+        KeyReleasedEvent event(key);
+        data.OnEvent(event);
+        break;
+      }
+      case GLFW_REPEAT: {
+        KeyPressedEvent event(key, true);
+        data.OnEvent(event);
+        break;
+      }
     }
-    bool Application::OnWindowClose(WindowCloseEvent& e)
-    {
-        m_Running = false;
-        return true;
+  });
+  glfwSetCharCallback(m_Window, [](GLFWwindow* window, unsigned int keycode) {
+    Application& data = *(Application*)glfwGetWindowUserPointer(window);
+    KeyTypedEvent e(keycode);
+    data.OnEvent(e);
+  });
+
+  glfwSetFramebufferSizeCallback(m_Window, [](GLFWwindow* window, int width, int height) {
+    Application& data = *(Application*)glfwGetWindowUserPointer(window);
+    WindowResizeEvent e {static_cast<unsigned int>(width), static_cast<unsigned int>(height)};
+    data.OnEvent(e);
+  });
+  glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* window, int button, int action, int mods) {
+    Application& data = *(Application*)glfwGetWindowUserPointer(window);
+    switch (action) {
+      case GLFW_PRESS: {
+        MouseButtonPressedEvent e {static_cast<MouseCode>(button)};
+        data.OnEvent(e);
+        break;
+      }
+      case GLFW_RELEASE: {
+        MouseButtonReleasedEvent e {static_cast<MouseCode>(button)};
+        data.OnEvent(e);
+        break;
+      }
     }
-    bool Application::OnWindowResize(WindowResizeEvent& e)
-    {
-        if (e.GetWidth() == 0 || e.GetHeight() == 0)
-        {
-            m_Minimized = true;
-            return false;
-        }
-        m_Minimized = false;
-        return false;
-        // return Backend::OnWindowResized(e);
+  });
+  glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos) {
+    Application& data = *(Application*)glfwGetWindowUserPointer(window);
+    MouseMovedEvent e {static_cast<float>(xPos), static_cast<float>(yPos)};
+    data.OnEvent(e);
+  });
+  glfwSetScrollCallback(m_Window, [](GLFWwindow* window, double xOffset, double yOffset) {
+    Application& data = *(Application*)glfwGetWindowUserPointer(window);
+    MouseScrolledEvent e {static_cast<float>(xOffset), static_cast<float>(yOffset)};
+    data.OnEvent(e);
+  });
+}
+Application::~Application() {
+  AssetManager::DeInit();
+  m_Renderer->Destroy();
+}
+void Application::PushLayer(Layer* layer) {
+  m_LayerStack.PushOverlay(layer);
+  layer->OnAttach();
+}
+void Application::Close() {
+  m_Running = false;
+}
+
+void Application::SubmitToMainThread(const std::function<void()>& f) {
+  std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
+  m_MainThreadQueue.emplace_back(f);
+}
+void Application::OnEvent(Event& e) {
+  EventDispatcher dispatcher {e};
+  dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(Application::OnWindowClose));
+  dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(Application::OnWindowResize));
+  for (auto it = m_LayerStack.begin(); it != m_LayerStack.end(); ++it) {
+    if (e.Handled) {
+      break;
     }
-    void Application::ExecuteMainThreadQueue()
-    {
-        std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
-        for (auto& f : m_MainThreadQueue)
-        {
-            f();
-        }
-        m_MainThreadQueue.clear();
+    (*it)->OnEvent(e);
+  }
+}
+void Application::Run() {
+  while (m_Running) {
+    Time::UpdateCurrentTime();
+    auto time = Time::CurrentTime();
+    float ts = time - m_LastFrameTime;
+    m_LastFrameTime = time;
+    ExecuteMainThreadQueue();
+    if (!m_Minimized) {
+      m_ImGuiLayer->Begin(&m_MenuBarCallback);
+      for (Layer* l : m_LayerStack) {
+        l->OnUpdate(ts);
+      }
+      // auto stats = Renderer3D::GetStats();
+      //
+      // Renderer3D::EndDraw();
+      // ImGui::Begin("3d scene stats");
+      // ImGui::Text("Draw calls %i", stats.DrawCall);
+      // ImGui::Text("Vertex count %llu", stats.VertexCount);
+      // ImGui::Text("Index count %llu", stats.IndexCount);
+      // ImGui::End();
+
+      for (Layer* l : m_LayerStack) {
+        l->OnImGuiRender();
+      }
+      m_ImGuiLayer->End();
     }
-    void Application::SetMenubarCallback(const std::function<void()>& callback)
-    {
-        m_MenuBarCallback = callback;
-    }
+    glfwPollEvents();
+    // Backend::SwapBuffers();
+  }
+  // Backend::WaitIdle();
+}
+bool Application::OnWindowClose(WindowCloseEvent& e) {
+  m_Running = false;
+  return true;
+}
+bool Application::OnWindowResize(WindowResizeEvent& e) {
+  if (e.GetWidth() == 0 || e.GetHeight() == 0) {
+    m_Minimized = true;
+    return false;
+  }
+  m_Minimized = false;
+  return false;
+  // return Backend::OnWindowResized(e);
+}
+void Application::ExecuteMainThreadQueue() {
+  std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
+  for (auto& f : m_MainThreadQueue) {
+    f();
+  }
+  m_MainThreadQueue.clear();
+}
+void Application::SetMenubarCallback(const std::function<void()>& callback) {
+  m_MenuBarCallback = callback;
+}
 }  // namespace FooGame
