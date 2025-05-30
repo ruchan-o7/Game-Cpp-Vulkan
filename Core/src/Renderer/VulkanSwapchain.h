@@ -28,6 +28,9 @@ class VulkanSwapchain {
     VkSurfaceFormatKHR Format() const {
       return m_SurfaceFormat;
     }
+    VkImageView GetCurrentImageView() const {
+      return m_Views[m_FrameIndex];
+    }
 
   private:
     void CreateSurface();
