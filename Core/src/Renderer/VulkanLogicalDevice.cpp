@@ -1,5 +1,6 @@
 #include "VulkanLogicalDevice.h"
 #include "VulkanObject.h"
+#include "../Core/Assert.h"
 
 namespace fg {
 
@@ -28,6 +29,19 @@ CommandPoolWrapper VulkanLogicalDevice::CreateCommandPool(const VkCommandPoolCre
   auto res = vkCreateCommandPool(m_Device, &info, m_Allocator, &handle);
   return CommandPoolWrapper(std::move(handle), GetPtr());
 }
+SemaphoreWrapper VulkanLogicalDevice::CreateVulkanSemaphore(const VkSemaphoreCreateInfo& info,
+                                                            const char* name) {
+  FOO_ASSERT(info.sType == VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+  VkSemaphore handle;
+  auto res = vkCreateSemaphore(m_Device, &info, m_Allocator, &handle);
+  return SemaphoreWrapper(std::move(handle), GetPtr());
+}
+FenceWrapper VulkanLogicalDevice::CreateFence(const VkFenceCreateInfo& info, const char* name) {
+  FOO_ASSERT(info.sType == VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
+  VkFence handle;
+  auto res = vkCreateFence(m_Device, &info, m_Allocator, &handle);
+  return FenceWrapper(std::move(handle), GetPtr());
+}
 
 VkCommandBuffer VulkanLogicalDevice::AllocateCmdBuffer(const VkCommandBufferAllocateInfo& info) {
   VkCommandBuffer handle = VK_NULL_HANDLE;
@@ -51,6 +65,14 @@ void VulkanLogicalDevice::DestroyObject(PipelineWrapper&& handle) const {
 
 void VulkanLogicalDevice::DestroyObject(CommandPoolWrapper&& handle) const {
   vkDestroyCommandPool(m_Device, handle, m_Allocator);
+  handle.m_VulkanObject = VK_NULL_HANDLE;
+}
+void VulkanLogicalDevice::DestroyObject(SemaphoreWrapper&& handle) const {
+  vkDestroySemaphore(m_Device, handle, m_Allocator);
+  handle.m_VulkanObject = VK_NULL_HANDLE;
+}
+void VulkanLogicalDevice::DestroyObject(FenceWrapper&& handle) const {
+  vkDestroyFence(m_Device, handle, m_Allocator);
   handle.m_VulkanObject = VK_NULL_HANDLE;
 }
 }  // namespace fg
