@@ -40,9 +40,6 @@ class RefBase {
 template <class T>
 class Ref {
   public:
-    Ref() : m_Ptr(nullptr) {
-    }
-
     Ref(T* ptr = nullptr) : m_Ptr(ptr) {
       AddStrong();
     }
