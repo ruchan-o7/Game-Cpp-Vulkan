@@ -73,7 +73,7 @@ DebugMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     }
   }
 
-  FOO_ENGINE_WARN("{}\n}", debugMessage.str());
+  FOO_ENGINE_WARN("{}\n", debugMessage.str());
   return VK_FALSE;
 }
 
