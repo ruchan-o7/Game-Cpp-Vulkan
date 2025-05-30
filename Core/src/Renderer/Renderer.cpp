@@ -5,6 +5,7 @@
 #include <memory>
 #include <stdexcept>
 #include "src/Core/Log.h"
+#include "src/Renderer/VulkanDebug.h"
 #include "src/Renderer/VulkanInstance.h"
 #include "src/Renderer/VulkanPhysicalDevice.h"
 #include "vulkan/vulkan_core.h"
@@ -15,32 +16,32 @@ const char* validationLayers[] = {
     "VK_LAYER_KHRONOS_validation",
 };
 
-VkDebugUtilsMessengerEXT s_DebugMessenger;
-
-VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
-                                      const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-                                      const VkAllocationCallbacks* pAllocator,
-                                      VkDebugUtilsMessengerEXT* pDebugMessenger) {
-  auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-      instance, "vkCreateDebugUtilsMessengerEXT");
-  if (func != nullptr) {
-    return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-  } else {
-    return VK_ERROR_EXTENSION_NOT_PRESENT;
-  }
-}
-static VKAPI_ATTR VkBool32 VKAPI_CALL
-debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-              VkDebugUtilsMessageTypeFlagsEXT messageType,
-              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-  if (messageSeverity <= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-    FOO_CORE_INFO("[VULKAN]: {}", pCallbackData->pMessage);
-  } else {
-    FOO_CORE_ERROR("[VULKAN]: {}", pCallbackData->pMessage);
-  }
-
-  return VK_FALSE;
-}
+// VkDebugUtilsMessengerEXT s_DebugMessenger;
+//
+// VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
+//                                       const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+//                                       const VkAllocationCallbacks* pAllocator,
+//                                       VkDebugUtilsMessengerEXT* pDebugMessenger) {
+//   auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+//       instance, "vkCreateDebugUtilsMessengerEXT");
+//   if (func != nullptr) {
+//     return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+//   } else {
+//     return VK_ERROR_EXTENSION_NOT_PRESENT;
+//   }
+// }
+// static VKAPI_ATTR VkBool32 VKAPI_CALL
+// debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+//               VkDebugUtilsMessageTypeFlagsEXT messageType,
+//               const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+//   if (messageSeverity <= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+//     FOO_CORE_INFO("[VULKAN]: {}", pCallbackData->pMessage);
+//   } else {
+//     FOO_CORE_ERROR("[VULKAN]: {}", pCallbackData->pMessage);
+//   }
+//
+//   return VK_FALSE;
+// }
 
 std::shared_ptr<Renderer> Renderer::Create(GLFWwindow* window, const VkAllocationCallbacks* acb) {
   VkInstance vkInstance = VK_NULL_HANDLE;
@@ -70,17 +71,6 @@ std::shared_ptr<Renderer> Renderer::Create(GLFWwindow* window, const VkAllocatio
   pCreateInfo.ppEnabledLayerNames = validationLayers;
   pCreateInfo.enabledLayerCount = 1;
 
-  VkDebugUtilsMessengerCreateInfoEXT messenger {
-      VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT};
-  messenger.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                              VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                              VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-  messenger.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                          VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                          VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-  messenger.pfnUserCallback = debugCallback;
-  pCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&messenger;
-
   VkResult res = vkCreateInstance(&pCreateInfo, acb, &vkInstance);
 
   if (res != VK_SUCCESS) {
@@ -89,7 +79,14 @@ std::shared_ptr<Renderer> Renderer::Create(GLFWwindow* window, const VkAllocatio
 
   auto Instance = std::make_shared<VulkanInstance>(vkInstance, acb);
 
-  res = CreateDebugUtilsMessengerEXT(vkInstance, &messenger, acb, &s_DebugMessenger);
+  auto messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                         VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+                         VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                         VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+  auto messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                     VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                     VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+  SetupDebugUtils(vkInstance, messageSeverity, messageType, 0, nullptr);
 
   VkPhysicalDevice physicalDevices[8];
   uint32_t physicalDeviceCount = 0;
