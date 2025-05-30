@@ -33,6 +33,9 @@ class VulkanSwapchain {
     VkImageView GetCurrentImageView() const {
       return m_Views[m_FrameIndex];
     }
+    VkImage GetCurrentImage() const {
+      return m_Images[m_FrameIndex];
+    }
     VkResult AcquireNextImage();
     void Present();
 
@@ -52,6 +55,8 @@ class VulkanSwapchain {
     Renderer* m_Renderer;
     const VulkanPhysicalDevice& m_PhysicalDevice;
     std::vector<VkImageView> m_Views;
+    // TODO: Remove this
+    std::vector<VkImage> m_Images;
     SemaphoreWrapper m_ImageAvailable;
     SemaphoreWrapper m_RenderFinished;
     FenceWrapper m_InFlight;

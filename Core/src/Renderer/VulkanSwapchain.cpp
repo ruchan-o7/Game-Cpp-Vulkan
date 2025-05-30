@@ -84,13 +84,12 @@ void VulkanSwapchain::CreateSwapchain() {
   }
   uint32_t viewCount = 0;
   vkGetSwapchainImagesKHR(m_Device->GetHandle(), m_Swapchain, &viewCount, nullptr);
-  VkImage images[16];
-  vkGetSwapchainImagesKHR(m_Device->GetHandle(), m_Swapchain, &viewCount, images);
+  m_Images.resize(viewCount);
+  vkGetSwapchainImagesKHR(m_Device->GetHandle(), m_Swapchain, &viewCount, m_Images.data());
 
   m_Views.resize(viewCount);
 
   VkImageViewCreateInfo viewInfo {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-
   viewInfo.format = m_SurfaceFormat.format;
   viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
   viewInfo.components = {
@@ -102,7 +101,7 @@ void VulkanSwapchain::CreateSwapchain() {
   viewInfo.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
   VkDevice dev = m_Device->GetHandle();
   for (int i = 0; i < m_Views.size(); i++) {
-    viewInfo.image = images[i];
+    viewInfo.image = m_Images[i];
     vkCreateImageView(dev, &viewInfo, m_VkInstance->GetAllocator(), &m_Views[i]);
   }
 
