@@ -11,13 +11,15 @@ class VulkanLogicalDevice;
 struct ShaderDescription {
     Buffer ByteCode;
     std::filesystem::path Path;
+    const char* Name = nullptr;
     VkShaderStageFlags Stage = 0;
-    std::shared_ptr<VulkanLogicalDevice> Device;
 };
 
 class VulkanShader {
   public:
-    VulkanShader(const ShaderDescription& desc);
+    VulkanShader(ShaderModuleWrapper&& module, VkShaderStageFlags stage)
+        : m_Handle(std::move(module)), m_Stage(stage) {
+    }
 
     VkShaderModule GetHandle() const {
       return m_Handle;

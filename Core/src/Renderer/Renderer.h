@@ -2,6 +2,7 @@
 #include "src/Renderer/VulkanInstance.h"
 #include "src/Renderer/VulkanLogicalDevice.h"
 #include "src/Renderer/VulkanPhysicalDevice.h"
+#include "src/Renderer/VulkanShader.h"
 #include "src/Renderer/VulkanSwapchain.h"
 
 typedef struct GLFWwindow GLFWwindow;
@@ -13,6 +14,8 @@ class Renderer {
     static std::shared_ptr<Renderer> Create(GLFWwindow* window,
                                             const VkAllocationCallbacks* alloc = nullptr);
     void Destroy();
+
+    std::shared_ptr<VulkanShader> CreateShader(const ShaderDescription& desc);
 
   private:
     Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& instance,
