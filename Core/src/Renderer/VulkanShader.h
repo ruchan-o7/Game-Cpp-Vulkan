@@ -1,6 +1,7 @@
 #pragma once
 
 #include "src/Core/Buffer.h"
+#include "src/Core/Ref.h"
 #include "vulkan/vulkan_core.h"
 #include "VulkanObject.h"
 
@@ -16,11 +17,12 @@ struct ShaderDescription {
     VkShaderStageFlagBits Stage;
 };
 
-class VulkanShader {
+class VulkanShader : public RefBase {
   public:
     VulkanShader(const ShaderDescription& desc, ShaderModuleWrapper&& module)
         : m_Desc(desc), m_Handle(std::move(module)) {
     }
+    virtual ~VulkanShader() = default;
 
     VkShaderModule GetHandle() const {
       return m_Handle;

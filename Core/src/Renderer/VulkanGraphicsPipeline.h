@@ -1,6 +1,7 @@
 #pragma once
 #include "VulkanLogicalDevice.h"
 #include "VulkanObject.h"
+#include "../Core/Ref.h"
 
 namespace fg {
 
@@ -22,12 +23,12 @@ struct GraphicsPipelineDescription {
     VkFrontFace FrontFace = VK_FRONT_FACE_CLOCKWISE;
 };
 
-class VulkanGraphicsPipeline {
+class VulkanGraphicsPipeline : public RefBase {
   public:
     VulkanGraphicsPipeline(PipelineWrapper pipeline, PipelineLayoutWrapper layout)
         : m_Pipeline(std::move(pipeline)), m_Layout(std::move(layout)) {
     }
-    ~VulkanGraphicsPipeline() = default;
+    virtual ~VulkanGraphicsPipeline() = default;
 
   private:
     PipelineWrapper m_Pipeline;
