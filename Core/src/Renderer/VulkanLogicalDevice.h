@@ -11,6 +11,7 @@ class VulkanObject;
 using ShaderModuleWrapper = VulkanObject<VkShaderModule>;
 using PipelineWrapper = VulkanObject<VkPipeline>;
 using PipelineLayoutWrapper = VulkanObject<VkPipelineLayout>;
+using CommandPoolWrapper = VulkanObject<VkCommandPool>;
 
 class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDevice> {
   public:
@@ -42,6 +43,7 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     void DestroyObject(ShaderModuleWrapper&& handle) const;
     void DestroyObject(PipelineLayoutWrapper&& handle) const;
     void DestroyObject(PipelineWrapper&& handle) const;
+    void DestroyObject(CommandPoolWrapper&& handle) const;
 
     ShaderModuleWrapper CreateShader(const VkShaderModuleCreateInfo& info,
                                      const char* name = nullptr);
@@ -50,6 +52,11 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
                                                const char* name = nullptr);
     PipelineWrapper CreateGraphicsPipeline(const VkGraphicsPipelineCreateInfo& info,
                                            const char* name = nullptr);
+    CommandPoolWrapper CreateCommandPool(const VkCommandPoolCreateInfo& info,
+                                         const char* name = nullptr);
+
+    // TODO: Should allocate from pool ?
+    VkCommandBuffer AllocateCmdBuffer(const VkCommandBufferAllocateInfo& info);
 
   private:
     const VkAllocationCallbacks* m_Allocator;

@@ -23,6 +23,18 @@ PipelineWrapper VulkanLogicalDevice::CreateGraphicsPipeline(
   auto res = vkCreateGraphicsPipelines(m_Device, VK_NULL_HANDLE, 1, &info, m_Allocator, &handle);
   return PipelineWrapper(std::move(handle), GetPtr());
 }
+CommandPoolWrapper VulkanLogicalDevice::CreateCommandPool(const VkCommandPoolCreateInfo& info,
+                                                          const char* name) {
+  VkCommandPool handle = VK_NULL_HANDLE;
+  auto res = vkCreateCommandPool(m_Device, &info, m_Allocator, &handle);
+  return CommandPoolWrapper(std::move(handle), GetPtr());
+}
+
+VkCommandBuffer VulkanLogicalDevice::AllocateCmdBuffer(const VkCommandBufferAllocateInfo& info) {
+  VkCommandBuffer handle = VK_NULL_HANDLE;
+  auto res = vkAllocateCommandBuffers(m_Device, &info, &handle);
+  return handle;
+}
 
 void VulkanLogicalDevice::DestroyObject(ShaderModuleWrapper&& module) const {
   vkDestroyShaderModule(m_Device, module, m_Allocator);
@@ -38,4 +50,8 @@ void VulkanLogicalDevice::DestroyObject(PipelineWrapper&& handle) const {
   handle.m_VulkanObject = VK_NULL_HANDLE;
 }
 
+void VulkanLogicalDevice::DestroyObject(CommandPoolWrapper&& handle) const {
+  vkDestroyCommandPool(m_Device, handle, m_Allocator);
+  handle.m_VulkanObject = VK_NULL_HANDLE;
+}
 }  // namespace fg
