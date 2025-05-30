@@ -1,12 +1,12 @@
-#include <stdexcept>
 #include "VulkanSwapchain.h"
 #include "GLFW/glfw3.h"
 
 #include "VulkanInstance.h"
 #include "../Core/Log.h"
-#include "src/Renderer/VulkanLogicalDevice.h"
-#include "src/Renderer/VulkanPhysicalDevice.h"
+#include "VulkanLogicalDevice.h"
+#include "VulkanPhysicalDevice.h"
 #include "vulkan/vulkan_core.h"
+#include <stdexcept>
 
 namespace fg {
 
@@ -51,9 +51,8 @@ void VulkanSwapchain::CreateSwapchain() {
   VkSurfaceCapabilitiesKHR caps {};
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalDevice.GetHandle(), m_Surface, &caps);
 
-  VkExtent2D extent {};
-  extent.width = caps.currentExtent.width;
-  extent.height = caps.currentExtent.height;
+  m_Extent.width = caps.currentExtent.width;
+  m_Extent.height = caps.currentExtent.height;
 
   m_ImageCount = caps.minImageCount + 1;
   VkSwapchainKHR oldSwapchain = m_Swapchain;
@@ -65,7 +64,7 @@ void VulkanSwapchain::CreateSwapchain() {
   info.imageColorSpace = m_SurfaceFormat.colorSpace;
   info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
   info.imageFormat = m_SurfaceFormat.format;
-  info.imageExtent = extent;
+  info.imageExtent = m_Extent;
   info.imageArrayLayers = 1;
   info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
   info.clipped = VK_TRUE;

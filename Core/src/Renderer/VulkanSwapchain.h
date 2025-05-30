@@ -22,6 +22,9 @@ class VulkanSwapchain {
     uint32_t GetFrameIndex() const {
       return m_FrameIndex;
     }
+    VkExtent2D GetExtent() const {
+      return m_Extent;
+    }
 
   private:
     void CreateSurface();
@@ -33,6 +36,7 @@ class VulkanSwapchain {
     GLFWwindow* m_Window = nullptr;
     VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
     VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;
+    VkExtent2D m_Extent;
     std::shared_ptr<VulkanInstance> m_VkInstance;
     std::shared_ptr<VulkanLogicalDevice> m_Device;
     const VulkanPhysicalDevice& m_PhysicalDevice;
