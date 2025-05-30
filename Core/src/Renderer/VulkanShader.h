@@ -1,8 +1,7 @@
 #pragma once
 
-#include "src/Core/Buffer.h"
-#include "src/Core/Ref.h"
-#include "vulkan/vulkan_core.h"
+#include "../Core/Buffer.h"
+#include "../Core/Ref.h"
 #include "VulkanObject.h"
 
 namespace fg {

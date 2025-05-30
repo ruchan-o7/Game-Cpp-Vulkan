@@ -1,10 +1,7 @@
 #pragma once
-#include "src/Renderer/VulkanGraphicsPipeline.h"
-#include "src/Renderer/VulkanInstance.h"
-#include "src/Renderer/VulkanLogicalDevice.h"
-#include "src/Renderer/VulkanPhysicalDevice.h"
-#include "src/Renderer/VulkanShader.h"
-#include "src/Renderer/VulkanSwapchain.h"
+#include "../Renderer/VulkanGraphicsPipeline.h"
+#include "../Renderer/VulkanShader.h"
+#include "../Renderer/VulkanSwapchain.h"
 
 typedef struct GLFWwindow GLFWwindow;
 

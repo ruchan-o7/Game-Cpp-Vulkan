@@ -1,6 +1,6 @@
 #pragma once
+#include "Volk/volk.h"
 
-#include "vulkan/vulkan_core.h"
 namespace fg {
 class VulkanInstance {
   public:

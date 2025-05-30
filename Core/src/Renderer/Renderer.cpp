@@ -1,5 +1,6 @@
+#define VOLK_IMPLEMENTATION
+#include "Volk/volk.h"
 #include "Renderer.h"
-#include <vulkan/vulkan.h>
 
 #include <GLFW/glfw3.h>
 #include <fstream>
@@ -13,7 +14,6 @@
 #include "src/Renderer/VulkanInstance.h"
 #include "src/Renderer/VulkanPhysicalDevice.h"
 #include "src/Renderer/VulkanShader.h"
-#include "vulkan/vulkan_core.h"
 
 namespace fg {
 
@@ -22,6 +22,9 @@ const char* validationLayers[] = {
 };
 
 std::shared_ptr<Renderer> Renderer::Create(GLFWwindow* window, const VkAllocationCallbacks* acb) {
+  if (volkInitialize() != VK_SUCCESS) {
+    return nullptr;
+  }
   VkInstance vkInstance = VK_NULL_HANDLE;
   VkPhysicalDevice vkPDevice = VK_NULL_HANDLE;
 
@@ -50,6 +53,8 @@ std::shared_ptr<Renderer> Renderer::Create(GLFWwindow* window, const VkAllocatio
   pCreateInfo.enabledLayerCount = 1;
 
   VkResult res = vkCreateInstance(&pCreateInfo, acb, &vkInstance);
+
+  volkLoadInstance(vkInstance);
 
   if (res != VK_SUCCESS) {
     throw std::runtime_error("Can not create vulkan instance");
@@ -129,6 +134,7 @@ Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& in
   if (res != VK_SUCCESS) {
     throw std::runtime_error("Can not create logical device");
   }
+  volkLoadDevice(device);
   m_LogicalDevice = std::make_shared<VulkanLogicalDevice>(device, queueIndex, m_AllocCB);
   m_Swapchain =
       std::make_shared<VulkanSwapchain>(m_Window, m_Instance, m_LogicalDevice, *m_PhysicalDevice);
@@ -152,7 +158,6 @@ void Renderer::BeginRendering() {
   vkBeginCommandBuffer(cmd, &info);
 
   VkRenderingInfoKHR beginInfo {VK_STRUCTURE_TYPE_RENDERING_INFO, 0};
-  beginInfo.flags = VK_RENDERING_CONTENTS_INLINE_BIT_EXT;
   beginInfo.renderArea = {
       {0, 0},
       m_Swapchain->GetExtent()
@@ -171,6 +176,7 @@ void Renderer::BeginRendering() {
   colorAttachments.push_back(colorInfo);
 
   beginInfo.colorAttachmentCount = colorAttachments.size();
+  beginInfo.pColorAttachments = colorAttachments.data();
 
   vkCmdBeginRendering(cmd, &beginInfo);
 }

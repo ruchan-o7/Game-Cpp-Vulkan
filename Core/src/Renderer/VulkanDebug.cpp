@@ -1,18 +1,19 @@
 #include "VulkanDebug.h"
 #include "../Core/Log.h"
+
 #include <ios>
 #include <iomanip>
 #include <sstream>
 
 namespace fg {
 
-PFN_vkCreateDebugUtilsMessengerEXT CreateDebugUtilsMessengerEXT = nullptr;
-PFN_vkDestroyDebugUtilsMessengerEXT DestroyDebugUtilsMessengerEXT = nullptr;
-PFN_vkSetDebugUtilsObjectNameEXT SetDebugUtilsObjectNameEXT = nullptr;
-PFN_vkSetDebugUtilsObjectTagEXT SetDebugUtilsObjectTagEXT = nullptr;
-PFN_vkQueueBeginDebugUtilsLabelEXT QueueBeginDebugUtilsLabelEXT = nullptr;
-PFN_vkQueueEndDebugUtilsLabelEXT QueueEndDebugUtilsLabelEXT = nullptr;
-PFN_vkQueueInsertDebugUtilsLabelEXT QueueInsertDebugUtilsLabelEXT = nullptr;
+// PFN_vkCreateDebugUtilsMessengerEXT CreateDebugUtilsMessengerEXT = nullptr;
+// PFN_vkDestroyDebugUtilsMessengerEXT DestroyDebugUtilsMessengerEXT = nullptr;
+// PFN_vkSetDebugUtilsObjectNameEXT SetDebugUtilsObjectNameEXT = nullptr;
+// PFN_vkSetDebugUtilsObjectTagEXT SetDebugUtilsObjectTagEXT = nullptr;
+// PFN_vkQueueBeginDebugUtilsLabelEXT QueueBeginDebugUtilsLabelEXT = nullptr;
+// PFN_vkQueueEndDebugUtilsLabelEXT QueueEndDebugUtilsLabelEXT = nullptr;
+// PFN_vkQueueInsertDebugUtilsLabelEXT QueueInsertDebugUtilsLabelEXT = nullptr;
 
 VkDebugUtilsMessengerEXT DbgMessenger = VK_NULL_HANDLE;
 
@@ -80,13 +81,13 @@ DebugMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 bool SetupDebugUtils(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT messageSeverity,
                      VkDebugUtilsMessageTypeFlagsEXT messageType, uint32_t IgnoreMessageCount,
                      const char* const* ppIgnoreMessageNames, void* pUserData) {
-  CreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
-      vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
-  DestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
-      vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
-  if (CreateDebugUtilsMessengerEXT == nullptr || DestroyDebugUtilsMessengerEXT == nullptr) {
-    return false;
-  }
+  // CreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+  //     vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
+  // DestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+  //     vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
+  // if (CreateDebugUtilsMessengerEXT == nullptr || DestroyDebugUtilsMessengerEXT == nullptr) {
+  //   return false;
+  // }
 
   VkDebugUtilsMessengerCreateInfoEXT DbgMessenger_CI {};
   DbgMessenger_CI.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -97,40 +98,41 @@ bool SetupDebugUtils(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT me
   DbgMessenger_CI.pfnUserCallback = DebugMessengerCallback;
   DbgMessenger_CI.pUserData = pUserData;
 
-  auto err = CreateDebugUtilsMessengerEXT(instance, &DbgMessenger_CI, nullptr, &DbgMessenger);
+  auto err = vkCreateDebugUtilsMessengerEXT(instance, &DbgMessenger_CI, nullptr, &DbgMessenger);
   assert(err == VK_SUCCESS && "Failed to create debug utils messenger");
 
   // Load function pointers
-  SetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(
-      vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
-  assert(SetDebugUtilsObjectNameEXT != nullptr);
-  SetDebugUtilsObjectTagEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectTagEXT>(
-      vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectTagEXT"));
-  assert(SetDebugUtilsObjectTagEXT != nullptr);
-
-  QueueBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueBeginDebugUtilsLabelEXT>(
-      vkGetInstanceProcAddr(instance, "vkQueueBeginDebugUtilsLabelEXT"));
-  assert(QueueBeginDebugUtilsLabelEXT != nullptr);
-  QueueEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueEndDebugUtilsLabelEXT>(
-      vkGetInstanceProcAddr(instance, "vkQueueEndDebugUtilsLabelEXT"));
-  assert(QueueEndDebugUtilsLabelEXT != nullptr);
-  QueueInsertDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueInsertDebugUtilsLabelEXT>(
-      vkGetInstanceProcAddr(instance, "vkQueueInsertDebugUtilsLabelEXT"));
-  assert(QueueInsertDebugUtilsLabelEXT != nullptr);
+  // SetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(
+  //    vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
+  // assert(SetDebugUtilsObjectNameEXT != nullptr);
+  // SetDebugUtilsObjectTagEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectTagEXT>(
+  //    vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectTagEXT"));
+  // assert(SetDebugUtilsObjectTagEXT != nullptr);
+  //
+  // QueueBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueBeginDebugUtilsLabelEXT>(
+  //    vkGetInstanceProcAddr(instance, "vkQueueBeginDebugUtilsLabelEXT"));
+  // assert(QueueBeginDebugUtilsLabelEXT != nullptr);
+  // QueueEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueEndDebugUtilsLabelEXT>(
+  //    vkGetInstanceProcAddr(instance, "vkQueueEndDebugUtilsLabelEXT"));
+  // assert(QueueEndDebugUtilsLabelEXT != nullptr);
+  // QueueInsertDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueInsertDebugUtilsLabelEXT>(
+  //    vkGetInstanceProcAddr(instance, "vkQueueInsertDebugUtilsLabelEXT"));
+  // assert(QueueInsertDebugUtilsLabelEXT != nullptr);
 
   return err == VK_SUCCESS;
 }
 
 void FreeDebug(VkInstance instance) {
   if (DbgMessenger != VK_NULL_HANDLE) {
-    DestroyDebugUtilsMessengerEXT(instance, DbgMessenger, nullptr);
+    vkDestroyDebugUtilsMessengerEXT(instance, DbgMessenger, nullptr);
+    // DestroyDebugUtilsMessengerEXT(instance, DbgMessenger, nullptr);
   }
 }
 
 void InsertCmdQueueLabel(VkQueue cmdQueue, const char* pLabelName, const float* color) {
-  if (QueueInsertDebugUtilsLabelEXT == nullptr) {
-    return;
-  }
+  // if (QueueInsertDebugUtilsLabelEXT == nullptr) {
+  //   return;
+  // }
 
   VkDebugUtilsLabelEXT Label {};
   Label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
@@ -139,20 +141,22 @@ void InsertCmdQueueLabel(VkQueue cmdQueue, const char* pLabelName, const float* 
   for (int i = 0; i < 4; ++i) {
     Label.color[i] = color[i];
   }
-  QueueInsertDebugUtilsLabelEXT(cmdQueue, &Label);
+
+  vkQueueInsertDebugUtilsLabelEXT(cmdQueue, &Label);
+  // QueueInsertDebugUtilsLabelEXT(cmdQueue, &Label);
 }
 
 void EndCmdQueueLabelRegion(VkQueue cmdQueue) {
-  if (QueueEndDebugUtilsLabelEXT == nullptr) {
-    return;
-  }
+  // if (QueueEndDebugUtilsLabelEXT == nullptr) {
+  //   return;
+  // }
 
-  QueueEndDebugUtilsLabelEXT(cmdQueue);
+  vkQueueEndDebugUtilsLabelEXT(cmdQueue);
 }
 
 void SetObjectName(VkDevice device, uint64_t object, VkObjectType objectType, const char* name) {
   // Check for valid function pointer (may not be present if not running in a debug mode)
-  if (SetDebugUtilsObjectNameEXT == nullptr || name == nullptr || name[0] == '\0') {
+  if (name == nullptr || name[0] == '\0') {
     return;
   }
 
@@ -163,7 +167,7 @@ void SetObjectName(VkDevice device, uint64_t object, VkObjectType objectType, co
   ObjectNameInfo.objectHandle = object;
   ObjectNameInfo.pObjectName = name;
 
-  VkResult res = SetDebugUtilsObjectNameEXT(device, &ObjectNameInfo);
+  VkResult res = vkSetDebugUtilsObjectNameEXT(device, &ObjectNameInfo);
   assert(res == VK_SUCCESS);
   (void)res;
 }
@@ -172,9 +176,9 @@ void SetObjectTag(VkDevice device, uint64_t objectHandle, VkObjectType objectTyp
                   size_t tagSize, const void* tag) {
   // Check for valid function pointer (may not be present if not running in a debugging
   // application)
-  if (SetDebugUtilsObjectTagEXT == nullptr) {
-    return;
-  }
+  // if (vkSetDebugUtilsObjectTagEXT == nullptr) {
+  //  return;
+  //}
 
   VkDebugUtilsObjectTagInfoEXT tagInfo {};
   tagInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_TAG_INFO_EXT;
@@ -184,7 +188,7 @@ void SetObjectTag(VkDevice device, uint64_t objectHandle, VkObjectType objectTyp
   tagInfo.tagName = name;
   tagInfo.tagSize = tagSize;
   tagInfo.pTag = tag;
-  SetDebugUtilsObjectTagEXT(device, &tagInfo);
+  vkSetDebugUtilsObjectTagEXT(device, &tagInfo);
 }
 
 void SetCommandPoolName(VkDevice device, VkCommandPool cmdPool, const char* name) {

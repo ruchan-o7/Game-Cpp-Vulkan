@@ -1,5 +1,4 @@
 #include "VulkanLogicalDevice.h"
-#include "vulkan/vulkan_core.h"
 #include "VulkanObject.h"
 
 namespace fg {

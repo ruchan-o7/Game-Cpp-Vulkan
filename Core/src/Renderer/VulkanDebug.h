@@ -1,49 +1,47 @@
 #pragma once
-#include <vulkan/vulkan.h>
+#include "Volk/volk.h"
 #include <string>
-#include "../Base.h"
-namespace fg
-{
+namespace fg {
 
-    // Loads the debug utils functions and initialized the debug callback.
-    bool SetupDebugUtils(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT messageSeverity,
-                         VkDebugUtilsMessageTypeFlagsEXT messageType, uint32_t IgnoreMessageCount,
-                         const char* const* ppIgnoreMessageNames, void* pUserData = nullptr);
+// Loads the debug utils functions and initialized the debug callback.
+bool SetupDebugUtils(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT messageSeverity,
+                     VkDebugUtilsMessageTypeFlagsEXT messageType, uint32_t IgnoreMessageCount,
+                     const char* const* ppIgnoreMessageNames, void* pUserData = nullptr);
 
-    // Initializes the debug report callback.
-    bool SetupDebugReport(VkInstance instance, VkDebugReportFlagBitsEXT flags,
-                          void* pUserData = nullptr);
+// Initializes the debug report callback.
+bool SetupDebugReport(VkInstance instance, VkDebugReportFlagBitsEXT flags,
+                      void* pUserData = nullptr);
 
-    // Clears the debug utils/debug report callback
-    void FreeDebug(VkInstance instance);
+// Clears the debug utils/debug report callback
+void FreeDebug(VkInstance instance);
 
-    // Setup and functions for the VK_EXT_debug_marker_extension
-    // Extension spec can be found at
-    // https://github.com/KhronosGroup/Vulkan-Docs/blob/1.0-VK_EXT_debug_marker/doc/specs/vulkan/appendices/VK_EXT_debug_marker.txt
-    // Note that the extension will only be present if run from an offline debugging application
-    // The actual check for extension presence and enabling it on the device is done in the example
-    // base class See VulkanExampleBase::createInstance and VulkanExampleBase::createDevice
-    // (base/vulkanexamplebase.cpp)
+// Setup and functions for the VK_EXT_debug_marker_extension
+// Extension spec can be found at
+// https://github.com/KhronosGroup/Vulkan-Docs/blob/1.0-VK_EXT_debug_marker/doc/specs/vulkan/appendices/VK_EXT_debug_marker.txt
+// Note that the extension will only be present if run from an offline debugging application
+// The actual check for extension presence and enabling it on the device is done in the example
+// base class See VulkanExampleBase::createInstance and VulkanExampleBase::createDevice
+// (base/vulkanexamplebase.cpp)
 
-    // Sets the debug name of an object
-    // All Objects in Vulkan are represented by their 64-bit handles which are passed into this
-    // function along with the object type
-    void SetObjectName(VkDevice device, uint64_t object, VkObjectType objectType, const char* name);
+// Sets the debug name of an object
+// All Objects in Vulkan are represented by their 64-bit handles which are passed into this
+// function along with the object type
+void SetObjectName(VkDevice device, uint64_t object, VkObjectType objectType, const char* name);
 
-    // Set the tag for an object
-    void SetObjectTag(VkDevice device, uint64_t objectHandle, VkObjectType objectType,
-                      uint64_t name, size_t tagSize, const void* tag);
+// Set the tag for an object
+void SetObjectTag(VkDevice device, uint64_t objectHandle, VkObjectType objectType, uint64_t name,
+                  size_t tagSize, const void* tag);
 
-    // Start a new label region
-    void BeginCmdQueueLabelRegion(VkQueue cmdQueue, const char* pLabelName, const float* color);
+// Start a new label region
+void BeginCmdQueueLabelRegion(VkQueue cmdQueue, const char* pLabelName, const float* color);
 
-    // End the label region
-    void EndCmdQueueLabelRegion(VkQueue cmdQueue);
+// End the label region
+void EndCmdQueueLabelRegion(VkQueue cmdQueue);
 
-    // Insert a single label
-    void InsertCmdQueueLabel(VkQueue cmdQueue, const char* pLabelName, const float* color);
+// Insert a single label
+void InsertCmdQueueLabel(VkQueue cmdQueue, const char* pLabelName, const float* color);
 
-    // clang-format off
+// clang-format off
     // Object specific naming functions
     void SetCommandPoolName         (VkDevice device, VkCommandPool         cmdPool,             const char * name);
     void SetCommandBufferName       (VkDevice device, VkCommandBuffer       cmdBuffer,           const char * name);
@@ -77,5 +75,5 @@ namespace fg
     const char* VkImageLayoutToString  (VkImageLayout    Layout);
     std::string VkAccessFlagsToString  (VkAccessFlags    Flags);
     const char* VkObjectTypeToString   (VkObjectType ObjectType);
-    // clang-format on
+// clang-format on
 }  // namespace fg

@@ -1,5 +1,4 @@
 #pragma once
-#include "VulkanLogicalDevice.h"
 #include "VulkanObject.h"
 #include "../Core/Ref.h"
 

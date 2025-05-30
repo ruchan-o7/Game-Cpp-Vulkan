@@ -1,5 +1,3 @@
-#pragma once
-
 #include "VulkanPhysicalDevice.h"
 
 namespace fg {
