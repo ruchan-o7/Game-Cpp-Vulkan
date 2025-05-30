@@ -105,16 +105,24 @@ Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& in
   VkPhysicalDeviceFeatures features;
   vkGetPhysicalDeviceFeatures(pDev, &features);
 
-  const char* extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+  const char* extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                              VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME};
+
+  VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRendering {
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
+      VK_NULL_HANDLE,
+      VK_TRUE,
+  };
 
   VkDeviceCreateInfo info {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
   info.pQueueCreateInfos = &queueInfo;
   info.queueCreateInfoCount = 1;
   info.pEnabledFeatures = &features;
-  info.enabledExtensionCount = 1;
+  info.enabledExtensionCount = 2;
   info.ppEnabledExtensionNames = extensions;
   info.enabledLayerCount = 1;
   info.ppEnabledLayerNames = validationLayers;
+  info.pNext = &dynamicRendering;
 
   VkDevice device = VK_NULL_HANDLE;
   VkResult res = vkCreateDevice(pDev, &info, m_AllocCB, &device);
@@ -157,7 +165,7 @@ std::shared_ptr<VulkanShader> Renderer::CreateShader(const ShaderDescription& de
   info.codeSize = buff.Size;
   auto handle = m_LogicalDevice->CreateShader(info, desc.Name);
   if (handle) {
-    return std::make_shared<VulkanShader>(std::move(handle), desc.Stage);
+    return std::make_shared<VulkanShader>(desc, std::move(handle), desc.Stage);
   }
 
   FOO_CORE_ERROR("Can not create shader handle: Name: {}", desc.Name != nullptr ? desc.Name : "");
@@ -286,6 +294,17 @@ std::shared_ptr<VulkanGraphicsPipeline> Renderer::CreateGraphicsPipeline(
   pipelineInfo.subpass = 0;
   pipelineInfo.basePipelineHandle = 0;
   pipelineInfo.basePipelineIndex = -1;
+
+  const auto swapchainFormat = m_Swapchain->Format();
+
+  const VkPipelineRenderingCreateInfoKHR pipeline_rendering_create_info {
+      VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+      VK_NULL_HANDLE,
+      0,
+      1,
+      &swapchainFormat.format,
+  };
+  pipelineInfo.pNext = &pipeline_rendering_create_info;
 
   pipelineInfo.pStages = shaderStages.data();
   auto pipeline = m_LogicalDevice->CreateGraphicsPipeline(pipelineInfo);
