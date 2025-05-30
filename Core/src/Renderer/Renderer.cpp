@@ -160,6 +160,20 @@ void Renderer::BeginRendering() {
 
   VkCommandBufferBeginInfo info {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
   vkBeginCommandBuffer(cmd, &info);
+  {
+    VkImageMemoryBarrier barrier {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+    barrier.image = m_Swapchain->GetCurrentImage();
+    barrier.srcAccessMask = 0;
+    barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr,
+                         1, &barrier);
+  }
 
   VkRenderingInfoKHR beginInfo {VK_STRUCTURE_TYPE_RENDERING_INFO, 0};
   beginInfo.renderArea = {
@@ -183,16 +197,37 @@ void Renderer::BeginRendering() {
   beginInfo.pColorAttachments = colorAttachments.data();
 
   vkCmdBeginRendering(cmd, &beginInfo);
+  VkRect2D scissor {
+      {0, 0},
+      m_Swapchain->GetExtent()
+  };
+  vkCmdSetScissor(cmd, 0, 1, &scissor);
+  VkViewport vp {
+      0,    0,   (float)m_Swapchain->GetExtent().width, (float)m_Swapchain->GetExtent().height,
+      0.0f, 1.0f};
+  vkCmdSetViewport(cmd, 0, 1, &vp);
 }
 
 void Renderer::EndRendering() {
   auto cmd = GetCurrentCmdBuffer();
   vkCmdEndRenderingKHR(cmd);
+  {
+    VkImageMemoryBarrier barrier {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+    barrier.image = m_Swapchain->GetCurrentImage();
+    barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    barrier.dstAccessMask = 0;
+    barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1,
+                         &barrier);
+  }
   vkEndCommandBuffer(cmd);
 }
 void Renderer::BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline) {
   m_CurrentPipeline = pipeline;
-  vkCmdBindPipeline(GetCurrentCmdBuffer(),VK_PIPELINE_BIND_POINT_GRAPHICS,pipeline->GetHandle());
+  vkCmdBindPipeline(GetCurrentCmdBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetHandle());
 }
 void Renderer::Draw(const DrawAttributes& attribs) {
   FOO_ASSERT(m_CurrentPipeline != nullptr);
@@ -385,6 +420,7 @@ Ref<VulkanGraphicsPipeline> Renderer::CreateGraphicsPipeline(
 }
 
 void Renderer::Destroy() {
+  WaitGPU();
 }
 
 }  // namespace fg
