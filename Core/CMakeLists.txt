@@ -26,7 +26,7 @@ set_property(TARGET "EnTT" PROPERTY FOLDER "Dependencies")
 set_property(TARGET "nlohmann_json" PROPERTY FOLDER "Dependencies")
 set_property(TARGET "tinygltf" PROPERTY FOLDER "Dependencies")
 
-file(GLOB_RECURSE CORE_SOURCES src/*.cpp)
+file(GLOB_RECURSE CORE_SOURCES src/*.cpp src/*.h)
 
 set(IMGUI_SRC_DIR "external/imgui")
 set(SPDLOG_INCLUDE_DIR "external/spdlog")
