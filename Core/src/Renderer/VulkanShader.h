@@ -18,8 +18,9 @@ struct ShaderDescription {
 
 class VulkanShader {
   public:
-    VulkanShader(ShaderModuleWrapper&& module, VkShaderStageFlagBits stage)
-        : m_Handle(std::move(module)), m_Stage(stage) {
+    VulkanShader(const ShaderDescription& desc, ShaderModuleWrapper&& module,
+                 VkShaderStageFlagBits stage)
+        : m_Desc(desc), m_Handle(std::move(module)), m_Stage(stage) {
     }
 
     VkShaderModule GetHandle() const {
@@ -29,11 +30,14 @@ class VulkanShader {
       return m_Stage;
     }
     const char* EntryPoint() const {
-      return m_EntryPoint.c_str();
+      return m_Desc.EntryPoint.c_str();
+    }
+    const ShaderDescription& Desc() const {
+      return m_Desc;
     }
 
   private:
-    std::string m_EntryPoint;
+    ShaderDescription m_Desc;
     ShaderModuleWrapper m_Handle;
     VkShaderStageFlagBits m_Stage;
 };
