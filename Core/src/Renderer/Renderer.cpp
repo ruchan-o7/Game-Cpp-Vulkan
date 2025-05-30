@@ -186,6 +186,14 @@ void Renderer::EndRendering() {
   vkCmdEndRenderingKHR(cmd);
   vkEndCommandBuffer(cmd);
 }
+void Renderer::BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline) {
+  m_CurrentPipeline = pipeline;
+}
+void Renderer::Draw(const DrawAttributes& attribs) {
+  FOO_ASSERT(m_CurrentPipeline != nullptr);
+  vkCmdDraw(GetCurrentCmdBuffer(), attribs.VertexCount, attribs.InstanceCount, attribs.FirstVertex,
+            attribs.FirstInstance);
+}
 
 Ref<VulkanShader> Renderer::CreateShader(const ShaderDescription& desc) {
   FOO_ASSERT(desc.Stage != 0)

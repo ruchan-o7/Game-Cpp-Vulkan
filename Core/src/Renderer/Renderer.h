@@ -7,6 +7,13 @@ typedef struct GLFWwindow GLFWwindow;
 
 namespace fg {
 
+struct DrawAttributes {
+    uint32_t VertexCount = 0;
+    uint32_t InstanceCount = 0;
+    uint32_t FirstVertex = 0;
+    uint32_t FirstInstance = 0;
+};
+
 class Renderer {
   public:
     static std::shared_ptr<Renderer> Create(GLFWwindow* window,
@@ -18,6 +25,8 @@ class Renderer {
     Ref<VulkanGraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDescription& desc);
 
     void BeginRendering();
+    void BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline);
+    void Draw(const DrawAttributes& attribs);
     void EndRendering();
 
     VkCommandBuffer GetCurrentCmdBuffer() const {
@@ -39,7 +48,7 @@ class Renderer {
     VkQueue m_VkQueue = VK_NULL_HANDLE;
     VkCommandBuffer m_Cmd = VK_NULL_HANDLE;
     CommandPoolWrapper m_CmdPool;
-
+    Ref<VulkanGraphicsPipeline> m_CurrentPipeline;
     GLFWwindow* m_Window = nullptr;
 };
 
