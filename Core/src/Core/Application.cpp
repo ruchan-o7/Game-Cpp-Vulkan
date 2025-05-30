@@ -1,15 +1,18 @@
 #include "Application.h"
-#include <mutex>
 #include "../ImGui/ImGuiLayer.h"
 #include "../Core/AssetManager.h"
 #include "../Core/Time.h"
 #include "../Events/Event.h"
 #include "../Profile/Profiling.h"
+#include "../Core/Log.h"
+#include "../Events/KeyEvent.h"
+#include "../Events/MouseEvent.h"
+#include "../Renderer/Renderer.h"
+#include "../Renderer/VulkanGraphicsPipeline.h"
+#include "../Renderer/VulkanShader.h"
+
+#include <mutex>
 #include "GLFW/glfw3.h"
-#include "src/Core/Log.h"
-#include "src/Events/KeyEvent.h"
-#include "src/Events/MouseEvent.h"
-#include "src/Renderer/Renderer.h"
 #include <imgui.h>
 namespace FooGame {
 
@@ -47,8 +50,29 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
   }
 
   m_Renderer = fg::Renderer::Create(m_Window, nullptr);
+  {
+    fg::ShaderDescription shaderDesc;
+    shaderDesc.EntryPoint = "main";
+    shaderDesc.Path = "Assets/Shaders/triangle_vert.spv";
+    shaderDesc.Stage = VK_SHADER_STAGE_VERTEX_BIT;
+    auto triVert = m_Renderer->CreateShader(shaderDesc);
 
-  AssetManager::Init();
+    shaderDesc.Path = "Assets/Shaders/triangle_frag.spv";
+    shaderDesc.Stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    auto trifrag = m_Renderer->CreateShader(shaderDesc);
+
+    fg::GraphicsPipelineDescription pipeDesc;
+    pipeDesc.FragmentShader = trifrag.get();
+    pipeDesc.VertexShader = triVert.get();
+    pipeDesc.DynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+
+    m_Pipeline = m_Renderer->CreateGraphicsPipeline(pipeDesc);
+  }
+  m_Renderer->BeginRendering();
+  m_Renderer->EndRendering();
+  m_Swapchain = m_Renderer->GetSwapchain();
+
+  // AssetManager::Init();
 
   m_ImGuiLayer = new ImGuiLayer;
   PushLayer(m_ImGuiLayer);
@@ -154,11 +178,12 @@ void Application::Run() {
     float ts = time - m_LastFrameTime;
     m_LastFrameTime = time;
     ExecuteMainThreadQueue();
+
     if (!m_Minimized) {
-      m_ImGuiLayer->Begin(&m_MenuBarCallback);
-      for (Layer* l : m_LayerStack) {
-        l->OnUpdate(ts);
-      }
+      // m_ImGuiLayer->Begin(&m_MenuBarCallback);
+      // for (Layer* l : m_LayerStack) {
+      //  l->OnUpdate(ts);
+      //}
       // auto stats = Renderer3D::GetStats();
       //
       // Renderer3D::EndDraw();
@@ -168,10 +193,17 @@ void Application::Run() {
       // ImGui::Text("Index count %llu", stats.IndexCount);
       // ImGui::End();
 
-      for (Layer* l : m_LayerStack) {
-        l->OnImGuiRender();
-      }
-      m_ImGuiLayer->End();
+      // for (Layer* l : m_LayerStack) {
+      //   l->OnImGuiRender();
+      // }
+      // m_ImGuiLayer->End();
+      m_Renderer->BeginRendering();
+      m_Renderer->BindPipeline(m_Pipeline);
+      m_Renderer->Draw({3, 1, 0, 0});
+
+      m_Renderer->EndRendering();
+
+      m_Swapchain->Present();
     }
     glfwPollEvents();
     // Backend::SwapBuffers();

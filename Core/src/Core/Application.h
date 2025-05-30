@@ -7,11 +7,14 @@
 #include "LayerStack.h"
 #include "../Events/ApplicationEvent.h"
 #include "../ImGui/ImGuiLayer.h"
+#include "Ref.h"
 int main(int argc, char** argv);
 
 namespace fg {
 class Renderer;
-}
+class VulkanSwapchain;
+class VulkanGraphicsPipeline;
+}  // namespace fg
 namespace FooGame {
 class Layer;
 struct ApplicationCommandLineArgs {
@@ -70,6 +73,8 @@ class Application {
     GLFWwindow* m_Window;
     ImGuiLayer* m_ImGuiLayer = nullptr;
     std::shared_ptr<fg::Renderer> m_Renderer;
+    std::shared_ptr<fg::VulkanSwapchain> m_Swapchain;
+    fg::Ref<fg::VulkanGraphicsPipeline> m_Pipeline;
     bool m_Running = true;
     bool m_Minimized = false;
     float m_LastFrameTime = 0.0f;
