@@ -17,6 +17,8 @@ class VulkanLogicalDevice {
       return m_Allocator;
     }
 
+    VkShaderModule CreateShader(const VkShaderModuleCreateInfo& info, const char* name = nullptr);
+
   private:
     const VkAllocationCallbacks* m_Allocator;
     VkDevice m_Device;

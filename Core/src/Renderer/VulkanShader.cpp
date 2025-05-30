@@ -31,9 +31,8 @@ VulkanShader::VulkanShader(const ShaderDescription& desc) {
   VkShaderModuleCreateInfo info {VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
   info.pCode = (uint32_t*)desc.ByteCode.Data;
   info.codeSize = desc.ByteCode.Size;
-  auto res =
-      vkCreateShaderModule(desc.Device->GetHandle(), &info, desc.Device->GetAllocator(), &m_Handle);
-  if (res != VK_SUCCESS) {
+  m_Handle = desc.Device->CreateShader(info);
+  if (m_Handle != VK_NULL_HANDLE) {
     FOO_CORE_ERROR("Can not create shader module '{}'", desc.Path.string());
   }
 }
