@@ -134,7 +134,7 @@ Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& in
       std::make_shared<VulkanSwapchain>(m_Window, m_Instance, m_LogicalDevice, *m_PhysicalDevice);
 }
 
-std::shared_ptr<VulkanShader> Renderer::CreateShader(const ShaderDescription& desc) {
+Ref<VulkanShader> Renderer::CreateShader(const ShaderDescription& desc) {
   FOO_ASSERT(desc.Stage != 0)
   FOO_ASSERT(!desc.EntryPoint.empty());
   Buffer buff;
@@ -165,13 +165,13 @@ std::shared_ptr<VulkanShader> Renderer::CreateShader(const ShaderDescription& de
   info.codeSize = buff.Size;
   auto handle = m_LogicalDevice->CreateShader(info, desc.Name);
   if (handle) {
-    return std::make_shared<VulkanShader>(desc, std::move(handle));
+    return MakeRef<VulkanShader>(desc, std::move(handle));
   }
 
   FOO_CORE_ERROR("Can not create shader handle: Name: {}", desc.Name != nullptr ? desc.Name : "");
   return nullptr;
 }
-std::shared_ptr<VulkanGraphicsPipeline> Renderer::CreateGraphicsPipeline(
+Ref<VulkanGraphicsPipeline> Renderer::CreateGraphicsPipeline(
     const GraphicsPipelineDescription& desc) {
   VkPipelineDynamicStateCreateInfo dynamicState {
       VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
@@ -308,7 +308,7 @@ std::shared_ptr<VulkanGraphicsPipeline> Renderer::CreateGraphicsPipeline(
 
   pipelineInfo.pStages = shaderStages.data();
   auto pipeline = m_LogicalDevice->CreateGraphicsPipeline(pipelineInfo);
-  return std::make_shared<VulkanGraphicsPipeline>(std::move(pipeline), std::move(layout));
+  return MakeRef<VulkanGraphicsPipeline>(std::move(pipeline), std::move(layout));
 }
 
 void Renderer::Destroy() {

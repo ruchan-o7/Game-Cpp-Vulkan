@@ -16,10 +16,9 @@ class Renderer {
                                             const VkAllocationCallbacks* alloc = nullptr);
     void Destroy();
 
-    std::shared_ptr<VulkanShader> CreateShader(const ShaderDescription& desc);
+    Ref<VulkanShader> CreateShader(const ShaderDescription& desc);
 
-    std::shared_ptr<VulkanGraphicsPipeline> CreateGraphicsPipeline(
-        const GraphicsPipelineDescription& desc);
+    Ref<VulkanGraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDescription& desc);
 
   private:
     Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& instance,
