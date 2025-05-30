@@ -20,18 +20,26 @@ class Renderer {
                                             const VkAllocationCallbacks* alloc = nullptr);
     void Destroy();
 
-    Ref<VulkanShader> CreateShader(const ShaderDescription& desc);
+    Ref<VulkanShader> CreateShader(const ShaderDescription& desc) const;
 
     Ref<VulkanGraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDescription& desc);
 
+    std::shared_ptr<VulkanSwapchain> GetSwapchain() const {
+      return m_Swapchain;
+    }
     void BeginRendering();
     void BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline);
     void Draw(const DrawAttributes& attribs);
     void EndRendering();
 
+    VkResult Flush(const std::function<VkResult(VkQueue, VkCommandBuffer)>& func);
+
     VkCommandBuffer GetCurrentCmdBuffer() const {
       return m_Cmd;
     }
+
+    void Present(VkPresentInfoKHR& info);
+    void WaitGPU() const;
 
   private:
     Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& instance,

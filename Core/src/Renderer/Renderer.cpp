@@ -7,13 +7,13 @@
 #include <ios>
 #include <memory>
 #include <stdexcept>
-#include "src/Core/Assert.h"
-#include "src/Core/Log.h"
-#include "src/Renderer/VulkanDebug.h"
-#include "src/Renderer/VulkanGraphicsPipeline.h"
-#include "src/Renderer/VulkanInstance.h"
-#include "src/Renderer/VulkanPhysicalDevice.h"
-#include "src/Renderer/VulkanShader.h"
+#include "../Core/Assert.h"
+#include "../Core/Log.h"
+#include "VulkanDebug.h"
+#include "VulkanGraphicsPipeline.h"
+#include "VulkanInstance.h"
+#include "VulkanPhysicalDevice.h"
+#include "VulkanShader.h"
 
 namespace fg {
 
@@ -90,6 +90,9 @@ std::shared_ptr<Renderer> Renderer::Create(GLFWwindow* window, const VkAllocatio
   return std::shared_ptr<Renderer>(renderer);
 }
 
+void Renderer::WaitGPU() const {
+  m_LogicalDevice->WaitIdle();
+}
 Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& instance,
                    std::unique_ptr<VulkanPhysicalDevice> pDevice,
                    const VkAllocationCallbacks* alloc)
@@ -136,8 +139,9 @@ Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& in
   }
   volkLoadDevice(device);
   m_LogicalDevice = std::make_shared<VulkanLogicalDevice>(device, queueIndex, m_AllocCB);
-  m_Swapchain =
-      std::make_shared<VulkanSwapchain>(m_Window, m_Instance, m_LogicalDevice, *m_PhysicalDevice);
+  m_VkQueue = m_LogicalDevice->GetQueue();
+  m_Swapchain = std::make_shared<VulkanSwapchain>(m_Window, this, m_Instance, m_LogicalDevice,
+                                                  *m_PhysicalDevice);
   VkCommandPoolCreateInfo cmdPool {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
   cmdPool.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
   m_CmdPool = m_LogicalDevice->CreateCommandPool(cmdPool);
@@ -195,7 +199,14 @@ void Renderer::Draw(const DrawAttributes& attribs) {
             attribs.FirstInstance);
 }
 
-Ref<VulkanShader> Renderer::CreateShader(const ShaderDescription& desc) {
+VkResult Renderer::Flush(const std::function<VkResult(VkQueue, VkCommandBuffer)>& func) {
+  return func(m_VkQueue, GetCurrentCmdBuffer());
+}
+void Renderer::Present(VkPresentInfoKHR& info) {
+  vkQueuePresentKHR(m_VkQueue, &info);
+}
+
+Ref<VulkanShader> Renderer::CreateShader(const ShaderDescription& desc) const {
   FOO_ASSERT(desc.Stage != 0)
   FOO_ASSERT(!desc.EntryPoint.empty());
   Buffer buff;
