@@ -28,6 +28,9 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     VulkanLogicalDevice& operator=(const VulkanLogicalDevice&) = delete;
     VulkanLogicalDevice& operator=(VulkanLogicalDevice&&) = delete;
 
+    VkQueue GetQueue() const {
+      return m_Queue;
+    }
     std::shared_ptr<VulkanLogicalDevice> GetPtr() {
       return shared_from_this();
     }
@@ -42,12 +45,15 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     const VkAllocationCallbacks* GetAllocator() const {
       return m_Allocator;
     }
+    void WaitIdle() const;
     void DestroyObject(ShaderModuleWrapper&& handle) const;
     void DestroyObject(PipelineLayoutWrapper&& handle) const;
     void DestroyObject(PipelineWrapper&& handle) const;
     void DestroyObject(CommandPoolWrapper&& handle) const;
     void DestroyObject(SemaphoreWrapper&& handle) const;
     void DestroyObject(FenceWrapper&& handle) const;
+    void WaitFence(VkFence fence);
+    void ResetFence(VkFence& fence);
 
     ShaderModuleWrapper CreateShader(const VkShaderModuleCreateInfo& info,
                                      const char* name = nullptr);

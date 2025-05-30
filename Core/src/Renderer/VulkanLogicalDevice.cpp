@@ -4,6 +4,17 @@
 
 namespace fg {
 
+void VulkanLogicalDevice::WaitIdle() const {
+  vkDeviceWaitIdle(m_Device);
+}
+void VulkanLogicalDevice::ResetFence(VkFence& fence) {
+  vkResetFences(m_Device, 1, &fence);
+}
+
+void VulkanLogicalDevice::WaitFence(VkFence fence) {
+  vkWaitForFences(m_Device, 1, &fence, VK_TRUE, UINT64_MAX);
+}
+
 ShaderModuleWrapper VulkanLogicalDevice::CreateShader(const VkShaderModuleCreateInfo& info,
                                                       const char* name) {
   VkShaderModule module;
