@@ -69,6 +69,10 @@ target_include_directories("${PROJECT_NAME}" PUBLIC
 	"${TINY_OBJ_LOADER_INCLUDE_DIR}"
 	"./"
 )
+add_compile_definitions(-DVK_NO_PROTOTYPES)
+if(WIN32)
+	add_compile_definitions(-DVK_USE_PLATFORM_WIN32_KHR)
+endif()
 
 set_target_properties("${PROJECT_NAME}" PROPERTIES CXX_STANDARD 17)
 
