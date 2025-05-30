@@ -93,6 +93,16 @@ class Ref {
       return m_Ptr;
     }
 
+    bool operator==(const Ref& other) const {
+      return m_Ptr == other.m_Ptr;
+    }
+    bool operator!=(const Ref& other) const {
+      return !(other == *this);
+    }
+    bool operator!=(T* ptr) const {
+      return ptr != m_Ptr;
+    }
+
     explicit operator bool() const {
       return m_Ptr != nullptr;
     }
