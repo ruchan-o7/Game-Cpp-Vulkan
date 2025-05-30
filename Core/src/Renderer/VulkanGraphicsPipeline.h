@@ -29,6 +29,10 @@ class VulkanGraphicsPipeline : public RefBase {
     }
     virtual ~VulkanGraphicsPipeline() = default;
 
+    VkPipeline GetHandle() const {
+      return m_Pipeline;
+    }
+
   private:
     PipelineWrapper m_Pipeline;
     PipelineLayoutWrapper m_Layout;
