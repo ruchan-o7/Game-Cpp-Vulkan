@@ -25,6 +25,9 @@ class VulkanSwapchain {
     VkExtent2D GetExtent() const {
       return m_Extent;
     }
+    VkSurfaceFormatKHR Format() const {
+      return m_SurfaceFormat;
+    }
 
   private:
     void CreateSurface();
