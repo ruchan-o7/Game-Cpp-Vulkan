@@ -1,11 +1,11 @@
 #include "VulkanShader.h"
+#include "../Core/Assert.h"
+#include "VulkanLogicalDevice.h"
+#include "../Core/Log.h"
+
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
-#include "../Core/Assert.h"
-#include "VulkanLogicalDevice.h"
-#include "spdlog/fmt/bundled/format.h"
-#include "src/Core/Log.h"
 
 namespace fg {
 

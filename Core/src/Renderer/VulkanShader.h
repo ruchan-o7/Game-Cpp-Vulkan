@@ -2,6 +2,7 @@
 
 #include "src/Core/Buffer.h"
 #include "vulkan/vulkan_core.h"
+#include "VulkanObject.h"
 
 namespace fg {
 
@@ -26,7 +27,7 @@ class VulkanShader {
     }
 
   private:
-    VkShaderModule m_Handle = VK_NULL_HANDLE;
+    ShaderModuleWrapper m_Handle;
     VkShaderStageFlags m_Stage = 0;
 };
 }  // namespace fg
