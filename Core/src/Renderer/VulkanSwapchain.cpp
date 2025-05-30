@@ -5,17 +5,19 @@
 #include "../Core/Log.h"
 #include "VulkanLogicalDevice.h"
 #include "VulkanPhysicalDevice.h"
-#include "vulkan/vulkan_core.h"
+#include "Renderer.h"
 #include <stdexcept>
 
 namespace fg {
 
 // clang-format off
 VulkanSwapchain::VulkanSwapchain(GLFWwindow* window, 
+                     Renderer* renderer,
                     std::shared_ptr<VulkanInstance> instance,
                     std::shared_ptr<VulkanLogicalDevice> logicalDevice,
                     const VulkanPhysicalDevice& pDev)
     : m_Window(window),
+      m_Renderer(renderer),
       m_Device(logicalDevice), 
       m_PhysicalDevice(pDev), 
       m_VkInstance(std::move(instance)) 
@@ -23,6 +25,7 @@ VulkanSwapchain::VulkanSwapchain(GLFWwindow* window,
   // clang-format on
   CreateSurface();
   CreateSwapchain();
+  AcquireNextImage();
 }
 
 void VulkanSwapchain::CreateSurface() {
@@ -103,24 +106,69 @@ void VulkanSwapchain::CreateSwapchain() {
     vkCreateImageView(dev, &viewInfo, m_VkInstance->GetAllocator(), &m_Views[i]);
   }
 
-  for (auto& f : m_Fences) {
-    vkDestroyFence(m_Device->GetHandle(), f, m_VkInstance->GetAllocator());
-  }
-  for (auto& s : m_Semaphores) {
-    vkDestroySemaphore(m_Device->GetHandle(), s, m_VkInstance->GetAllocator());
-  }
+  // for (auto& f : m_Fences) {
+  //   vkDestroyFence(m_Device->GetHandle(), f, m_VkInstance->GetAllocator());
+  // }
+  // for (auto& s : m_Semaphores) {
+  //   vkDestroySemaphore(m_Device->GetHandle(), s, m_VkInstance->GetAllocator());
+  // }
 
-  m_Semaphores.resize(viewCount);
-  m_Fences.resize(viewCount);
+  // m_Semaphores.resize(viewCount);
+  // m_Fences.resize(viewCount);
+  m_InFlight = {};
+  m_RenderFinished = {};
+  m_ImageAvailable = {};
 
   VkSemaphoreCreateInfo semInfo {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
   VkFenceCreateInfo fenceInfo {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
   fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-  for (uint32_t i = 0; i < viewCount; i++) {
-    vkCreateSemaphore(m_Device->GetHandle(), &semInfo, m_VkInstance->GetAllocator(),
-                      &m_Semaphores[i]);
-    vkCreateFence(m_Device->GetHandle(), &fenceInfo, m_VkInstance->GetAllocator(), &m_Fences[i]);
-  }
+  m_InFlight = m_Device->CreateFence(fenceInfo);
+  m_RenderFinished = m_Device->CreateVulkanSemaphore(semInfo);
+  m_ImageAvailable = m_Device->CreateVulkanSemaphore(semInfo);
+  // for (uint32_t i = 0; i < viewCount; i++) {
+  //   vkCreateSemaphore(m_Device->GetHandle(), &semInfo, m_VkInstance->GetAllocator(),
+  //                     &m_Semaphores[i]);
+  //   vkCreateFence(m_Device->GetHandle(), &fenceInfo, m_VkInstance->GetAllocator(), &m_Fences[i]);
+  // }
+}
+
+VkResult VulkanSwapchain::AcquireNextImage() {
+  m_Device->WaitFence(m_InFlight);
+  VkFence fence = m_InFlight;
+  m_Device->ResetFence(fence);
+  return vkAcquireNextImageKHR(m_Device->GetHandle(), m_Swapchain, UINT64_MAX, m_ImageAvailable,
+                               VK_NULL_HANDLE, &m_FrameIndex);
+}
+
+void VulkanSwapchain::Present() {
+  VkSubmitInfo submit {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+  VkSemaphore waits[] = {m_ImageAvailable};
+
+  VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+  submit.waitSemaphoreCount = 1;
+  submit.pWaitSemaphores = waits;
+  submit.pWaitDstStageMask = waitStages;
+  submit.commandBufferCount = 1;
+
+  VkSemaphore signalSems[] = {m_RenderFinished};
+  submit.signalSemaphoreCount = 1;
+  submit.pSignalSemaphores = signalSems;
+
+  auto res = m_Renderer->Flush([&](VkQueue queue, VkCommandBuffer cmd) -> VkResult {
+    submit.commandBufferCount = 1;
+    submit.pCommandBuffers = &cmd;
+    return vkQueueSubmit(queue, 1, &submit, m_InFlight);
+  });
+
+  VkPresentInfoKHR presentInfo {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
+  presentInfo.waitSemaphoreCount = 1;
+  presentInfo.pWaitSemaphores = signalSems;
+  presentInfo.pSwapchains = &m_Swapchain;
+  presentInfo.swapchainCount = 1;
+  presentInfo.pImageIndices = &m_FrameIndex;
+  m_Renderer->Present(presentInfo);
+
+  res = AcquireNextImage();
 }
 
 }  // namespace fg
