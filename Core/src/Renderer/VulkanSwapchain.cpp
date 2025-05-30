@@ -103,6 +103,25 @@ void VulkanSwapchain::CreateSwapchain() {
     viewInfo.image = images[i];
     vkCreateImageView(dev, &viewInfo, m_VkInstance->GetAllocator(), &m_Views[i]);
   }
+
+  for (auto& f : m_Fences) {
+    vkDestroyFence(m_Device->GetHandle(), f, m_VkInstance->GetAllocator());
+  }
+  for (auto& s : m_Semaphores) {
+    vkDestroySemaphore(m_Device->GetHandle(), s, m_VkInstance->GetAllocator());
+  }
+
+  m_Semaphores.resize(viewCount);
+  m_Fences.resize(viewCount);
+
+  VkSemaphoreCreateInfo semInfo {VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO};
+  VkFenceCreateInfo fenceInfo {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+  fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+  for (uint32_t i = 0; i < viewCount; i++) {
+    vkCreateSemaphore(m_Device->GetHandle(), &semInfo, m_VkInstance->GetAllocator(),
+                      &m_Semaphores[i]);
+    vkCreateFence(m_Device->GetHandle(), &fenceInfo, m_VkInstance->GetAllocator(), &m_Fences[i]);
+  }
 }
 
 }  // namespace fg

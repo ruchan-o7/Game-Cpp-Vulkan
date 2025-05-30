@@ -37,6 +37,8 @@ class VulkanSwapchain {
     std::shared_ptr<VulkanLogicalDevice> m_Device;
     const VulkanPhysicalDevice& m_PhysicalDevice;
     std::vector<VkImageView> m_Views;
+    std::vector<VkSemaphore> m_Semaphores;
+    std::vector<VkFence> m_Fences;
     uint32_t m_FrameIndex = 0;
     uint32_t m_ImageCount = 0;
 };
