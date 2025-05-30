@@ -7,9 +7,7 @@ class VulkanInstance {
     VulkanInstance(VkInstance instance, const VkAllocationCallbacks* allocator)
         : m_Instance(instance), m_Allocator(allocator) {
     }
-    ~VulkanInstance() {
-      vkDestroyInstance(m_Instance, m_Allocator);
-    }
+    ~VulkanInstance();
 
     VkInstance GetHandle() const {
       return m_Instance;
