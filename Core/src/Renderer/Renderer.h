@@ -1,4 +1,5 @@
 #pragma once
+#include "src/Renderer/VulkanGraphicsPipeline.h"
 #include "src/Renderer/VulkanInstance.h"
 #include "src/Renderer/VulkanLogicalDevice.h"
 #include "src/Renderer/VulkanPhysicalDevice.h"
@@ -16,6 +17,9 @@ class Renderer {
     void Destroy();
 
     std::shared_ptr<VulkanShader> CreateShader(const ShaderDescription& desc);
+
+    std::shared_ptr<VulkanGraphicsPipeline> CreateGraphicsPipeline(
+        const GraphicsPipelineDescription& desc);
 
   private:
     Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& instance,

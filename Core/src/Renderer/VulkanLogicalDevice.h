@@ -9,6 +9,8 @@ template <class T>
 class VulkanObject;
 
 using ShaderModuleWrapper = VulkanObject<VkShaderModule>;
+using PipelineWrapper = VulkanObject<VkPipeline>;
+using PipelineLayoutWrapper = VulkanObject<VkPipelineLayout>;
 
 class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDevice> {
   public:
@@ -37,10 +39,17 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     const VkAllocationCallbacks* GetAllocator() const {
       return m_Allocator;
     }
-    void DestroyObject(ShaderModuleWrapper&& module) const;
+    void DestroyObject(ShaderModuleWrapper&& handle) const;
+    void DestroyObject(PipelineLayoutWrapper&& handle) const;
+    void DestroyObject(PipelineWrapper&& handle) const;
 
     ShaderModuleWrapper CreateShader(const VkShaderModuleCreateInfo& info,
                                      const char* name = nullptr);
+
+    PipelineLayoutWrapper CreatePipelineLayout(const VkPipelineLayoutCreateInfo& info,
+                                               const char* name = nullptr);
+    PipelineWrapper CreateGraphicsPipeline(const VkGraphicsPipelineCreateInfo& info,
+                                           const char* name = nullptr);
 
   private:
     const VkAllocationCallbacks* m_Allocator;

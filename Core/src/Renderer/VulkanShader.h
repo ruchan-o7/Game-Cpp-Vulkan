@@ -12,24 +12,29 @@ struct ShaderDescription {
     Buffer ByteCode;
     std::filesystem::path Path;
     const char* Name = nullptr;
-    VkShaderStageFlags Stage = 0;
+    std::string EntryPoint;
+    VkShaderStageFlagBits Stage;
 };
 
 class VulkanShader {
   public:
-    VulkanShader(ShaderModuleWrapper&& module, VkShaderStageFlags stage)
+    VulkanShader(ShaderModuleWrapper&& module, VkShaderStageFlagBits stage)
         : m_Handle(std::move(module)), m_Stage(stage) {
     }
 
     VkShaderModule GetHandle() const {
       return m_Handle;
     }
-    VkShaderStageFlags GetStage() const {
+    VkShaderStageFlagBits GetStage() const {
       return m_Stage;
+    }
+    const char* EntryPoint() const {
+      return m_EntryPoint.c_str();
     }
 
   private:
+    std::string m_EntryPoint;
     ShaderModuleWrapper m_Handle;
-    VkShaderStageFlags m_Stage = 0;
+    VkShaderStageFlagBits m_Stage;
 };
 }  // namespace fg
