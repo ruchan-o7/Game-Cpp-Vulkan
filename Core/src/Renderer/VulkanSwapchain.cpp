@@ -114,7 +114,7 @@ void VulkanSwapchain::CreateSwapchain() {
   m_Semaphores.resize(viewCount);
   m_Fences.resize(viewCount);
 
-  VkSemaphoreCreateInfo semInfo {VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO};
+  VkSemaphoreCreateInfo semInfo {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
   VkFenceCreateInfo fenceInfo {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
   fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
   for (uint32_t i = 0; i < viewCount; i++) {
