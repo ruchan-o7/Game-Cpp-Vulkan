@@ -74,8 +74,8 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
 
   // AssetManager::Init();
 
-  m_ImGuiLayer = new ImGuiLayer;
-  PushLayer(m_ImGuiLayer);
+  // m_ImGuiLayer = new ImGuiLayer;
+  // PushLayer(m_ImGuiLayer);
 
   glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int w, int h) {
     Application& data = *(Application*)glfwGetWindowUserPointer(window);
@@ -206,9 +206,7 @@ void Application::Run() {
       m_Swapchain->Present();
     }
     glfwPollEvents();
-    // Backend::SwapBuffers();
   }
-  // Backend::WaitIdle();
 }
 bool Application::OnWindowClose(WindowCloseEvent& e) {
   m_Running = false;
