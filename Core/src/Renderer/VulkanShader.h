@@ -18,16 +18,15 @@ struct ShaderDescription {
 
 class VulkanShader {
   public:
-    VulkanShader(const ShaderDescription& desc, ShaderModuleWrapper&& module,
-                 VkShaderStageFlagBits stage)
-        : m_Desc(desc), m_Handle(std::move(module)), m_Stage(stage) {
+    VulkanShader(const ShaderDescription& desc, ShaderModuleWrapper&& module)
+        : m_Desc(desc), m_Handle(std::move(module)) {
     }
 
     VkShaderModule GetHandle() const {
       return m_Handle;
     }
     VkShaderStageFlagBits GetStage() const {
-      return m_Stage;
+      return m_Desc.Stage;
     }
     const char* EntryPoint() const {
       return m_Desc.EntryPoint.c_str();
@@ -39,6 +38,5 @@ class VulkanShader {
   private:
     ShaderDescription m_Desc;
     ShaderModuleWrapper m_Handle;
-    VkShaderStageFlagBits m_Stage;
 };
 }  // namespace fg

@@ -165,7 +165,7 @@ std::shared_ptr<VulkanShader> Renderer::CreateShader(const ShaderDescription& de
   info.codeSize = buff.Size;
   auto handle = m_LogicalDevice->CreateShader(info, desc.Name);
   if (handle) {
-    return std::make_shared<VulkanShader>(desc, std::move(handle), desc.Stage);
+    return std::make_shared<VulkanShader>(desc, std::move(handle));
   }
 
   FOO_CORE_ERROR("Can not create shader handle: Name: {}", desc.Name != nullptr ? desc.Name : "");
