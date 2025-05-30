@@ -192,6 +192,7 @@ void Renderer::EndRendering() {
 }
 void Renderer::BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline) {
   m_CurrentPipeline = pipeline;
+  vkCmdBindPipeline(GetCurrentCmdBuffer(),VK_PIPELINE_BIND_POINT_GRAPHICS,pipeline->GetHandle());
 }
 void Renderer::Draw(const DrawAttributes& attribs) {
   FOO_ASSERT(m_CurrentPipeline != nullptr);
