@@ -4,341 +4,285 @@
 #include <iomanip>
 #include <sstream>
 
-namespace fg
-{
+namespace fg {
 
-    PFN_vkCreateDebugUtilsMessengerEXT CreateDebugUtilsMessengerEXT   = nullptr;
-    PFN_vkDestroyDebugUtilsMessengerEXT DestroyDebugUtilsMessengerEXT = nullptr;
-    PFN_vkSetDebugUtilsObjectNameEXT SetDebugUtilsObjectNameEXT       = nullptr;
-    PFN_vkSetDebugUtilsObjectTagEXT SetDebugUtilsObjectTagEXT         = nullptr;
-    PFN_vkQueueBeginDebugUtilsLabelEXT QueueBeginDebugUtilsLabelEXT   = nullptr;
-    PFN_vkQueueEndDebugUtilsLabelEXT QueueEndDebugUtilsLabelEXT       = nullptr;
-    PFN_vkQueueInsertDebugUtilsLabelEXT QueueInsertDebugUtilsLabelEXT = nullptr;
+PFN_vkCreateDebugUtilsMessengerEXT CreateDebugUtilsMessengerEXT = nullptr;
+PFN_vkDestroyDebugUtilsMessengerEXT DestroyDebugUtilsMessengerEXT = nullptr;
+PFN_vkSetDebugUtilsObjectNameEXT SetDebugUtilsObjectNameEXT = nullptr;
+PFN_vkSetDebugUtilsObjectTagEXT SetDebugUtilsObjectTagEXT = nullptr;
+PFN_vkQueueBeginDebugUtilsLabelEXT QueueBeginDebugUtilsLabelEXT = nullptr;
+PFN_vkQueueEndDebugUtilsLabelEXT QueueEndDebugUtilsLabelEXT = nullptr;
+PFN_vkQueueInsertDebugUtilsLabelEXT QueueInsertDebugUtilsLabelEXT = nullptr;
 
-    VkDebugUtilsMessengerEXT DbgMessenger = VK_NULL_HANDLE;
+VkDebugUtilsMessengerEXT DbgMessenger = VK_NULL_HANDLE;
 
-    VKAPI_ATTR VkBool32 VKAPI_CALL
-    DebugMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                           VkDebugUtilsMessageTypeFlagsEXT messageType,
-                           const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData)
-    {
-        std::stringstream debugMessage;
-        debugMessage << "Vulkan debug message (";
-        if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
-        {
-            debugMessage << "general";
-            if (messageType & (VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                               VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT))
-            {
-                debugMessage << ", ";
-            }
-        }
-        if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
-        {
-            debugMessage << "validation";
-            if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
-            {
-                debugMessage << ", ";
-            }
-        }
-        if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
-        {
-            debugMessage << "performance";
-        }
-        debugMessage << "): ";
-
-        debugMessage << (callbackData->pMessageIdName != nullptr ? callbackData->pMessageIdName
-                                                                 : "<Unknown name>");
-        if (callbackData->pMessage != nullptr)
-        {
-            debugMessage << std::endl << "                 " << callbackData->pMessage;
-        }
-
-        if (callbackData->objectCount > 0)
-        {
-            for (uint32_t obj = 0; obj < callbackData->objectCount; ++obj)
-            {
-                const auto& Object = callbackData->pObjects[obj];
-                debugMessage << std::endl
-                             << "                 Object[" << obj << "] ("
-                             << VkObjectTypeToString(Object.objectType) << "): Handle " << std::hex
-                             << "0x" << Object.objectHandle;
-                if (Object.pObjectName != nullptr)
-                {
-                    debugMessage << ", Name: '" << Object.pObjectName << '\'';
-                }
-            }
-        }
-
-        if (callbackData->cmdBufLabelCount > 0)
-        {
-            for (uint32_t l = 0; l < callbackData->cmdBufLabelCount; ++l)
-            {
-                const auto& Label = callbackData->pCmdBufLabels[l];
-                debugMessage << std::endl << "                 Label[" << l << "]";
-                if (Label.pLabelName != nullptr)
-                {
-                    debugMessage << " - " << Label.pLabelName;
-                }
-                debugMessage << " {";
-                debugMessage << std::fixed << std::setw(4) << Label.color[0] << ", " << std::fixed
-                             << std::setw(4) << Label.color[1] << ", " << std::fixed << std::setw(4)
-                             << Label.color[2] << ", " << std::fixed << std::setw(4)
-                             << Label.color[3] << "}";
-            }
-        }
-
-        FOO_ENGINE_WARN(debugMessage.str());
-        return VK_FALSE;
+VKAPI_ATTR VkBool32 VKAPI_CALL
+DebugMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                       VkDebugUtilsMessageTypeFlagsEXT messageType,
+                       const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData) {
+  std::stringstream debugMessage;
+  debugMessage << "Vulkan debug message (";
+  if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT) {
+    debugMessage << "general";
+    if (messageType & (VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                       VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)) {
+      debugMessage << ", ";
     }
-
-    bool SetupDebugUtils(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT messageSeverity,
-                         VkDebugUtilsMessageTypeFlagsEXT messageType, uint32_t IgnoreMessageCount,
-                         const char* const* ppIgnoreMessageNames, void* pUserData)
-    {
-        CreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
-            vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
-        DestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
-            vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
-        if (CreateDebugUtilsMessengerEXT == nullptr || DestroyDebugUtilsMessengerEXT == nullptr)
-        {
-            return false;
-        }
-
-        VkDebugUtilsMessengerCreateInfoEXT DbgMessenger_CI{};
-        DbgMessenger_CI.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-        DbgMessenger_CI.pNext           = NULL;
-        DbgMessenger_CI.flags           = 0;
-        DbgMessenger_CI.messageSeverity = messageSeverity;
-        DbgMessenger_CI.messageType     = messageType;
-        DbgMessenger_CI.pfnUserCallback = DebugMessengerCallback;
-        DbgMessenger_CI.pUserData       = pUserData;
-
-        auto err = CreateDebugUtilsMessengerEXT(instance, &DbgMessenger_CI, nullptr, &DbgMessenger);
-        assert(err == VK_SUCCESS && "Failed to create debug utils messenger");
-
-        // Load function pointers
-        SetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(
-            vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
-        assert(SetDebugUtilsObjectNameEXT != nullptr);
-        SetDebugUtilsObjectTagEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectTagEXT>(
-            vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectTagEXT"));
-        assert(SetDebugUtilsObjectTagEXT != nullptr);
-
-        QueueBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueBeginDebugUtilsLabelEXT>(
-            vkGetInstanceProcAddr(instance, "vkQueueBeginDebugUtilsLabelEXT"));
-        assert(QueueBeginDebugUtilsLabelEXT != nullptr);
-        QueueEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueEndDebugUtilsLabelEXT>(
-            vkGetInstanceProcAddr(instance, "vkQueueEndDebugUtilsLabelEXT"));
-        assert(QueueEndDebugUtilsLabelEXT != nullptr);
-        QueueInsertDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueInsertDebugUtilsLabelEXT>(
-            vkGetInstanceProcAddr(instance, "vkQueueInsertDebugUtilsLabelEXT"));
-        assert(QueueInsertDebugUtilsLabelEXT != nullptr);
-
-        return err == VK_SUCCESS;
+  }
+  if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT) {
+    debugMessage << "validation";
+    if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
+      debugMessage << ", ";
     }
+  }
+  if (messageType & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
+    debugMessage << "performance";
+  }
+  debugMessage << "): ";
 
-    void FreeDebug(VkInstance instance)
-    {
-        if (DbgMessenger != VK_NULL_HANDLE)
-        {
-            DestroyDebugUtilsMessengerEXT(instance, DbgMessenger, nullptr);
-        }
+  debugMessage << (callbackData->pMessageIdName != nullptr ? callbackData->pMessageIdName
+                                                           : "<Unknown name>");
+  if (callbackData->pMessage != nullptr) {
+    debugMessage << std::endl << "                 " << callbackData->pMessage;
+  }
+
+  if (callbackData->objectCount > 0) {
+    for (uint32_t obj = 0; obj < callbackData->objectCount; ++obj) {
+      const auto& Object = callbackData->pObjects[obj];
+      debugMessage << std::endl
+                   << "                 Object[" << obj << "] ("
+                   << VkObjectTypeToString(Object.objectType) << "): Handle " << std::hex << "0x"
+                   << Object.objectHandle;
+      if (Object.pObjectName != nullptr) {
+        debugMessage << ", Name: '" << Object.pObjectName << '\'';
+      }
     }
+  }
 
-    void InsertCmdQueueLabel(VkQueue cmdQueue, const char* pLabelName, const float* color)
-    {
-        if (QueueInsertDebugUtilsLabelEXT == nullptr)
-        {
-            return;
-        }
-
-        VkDebugUtilsLabelEXT Label{};
-        Label.sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
-        Label.pNext      = nullptr;
-        Label.pLabelName = pLabelName;
-        for (int i = 0; i < 4; ++i)
-        {
-            Label.color[i] = color[i];
-        }
-        QueueInsertDebugUtilsLabelEXT(cmdQueue, &Label);
+  if (callbackData->cmdBufLabelCount > 0) {
+    for (uint32_t l = 0; l < callbackData->cmdBufLabelCount; ++l) {
+      const auto& Label = callbackData->pCmdBufLabels[l];
+      debugMessage << std::endl << "                 Label[" << l << "]";
+      if (Label.pLabelName != nullptr) {
+        debugMessage << " - " << Label.pLabelName;
+      }
+      debugMessage << " {";
+      debugMessage << std::fixed << std::setw(4) << Label.color[0] << ", " << std::fixed
+                   << std::setw(4) << Label.color[1] << ", " << std::fixed << std::setw(4)
+                   << Label.color[2] << ", " << std::fixed << std::setw(4) << Label.color[3] << "}";
     }
+  }
 
-    void EndCmdQueueLabelRegion(VkQueue cmdQueue)
-    {
-        if (QueueEndDebugUtilsLabelEXT == nullptr)
-        {
-            return;
-        }
+  FOO_ENGINE_WARN("{}\n}", debugMessage.str());
+  return VK_FALSE;
+}
 
-        QueueEndDebugUtilsLabelEXT(cmdQueue);
-    }
+bool SetupDebugUtils(VkInstance instance, VkDebugUtilsMessageSeverityFlagsEXT messageSeverity,
+                     VkDebugUtilsMessageTypeFlagsEXT messageType, uint32_t IgnoreMessageCount,
+                     const char* const* ppIgnoreMessageNames, void* pUserData) {
+  CreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+      vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
+  DestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+      vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
+  if (CreateDebugUtilsMessengerEXT == nullptr || DestroyDebugUtilsMessengerEXT == nullptr) {
+    return false;
+  }
 
-    void SetObjectName(VkDevice device, uint64_t object, VkObjectType objectType, const char* name)
-    {
-        // Check for valid function pointer (may not be present if not running in a debug mode)
-        if (SetDebugUtilsObjectNameEXT == nullptr || name == nullptr || name[0] == '\0')
-        {
-            return;
-        }
+  VkDebugUtilsMessengerCreateInfoEXT DbgMessenger_CI {};
+  DbgMessenger_CI.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+  DbgMessenger_CI.pNext = NULL;
+  DbgMessenger_CI.flags = 0;
+  DbgMessenger_CI.messageSeverity = messageSeverity;
+  DbgMessenger_CI.messageType = messageType;
+  DbgMessenger_CI.pfnUserCallback = DebugMessengerCallback;
+  DbgMessenger_CI.pUserData = pUserData;
 
-        VkDebugUtilsObjectNameInfoEXT ObjectNameInfo{};
-        ObjectNameInfo.sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
-        ObjectNameInfo.pNext        = nullptr;
-        ObjectNameInfo.objectType   = objectType;
-        ObjectNameInfo.objectHandle = object;
-        ObjectNameInfo.pObjectName  = name;
+  auto err = CreateDebugUtilsMessengerEXT(instance, &DbgMessenger_CI, nullptr, &DbgMessenger);
+  assert(err == VK_SUCCESS && "Failed to create debug utils messenger");
 
-        VkResult res = SetDebugUtilsObjectNameEXT(device, &ObjectNameInfo);
-        assert(res == VK_SUCCESS);
-        (void)res;
-    }
+  // Load function pointers
+  SetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(
+      vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
+  assert(SetDebugUtilsObjectNameEXT != nullptr);
+  SetDebugUtilsObjectTagEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectTagEXT>(
+      vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectTagEXT"));
+  assert(SetDebugUtilsObjectTagEXT != nullptr);
 
-    void SetObjectTag(VkDevice device, uint64_t objectHandle, VkObjectType objectType,
-                      uint64_t name, size_t tagSize, const void* tag)
-    {
-        // Check for valid function pointer (may not be present if not running in a debugging
-        // application)
-        if (SetDebugUtilsObjectTagEXT == nullptr)
-        {
-            return;
-        }
+  QueueBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueBeginDebugUtilsLabelEXT>(
+      vkGetInstanceProcAddr(instance, "vkQueueBeginDebugUtilsLabelEXT"));
+  assert(QueueBeginDebugUtilsLabelEXT != nullptr);
+  QueueEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueEndDebugUtilsLabelEXT>(
+      vkGetInstanceProcAddr(instance, "vkQueueEndDebugUtilsLabelEXT"));
+  assert(QueueEndDebugUtilsLabelEXT != nullptr);
+  QueueInsertDebugUtilsLabelEXT = reinterpret_cast<PFN_vkQueueInsertDebugUtilsLabelEXT>(
+      vkGetInstanceProcAddr(instance, "vkQueueInsertDebugUtilsLabelEXT"));
+  assert(QueueInsertDebugUtilsLabelEXT != nullptr);
 
-        VkDebugUtilsObjectTagInfoEXT tagInfo{};
-        tagInfo.sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_TAG_INFO_EXT;
-        tagInfo.pNext        = nullptr;
-        tagInfo.objectType   = objectType;
-        tagInfo.objectHandle = objectHandle;
-        tagInfo.tagName      = name;
-        tagInfo.tagSize      = tagSize;
-        tagInfo.pTag         = tag;
-        SetDebugUtilsObjectTagEXT(device, &tagInfo);
-    }
+  return err == VK_SUCCESS;
+}
 
-    void SetCommandPoolName(VkDevice device, VkCommandPool cmdPool, const char* name)
-    {
-        SetObjectName(device, (uint64_t)cmdPool, VK_OBJECT_TYPE_COMMAND_POOL, name);
-    }
+void FreeDebug(VkInstance instance) {
+  if (DbgMessenger != VK_NULL_HANDLE) {
+    DestroyDebugUtilsMessengerEXT(instance, DbgMessenger, nullptr);
+  }
+}
 
-    void SetCommandBufferName(VkDevice device, VkCommandBuffer cmdBuffer, const char* name)
-    {
-        SetObjectName(device, (uint64_t)cmdBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, name);
-    }
+void InsertCmdQueueLabel(VkQueue cmdQueue, const char* pLabelName, const float* color) {
+  if (QueueInsertDebugUtilsLabelEXT == nullptr) {
+    return;
+  }
 
-    void SetQueueName(VkDevice device, VkQueue queue, const char* name)
-    {
-        SetObjectName(device, (uint64_t)queue, VK_OBJECT_TYPE_QUEUE, name);
-    }
+  VkDebugUtilsLabelEXT Label {};
+  Label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+  Label.pNext = nullptr;
+  Label.pLabelName = pLabelName;
+  for (int i = 0; i < 4; ++i) {
+    Label.color[i] = color[i];
+  }
+  QueueInsertDebugUtilsLabelEXT(cmdQueue, &Label);
+}
 
-    void SetImageName(VkDevice device, VkImage image, const char* name)
-    {
-        SetObjectName(device, (uint64_t)image, VK_OBJECT_TYPE_IMAGE, name);
-    }
+void EndCmdQueueLabelRegion(VkQueue cmdQueue) {
+  if (QueueEndDebugUtilsLabelEXT == nullptr) {
+    return;
+  }
 
-    void SetImageViewName(VkDevice device, VkImageView imageView, const char* name)
-    {
-        SetObjectName(device, (uint64_t)imageView, VK_OBJECT_TYPE_IMAGE_VIEW, name);
-    }
+  QueueEndDebugUtilsLabelEXT(cmdQueue);
+}
 
-    void SetSamplerName(VkDevice device, VkSampler sampler, const char* name)
-    {
-        SetObjectName(device, (uint64_t)sampler, VK_OBJECT_TYPE_SAMPLER, name);
-    }
+void SetObjectName(VkDevice device, uint64_t object, VkObjectType objectType, const char* name) {
+  // Check for valid function pointer (may not be present if not running in a debug mode)
+  if (SetDebugUtilsObjectNameEXT == nullptr || name == nullptr || name[0] == '\0') {
+    return;
+  }
 
-    void SetBufferName(VkDevice device, VkBuffer buffer, const char* name)
-    {
-        SetObjectName(device, (uint64_t)buffer, VK_OBJECT_TYPE_BUFFER, name);
-    }
+  VkDebugUtilsObjectNameInfoEXT ObjectNameInfo {};
+  ObjectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+  ObjectNameInfo.pNext = nullptr;
+  ObjectNameInfo.objectType = objectType;
+  ObjectNameInfo.objectHandle = object;
+  ObjectNameInfo.pObjectName = name;
 
-    void SetBufferViewName(VkDevice device, VkBufferView bufferView, const char* name)
-    {
-        SetObjectName(device, (uint64_t)bufferView, VK_OBJECT_TYPE_BUFFER_VIEW, name);
-    }
+  VkResult res = SetDebugUtilsObjectNameEXT(device, &ObjectNameInfo);
+  assert(res == VK_SUCCESS);
+  (void)res;
+}
 
-    void SetDeviceMemoryName(VkDevice device, VkDeviceMemory memory, const char* name)
-    {
-        SetObjectName(device, (uint64_t)memory, VK_OBJECT_TYPE_DEVICE_MEMORY, name);
-    }
+void SetObjectTag(VkDevice device, uint64_t objectHandle, VkObjectType objectType, uint64_t name,
+                  size_t tagSize, const void* tag) {
+  // Check for valid function pointer (may not be present if not running in a debugging
+  // application)
+  if (SetDebugUtilsObjectTagEXT == nullptr) {
+    return;
+  }
 
-    void SetShaderModuleName(VkDevice device, VkShaderModule shaderModule, const char* name)
-    {
-        SetObjectName(device, (uint64_t)shaderModule, VK_OBJECT_TYPE_SHADER_MODULE, name);
-    }
+  VkDebugUtilsObjectTagInfoEXT tagInfo {};
+  tagInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_TAG_INFO_EXT;
+  tagInfo.pNext = nullptr;
+  tagInfo.objectType = objectType;
+  tagInfo.objectHandle = objectHandle;
+  tagInfo.tagName = name;
+  tagInfo.tagSize = tagSize;
+  tagInfo.pTag = tag;
+  SetDebugUtilsObjectTagEXT(device, &tagInfo);
+}
 
-    void SetPipelineName(VkDevice device, VkPipeline pipeline, const char* name)
-    {
-        SetObjectName(device, (uint64_t)pipeline, VK_OBJECT_TYPE_PIPELINE, name);
-    }
+void SetCommandPoolName(VkDevice device, VkCommandPool cmdPool, const char* name) {
+  SetObjectName(device, (uint64_t)cmdPool, VK_OBJECT_TYPE_COMMAND_POOL, name);
+}
 
-    void SetPipelineLayoutName(VkDevice device, VkPipelineLayout pipelineLayout, const char* name)
-    {
-        SetObjectName(device, (uint64_t)pipelineLayout, VK_OBJECT_TYPE_PIPELINE_LAYOUT, name);
-    }
+void SetCommandBufferName(VkDevice device, VkCommandBuffer cmdBuffer, const char* name) {
+  SetObjectName(device, (uint64_t)cmdBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, name);
+}
 
-    void SetRenderPassName(VkDevice device, VkRenderPass renderPass, const char* name)
-    {
-        SetObjectName(device, (uint64_t)renderPass, VK_OBJECT_TYPE_RENDER_PASS, name);
-    }
+void SetQueueName(VkDevice device, VkQueue queue, const char* name) {
+  SetObjectName(device, (uint64_t)queue, VK_OBJECT_TYPE_QUEUE, name);
+}
 
-    void SetFramebufferName(VkDevice device, VkFramebuffer framebuffer, const char* name)
-    {
-        SetObjectName(device, (uint64_t)framebuffer, VK_OBJECT_TYPE_FRAMEBUFFER, name);
-    }
+void SetImageName(VkDevice device, VkImage image, const char* name) {
+  SetObjectName(device, (uint64_t)image, VK_OBJECT_TYPE_IMAGE, name);
+}
 
-    void SetDescriptorSetLayoutName(VkDevice device, VkDescriptorSetLayout descriptorSetLayout,
-                                    const char* name)
-    {
-        SetObjectName(device, (uint64_t)descriptorSetLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT,
-                      name);
-    }
+void SetImageViewName(VkDevice device, VkImageView imageView, const char* name) {
+  SetObjectName(device, (uint64_t)imageView, VK_OBJECT_TYPE_IMAGE_VIEW, name);
+}
 
-    void SetDescriptorSetName(VkDevice device, VkDescriptorSet descriptorSet, const char* name)
-    {
-        SetObjectName(device, (uint64_t)descriptorSet, VK_OBJECT_TYPE_DESCRIPTOR_SET, name);
-    }
+void SetSamplerName(VkDevice device, VkSampler sampler, const char* name) {
+  SetObjectName(device, (uint64_t)sampler, VK_OBJECT_TYPE_SAMPLER, name);
+}
 
-    void SetDescriptorPoolName(VkDevice device, VkDescriptorPool descriptorPool, const char* name)
-    {
-        SetObjectName(device, (uint64_t)descriptorPool, VK_OBJECT_TYPE_DESCRIPTOR_POOL, name);
-    }
+void SetBufferName(VkDevice device, VkBuffer buffer, const char* name) {
+  SetObjectName(device, (uint64_t)buffer, VK_OBJECT_TYPE_BUFFER, name);
+}
 
-    void SetSemaphoreName(VkDevice device, VkSemaphore semaphore, const char* name)
-    {
-        SetObjectName(device, (uint64_t)semaphore, VK_OBJECT_TYPE_SEMAPHORE, name);
-    }
+void SetBufferViewName(VkDevice device, VkBufferView bufferView, const char* name) {
+  SetObjectName(device, (uint64_t)bufferView, VK_OBJECT_TYPE_BUFFER_VIEW, name);
+}
 
-    void SetFenceName(VkDevice device, VkFence fence, const char* name)
-    {
-        SetObjectName(device, (uint64_t)fence, VK_OBJECT_TYPE_FENCE, name);
-    }
+void SetDeviceMemoryName(VkDevice device, VkDeviceMemory memory, const char* name) {
+  SetObjectName(device, (uint64_t)memory, VK_OBJECT_TYPE_DEVICE_MEMORY, name);
+}
 
-    void SetEventName(VkDevice device, VkEvent _event, const char* name)
-    {
-        SetObjectName(device, (uint64_t)_event, VK_OBJECT_TYPE_EVENT, name);
-    }
+void SetShaderModuleName(VkDevice device, VkShaderModule shaderModule, const char* name) {
+  SetObjectName(device, (uint64_t)shaderModule, VK_OBJECT_TYPE_SHADER_MODULE, name);
+}
 
-    void SetQueryPoolName(VkDevice device, VkQueryPool queryPool, const char* name)
-    {
-        SetObjectName(device, (uint64_t)queryPool, VK_OBJECT_TYPE_QUERY_POOL, name);
-    }
+void SetPipelineName(VkDevice device, VkPipeline pipeline, const char* name) {
+  SetObjectName(device, (uint64_t)pipeline, VK_OBJECT_TYPE_PIPELINE, name);
+}
 
-    void SetAccelStructName(VkDevice device, VkAccelerationStructureKHR accelStruct,
-                            const char* name)
-    {
-        SetObjectName(device, (uint64_t)accelStruct, VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR,
-                      name);
-    }
+void SetPipelineLayoutName(VkDevice device, VkPipelineLayout pipelineLayout, const char* name) {
+  SetObjectName(device, (uint64_t)pipelineLayout, VK_OBJECT_TYPE_PIPELINE_LAYOUT, name);
+}
 
-    void SetPipelineCacheName(VkDevice device, VkPipelineCache pipeCache, const char* name)
-    {
-        SetObjectName(device, (uint64_t)pipeCache, VK_OBJECT_TYPE_PIPELINE_CACHE, name);
-    }
+void SetRenderPassName(VkDevice device, VkRenderPass renderPass, const char* name) {
+  SetObjectName(device, (uint64_t)renderPass, VK_OBJECT_TYPE_RENDER_PASS, name);
+}
 
-    const char* VkObjectTypeToString(VkObjectType ObjectType)
-    {
-        switch (ObjectType)
-        {
-                // clang-format off
+void SetFramebufferName(VkDevice device, VkFramebuffer framebuffer, const char* name) {
+  SetObjectName(device, (uint64_t)framebuffer, VK_OBJECT_TYPE_FRAMEBUFFER, name);
+}
+
+void SetDescriptorSetLayoutName(VkDevice device, VkDescriptorSetLayout descriptorSetLayout,
+                                const char* name) {
+  SetObjectName(device, (uint64_t)descriptorSetLayout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, name);
+}
+
+void SetDescriptorSetName(VkDevice device, VkDescriptorSet descriptorSet, const char* name) {
+  SetObjectName(device, (uint64_t)descriptorSet, VK_OBJECT_TYPE_DESCRIPTOR_SET, name);
+}
+
+void SetDescriptorPoolName(VkDevice device, VkDescriptorPool descriptorPool, const char* name) {
+  SetObjectName(device, (uint64_t)descriptorPool, VK_OBJECT_TYPE_DESCRIPTOR_POOL, name);
+}
+
+void SetSemaphoreName(VkDevice device, VkSemaphore semaphore, const char* name) {
+  SetObjectName(device, (uint64_t)semaphore, VK_OBJECT_TYPE_SEMAPHORE, name);
+}
+
+void SetFenceName(VkDevice device, VkFence fence, const char* name) {
+  SetObjectName(device, (uint64_t)fence, VK_OBJECT_TYPE_FENCE, name);
+}
+
+void SetEventName(VkDevice device, VkEvent _event, const char* name) {
+  SetObjectName(device, (uint64_t)_event, VK_OBJECT_TYPE_EVENT, name);
+}
+
+void SetQueryPoolName(VkDevice device, VkQueryPool queryPool, const char* name) {
+  SetObjectName(device, (uint64_t)queryPool, VK_OBJECT_TYPE_QUERY_POOL, name);
+}
+
+void SetAccelStructName(VkDevice device, VkAccelerationStructureKHR accelStruct, const char* name) {
+  SetObjectName(device, (uint64_t)accelStruct, VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR, name);
+}
+
+void SetPipelineCacheName(VkDevice device, VkPipelineCache pipeCache, const char* name) {
+  SetObjectName(device, (uint64_t)pipeCache, VK_OBJECT_TYPE_PIPELINE_CACHE, name);
+}
+
+const char* VkObjectTypeToString(VkObjectType ObjectType) {
+  switch (ObjectType) {
+      // clang-format off
         case VK_OBJECT_TYPE_UNKNOWN:                        return "unknown";
         case VK_OBJECT_TYPE_INSTANCE:                       return "instance";
         case VK_OBJECT_TYPE_PHYSICAL_DEVICE:                return "physical device";
@@ -380,7 +324,7 @@ namespace fg
         case VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV:    return "indirect commands layout NV";
         case VK_OBJECT_TYPE_PRIVATE_DATA_SLOT_EXT:          return "private data slot EXT";
         default: return "unknown";
-                // clang-format on
-        }
-    }
+      // clang-format on
+  }
+}
 }  // namespace fg
