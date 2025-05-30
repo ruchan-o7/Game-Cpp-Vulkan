@@ -33,8 +33,8 @@ class RefBase {
     }
 
   private:
-    mutable std::atomic<uint32_t> m_StrongRef = 1;
-    mutable std::atomic<uint32_t> m_WeakRef = 1;
+    mutable std::atomic<uint32_t> m_StrongRef = 0;
+    mutable std::atomic<uint32_t> m_WeakRef = 0;
 };
 
 template <class T>
