@@ -146,7 +146,7 @@ Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& in
   if (res != VK_SUCCESS) {
     throw std::runtime_error("Can not create logical device");
   }
-  m_LogicalDevice = std::make_shared<VulkanLogicalDevice>(device, queueIndex);
+  m_LogicalDevice = std::make_shared<VulkanLogicalDevice>(device, queueIndex, m_AllocCB);
   m_Swapchain =
       std::make_shared<VulkanSwapchain>(m_Window, m_Instance, m_LogicalDevice, *m_PhysicalDevice);
 }
