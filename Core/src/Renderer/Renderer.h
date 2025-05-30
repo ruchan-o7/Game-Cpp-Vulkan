@@ -20,6 +20,13 @@ class Renderer {
 
     Ref<VulkanGraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDescription& desc);
 
+    void BeginRendering();
+    void EndRendering();
+
+    VkCommandBuffer GetCurrentCmdBuffer() const {
+      return m_Cmd;
+    }
+
   private:
     Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& instance,
              std::unique_ptr<VulkanPhysicalDevice> pDevice, const VkAllocationCallbacks* alloc);
@@ -33,6 +40,8 @@ class Renderer {
     const VkAllocationCallbacks* m_AllocCB;
     VkDevice m_VkDevice = VK_NULL_HANDLE;
     VkQueue m_VkQueue = VK_NULL_HANDLE;
+    VkCommandBuffer m_Cmd = VK_NULL_HANDLE;
+    CommandPoolWrapper m_CmdPool;
 
     GLFWwindow* m_Window = nullptr;
 };

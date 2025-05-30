@@ -132,6 +132,53 @@ Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& in
   m_LogicalDevice = std::make_shared<VulkanLogicalDevice>(device, queueIndex, m_AllocCB);
   m_Swapchain =
       std::make_shared<VulkanSwapchain>(m_Window, m_Instance, m_LogicalDevice, *m_PhysicalDevice);
+  VkCommandPoolCreateInfo cmdPool {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
+  cmdPool.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+  m_CmdPool = m_LogicalDevice->CreateCommandPool(cmdPool);
+
+  VkCommandBufferAllocateInfo allocInfo {};
+  allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  allocInfo.commandPool = m_CmdPool;
+  allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  allocInfo.commandBufferCount = 1;
+  m_Cmd = m_LogicalDevice->AllocateCmdBuffer(allocInfo);
+}
+
+void Renderer::BeginRendering() {
+  auto cmd = GetCurrentCmdBuffer();
+  vkResetCommandBuffer(cmd, 0);
+
+  VkCommandBufferBeginInfo info {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+  vkBeginCommandBuffer(cmd, &info);
+
+  VkRenderingInfoKHR beginInfo {VK_STRUCTURE_TYPE_RENDERING_INFO, 0};
+  beginInfo.flags = VK_RENDERING_CONTENTS_INLINE_BIT_EXT;
+  beginInfo.renderArea = {
+      {0, 0},
+      m_Swapchain->GetExtent()
+  };
+  beginInfo.layerCount = 1;
+
+  VkRenderingAttachmentInfo colorInfo {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR};
+  colorInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  colorInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+  colorInfo.imageView = m_Swapchain->GetCurrentImageView();
+  colorInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+  colorInfo.clearValue = {
+      {0.2f, 0.2f, 0.2f, 1.0f}
+  };
+  std::vector<VkRenderingAttachmentInfo> colorAttachments;
+  colorAttachments.push_back(colorInfo);
+
+  beginInfo.colorAttachmentCount = colorAttachments.size();
+
+  vkCmdBeginRendering(cmd, &beginInfo);
+}
+
+void Renderer::EndRendering() {
+  auto cmd = GetCurrentCmdBuffer();
+  vkCmdEndRenderingKHR(cmd);
+  vkEndCommandBuffer(cmd);
 }
 
 Ref<VulkanShader> Renderer::CreateShader(const ShaderDescription& desc) {
