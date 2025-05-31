@@ -44,8 +44,8 @@ void VulkanSwapchain::CreateSwapchain() {
   vkGetPhysicalDeviceSurfaceFormatsKHR(m_PhysicalDevice.GetHandle(), m_Surface, &surfaceCount,
                                        formats);
   for (uint32_t i = 0; i < surfaceCount; i++) {
+    // TODO: Improve
     const auto& format = formats[i];
-    FOO_CORE_INFO("Surfece format: {}", (int)format.format);
     m_SurfaceFormat = format;
   }
   m_SurfaceFormat.format = VK_FORMAT_R8G8B8A8_UNORM;
