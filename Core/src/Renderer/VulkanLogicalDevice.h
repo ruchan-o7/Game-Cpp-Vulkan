@@ -54,11 +54,10 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     void DestroyObject(FenceWrapper&& handle) const;
     void WaitFence(VkFence fence);
     void ResetFence(VkFence& fence);
-
-    ShaderModuleWrapper CreateShader(const VkShaderModuleCreateInfo& info,
-                                     const char* name = nullptr);
+    VkResult GetFenceStatus(VkFence fence);
 
     // clang-format off
+    ShaderModuleWrapper CreateShader(const VkShaderModuleCreateInfo& info, const char* name = nullptr);
     PipelineLayoutWrapper CreatePipelineLayout(const VkPipelineLayoutCreateInfo& info, const char* name = nullptr);
     PipelineWrapper CreateGraphicsPipeline(const VkGraphicsPipelineCreateInfo& info, const char* name = nullptr);
     CommandPoolWrapper CreateCommandPool(const VkCommandPoolCreateInfo& info, const char* name = nullptr);

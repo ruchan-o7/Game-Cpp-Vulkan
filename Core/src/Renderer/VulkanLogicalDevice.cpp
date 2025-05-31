@@ -14,6 +14,9 @@ void VulkanLogicalDevice::ResetFence(VkFence& fence) {
 void VulkanLogicalDevice::WaitFence(VkFence fence) {
   vkWaitForFences(m_Device, 1, &fence, VK_TRUE, UINT64_MAX);
 }
+VkResult VulkanLogicalDevice::GetFenceStatus(VkFence fence) {
+  return vkGetFenceStatus(m_Device, fence);
+}
 
 ShaderModuleWrapper VulkanLogicalDevice::CreateShader(const VkShaderModuleCreateInfo& info,
                                                       const char* name) {
