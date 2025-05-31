@@ -42,6 +42,9 @@ class VulkanSwapchain {
   private:
     void CreateSurface();
     void CreateSwapchain();
+    void RecreateSwapchain();
+    void DestroySwapchainRes(bool destroySwapchain = true);
+    void WaitForImageAcquiredFences();
 
   private:
     VkSurfaceFormatKHR m_SurfaceFormat;

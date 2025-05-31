@@ -131,6 +131,45 @@ void VulkanSwapchain::CreateSwapchain() {
   // }
 }
 
+void VulkanSwapchain::RecreateSwapchain() {
+  DestroySwapchainRes(false);
+  VkSurfaceCapabilitiesKHR caps {};
+  auto err =
+      vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalDevice.GetHandle(), m_Surface, &caps);
+  if (err == VK_ERROR_SURFACE_LOST_KHR) {
+    if (m_Swapchain != VK_NULL_HANDLE) {
+      vkDestroySwapchainKHR(m_Device->GetHandle(), m_Swapchain, m_Device->GetAllocator());
+      m_Swapchain = VK_NULL_HANDLE;
+    }
+    CreateSurface();
+  }
+  CreateSwapchain();
+}
+void VulkanSwapchain::DestroySwapchainRes(bool destroySwapchain) {
+  if (m_Swapchain == VK_NULL_HANDLE) {
+    return;
+  }
+  m_Device->WaitIdle();
+  WaitForImageAcquiredFences();
+  m_Views.clear();
+  m_Images.clear();
+  m_ImageAvailable.Release();
+  m_RenderFinished.Release();
+  m_InFlight.Release();
+  m_FrameIndex = 0;
+  if (destroySwapchain) {
+    vkDestroySwapchainKHR(m_Device->GetHandle(), m_Swapchain, m_Device->GetAllocator());
+    m_Swapchain = VK_NULL_HANDLE;
+  }
+}
+
+void VulkanSwapchain::WaitForImageAcquiredFences() {
+  VkFence fence = m_InFlight;
+  if (m_Device->GetFenceStatus(fence) == VK_NOT_READY) {
+    m_Device->WaitFence(fence);
+  }
+}
+
 VkResult VulkanSwapchain::AcquireNextImage() {
   m_Device->WaitFence(m_InFlight);
   VkFence fence = m_InFlight;
@@ -165,9 +204,27 @@ void VulkanSwapchain::Present() {
   presentInfo.pSwapchains = &m_Swapchain;
   presentInfo.swapchainCount = 1;
   presentInfo.pImageIndices = &m_FrameIndex;
-  m_Renderer->Present(presentInfo);
+  VkResult result = VK_SUCCESS;
+  presentInfo.pResults = &result;
+  res = m_Renderer->Present(presentInfo);
+  if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR) {
+    RecreateSwapchain();
+    m_FrameIndex = m_ImageCount - 1;
+  } else {
+    if (res != VK_SUCCESS) {
+      FOO_CORE_ERROR("Presentation failed");
+    }
+  }
 
   res = AcquireNextImage();
+  if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR) {
+    RecreateSwapchain();
+    m_FrameIndex = m_ImageCount - 1;
+  } else {
+    if (res != VK_SUCCESS) {
+      FOO_CORE_ERROR("Presentation failed");
+    }
+  }
 }
 
 }  // namespace fg
