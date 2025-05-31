@@ -12,7 +12,7 @@ namespace fg {
 
 // clang-format off
 VulkanSwapchain::VulkanSwapchain(GLFWwindow* window, 
-                     Renderer* renderer,
+                    std::weak_ptr<Renderer> renderer,
                     std::shared_ptr<VulkanInstance> instance,
                     std::shared_ptr<VulkanLogicalDevice> logicalDevice,
                     const VulkanPhysicalDevice& pDev)
@@ -191,8 +191,12 @@ void VulkanSwapchain::Present() {
   VkSemaphore signalSems[] = {m_RenderFinished};
   submit.signalSemaphoreCount = 1;
   submit.pSignalSemaphores = signalSems;
-
-  auto res = m_Renderer->Flush([&](VkQueue queue, VkCommandBuffer cmd) -> VkResult {
+  auto renderer = m_Renderer.lock();
+  if (!renderer) {
+    FOO_CORE_ERROR("Renderer disposed before swapchain");
+    return;
+  }
+  auto res = renderer->Flush([&](VkQueue queue, VkCommandBuffer cmd) -> VkResult {
     submit.commandBufferCount = 1;
     submit.pCommandBuffers = &cmd;
     return vkQueueSubmit(queue, 1, &submit, m_InFlight);
@@ -206,7 +210,7 @@ void VulkanSwapchain::Present() {
   presentInfo.pImageIndices = &m_FrameIndex;
   VkResult result = VK_SUCCESS;
   presentInfo.pResults = &result;
-  res = m_Renderer->Present(presentInfo);
+  res = renderer->Present(presentInfo);
   if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR) {
     RecreateSwapchain();
     m_FrameIndex = m_ImageCount - 1;

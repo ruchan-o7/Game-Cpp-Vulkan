@@ -15,7 +15,7 @@ class VulkanSwapchain {
   public:
     // clang-format off
     VulkanSwapchain(GLFWwindow* window, 
-                     Renderer* renderer,
+                    std::weak_ptr<Renderer> renderer,
                     std::shared_ptr<VulkanInstance> instance,
                     std::shared_ptr<VulkanLogicalDevice> logicalDevice,
                     const VulkanPhysicalDevice& pDev);
@@ -55,7 +55,7 @@ class VulkanSwapchain {
     VkExtent2D m_Extent;
     std::shared_ptr<VulkanInstance> m_VkInstance;
     std::shared_ptr<VulkanLogicalDevice> m_Device;
-    Renderer* m_Renderer;
+    std::weak_ptr<Renderer> m_Renderer;
     const VulkanPhysicalDevice& m_PhysicalDevice;
     std::vector<VkImageView> m_Views;
     // TODO: Remove this

@@ -14,12 +14,16 @@ using PipelineLayoutWrapper = VulkanObject<VkPipelineLayout>;
 using CommandPoolWrapper = VulkanObject<VkCommandPool>;
 using SemaphoreWrapper = VulkanObject<VkSemaphore>;
 using FenceWrapper = VulkanObject<VkFence>;
+using ImageWrapper = VulkanObject<VkImage>;
+
+class VulkanPhysicalDevice;
+class Renderer;
 
 class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDevice> {
   public:
-    VulkanLogicalDevice(VkDevice device, uint32_t queueIndex,
+    VulkanLogicalDevice(VkDevice device, uint32_t queueIndex, std::weak_ptr<Renderer> renderer,
                         const VkAllocationCallbacks* allocator)
-        : m_Device(device), m_Allocator(allocator) {
+        : m_Device(device), m_Renderer(renderer), m_Allocator(allocator) {
       vkGetDeviceQueue(m_Device, queueIndex, 0, &m_Queue);
     }
 
@@ -52,24 +56,31 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     void DestroyObject(CommandPoolWrapper&& handle) const;
     void DestroyObject(SemaphoreWrapper&& handle) const;
     void DestroyObject(FenceWrapper&& handle) const;
+    void DestroyObject(ImageWrapper&& handle) const;
     void WaitFence(VkFence fence);
     void ResetFence(VkFence& fence);
     VkResult GetFenceStatus(VkFence fence);
 
     // clang-format off
-    ShaderModuleWrapper CreateShader(const VkShaderModuleCreateInfo& info, const char* name = nullptr);
-    PipelineLayoutWrapper CreatePipelineLayout(const VkPipelineLayoutCreateInfo& info, const char* name = nullptr);
-    PipelineWrapper CreateGraphicsPipeline(const VkGraphicsPipelineCreateInfo& info, const char* name = nullptr);
-    CommandPoolWrapper CreateCommandPool(const VkCommandPoolCreateInfo& info, const char* name = nullptr);
+    ShaderModuleWrapper CreateShader(const VkShaderModuleCreateInfo& info, const char* name = nullptr)const;
+    PipelineLayoutWrapper CreatePipelineLayout(const VkPipelineLayoutCreateInfo& info, const char* name = nullptr)const;
+    PipelineWrapper CreateGraphicsPipeline(const VkGraphicsPipelineCreateInfo& info, const char* name = nullptr)const;
+    CommandPoolWrapper CreateCommandPool(const VkCommandPoolCreateInfo& info, const char* name = nullptr)const;
     SemaphoreWrapper CreateVulkanSemaphore(const VkSemaphoreCreateInfo& info, const char* name = nullptr);
-    FenceWrapper CreateFence(const VkFenceCreateInfo& info, const char* name = nullptr);
+    FenceWrapper CreateFence(const VkFenceCreateInfo& info, const char* name = nullptr)const;
+    ImageWrapper CreateImage(const VkImageCreateInfo& info, const char* name = nullptr)const;
     // clang-format on
 
     // TODO: Should allocate from pool ?
-    VkCommandBuffer AllocateCmdBuffer(const VkCommandBufferAllocateInfo& info);
+    VkCommandBuffer AllocateCmdBuffer(const VkCommandBufferAllocateInfo& info) const;
+
+    VkMemoryRequirements GetImageMemReq(VkImage image) const;
+    VkDeviceMemory AllocateMemory(VkMemoryRequirements memReqs) const;
+    void BindImageMemory(VkImage image, VkDeviceMemory mem);
 
   private:
     const VkAllocationCallbacks* m_Allocator;
+    std::weak_ptr<Renderer> m_Renderer;
     VkDevice m_Device;
     VkQueue m_Queue;
     uint32_t m_QueueIndex;
