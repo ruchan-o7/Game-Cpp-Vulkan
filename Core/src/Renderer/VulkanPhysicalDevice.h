@@ -11,6 +11,7 @@ class VulkanPhysicalDevice {
       return m_Device;
     }
     int GetQueuFamilyIndices(VkQueueFlagBits flags);
+    uint32_t FindMemTypeIndex(uint32_t typeBits, VkMemoryPropertyFlagBits flags) const;
 
   private:
     VkPhysicalDevice m_Device;

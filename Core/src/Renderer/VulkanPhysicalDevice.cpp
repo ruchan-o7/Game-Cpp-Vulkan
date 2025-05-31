@@ -19,5 +19,17 @@ int VulkanPhysicalDevice::GetQueuFamilyIndices(VkQueueFlagBits flags) {
   }
   return 0;
 }
+uint32_t VulkanPhysicalDevice::FindMemTypeIndex(uint32_t typeBits,
+                                                VkMemoryPropertyFlagBits flags) const {
+  VkPhysicalDeviceMemoryProperties memProps;
+  vkGetPhysicalDeviceMemoryProperties(m_Device, &memProps);
+
+  for (uint32_t i = 0; i < memProps.memoryTypeCount; i++) {
+    if ((typeBits & (1 << i)) && (memProps.memoryTypes[i].propertyFlags & flags) == flags) {
+      return i;
+    }
+  }
+  return -1;
+}
 
 }  // namespace fg
