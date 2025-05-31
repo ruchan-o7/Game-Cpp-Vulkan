@@ -50,6 +50,7 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
   }
 
   m_Renderer = fg::Renderer::Create(m_Window, nullptr);
+  m_Renderer->CreateDeviceAndSwapchain();
   {
     fg::ShaderDescription shaderDesc;
     shaderDesc.EntryPoint = "main";

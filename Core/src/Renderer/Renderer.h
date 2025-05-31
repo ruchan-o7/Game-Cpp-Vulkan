@@ -2,6 +2,7 @@
 #include "../Renderer/VulkanGraphicsPipeline.h"
 #include "../Renderer/VulkanShader.h"
 #include "../Renderer/VulkanSwapchain.h"
+#include "src/Renderer/VulkanImage.h"
 
 typedef struct GLFWwindow GLFWwindow;
 
@@ -14,19 +15,38 @@ struct DrawAttributes {
     uint32_t FirstInstance = 0;
 };
 
-class Renderer {
+class Renderer : public std::enable_shared_from_this<Renderer> {
   public:
     static std::shared_ptr<Renderer> Create(GLFWwindow* window,
                                             const VkAllocationCallbacks* alloc = nullptr);
+    void CreateDeviceAndSwapchain();
     void Destroy();
+
+    std::shared_ptr<Renderer> GetPtr() {
+      return shared_from_this();
+    }
+
+    std::shared_ptr<const Renderer> GetPtr() const {
+      return shared_from_this();
+    }
 
     Ref<VulkanShader> CreateShader(const ShaderDescription& desc) const;
 
     Ref<VulkanGraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDescription& desc);
+    Ref<VulkanImage> CreateImage(const ImageDescription& desc, VkImage handle);
 
     std::shared_ptr<VulkanSwapchain> GetSwapchain() const {
       return m_Swapchain;
     }
+
+    std::shared_ptr<VulkanLogicalDevice> GetLogicalDevice() const {
+      return m_LogicalDevice;
+    }
+
+    const VulkanPhysicalDevice& GetPhysicalDevice() {
+      return *m_PhysicalDevice;
+    }
+
     void BeginRendering();
     void BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline);
     void Draw(const DrawAttributes& attribs);
@@ -38,7 +58,7 @@ class Renderer {
       return m_Cmd;
     }
 
-    void Present(VkPresentInfoKHR& info);
+    VkResult Present(VkPresentInfoKHR& info);
     void WaitGPU() const;
 
   private:

@@ -93,6 +93,7 @@ std::shared_ptr<Renderer> Renderer::Create(GLFWwindow* window, const VkAllocatio
 void Renderer::WaitGPU() const {
   m_LogicalDevice->WaitIdle();
 }
+
 Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& instance,
                    std::unique_ptr<VulkanPhysicalDevice> pDevice,
                    const VkAllocationCallbacks* alloc)
@@ -100,16 +101,16 @@ Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& in
       m_Window(window),
       m_PhysicalDevice(std::move(pDevice)),
       m_AllocCB(alloc) {
-  uint32_t queueIndex = m_PhysicalDevice->GetQueuFamilyIndices(VK_QUEUE_GRAPHICS_BIT);
+}
 
+void Renderer::CreateDeviceAndSwapchain() {
+  uint32_t queueIndex = m_PhysicalDevice->GetQueuFamilyIndices(VK_QUEUE_GRAPHICS_BIT);
   VkDeviceQueueCreateInfo queueInfo {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
   queueInfo.queueFamilyIndex = queueIndex;
   queueInfo.queueCount = 1;
   float priority[] = {1.0f};
   queueInfo.pQueuePriorities = priority;
-
   auto pDev = m_PhysicalDevice->GetHandle();
-
   VkPhysicalDeviceFeatures features;
   vkGetPhysicalDeviceFeatures(pDev, &features);
 
@@ -138,9 +139,9 @@ Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& in
     throw std::runtime_error("Can not create logical device");
   }
   volkLoadDevice(device);
-  m_LogicalDevice = std::make_shared<VulkanLogicalDevice>(device, queueIndex, m_AllocCB);
+  m_LogicalDevice = std::make_shared<VulkanLogicalDevice>(device, queueIndex, GetPtr(), m_AllocCB);
   m_VkQueue = m_LogicalDevice->GetQueue();
-  m_Swapchain = std::make_shared<VulkanSwapchain>(m_Window, this, m_Instance, m_LogicalDevice,
+  m_Swapchain = std::make_shared<VulkanSwapchain>(m_Window, GetPtr(), m_Instance, m_LogicalDevice,
                                                   *m_PhysicalDevice);
   VkCommandPoolCreateInfo cmdPool {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
   cmdPool.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
@@ -152,6 +153,10 @@ Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& in
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   allocInfo.commandBufferCount = 1;
   m_Cmd = m_LogicalDevice->AllocateCmdBuffer(allocInfo);
+}
+
+Ref<VulkanImage> Renderer::CreateImage(const ImageDescription& desc, VkImage handle) {
+  return nullptr;
 }
 
 void Renderer::BeginRendering() {
@@ -238,8 +243,8 @@ void Renderer::Draw(const DrawAttributes& attribs) {
 VkResult Renderer::Flush(const std::function<VkResult(VkQueue, VkCommandBuffer)>& func) {
   return func(m_VkQueue, GetCurrentCmdBuffer());
 }
-void Renderer::Present(VkPresentInfoKHR& info) {
-  vkQueuePresentKHR(m_VkQueue, &info);
+VkResult Renderer::Present(VkPresentInfoKHR& info) {
+  return vkQueuePresentKHR(m_VkQueue, &info);
 }
 
 Ref<VulkanShader> Renderer::CreateShader(const ShaderDescription& desc) const {
