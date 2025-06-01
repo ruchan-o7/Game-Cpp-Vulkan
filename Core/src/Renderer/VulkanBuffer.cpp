@@ -9,13 +9,14 @@ namespace fg {
 VkBufferUsageFlags ToVk(BufferUsage usage) {
   switch (usage) {
     case BufferUsage::Vertex:
-      return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+      return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     case BufferUsage::Index:
-      return VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+      return VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     case BufferUsage::Uniform:
       return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    case BufferUsage::None:
     case BufferUsage::Staging:
+      return VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    case BufferUsage::None:
       return 0;
   }
 }
@@ -23,14 +24,12 @@ VkMemoryPropertyFlags GetMemFlag(BufferUsage usage) {
   switch (usage) {
     case BufferUsage::Vertex:
     case BufferUsage::Index:
-      return VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;  // VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+      return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    case BufferUsage::Staging:
     case BufferUsage::Uniform:
       return VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
     case BufferUsage::None:
       FOO_CORE_ERROR("No buffer usage specified while creating buffer");
-      break;
-    case BufferUsage::Staging:
       return 0;
   }
 
@@ -64,34 +63,28 @@ VulkanBuffer::VulkanBuffer(const BufferDescription& desc, std::weak_ptr<Renderer
   device->BindBufferMemory(m_Handle, m_Memory, 0);
 
   if (data) {
-    // TODO: Create stage buffer if needed
-    //  VkBufferCreateInfo stageInfo {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-    //  stageInfo.size = m_Desc.Size;
-    //  stageInfo.usage = ToVk(m_Desc.Usage);
-    //  stageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    //
-    //  auto r = m_Renderer.lock();
-    //  auto device = r->GetLogicalDevice();
-    //  auto stage = device->CreateBuffer(stageInfo, m_Desc.Name);
-    //
-    //  auto memRequirements = device->GetBufferMemReq(m_Handle);
-    //  VkMemoryPropertyFlags flags =
-    //      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    //
-    //  auto memTypeIndex =
-    //      r->GetPhysicalDevice().FindMemTypeIndex(memRequirements.memoryTypeBits, flags);
-    //
-    //  VkMemoryAllocateInfo allocInfo {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
-    //  allocInfo.allocationSize = memRequirements.size;
-    //  allocInfo.memoryTypeIndex = memTypeIndex;
-    //
-    //  m_Memory = device->AllocateMemory(allocInfo);
-    //  device->BindBufferMemory(m_Handle, m_Memory, 0);
+    if (m_Desc.Usage == BufferUsage::Staging || m_Desc.Usage == BufferUsage::Uniform) {
+      SetData(data);
+    } else {
+      BufferDescription stageDesc;
+      stageDesc.Size = desc.Size;
+      stageDesc.Usage = BufferUsage::Staging;
+      stageDesc.Name = desc.Name;
 
-    Map();
-    CopyData(data);
-    Unmap();
+      auto stageBuffer = r->CreateBuffer(stageDesc);
+      stageBuffer->SetData(data);
+      VkBufferCopy region[] = {
+          {0, 0, m_Desc.Size}
+      };
+      stageBuffer->CopyTo(this, region, 1);
+    }
   }
+}
+
+void VulkanBuffer::SetData(Buffer buffer) {
+  Map();
+  std::memcpy(m_MapPtr, buffer.Data, buffer.Size);
+  Unmap();
 }
 
 void VulkanBuffer::Map(VkMemoryMapFlags flags) {
@@ -116,12 +109,17 @@ void VulkanBuffer::Unmap() {
   }
 }
 
-void VulkanBuffer::CopyData(Buffer buffer) {
-  FOO_ASSERT(m_MapPtr != nullptr, "Buffer did not mapped");
-  FOO_ASSERT(m_Handle);
-  FOO_ASSERT(m_Memory);
-  FOO_ASSERT(buffer);
-  std::memcpy(m_MapPtr, buffer.Data, buffer.Size);
+void VulkanBuffer::CopyTo(VulkanBuffer* destination, VkBufferCopy* regions, uint32_t regionCount) {
+  auto r = m_Renderer.lock();
+  auto cmd = r->GetTransientCmdBuffer();
+  vkCmdCopyBuffer(cmd, m_Handle, destination->GetVkBuffer(), regionCount, regions);
+  r->SubmitTransientCommandBuffer(cmd);
+}
+
+VulkanBuffer::~VulkanBuffer() {
+  if (m_MapPtr) {
+    Unmap();
+  }
 }
 
 }  // namespace fg

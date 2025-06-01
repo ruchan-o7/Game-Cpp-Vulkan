@@ -26,14 +26,15 @@ class VulkanBuffer : public RefBase {
   public:
     VulkanBuffer(const BufferDescription& desc, std::weak_ptr<Renderer> renderer,
                  const Buffer data = Buffer());
-    virtual ~VulkanBuffer() = default;
+    virtual ~VulkanBuffer();
 
     const BufferDescription& GetDesc() const {
       return m_Desc;
     }
     void Map(VkMemoryMapFlags flags = 0);
     void Unmap();
-    void CopyData(Buffer buffer);
+    void CopyTo(VulkanBuffer* destination, VkBufferCopy* regions, uint32_t regionCount);
+    void SetData(Buffer buffer);
 
     VkBuffer GetVkBuffer() const {
       return m_Handle;
@@ -44,7 +45,7 @@ class VulkanBuffer : public RefBase {
     ResourceState m_State = ResourceState::Unknown;
     std::weak_ptr<Renderer> m_Renderer;
     BufferWrapper m_Handle;
-    VkDeviceMemory m_Memory = VK_NULL_HANDLE;
+    MemoryWrapper m_Memory;
     void* m_MapPtr = nullptr;
 };
 
