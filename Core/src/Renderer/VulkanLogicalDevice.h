@@ -16,6 +16,7 @@ using SemaphoreWrapper = VulkanObject<VkSemaphore>;
 using FenceWrapper = VulkanObject<VkFence>;
 using ImageWrapper = VulkanObject<VkImage>;
 using BufferWrapper = VulkanObject<VkBuffer>;
+using MemoryWrapper = VulkanObject<VkDeviceMemory>;
 
 class VulkanPhysicalDevice;
 class Renderer;
@@ -59,6 +60,7 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     void DestroyObject(SemaphoreWrapper&& handle) const;
     void DestroyObject(FenceWrapper&& handle) const;
     void DestroyObject(ImageWrapper&& handle) const;
+    void DestroyObject(MemoryWrapper&& handle) const;
     void WaitFence(VkFence fence);
     void ResetFence(VkFence& fence);
     VkResult GetFenceStatus(VkFence fence);
@@ -79,7 +81,7 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
 
     VkMemoryRequirements GetImageMemReq(VkImage image) const;
     VkMemoryRequirements GetBufferMemReq(VkBuffer buffer) const;
-    VkDeviceMemory AllocateMemory(const VkMemoryAllocateInfo& memReqs) const;
+    MemoryWrapper AllocateMemory(const VkMemoryAllocateInfo& memReqs) const;
     void BindImageMemory(VkImage image, VkDeviceMemory mem) const;
     void BindBufferMemory(VkBuffer buffer, VkDeviceMemory mem, uint64_t offset = 0) const;
 

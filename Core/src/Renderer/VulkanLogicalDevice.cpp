@@ -42,10 +42,10 @@ VkMemoryRequirements VulkanLogicalDevice::GetBufferMemReq(VkBuffer buffer) const
   return memReqs;
 }
 
-VkDeviceMemory VulkanLogicalDevice::AllocateMemory(const VkMemoryAllocateInfo& info) const {
+MemoryWrapper VulkanLogicalDevice::AllocateMemory(const VkMemoryAllocateInfo& info) const {
   VkDeviceMemory mem = VK_NULL_HANDLE;
   vkAllocateMemory(m_Device, &info, m_Allocator, &mem);
-  return mem;
+  return MemoryWrapper(std::move(mem), GetPtr());
 }
 
 void VulkanLogicalDevice::BindImageMemory(VkImage image, VkDeviceMemory mem) const {
@@ -140,6 +140,10 @@ void VulkanLogicalDevice::DestroyObject(PipelineLayoutWrapper&& handle) const {
 }
 void VulkanLogicalDevice::DestroyObject(PipelineWrapper&& handle) const {
   vkDestroyPipeline(m_Device, handle, m_Allocator);
+  handle.m_VulkanObject = VK_NULL_HANDLE;
+}
+void VulkanLogicalDevice::DestroyObject(MemoryWrapper&& handle) const {
+  vkFreeMemory(m_Device, handle, m_Allocator);
   handle.m_VulkanObject = VK_NULL_HANDLE;
 }
 
