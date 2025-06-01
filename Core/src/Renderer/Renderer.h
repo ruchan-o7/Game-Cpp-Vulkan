@@ -35,7 +35,7 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
 
     Ref<VulkanGraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDescription& desc);
     Ref<VulkanImage> CreateImage(const ImageDescription& desc, VkImage handle);
-    Ref<VulkanBuffer> CreateBuffer(const BufferDescription& desc);
+    Ref<VulkanBuffer> CreateBuffer(const BufferDescription& desc, Buffer bufferData = Buffer());
 
     std::shared_ptr<VulkanSwapchain> GetSwapchain() const {
       return m_Swapchain;
@@ -53,6 +53,8 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
     void BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline);
     void Draw(const DrawAttributes& attribs);
     void EndRendering();
+    void BindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, VulkanBuffer** buffers,
+                           VkDeviceSize* offsets) const;
 
     VkResult Flush(const std::function<VkResult(VkQueue, VkCommandBuffer)>& func);
 

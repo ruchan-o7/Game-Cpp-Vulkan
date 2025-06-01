@@ -35,6 +35,10 @@ class VulkanBuffer : public RefBase {
     void Unmap();
     void CopyData(Buffer buffer);
 
+    VkBuffer GetVkBuffer() const {
+      return m_Handle;
+    }
+
   private:
     BufferDescription m_Desc;
     ResourceState m_State = ResourceState::Unknown;

@@ -10,9 +10,11 @@
 #include "../Renderer/Renderer.h"
 #include "../Renderer/VulkanGraphicsPipeline.h"
 #include "../Renderer/VulkanShader.h"
+#include "Buffer.h"
 
 #include <mutex>
 #include "GLFW/glfw3.h"
+#include "src/Renderer/VulkanBuffer.h"
 #include <imgui.h>
 namespace FooGame {
 
@@ -21,6 +23,19 @@ Application* Application::s_Instance = nullptr;
 static void GLFWErrorCallback(int err, const char* desc) {
   FOO_CORE_ERROR("GLFW Error ({0}): {1}", err, desc);
 }
+
+fg::Ref<fg::VulkanBuffer> m_VertexBuffer;
+
+struct Vertex {
+    glm::vec2 pos;
+    glm::vec3 color;
+};
+
+const std::vector<Vertex> vertices = {
+    {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+    { {0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+};
 
 Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) {
   FOO_PROFILE_FUNCTION();
@@ -77,9 +92,17 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
     };
 
     m_Pipeline = m_Renderer->CreateGraphicsPipeline(pipeDesc);
+    fg::BufferDescription desc;
+    desc.Size = vertices.size();
+    desc.Name = "Vertex buffer";
+    desc.Usage = fg::BufferUsage::Vertex;
+
+    fg::Buffer data;
+    data.Data = (uint8_t*)vertices.data();
+    data.Size = vertices.size();
+
+    m_VertexBuffer = m_Renderer->CreateBuffer(desc, data);
   }
-  m_Renderer->BeginRendering();
-  m_Renderer->EndRendering();
 
   // AssetManager::Init();
 
@@ -207,7 +230,12 @@ void Application::Run() {
       // }
       // m_ImGuiLayer->End();
       m_Renderer->BeginRendering();
+
       m_Renderer->BindPipeline(m_Pipeline);
+
+      fg::VulkanBuffer* buffer[1] = {m_VertexBuffer.get()};
+      VkDeviceSize offset[] = {0};
+      m_Renderer->BindVertexBuffers(0, 1, buffer, offset);
       m_Renderer->Draw({3, 1, 0, 0});
 
       m_Renderer->EndRendering();

@@ -160,14 +160,14 @@ Ref<VulkanImage> Renderer::CreateImage(const ImageDescription& desc, VkImage han
   return nullptr;
 }
 
-Ref<VulkanBuffer> Renderer::CreateBuffer(const BufferDescription& desc) {
+Ref<VulkanBuffer> Renderer::CreateBuffer(const BufferDescription& desc, Buffer bufferData) {
   FOO_ASSERT(desc.Usage != BufferUsage::None);
 
   if (desc.Usage == BufferUsage::Index || desc.Usage == BufferUsage::Vertex) {
     FOO_ASSERT(desc.Size > 0, "Vertex and Index buffers must be provide data");
   }
 
-  auto buffer = MakeRef<VulkanBuffer>(desc, GetPtr());
+  auto buffer = MakeRef<VulkanBuffer>(desc, GetPtr(), bufferData);
   return buffer;
 }
 
@@ -300,6 +300,20 @@ Ref<VulkanGraphicsPipeline> Renderer::CreateGraphicsPipeline(
     const GraphicsPipelineDescription& desc) {
   FOO_ASSERT(desc.RenderTargetFormat != VK_FORMAT_UNDEFINED);
   return MakeRef<VulkanGraphicsPipeline>(desc, GetPtr());
+}
+
+void Renderer::BindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
+                                 VulkanBuffer** buffers, VkDeviceSize* offsets) const {
+  FOO_ASSERT(bindingCount > 0);
+  FOO_ASSERT(buffers != nullptr);
+  FOO_ASSERT(offsets != nullptr);
+  auto cmd = GetCurrentCmdBuffer();
+  VkBuffer vkbuffers[8];
+  memset(vkbuffers, 0, sizeof(vkbuffers));
+  for (uint32_t i = 0; i < bindingCount; i++) {
+    vkbuffers[i] = buffers[i]->GetVkBuffer();
+  }
+  vkCmdBindVertexBuffers(cmd, firstBinding, bindingCount, vkbuffers, offsets);
 }
 
 void Renderer::Destroy() {
