@@ -27,7 +27,7 @@ enum class VertexInputRate : uint8_t {
 
 // Vertex input binding and attribute description
 struct VertexAttribute {
-    uint8_t Binding;
+    uint8_t Binding = 0, Location = 0;
     ValueType Type;
 };
 

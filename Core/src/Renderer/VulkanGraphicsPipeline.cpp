@@ -47,24 +47,25 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineDescription
 
   std::vector<VkVertexInputAttributeDescription> attributesDescs;
   std::vector<VkVertexInputBindingDescription> bindingDescs;
-  uint32_t i = 0;
+
   uint32_t offset = 0;
-  VkVertexInputAttributeDescription attrDesc {};
+
   for (const auto& attr : m_Desc.VertexAttributes) {
+    VkVertexInputAttributeDescription attrDesc {};
     attrDesc.binding = attr.Binding;
-    attrDesc.location = i;
+    attrDesc.location = attr.Location;
     attrDesc.format = ToVk(attr.Type);
     attrDesc.offset = offset;
     attributesDescs.push_back(attrDesc);
 
     offset += (uint8_t)attr.Type;
-    i++;
   }
   for (const auto& elem : m_Desc.BindingDescs) {
-    VkVertexInputBindingDescription desc {};
-    desc.binding = elem.Binding;
-    desc.stride = elem.Stride;
-    desc.inputRate = ToVk(elem.Rate);
+    VkVertexInputBindingDescription bindingDesc {};
+    bindingDesc.binding = elem.Binding;
+    bindingDesc.stride = elem.Stride;
+    bindingDesc.inputRate = ToVk(elem.Rate);
+    bindingDescs.push_back(bindingDesc);
   }
 
   vertexInput.vertexBindingDescriptionCount = (uint32_t)bindingDescs.size();
