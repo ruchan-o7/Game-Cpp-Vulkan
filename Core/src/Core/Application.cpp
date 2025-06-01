@@ -51,6 +51,7 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
 
   m_Renderer = fg::Renderer::Create(m_Window, nullptr);
   m_Renderer->CreateDeviceAndSwapchain();
+  m_Swapchain = m_Renderer->GetSwapchain();
   {
     fg::ShaderDescription shaderDesc;
     shaderDesc.EntryPoint = "main";
@@ -66,12 +67,19 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
     pipeDesc.FragmentShader = trifrag.get();
     pipeDesc.VertexShader = triVert.get();
     pipeDesc.DynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+    pipeDesc.RenderTargetFormat = m_Swapchain->Format().format;
+    pipeDesc.VertexAttributes = {
+        {0, 0, fg::VT_VEC2},
+        {0, 1, fg::VT_VEC3},
+    };
+    pipeDesc.BindingDescs = {
+        {0, sizeof(glm::vec2) + sizeof(glm::vec3)}
+    };
 
     m_Pipeline = m_Renderer->CreateGraphicsPipeline(pipeDesc);
   }
   m_Renderer->BeginRendering();
   m_Renderer->EndRendering();
-  m_Swapchain = m_Renderer->GetSwapchain();
 
   // AssetManager::Init();
 
