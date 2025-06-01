@@ -2,6 +2,7 @@
 #include "../Renderer/VulkanGraphicsPipeline.h"
 #include "../Renderer/VulkanShader.h"
 #include "../Renderer/VulkanSwapchain.h"
+#include "src/Renderer/VulkanBuffer.h"
 #include "src/Renderer/VulkanImage.h"
 
 typedef struct GLFWwindow GLFWwindow;
@@ -34,6 +35,7 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
 
     Ref<VulkanGraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDescription& desc);
     Ref<VulkanImage> CreateImage(const ImageDescription& desc, VkImage handle);
+    Ref<VulkanBuffer> CreateBuffer(const BufferDescription& desc);
 
     std::shared_ptr<VulkanSwapchain> GetSwapchain() const {
       return m_Swapchain;

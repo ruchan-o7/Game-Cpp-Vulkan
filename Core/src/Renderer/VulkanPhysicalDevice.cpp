@@ -20,7 +20,7 @@ int VulkanPhysicalDevice::GetQueuFamilyIndices(VkQueueFlagBits flags) {
   return 0;
 }
 uint32_t VulkanPhysicalDevice::FindMemTypeIndex(uint32_t typeBits,
-                                                VkMemoryPropertyFlagBits flags) const {
+                                                VkMemoryPropertyFlags flags) const {
   VkPhysicalDeviceMemoryProperties memProps;
   vkGetPhysicalDeviceMemoryProperties(m_Device, &memProps);
 

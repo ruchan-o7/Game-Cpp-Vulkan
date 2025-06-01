@@ -1,7 +1,5 @@
 #include "VulkanLogicalDevice.h"
 #include "VulkanObject.h"
-#include "VulkanPhysicalDevice.h"
-#include "Renderer.h"
 #include "../Core/Assert.h"
 
 namespace fg {
@@ -20,24 +18,42 @@ void VulkanLogicalDevice::WaitFence(VkFence fence) {
 VkResult VulkanLogicalDevice::GetFenceStatus(VkFence fence) {
   return vkGetFenceStatus(m_Device, fence);
 }
+void* VulkanLogicalDevice::MapBuffer(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size,
+                                     VkMemoryMapFlags flags) const {
+  void* ptr = 0;
+  auto res = vkMapMemory(m_Device, memory, offset, size, flags, &ptr);
+  FOO_ASSERT(res == VK_SUCCESS);
+  return ptr;
+}
+
+void VulkanLogicalDevice::UnmapBuffer(VkDeviceMemory memory) const {
+  FOO_ASSERT(memory != VK_NULL_HANDLE);
+  vkUnmapMemory(m_Device, memory);
+}
 
 VkMemoryRequirements VulkanLogicalDevice::GetImageMemReq(VkImage image) const {
   VkMemoryRequirements memReqs {};
   vkGetImageMemoryRequirements(m_Device, image, &memReqs);
   return memReqs;
 }
-VkDeviceMemory VulkanLogicalDevice::AllocateMemory(VkMemoryRequirements memReqs) const {
-  VkMemoryAllocateInfo info {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
-  info.allocationSize = memReqs.size;
-  info.memoryTypeIndex = m_Renderer.lock()->GetPhysicalDevice().FindMemTypeIndex(
-      memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-  VkDeviceMemory mem = 0;
+VkMemoryRequirements VulkanLogicalDevice::GetBufferMemReq(VkBuffer buffer) const {
+  VkMemoryRequirements memReqs {};
+  vkGetBufferMemoryRequirements(m_Device, buffer, &memReqs);
+  return memReqs;
+}
+
+VkDeviceMemory VulkanLogicalDevice::AllocateMemory(const VkMemoryAllocateInfo& info) const {
+  VkDeviceMemory mem = VK_NULL_HANDLE;
   vkAllocateMemory(m_Device, &info, m_Allocator, &mem);
   return mem;
 }
 
-void VulkanLogicalDevice::BindImageMemory(VkImage image, VkDeviceMemory mem) {
+void VulkanLogicalDevice::BindImageMemory(VkImage image, VkDeviceMemory mem) const {
   vkBindImageMemory(m_Device, image, mem, 0);
+}
+void VulkanLogicalDevice::BindBufferMemory(VkBuffer buffer, VkDeviceMemory mem,
+                                           uint64_t offset) const {
+  vkBindBufferMemory(m_Device, buffer, mem, offset);
 }
 
 ShaderModuleWrapper VulkanLogicalDevice::CreateShader(const VkShaderModuleCreateInfo& info,
@@ -59,6 +75,7 @@ PipelineWrapper VulkanLogicalDevice::CreateGraphicsPipeline(
   auto res = vkCreateGraphicsPipelines(m_Device, VK_NULL_HANDLE, 1, &info, m_Allocator, &handle);
   return PipelineWrapper(std::move(handle), GetPtr());
 }
+
 CommandPoolWrapper VulkanLogicalDevice::CreateCommandPool(const VkCommandPoolCreateInfo& info,
                                                           const char* name) const {
   VkCommandPool handle = VK_NULL_HANDLE;
@@ -79,6 +96,7 @@ FenceWrapper VulkanLogicalDevice::CreateFence(const VkFenceCreateInfo& info,
   auto res = vkCreateFence(m_Device, &info, m_Allocator, &handle);
   return FenceWrapper(std::move(handle), GetPtr());
 }
+
 ImageWrapper VulkanLogicalDevice::CreateImage(const VkImageCreateInfo& info,
                                               const char* name) const {
   FOO_ASSERT(info.sType == VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
@@ -87,11 +105,24 @@ ImageWrapper VulkanLogicalDevice::CreateImage(const VkImageCreateInfo& info,
   return ImageWrapper(std::move(handle), GetPtr());
 }
 
+BufferWrapper VulkanLogicalDevice::CreateBuffer(const VkBufferCreateInfo& info,
+                                                const char* name) const {
+  FOO_ASSERT(info.sType == VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
+  VkBuffer handle;
+  auto res = vkCreateBuffer(m_Device, &info, m_Allocator, &handle);
+  return BufferWrapper(std::move(handle), GetPtr());
+}
+
 VkCommandBuffer VulkanLogicalDevice::AllocateCmdBuffer(
     const VkCommandBufferAllocateInfo& info) const {
   VkCommandBuffer handle = VK_NULL_HANDLE;
   auto res = vkAllocateCommandBuffers(m_Device, &info, &handle);
   return handle;
+}
+
+void VulkanLogicalDevice::DestroyObject(BufferWrapper&& handle) const {
+  vkDestroyBuffer(m_Device, handle, m_Allocator);
+  handle.m_VulkanObject = VK_NULL_HANDLE;
 }
 
 void VulkanLogicalDevice::DestroyObject(ShaderModuleWrapper&& module) const {

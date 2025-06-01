@@ -1,3 +1,4 @@
+#include "src/Core/Ref.h"
 #define VOLK_IMPLEMENTATION
 #include "Volk/volk.h"
 #include "Renderer.h"
@@ -157,6 +158,17 @@ void Renderer::CreateDeviceAndSwapchain() {
 
 Ref<VulkanImage> Renderer::CreateImage(const ImageDescription& desc, VkImage handle) {
   return nullptr;
+}
+
+Ref<VulkanBuffer> Renderer::CreateBuffer(const BufferDescription& desc) {
+  FOO_ASSERT(desc.Usage != BufferUsage::None);
+
+  if (desc.Usage == BufferUsage::Index || desc.Usage == BufferUsage::Vertex) {
+    FOO_ASSERT(desc.Size > 0, "Vertex and Index buffers must be provide data");
+  }
+
+  auto buffer = MakeRef<VulkanBuffer>(desc, GetPtr());
+  return buffer;
 }
 
 void Renderer::BeginRendering() {

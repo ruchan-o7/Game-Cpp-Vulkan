@@ -15,6 +15,7 @@ using CommandPoolWrapper = VulkanObject<VkCommandPool>;
 using SemaphoreWrapper = VulkanObject<VkSemaphore>;
 using FenceWrapper = VulkanObject<VkFence>;
 using ImageWrapper = VulkanObject<VkImage>;
+using BufferWrapper = VulkanObject<VkBuffer>;
 
 class VulkanPhysicalDevice;
 class Renderer;
@@ -50,6 +51,7 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
       return m_Allocator;
     }
     void WaitIdle() const;
+    void DestroyObject(BufferWrapper&& handle) const;
     void DestroyObject(ShaderModuleWrapper&& handle) const;
     void DestroyObject(PipelineLayoutWrapper&& handle) const;
     void DestroyObject(PipelineWrapper&& handle) const;
@@ -69,14 +71,21 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     SemaphoreWrapper CreateVulkanSemaphore(const VkSemaphoreCreateInfo& info, const char* name = nullptr);
     FenceWrapper CreateFence(const VkFenceCreateInfo& info, const char* name = nullptr)const;
     ImageWrapper CreateImage(const VkImageCreateInfo& info, const char* name = nullptr)const;
+    BufferWrapper CreateBuffer(const VkBufferCreateInfo& info, const char* name = nullptr)const;
     // clang-format on
 
     // TODO: Should allocate from pool ?
     VkCommandBuffer AllocateCmdBuffer(const VkCommandBufferAllocateInfo& info) const;
 
     VkMemoryRequirements GetImageMemReq(VkImage image) const;
-    VkDeviceMemory AllocateMemory(VkMemoryRequirements memReqs) const;
-    void BindImageMemory(VkImage image, VkDeviceMemory mem);
+    VkMemoryRequirements GetBufferMemReq(VkBuffer buffer) const;
+    VkDeviceMemory AllocateMemory(const VkMemoryAllocateInfo& memReqs) const;
+    void BindImageMemory(VkImage image, VkDeviceMemory mem) const;
+    void BindBufferMemory(VkBuffer buffer, VkDeviceMemory mem, uint64_t offset = 0) const;
+
+    [[nodiscard]] void* MapBuffer(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size,
+                                  VkMemoryMapFlags flags) const;
+    void UnmapBuffer(VkDeviceMemory memory) const;
 
   private:
     const VkAllocationCallbacks* m_Allocator;
