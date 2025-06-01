@@ -104,6 +104,36 @@ Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& in
       m_AllocCB(alloc) {
 }
 
+VkCommandBuffer Renderer::GetTransientCmdBuffer() {
+  VkCommandBufferAllocateInfo allocInfo {};
+  allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  allocInfo.commandPool = m_CmdPool;
+  allocInfo.commandBufferCount = 1;
+
+  VkCommandBuffer commandBuffer = m_LogicalDevice->AllocateCmdBuffer(allocInfo);
+
+  VkCommandBufferBeginInfo beginInfo {};
+  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+  vkBeginCommandBuffer(commandBuffer, &beginInfo);
+  return commandBuffer;
+}
+
+void Renderer::SubmitTransientCommandBuffer(VkCommandBuffer cmd) {
+  vkEndCommandBuffer(cmd);
+
+  VkSubmitInfo submitInfo {};
+  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submitInfo.commandBufferCount = 1;
+  submitInfo.pCommandBuffers = &cmd;
+
+  vkQueueSubmit(m_VkQueue, 1, &submitInfo, VK_NULL_HANDLE);
+  vkQueueWaitIdle(m_VkQueue);
+
+  vkFreeCommandBuffers(m_LogicalDevice->GetHandle(), m_CmdPool, 1, &cmd);
+}
 void Renderer::CreateDeviceAndSwapchain() {
   uint32_t queueIndex = m_PhysicalDevice->GetQueuFamilyIndices(VK_QUEUE_GRAPHICS_BIT);
   VkDeviceQueueCreateInfo queueInfo {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};

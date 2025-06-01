@@ -49,6 +49,9 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
       return *m_PhysicalDevice;
     }
 
+    VkCommandBuffer GetTransientCmdBuffer();
+    void SubmitTransientCommandBuffer(VkCommandBuffer cmd);
+
     void BeginRendering();
     void BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline);
     void Draw(const DrawAttributes& attribs);
