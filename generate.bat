@@ -1,3 +1,5 @@
 @echo off
 call cls
-call cmake -S . -O build -G "MinGW Makefiles"
+call cmake -B build\Ninja -G Ninja
+call cmake -B build\VS
+
