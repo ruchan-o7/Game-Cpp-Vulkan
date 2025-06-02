@@ -31,6 +31,15 @@ struct VertexAttribute {
     ValueType Type;
 };
 
+struct ShaderVariable {
+    uint32_t Binding = 0;
+    // UNIFORM
+    VkDescriptorType Type;
+    uint32_t Count = 1;
+    //= VK_SHADER_STAGE_VERTEX_BIT
+    VkShaderStageFlagBits ShaderStage;
+};
+
 struct VertexInputBindingDesc {
     uint32_t Binding = 0;
     uint32_t Stride = 0;
@@ -49,6 +58,7 @@ struct GraphicsPipelineDescription {
     std::vector<VertexAttribute> VertexAttributes;
     std::vector<VertexInputBindingDesc> BindingDescs;
     std::vector<PushConstantRange> PushConstants;
+    std::vector<ShaderVariable> ShaderVariables;
     VkPrimitiveTopology Topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     VkPolygonMode PolygonMode = VK_POLYGON_MODE_FILL;
     float LineWidth = 1.0f;
@@ -73,6 +83,7 @@ class VulkanGraphicsPipeline : public RefBase {
 
     PipelineWrapper m_Pipeline;
     PipelineLayoutWrapper m_Layout;
+    std::vector<DescriptorSetLayoutWrapper> m_DescriptorLayouts;
 };
 
 }  // namespace fg

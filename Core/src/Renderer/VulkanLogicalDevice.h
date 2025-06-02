@@ -17,6 +17,7 @@ using FenceWrapper = VulkanObject<VkFence>;
 using ImageWrapper = VulkanObject<VkImage>;
 using BufferWrapper = VulkanObject<VkBuffer>;
 using MemoryWrapper = VulkanObject<VkDeviceMemory>;
+using DescriptorSetLayoutWrapper = VulkanObject<VkDescriptorSetLayout>;
 
 class VulkanPhysicalDevice;
 class Renderer;
@@ -63,6 +64,7 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     void DestroyObject(ImageWrapper&& handle) const;
     void DestroyObject(MemoryWrapper&& handle) const;
     void DestroyObject(VmaAllocationWrapper&& handle) const;
+    void DestroyObject(DescriptorSetLayoutWrapper&& handle) const;
     void WaitFence(VkFence fence);
     void ResetFence(VkFence& fence);
     VkResult GetFenceStatus(VkFence fence);
@@ -77,6 +79,7 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     ImageWrapper CreateImage(const VkImageCreateInfo& info, const char* name = nullptr)const;
     BufferWrapper CreateBuffer(const VkBufferCreateInfo& info, const char* name = nullptr)const;
     VmaAllocationWrapper CreateVMABuffer(const VkBufferCreateInfo& info,const VmaAllocationCreateInfo& allocInfo) const;
+    DescriptorSetLayoutWrapper CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& info, const char* name = nullptr)const;
     // clang-format on
 
     // TODO: Should allocate from pool ?

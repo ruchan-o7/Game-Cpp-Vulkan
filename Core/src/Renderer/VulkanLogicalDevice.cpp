@@ -4,7 +4,6 @@
 #include "Renderer.h"
 #include "../Core/Assert.h"
 #include "../Core/Log.h"
-#include "src/Renderer/VulkanHeader.h"
 
 namespace fg {
 
@@ -87,12 +86,14 @@ void VulkanLogicalDevice::BindBufferMemory(VkBuffer buffer, VkDeviceMemory mem,
 
 ShaderModuleWrapper VulkanLogicalDevice::CreateShader(const VkShaderModuleCreateInfo& info,
                                                       const char* name) const {
+  FOO_ASSERT(info.sType == VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
   VkShaderModule module;
   auto res = vkCreateShaderModule(m_Device, &info, m_Allocator, &module);
   return ShaderModuleWrapper(std::move(module), GetPtr());
 }
 PipelineLayoutWrapper VulkanLogicalDevice::CreatePipelineLayout(
     const VkPipelineLayoutCreateInfo& info, const char* name) const {
+  FOO_ASSERT(info.sType == VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
   VkPipelineLayout layout = VK_NULL_HANDLE;
   auto res = vkCreatePipelineLayout(m_Device, &info, m_Allocator, &layout);
   return PipelineLayoutWrapper(std::move(layout), GetPtr());
@@ -100,13 +101,22 @@ PipelineLayoutWrapper VulkanLogicalDevice::CreatePipelineLayout(
 
 PipelineWrapper VulkanLogicalDevice::CreateGraphicsPipeline(
     const VkGraphicsPipelineCreateInfo& info, const char* name) const {
+  FOO_ASSERT(info.sType == VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
   VkPipeline handle = VK_NULL_HANDLE;
   auto res = vkCreateGraphicsPipelines(m_Device, VK_NULL_HANDLE, 1, &info, m_Allocator, &handle);
   return PipelineWrapper(std::move(handle), GetPtr());
 }
+DescriptorSetLayoutWrapper VulkanLogicalDevice::CreateDescriptorSetLayout(
+    const VkDescriptorSetLayoutCreateInfo& info, const char* name) const {
+  FOO_ASSERT(info.sType == VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
+  VkDescriptorSetLayout handle = VK_NULL_HANDLE;
+  auto res = vkCreateDescriptorSetLayout(m_Device, &info, m_Allocator, &handle);
+  return DescriptorSetLayoutWrapper(std::move(handle), GetPtr());
+}
 
 CommandPoolWrapper VulkanLogicalDevice::CreateCommandPool(const VkCommandPoolCreateInfo& info,
                                                           const char* name) const {
+  FOO_ASSERT(info.sType == VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
   VkCommandPool handle = VK_NULL_HANDLE;
   auto res = vkCreateCommandPool(m_Device, &info, m_Allocator, &handle);
   return CommandPoolWrapper(std::move(handle), GetPtr());
@@ -151,6 +161,11 @@ VkCommandBuffer VulkanLogicalDevice::AllocateCmdBuffer(
 
 void VulkanLogicalDevice::DestroyObject(BufferWrapper&& handle) const {
   vkDestroyBuffer(m_Device, handle, m_Allocator);
+  handle.m_VulkanObject = VK_NULL_HANDLE;
+}
+
+void VulkanLogicalDevice::DestroyObject(DescriptorSetLayoutWrapper&& handle) const {
+  vkDestroyDescriptorSetLayout(m_Device, handle, m_Allocator);
   handle.m_VulkanObject = VK_NULL_HANDLE;
 }
 

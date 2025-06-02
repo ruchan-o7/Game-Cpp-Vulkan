@@ -138,10 +138,32 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineDescription
     pcranges.emplace_back(range);
   }
 
+  std::map<uint32_t, std::vector<VkDescriptorSetLayoutBinding>> bindingMap;
+
+  for (const auto& var : m_Desc.ShaderVariables) {
+    VkDescriptorSetLayoutBinding binding {};
+    binding.binding = var.Binding;
+    binding.descriptorType = var.Type;
+    binding.descriptorCount = var.Count;
+    binding.stageFlags = var.ShaderStage;
+    binding.pImmutableSamplers = VK_NULL_HANDLE;  // TODO:
+    bindingMap[var.Binding].push_back(binding);
+  }
+
+  std::vector<VkDescriptorSetLayout> setLayouts;
+  for (const auto& [idx, bindings] : bindingMap) {
+    VkDescriptorSetLayoutCreateInfo descriptorInfo {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+    descriptorInfo.pBindings = bindings.data();
+    descriptorInfo.bindingCount = (uint32_t)bindings.size();
+    setLayouts.push_back(
+        m_DescriptorLayouts.emplace_back(device->CreateDescriptorSetLayout(descriptorInfo)));
+  }
+
   VkPipelineLayoutCreateInfo layoutInfo {};
   layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  layoutInfo.setLayoutCount = 0;     // Optional
-  layoutInfo.pSetLayouts = nullptr;  // Optional
+  layoutInfo.setLayoutCount = (uint32_t)setLayouts.size();
+  layoutInfo.pSetLayouts = setLayouts.data();  // Optional
   layoutInfo.pushConstantRangeCount = (uint32_t)pcranges.size();
   layoutInfo.pPushConstantRanges = pcranges.data();
   m_Layout = device->CreatePipelineLayout(layoutInfo, m_Desc.Name);
