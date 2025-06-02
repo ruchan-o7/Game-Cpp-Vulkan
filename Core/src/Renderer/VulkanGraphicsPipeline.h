@@ -1,6 +1,7 @@
 #pragma once
 #include "VulkanObject.h"
 #include "../Core/Ref.h"
+#include "../Core/Assert.h"
 
 namespace fg {
 
@@ -63,24 +64,36 @@ struct GraphicsPipelineDescription {
     VkPolygonMode PolygonMode = VK_POLYGON_MODE_FILL;
     float LineWidth = 1.0f;
     VkCullModeFlags CullMode = VK_CULL_MODE_BACK_BIT;
-    VkFrontFace FrontFace = VK_FRONT_FACE_CLOCKWISE;
+    VkFrontFace FrontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     VkFormat RenderTargetFormat = VK_FORMAT_UNDEFINED;
 };
 
 class VulkanGraphicsPipeline : public RefBase {
   public:
     VulkanGraphicsPipeline(const GraphicsPipelineDescription& desc,
-                           std::weak_ptr<Renderer> renderer);
+                           const std::shared_ptr<VulkanLogicalDevice>& renderer);
     virtual ~VulkanGraphicsPipeline() = default;
 
     VkPipeline GetHandle() const {
       return m_Pipeline;
     }
 
+    VkPipelineLayout Layout() const {
+      return m_Layout;
+    }
+
+    VkDescriptorSetLayout DescriptorSetLayout() const {
+      FOO_ASSERT(m_DescriptorLayouts.size() > 0);
+      return m_DescriptorLayouts[0];
+    }
+
+    VkDescriptorSet CreateDescriptorSet();
+
   private:
     GraphicsPipelineDescription m_Desc;
-    std::weak_ptr<Renderer> m_Renderer;
+    std::shared_ptr<VulkanLogicalDevice> m_LogicalDevice;
 
+    DescriptorPoolWrapper m_DescriptorPool;
     PipelineWrapper m_Pipeline;
     PipelineLayoutWrapper m_Layout;
     std::vector<DescriptorSetLayoutWrapper> m_DescriptorLayouts;

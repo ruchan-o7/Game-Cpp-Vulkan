@@ -1,6 +1,4 @@
 #include "VulkanGraphicsPipeline.h"
-#include "../Core/Assert.h"
-#include "Renderer.h"
 
 namespace {
 static VkFormat ToVk(fg::ValueType type) {
@@ -32,10 +30,9 @@ static VkVertexInputRate ToVk(fg::VertexInputRate rate) {
 namespace fg {
 
 VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineDescription& desc,
-                                               std::weak_ptr<Renderer> renderer)
-    : m_Desc(desc), m_Renderer(renderer) {
-  FOO_ASSERT(!renderer.expired());
-  auto device = m_Renderer.lock()->GetLogicalDevice();
+                                               const std::shared_ptr<VulkanLogicalDevice>& logical)
+    : m_Desc(desc), m_LogicalDevice(logical) {
+  auto device = m_LogicalDevice;
 
   VkPipelineDynamicStateCreateInfo dynamicState {
       VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
@@ -216,6 +213,35 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineDescription
   pipelineInfo.pStages = shaderStages.data();
 
   m_Pipeline = device->CreateGraphicsPipeline(pipelineInfo, m_Desc.Name);
+
+  VkDescriptorPoolSize poolSize {};
+  poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  poolSize.descriptorCount = 1;
+
+  VkDescriptorPoolCreateInfo poolInfo {VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
+  poolInfo.poolSizeCount = 1;
+  poolInfo.pPoolSizes = &poolSize;
+  poolInfo.maxSets = 100;
+  poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+  m_DescriptorPool = m_LogicalDevice->CreateDescriptorPool(poolInfo);
+}
+
+VkDescriptorSet VulkanGraphicsPipeline::CreateDescriptorSet() {
+  std::vector<VkDescriptorSetLayout> setLayouts;
+  setLayouts.reserve(m_DescriptorLayouts.size());
+  for (const auto& l : m_DescriptorLayouts) {
+    setLayouts.emplace_back(l);
+  }
+  VkDescriptorSetAllocateInfo allocInfo {};
+  allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+  allocInfo.descriptorPool = m_DescriptorPool;
+  allocInfo.descriptorSetCount = 1;
+  allocInfo.pSetLayouts = setLayouts.data();
+  VkDescriptorSet handle = 0;
+  auto vkDevice = m_LogicalDevice->GetHandle();
+  // TODO: Create wrapper for this:
+  auto res = vkAllocateDescriptorSets(vkDevice, &allocInfo, &handle);
+  return handle;
 }
 
 }  // namespace fg
