@@ -2,8 +2,8 @@
 #include "../Renderer/VulkanGraphicsPipeline.h"
 #include "../Renderer/VulkanShader.h"
 #include "../Renderer/VulkanSwapchain.h"
-#include "src/Renderer/VulkanBuffer.h"
-#include "src/Renderer/VulkanImage.h"
+#include "../Renderer/VulkanBuffer.h"
+#include "../Renderer/VulkanImage.h"
 
 typedef struct GLFWwindow GLFWwindow;
 

@@ -1,8 +1,25 @@
 #include "VulkanLogicalDevice.h"
 #include "VulkanObject.h"
+#include "Renderer.h"
 #include "../Core/Assert.h"
+#include "../Core/Log.h"
+#include "../Renderer/VulkanPhysicalDevice.h"
 
 namespace fg {
+
+VulkanLogicalDevice::VulkanLogicalDevice(const VkDeviceCreateInfo& info, uint32_t queueIndex,
+                                         std::weak_ptr<Renderer> renderer,
+                                         const VkAllocationCallbacks* allocator)
+    : m_Renderer(renderer), m_Allocator(allocator) {
+  VkDevice device = VK_NULL_HANDLE;
+  const auto& pDevice = m_Renderer.lock()->GetPhysicalDevice();
+  VkResult res = vkCreateDevice(pDevice.GetHandle(), &info, allocator, &device);
+  if (res != VK_SUCCESS) {
+    FOO_CORE_CRITICAL("Can not create logical device");
+  }
+  volkLoadDevice(device);
+  vkGetDeviceQueue(m_Device, queueIndex, 0, &m_Queue);
+}
 
 void VulkanLogicalDevice::WaitIdle() const {
   vkDeviceWaitIdle(m_Device);

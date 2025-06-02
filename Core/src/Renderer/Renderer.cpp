@@ -164,13 +164,7 @@ void Renderer::CreateDeviceAndSwapchain() {
   info.ppEnabledLayerNames = validationLayers;
   info.pNext = &dynamicRendering;
 
-  VkDevice device = VK_NULL_HANDLE;
-  VkResult res = vkCreateDevice(pDev, &info, m_AllocCB, &device);
-  if (res != VK_SUCCESS) {
-    throw std::runtime_error("Can not create logical device");
-  }
-  volkLoadDevice(device);
-  m_LogicalDevice = std::make_shared<VulkanLogicalDevice>(device, queueIndex, GetPtr(), m_AllocCB);
+  m_LogicalDevice = std::make_shared<VulkanLogicalDevice>(info, queueIndex, GetPtr(), m_AllocCB);
   m_VkQueue = m_LogicalDevice->GetQueue();
   m_Swapchain = std::make_shared<VulkanSwapchain>(m_Window, GetPtr(), m_Instance, m_LogicalDevice,
                                                   *m_PhysicalDevice);
