@@ -24,6 +24,13 @@ void VulkanLogicalDevice::WaitIdle() const {
   vkDeviceWaitIdle(m_Device);
 }
 
+DescriptorPoolWrapper VulkanLogicalDevice::CreateDescriptorPool(
+    const VkDescriptorPoolCreateInfo& info, const char* name) const {
+  VkDescriptorPool handle = VK_NULL_HANDLE;
+  auto res = vkCreateDescriptorPool(m_Device, &info, m_Allocator, &handle);
+  return {std::move(handle), GetPtr()};
+}
+
 VmaAllocationWrapper VulkanLogicalDevice::CreateVMABuffer(
     const VkBufferCreateInfo& info, const VmaAllocationCreateInfo& allocInfo) const {
   VkBuffer handle = VK_NULL_HANDLE;
@@ -46,6 +53,13 @@ void VulkanLogicalDevice::WaitFence(VkFence fence) {
 VkResult VulkanLogicalDevice::GetFenceStatus(VkFence fence) {
   return vkGetFenceStatus(m_Device, fence);
 }
+void VulkanLogicalDevice::UpdateDescriptorSets(uint32_t writeCount,
+                                               const VkWriteDescriptorSet* sets,
+                                               uint32_t dstCopyCount,
+                                               const VkCopyDescriptorSet* copies) {
+  vkUpdateDescriptorSets(m_Device, writeCount, sets, dstCopyCount, copies);
+}
+
 void* VulkanLogicalDevice::MapBuffer(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size,
                                      VkMemoryMapFlags flags) const {
   void* ptr = 0;
@@ -195,6 +209,10 @@ void VulkanLogicalDevice::DestroyObject(VmaAllocationWrapper&& handle) const {
   vmaDestroyBuffer(m_VMA, handle.m_VulkanObject, handle.m_VmaAllocation);
   handle.m_VulkanObject = VK_NULL_HANDLE;
   handle.m_VmaAllocation = nullptr;
+}
+void VulkanLogicalDevice::DestroyObject(DescriptorPoolWrapper&& handle) const {
+  vkDestroyDescriptorPool(m_Device, handle.m_VulkanObject, m_Allocator);
+  handle.m_VulkanObject = VK_NULL_HANDLE;
 }
 
 void VulkanLogicalDevice::DestroyObject(CommandPoolWrapper&& handle) const {
