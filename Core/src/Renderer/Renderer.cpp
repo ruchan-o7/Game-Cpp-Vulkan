@@ -209,6 +209,13 @@ void Renderer::CreateDeviceAndSwapchain() {
   }
 }
 
+void Renderer::BindDescriptorSet(const VkDescriptorSet& set) {
+  FOO_ASSERT(m_CurrentPipeline != nullptr);
+  auto cmd = GetCurrentCmdBuffer();
+  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CurrentPipeline->Layout(), 0, 1,
+                          &set, 0, nullptr);
+}
+
 Ref<VulkanImage> Renderer::CreateImage(const ImageDescription& desc, VkImage handle) {
   return nullptr;
 }
@@ -369,7 +376,7 @@ Ref<VulkanShader> Renderer::CreateShader(const ShaderDescription& desc) const {
 Ref<VulkanGraphicsPipeline> Renderer::CreateGraphicsPipeline(
     const GraphicsPipelineDescription& desc) {
   FOO_ASSERT(desc.RenderTargetFormat != VK_FORMAT_UNDEFINED);
-  return MakeRef<VulkanGraphicsPipeline>(desc, GetPtr());
+  return MakeRef<VulkanGraphicsPipeline>(desc, m_LogicalDevice);
 }
 
 void Renderer::BindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
