@@ -27,7 +27,6 @@ std::shared_ptr<Renderer> Renderer::Create(GLFWwindow* window, const VkAllocatio
     return nullptr;
   }
   VkInstance vkInstance = VK_NULL_HANDLE;
-  VkPhysicalDevice vkPDevice = VK_NULL_HANDLE;
 
   VkApplicationInfo appInfo {VK_STRUCTURE_TYPE_APPLICATION_INFO};
   appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
@@ -63,8 +62,7 @@ std::shared_ptr<Renderer> Renderer::Create(GLFWwindow* window, const VkAllocatio
 
   auto Instance = std::make_shared<VulkanInstance>(vkInstance, acb);
 
-  auto messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                         VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+  auto messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
                          VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
                          VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
   auto messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
@@ -76,15 +74,27 @@ std::shared_ptr<Renderer> Renderer::Create(GLFWwindow* window, const VkAllocatio
   uint32_t physicalDeviceCount = 0;
   vkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, nullptr);
   vkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, physicalDevices);
-
+  if (physicalDeviceCount == 0) {
+    throw std::runtime_error("Can not supported physical GPU device");
+  }
+  VkPhysicalDevice selected = VK_NULL_HANDLE;
   for (uint32_t i = 0; i < physicalDeviceCount; i++) {
     VkPhysicalDeviceProperties props;
     vkGetPhysicalDeviceProperties(physicalDevices[i], &props);
     if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-      vkPDevice = physicalDevices[i];
+      selected = physicalDevices[i];
+      break;
     }
   }
-  auto physicalDevice = std::make_unique<VulkanPhysicalDevice>(vkPDevice);
+  if (selected == VK_NULL_HANDLE) {
+    FOO_CORE_INFO("Can not find discrete GPU, selecting first one");
+    selected = physicalDevices[0];
+  }
+  VkPhysicalDeviceProperties pDeviceProps {};
+  vkGetPhysicalDeviceProperties(selected, &pDeviceProps);
+  FOO_CORE_INFO("Selected GPU: {}", pDeviceProps.deviceName);
+
+  auto physicalDevice = std::make_unique<VulkanPhysicalDevice>(selected);
 
   Renderer* renderer = new Renderer(window, Instance, std::move(physicalDevice), acb);
 
