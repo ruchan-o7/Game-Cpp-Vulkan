@@ -26,17 +26,6 @@ static void GLFWErrorCallback(int err, const char* desc) {
 
 fg::Ref<fg::VulkanBuffer> m_VertexBuffer;
 
-struct Vertex {
-    glm::vec2 pos;
-    glm::vec3 color;
-};
-
-const std::vector<Vertex> vertices = {
-    {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-    { {0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
-};
-
 Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) {
   FOO_PROFILE_FUNCTION();
   FOO_ASSERT(!s_Instance, "Application already exists!");
@@ -92,15 +81,25 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
     };
 
     m_Pipeline = m_Renderer->CreateGraphicsPipeline(pipeDesc);
+
+    struct Vertex {
+        glm::vec2 pos;
+        glm::vec3 color;
+    };
+
+    const Vertex vertices[] = {
+        {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+        { {0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    };
     fg::BufferDescription desc;
-    desc.Size = vertices.size();
+    desc.Size = sizeof(vertices);
     desc.Name = "Vertex buffer";
     desc.Usage = fg::BufferUsage::Vertex;
 
     fg::Buffer data;
-    data.Data = (uint8_t*)vertices.data();
-    data.Size = vertices.size();
-
+    data.Data = (uint8_t*)vertices;
+    data.Size = sizeof(vertices);
     m_VertexBuffer = m_Renderer->CreateBuffer(desc, data);
   }
 
