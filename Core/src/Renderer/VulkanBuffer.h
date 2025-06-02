@@ -24,7 +24,7 @@ struct BufferDescription {
 
 class VulkanBuffer : public RefBase {
   public:
-    VulkanBuffer(const BufferDescription& desc, std::weak_ptr<Renderer> renderer,
+    VulkanBuffer(const BufferDescription& desc, const Renderer* renderer,
                  const Buffer data = Buffer());
     virtual ~VulkanBuffer();
 
@@ -33,19 +33,17 @@ class VulkanBuffer : public RefBase {
     }
     void Map(VkMemoryMapFlags flags = 0);
     void Unmap();
-    void CopyTo(VulkanBuffer* destination, VkBufferCopy* regions, uint32_t regionCount);
     void SetData(Buffer buffer);
 
     VkBuffer GetVkBuffer() const {
-      return m_Handle;
+      return m_Allocation;
     }
 
   private:
     BufferDescription m_Desc;
     ResourceState m_State = ResourceState::Unknown;
-    std::weak_ptr<Renderer> m_Renderer;
-    BufferWrapper m_Handle;
-    MemoryWrapper m_Memory;
+    VmaAllocationWrapper m_Allocation;
+    VmaAllocator m_Allocator;
     void* m_MapPtr = nullptr;
 };
 

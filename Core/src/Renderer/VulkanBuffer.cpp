@@ -1,6 +1,5 @@
 #include "VulkanBuffer.h"
 #include "Renderer.h"
-#include "VulkanPhysicalDevice.h"
 #include "../Core/Assert.h"
 #include "../Core/Log.h"
 
@@ -37,30 +36,34 @@ VkMemoryPropertyFlags GetMemFlag(BufferUsage usage) {
   return 0;
 }
 
-VulkanBuffer::VulkanBuffer(const BufferDescription& desc, std::weak_ptr<Renderer> renderer,
+VmaMemoryUsage GetVMAUsage(BufferUsage usage) {
+  switch (usage) {
+    case BufferUsage::Vertex:
+    case BufferUsage::Index:
+      return VMA_MEMORY_USAGE_GPU_ONLY;
+    case BufferUsage::Uniform:
+    case BufferUsage::Staging:
+    case BufferUsage::None:
+      return VMA_MEMORY_USAGE_AUTO;
+      break;
+  }
+}
+
+VulkanBuffer::VulkanBuffer(const BufferDescription& desc, const Renderer* renderer,
                            const Buffer data)
-    : m_Renderer(renderer), m_Desc(desc) {
+    : m_Desc(desc) {
+  m_Allocator = renderer->GetVMA();
+
   VkBufferCreateInfo info {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
   info.size = m_Desc.Size;
   info.usage = ToVk(m_Desc.Usage);
   info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-  auto r = m_Renderer.lock();
-  auto device = r->GetLogicalDevice();
-  m_Handle = device->CreateBuffer(info, m_Desc.Name);
+  VmaAllocationCreateInfo allocInfo {};
+  allocInfo.usage = GetVMAUsage(m_Desc.Usage);
+  allocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
 
-  auto memRequirements = device->GetBufferMemReq(m_Handle);
-  VkMemoryPropertyFlags flags = GetMemFlag(m_Desc.Usage);
-
-  auto memTypeIndex =
-      r->GetPhysicalDevice().FindMemTypeIndex(memRequirements.memoryTypeBits, flags);
-
-  VkMemoryAllocateInfo allocInfo {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
-  allocInfo.allocationSize = memRequirements.size;
-  allocInfo.memoryTypeIndex = memTypeIndex;
-
-  m_Memory = device->AllocateMemory(allocInfo);
-  device->BindBufferMemory(m_Handle, m_Memory, 0);
+  m_Allocation = renderer->GetLogicalDevice()->CreateVMABuffer(info, allocInfo);
 
   if (data) {
     if (m_Desc.Usage == BufferUsage::Staging || m_Desc.Usage == BufferUsage::Uniform) {
@@ -71,12 +74,15 @@ VulkanBuffer::VulkanBuffer(const BufferDescription& desc, std::weak_ptr<Renderer
       stageDesc.Usage = BufferUsage::Staging;
       stageDesc.Name = desc.Name;
 
-      auto stageBuffer = r->CreateBuffer(stageDesc);
+      auto stageBuffer = renderer->CreateBuffer(stageDesc);
       stageBuffer->SetData(data);
       VkBufferCopy region[] = {
           {0, 0, m_Desc.Size}
       };
-      stageBuffer->CopyTo(this, region, 1);
+      CopyBufferAttr attr {};
+      attr.Src = stageBuffer.get();
+      attr.Dst = this;
+      renderer->CopyBuffer(attr);
     }
   }
 }
@@ -89,31 +95,14 @@ void VulkanBuffer::SetData(Buffer buffer) {
 
 void VulkanBuffer::Map(VkMemoryMapFlags flags) {
   FOO_ASSERT(m_MapPtr == nullptr, "Buffer did not unmapped after mapped");
-  FOO_ASSERT(m_Handle);
-  FOO_ASSERT(m_Memory);
-  FOO_ASSERT(!m_Renderer.expired());
-  if (auto renderer = m_Renderer.lock()) {
-    auto device = renderer->GetLogicalDevice();
-    m_MapPtr = device->MapBuffer(m_Memory, 0, m_Desc.Size, flags);
-  }
+  FOO_ASSERT(m_Allocation);
+  vmaMapMemory(m_Allocator, m_Allocation, &m_MapPtr);
 }
 
 void VulkanBuffer::Unmap() {
-  FOO_ASSERT(m_Handle);
-  FOO_ASSERT(m_Memory);
-  FOO_ASSERT(!m_Renderer.expired());
-  if (auto renderer = m_Renderer.lock()) {
-    auto device = renderer->GetLogicalDevice();
-    device->UnmapBuffer(m_Memory);
-    m_MapPtr = 0;
-  }
-}
-
-void VulkanBuffer::CopyTo(VulkanBuffer* destination, VkBufferCopy* regions, uint32_t regionCount) {
-  auto r = m_Renderer.lock();
-  auto cmd = r->GetTransientCmdBuffer();
-  vkCmdCopyBuffer(cmd, m_Handle, destination->GetVkBuffer(), regionCount, regions);
-  r->SubmitTransientCommandBuffer(cmd);
+  FOO_ASSERT(m_Allocation);
+  vmaUnmapMemory(m_Allocator, m_Allocation);
+  m_MapPtr = 0;
 }
 
 VulkanBuffer::~VulkanBuffer() {
