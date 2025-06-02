@@ -4,6 +4,7 @@
 #include "Renderer.h"
 #include "../Core/Assert.h"
 #include "../Core/Log.h"
+#include "src/Renderer/VulkanHeader.h"
 
 namespace fg {
 
@@ -23,6 +24,18 @@ VulkanLogicalDevice::VulkanLogicalDevice(const VkDeviceCreateInfo& info, uint32_
 void VulkanLogicalDevice::WaitIdle() const {
   vkDeviceWaitIdle(m_Device);
 }
+
+VmaAllocationWrapper VulkanLogicalDevice::CreateVMABuffer(
+    const VkBufferCreateInfo& info, const VmaAllocationCreateInfo& allocInfo) const {
+  VkBuffer handle = VK_NULL_HANDLE;
+  VmaAllocation allocation = VK_NULL_HANDLE;
+  auto res = vmaCreateBuffer(m_VMA, &info, &allocInfo, &handle, &allocation, nullptr);
+  if (res != VK_SUCCESS) {
+    FOO_CORE_ERROR("Can not allocate memory");
+  }
+  return VmaAllocationWrapper(std::move(handle), std::move(allocation), GetPtr());
+}
+
 void VulkanLogicalDevice::ResetFence(VkFence& fence) {
   vkResetFences(m_Device, 1, &fence);
 }
@@ -161,6 +174,12 @@ void VulkanLogicalDevice::DestroyObject(PipelineWrapper&& handle) const {
 void VulkanLogicalDevice::DestroyObject(MemoryWrapper&& handle) const {
   vkFreeMemory(m_Device, handle, m_Allocator);
   handle.m_VulkanObject = VK_NULL_HANDLE;
+}
+
+void VulkanLogicalDevice::DestroyObject(VmaAllocationWrapper&& handle) const {
+  vmaDestroyBuffer(m_VMA, handle.m_VulkanObject, handle.m_VmaAllocation);
+  handle.m_VulkanObject = VK_NULL_HANDLE;
+  handle.m_VmaAllocation = nullptr;
 }
 
 void VulkanLogicalDevice::DestroyObject(CommandPoolWrapper&& handle) const {

@@ -20,6 +20,7 @@ using MemoryWrapper = VulkanObject<VkDeviceMemory>;
 
 class VulkanPhysicalDevice;
 class Renderer;
+class VmaAllocationWrapper;
 
 class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDevice> {
   public:
@@ -48,6 +49,9 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     const VkAllocationCallbacks* GetAllocator() const {
       return m_Allocator;
     }
+    void SetVMAInstance(VmaAllocator vma) {
+      m_VMA = vma;
+    }
     void WaitIdle() const;
     void DestroyObject(BufferWrapper&& handle) const;
     void DestroyObject(ShaderModuleWrapper&& handle) const;
@@ -58,6 +62,7 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     void DestroyObject(FenceWrapper&& handle) const;
     void DestroyObject(ImageWrapper&& handle) const;
     void DestroyObject(MemoryWrapper&& handle) const;
+    void DestroyObject(VmaAllocationWrapper&& handle) const;
     void WaitFence(VkFence fence);
     void ResetFence(VkFence& fence);
     VkResult GetFenceStatus(VkFence fence);
@@ -71,6 +76,7 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     FenceWrapper CreateFence(const VkFenceCreateInfo& info, const char* name = nullptr)const;
     ImageWrapper CreateImage(const VkImageCreateInfo& info, const char* name = nullptr)const;
     BufferWrapper CreateBuffer(const VkBufferCreateInfo& info, const char* name = nullptr)const;
+    VmaAllocationWrapper CreateVMABuffer(const VkBufferCreateInfo& info,const VmaAllocationCreateInfo& allocInfo) const;
     // clang-format on
 
     // TODO: Should allocate from pool ?
@@ -92,5 +98,6 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     VkDevice m_Device;
     VkQueue m_Queue;
     uint32_t m_QueueIndex;
+    VmaAllocator m_VMA = nullptr;
 };
 }  // namespace fg
