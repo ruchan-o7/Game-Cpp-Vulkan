@@ -1,13 +1,7 @@
-#include "src/Core/Ref.h"
 #define VOLK_IMPLEMENTATION
-#include "Volk/volk.h"
 #include "Renderer.h"
 
-#include <GLFW/glfw3.h>
-#include <fstream>
-#include <ios>
-#include <memory>
-#include <stdexcept>
+#include "../Core/Ref.h"
 #include "../Core/Assert.h"
 #include "../Core/Log.h"
 #include "VulkanDebug.h"
@@ -15,6 +9,12 @@
 #include "VulkanInstance.h"
 #include "VulkanPhysicalDevice.h"
 #include "VulkanShader.h"
+
+#include <GLFW/glfw3.h>
+#include <fstream>
+#include <ios>
+#include <memory>
+#include <stdexcept>
 
 namespace fg {
 
