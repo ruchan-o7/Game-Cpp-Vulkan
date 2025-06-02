@@ -14,6 +14,8 @@
 
 #include <mutex>
 #include "GLFW/glfw3.h"
+#include "glm/ext/matrix_clip_space.hpp"
+#include "glm/ext/matrix_transform.hpp"
 #include "src/Renderer/VulkanBuffer.h"
 #include <imgui.h>
 namespace FooGame {
@@ -25,6 +27,14 @@ static void GLFWErrorCallback(int err, const char* desc) {
 }
 
 fg::Ref<fg::VulkanBuffer> m_VertexBuffer;
+fg::Ref<fg::VulkanBuffer> m_UniformBuffer;
+VkDescriptorSet m_DescriptorSet = 0;
+
+struct UBO {
+    glm::mat4 Model;
+    glm::mat4 View;
+    glm::mat4 Proj;
+};
 
 Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) {
   FOO_PROFILE_FUNCTION();
@@ -79,6 +89,9 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
     pipeDesc.BindingDescs = {
         {0, sizeof(glm::vec2) + sizeof(glm::vec3)}
     };
+    pipeDesc.ShaderVariables = {
+        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT},
+    };
 
     m_Pipeline = m_Renderer->CreateGraphicsPipeline(pipeDesc);
 
@@ -101,6 +114,28 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
     data.Data = (uint8_t*)vertices;
     data.Size = sizeof(vertices);
     m_VertexBuffer = m_Renderer->CreateBuffer(desc, data);
+    {
+      fg::BufferDescription desc;
+      desc.Size = sizeof(UBO);
+      desc.Name = "Uniform buffer";
+      desc.Usage = fg::BufferUsage::Uniform;
+      m_UniformBuffer = m_Renderer->CreateBuffer(desc);
+    }
+    m_DescriptorSet = m_Pipeline->CreateDescriptorSet();
+
+    VkDescriptorBufferInfo uboInfo {};
+    uboInfo.buffer = m_UniformBuffer->GetVkBuffer();
+    uboInfo.offset = 0;
+    uboInfo.range = VK_WHOLE_SIZE;
+    VkWriteDescriptorSet wds {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+    wds.dstSet = m_DescriptorSet;
+    wds.dstBinding = 0;
+    wds.dstArrayElement = 0;
+    wds.pBufferInfo = &uboInfo;
+    wds.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    wds.descriptorCount = 1;
+    wds.pBufferInfo = &uboInfo;
+    m_Renderer->GetLogicalDevice()->UpdateDescriptorSets(1, &wds, 0, nullptr);
   }
 
   // AssetManager::Init();
@@ -231,9 +266,25 @@ void Application::Run() {
       m_Renderer->BeginRendering();
 
       m_Renderer->BindPipeline(m_Pipeline);
+      UBO ubo {};
+      ubo.Model =
+          glm::rotate(glm::mat4(1.f), (float)time * glm::radians(90.f), glm::vec3(0.f, 0.f, 1.0f));
+      ubo.View =
+          glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f), glm::vec3(0.f, 0.f, 1.0f));
+      ubo.Proj = glm::perspective(
+          glm::radians(45.f),
+          (float)m_Swapchain->GetExtent().width / m_Swapchain->GetExtent().height, 0.001f, 100.f);
+      ubo.Proj[1][1] *= -1;
+      uint8_t CHUNK_BOI[192];
+      fg::Buffer mvp;
+      mvp.Data = CHUNK_BOI;
+      std::memcpy(mvp.Data, &ubo, sizeof(ubo));
+      mvp.Size = sizeof(ubo);
+      m_UniformBuffer->SetData(mvp);
 
       fg::VulkanBuffer* buffer[1] = {m_VertexBuffer.get()};
       VkDeviceSize offset[] = {0};
+      m_Renderer->BindDescriptorSet(m_DescriptorSet);
       m_Renderer->BindVertexBuffers(0, 1, buffer, offset);
       m_Renderer->Draw({3, 1, 0, 0});
 
