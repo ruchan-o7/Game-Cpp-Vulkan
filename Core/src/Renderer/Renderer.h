@@ -15,6 +15,12 @@ struct DrawAttributes {
     uint32_t FirstVertex = 0;
     uint32_t FirstInstance = 0;
 };
+struct CopyBufferAttr {
+    VulkanBuffer* Src = nullptr;
+    VulkanBuffer* Dst = nullptr;
+    VkBufferCopy Regions[4];
+    uint32_t RegionCount = 0;
+};
 
 class Renderer : public std::enable_shared_from_this<Renderer> {
   public:
@@ -35,7 +41,10 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
 
     Ref<VulkanGraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDescription& desc);
     Ref<VulkanImage> CreateImage(const ImageDescription& desc, VkImage handle);
-    Ref<VulkanBuffer> CreateBuffer(const BufferDescription& desc, Buffer bufferData = Buffer());
+    Ref<VulkanBuffer> CreateBuffer(const BufferDescription& desc,
+                                   Buffer bufferData = Buffer()) const;
+
+    void CopyBuffer(const CopyBufferAttr& attr) const;
 
     std::shared_ptr<VulkanSwapchain> GetSwapchain() const {
       return m_Swapchain;
@@ -49,8 +58,12 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
       return *m_PhysicalDevice;
     }
 
-    VkCommandBuffer GetTransientCmdBuffer();
-    void SubmitTransientCommandBuffer(VkCommandBuffer cmd);
+    VmaAllocator GetVMA() const {
+      return m_VMA;
+    }
+
+    VkCommandBuffer GetTransientCmdBuffer() const;
+    void SubmitTransientCommandBuffer(VkCommandBuffer cmd) const;
 
     void BeginRendering();
     void BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline);
@@ -79,15 +92,12 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
     std::shared_ptr<VulkanSwapchain> m_Swapchain;
 
     const VkAllocationCallbacks* m_AllocCB;
-    VkDevice m_VkDevice = VK_NULL_HANDLE;
     VkQueue m_VkQueue = VK_NULL_HANDLE;
     VkCommandBuffer m_Cmd = VK_NULL_HANDLE;
     CommandPoolWrapper m_CmdPool;
     Ref<VulkanGraphicsPipeline> m_CurrentPipeline;
     GLFWwindow* m_Window = nullptr;
+    VmaAllocator m_VMA = nullptr;
 };
 
 }  // namespace fg
-
-// std::vector<VkExtensionProperties> AvailableInstanceExtensions;
-// std::vector<VkExtensionProperties> EnabledInstanceExtensions;

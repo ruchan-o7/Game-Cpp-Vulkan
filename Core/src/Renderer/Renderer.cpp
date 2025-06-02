@@ -1,4 +1,5 @@
 #define VOLK_IMPLEMENTATION
+#define VMA_IMPLEMENTATION
 #include "Renderer.h"
 
 #include "../Core/Ref.h"
@@ -114,7 +115,7 @@ Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& in
       m_AllocCB(alloc) {
 }
 
-VkCommandBuffer Renderer::GetTransientCmdBuffer() {
+VkCommandBuffer Renderer::GetTransientCmdBuffer() const {
   VkCommandBufferAllocateInfo allocInfo {};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -131,7 +132,7 @@ VkCommandBuffer Renderer::GetTransientCmdBuffer() {
   return commandBuffer;
 }
 
-void Renderer::SubmitTransientCommandBuffer(VkCommandBuffer cmd) {
+void Renderer::SubmitTransientCommandBuffer(VkCommandBuffer cmd) const {
   vkEndCommandBuffer(cmd);
 
   VkSubmitInfo submitInfo {};
@@ -176,33 +177,68 @@ void Renderer::CreateDeviceAndSwapchain() {
 
   m_LogicalDevice = std::make_shared<VulkanLogicalDevice>(info, queueIndex, GetPtr(), m_AllocCB);
   m_VkQueue = m_LogicalDevice->GetQueue();
+
+  VmaAllocatorCreateInfo allocatorInfo {};
+  allocatorInfo.device = m_LogicalDevice->GetHandle();
+  allocatorInfo.physicalDevice = m_PhysicalDevice->GetHandle();
+  allocatorInfo.instance = m_Instance->GetHandle();
+  allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+
+  VmaVulkanFunctions vmaFunc {};
+  vmaImportVulkanFunctionsFromVolk(&allocatorInfo, &vmaFunc);
+  allocatorInfo.pVulkanFunctions = &vmaFunc;
+
+  auto res = vmaCreateAllocator(&allocatorInfo, &m_VMA);
+  if (res != VK_SUCCESS) {
+    FOO_CORE_ERROR("Can not initialize VMA");
+  }
+  m_LogicalDevice->SetVMAInstance(m_VMA);
+
   m_Swapchain = std::make_shared<VulkanSwapchain>(m_Window, GetPtr(), m_Instance, m_LogicalDevice,
                                                   *m_PhysicalDevice);
-  VkCommandPoolCreateInfo cmdPool {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
-  cmdPool.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-  m_CmdPool = m_LogicalDevice->CreateCommandPool(cmdPool);
-
-  VkCommandBufferAllocateInfo allocInfo {};
-  allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  allocInfo.commandPool = m_CmdPool;
-  allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocInfo.commandBufferCount = 1;
-  m_Cmd = m_LogicalDevice->AllocateCmdBuffer(allocInfo);
+  {
+    VkCommandPoolCreateInfo cmdPool {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
+    cmdPool.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    m_CmdPool = m_LogicalDevice->CreateCommandPool(cmdPool);
+    VkCommandBufferAllocateInfo allocInfo {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = m_CmdPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = 1;
+    m_Cmd = m_LogicalDevice->AllocateCmdBuffer(allocInfo);
+  }
 }
 
 Ref<VulkanImage> Renderer::CreateImage(const ImageDescription& desc, VkImage handle) {
   return nullptr;
 }
 
-Ref<VulkanBuffer> Renderer::CreateBuffer(const BufferDescription& desc, Buffer bufferData) {
+Ref<VulkanBuffer> Renderer::CreateBuffer(const BufferDescription& desc, Buffer bufferData) const {
   FOO_ASSERT(desc.Usage != BufferUsage::None);
 
   if (desc.Usage == BufferUsage::Index || desc.Usage == BufferUsage::Vertex) {
     FOO_ASSERT(desc.Size > 0, "Vertex and Index buffers must be provide data");
   }
-
-  auto buffer = MakeRef<VulkanBuffer>(desc, GetPtr(), bufferData);
+  auto buffer = MakeRef<VulkanBuffer>(desc, this, bufferData);
   return buffer;
+}
+
+void Renderer::CopyBuffer(const CopyBufferAttr& attr) const {
+  FOO_ASSERT(attr.Src != nullptr);
+  FOO_ASSERT(attr.Dst != nullptr);
+  if (attr.RegionCount == 0) {
+    // Whole buffer
+    auto cmd = GetTransientCmdBuffer();
+    VkBufferCopy whole {};
+    whole.dstOffset = 0;
+    whole.srcOffset = 0;
+    whole.size = attr.Src->GetDesc().Size;
+    vkCmdCopyBuffer(cmd, attr.Src->GetVkBuffer(), attr.Dst->GetVkBuffer(), 1, &whole);
+    SubmitTransientCommandBuffer(cmd);
+    return;
+  }
+
+  FOO_CORE_ERROR("Renderer::CopyBuffer did not implmenetd");
 }
 
 void Renderer::BeginRendering() {
