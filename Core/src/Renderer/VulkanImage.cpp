@@ -70,6 +70,20 @@ VkImageType ToVk(ImageType dim) {
       return VK_IMAGE_TYPE_3D;
   }
 }
+uint32_t ComponentSize(ImageFormat format) {
+  switch (format) {
+    case fg::ImageFormat::None:
+      return 0;
+    case fg::ImageFormat::RGBA8:
+    case fg::ImageFormat::RGB8:
+    case fg::ImageFormat::R8:
+    case fg::ImageFormat::R8Unsigned:
+      return sizeof(uint32_t);
+    case fg::ImageFormat::D32:
+    case fg::ImageFormat::RGBA16F:
+      return sizeof(float);
+  }
+}
 
 VulkanImage::VulkanImage(Renderer* renderer, const ImageDescription& desc, const Buffer buffer)
     : m_Desc(desc) {
@@ -111,12 +125,12 @@ VulkanImage::VulkanImage(Renderer* renderer, const ImageDescription& desc, const
     if (m_Desc.Usage == ImageUsage::Staging) {
       // SetData(buffer);
     } else {
-      BufferDescription stageDesc {};
+      BufferDescription stageDesc;
       stageDesc.Usage = BufferUsage::Staging;
       stageDesc.Name = "Staging buffer";
-      stageDesc.Size = m_Desc.Width * m_Desc.Height * GetComponentCount(m_Desc.Format);
+      stageDesc.Size = m_Desc.Width * m_Desc.Height * GetComponentCount(m_Desc.Format) *
+                       ComponentSize(m_Desc.Format);
       auto stage = renderer->CreateBuffer(stageDesc, buffer);
-      stage->SetData(buffer);
       CopyBufferToImageAttr attr {};
       attr.Src = stage.get();
       attr.Dst = this;
@@ -126,6 +140,7 @@ VulkanImage::VulkanImage(Renderer* renderer, const ImageDescription& desc, const
 }
 
 VkImageView VulkanImage::CreateView() {
+  FOO_ASSERT(false, "VulkanImage::CreateView - Did not implemented");
   return 0;
 }
 
