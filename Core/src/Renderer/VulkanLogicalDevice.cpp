@@ -4,6 +4,7 @@
 #include "Renderer.h"
 #include "../Core/Assert.h"
 #include "../Core/Log.h"
+#include "src/Renderer/VulkanHeader.h"
 
 namespace fg {
 
@@ -183,6 +184,10 @@ VkCommandBuffer VulkanLogicalDevice::AllocateCmdBuffer(
   VkCommandBuffer handle = VK_NULL_HANDLE;
   auto res = vkAllocateCommandBuffers(m_Device, &info, &handle);
   return handle;
+}
+
+void VulkanLogicalDevice::ResetCmdPool(VkCommandPool pool) const {
+  vkResetCommandPool(m_Device, pool, 0);
 }
 
 void VulkanLogicalDevice::FreeCmdBuffer(VkCommandPool pool, VkCommandBuffer cmd) const {
