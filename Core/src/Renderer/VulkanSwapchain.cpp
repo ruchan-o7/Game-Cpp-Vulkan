@@ -28,6 +28,24 @@ VulkanSwapchain::VulkanSwapchain(GLFWwindow* window,
   AcquireNextImage();
 }
 
+VulkanSwapchain::~VulkanSwapchain() {
+  for (auto& view : m_Views) {
+    vkDestroyImageView(m_Device->GetHandle(), view, m_Device->GetAllocator());
+  }
+  m_ImageAvailable.Release();
+  m_RenderFinished.Release();
+  m_InFlight.Release();
+  if (m_Swapchain) {
+    vkDestroySwapchainKHR(m_Device->GetHandle(), m_Swapchain, m_Device->GetAllocator());
+  }
+  if (m_Surface) {
+    if (auto renderer = m_Renderer.lock()) {
+      vkDestroySurfaceKHR(renderer->GetVkInstance2().GetHandle(), m_Surface,
+                          m_Device->GetAllocator());
+    }
+  }
+}
+
 void VulkanSwapchain::CreateSurface() {
   auto res = glfwCreateWindowSurface(m_VkInstance->GetHandle(), m_Window,
                                      m_VkInstance->GetAllocator(), &m_Surface);

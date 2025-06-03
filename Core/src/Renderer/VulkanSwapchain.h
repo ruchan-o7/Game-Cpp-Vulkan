@@ -20,6 +20,7 @@ class VulkanSwapchain {
                     std::shared_ptr<VulkanLogicalDevice> logicalDevice,
                     const VulkanPhysicalDevice& pDev);
     // clang-format on
+    ~VulkanSwapchain();
 
     uint32_t GetFrameIndex() const {
       return m_FrameIndex;
