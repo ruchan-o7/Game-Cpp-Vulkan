@@ -1,5 +1,4 @@
 #pragma once
-#include "Volk/volk.h"
 #include "Misc.h"
 #include "../Core/Buffer.h"
 #include "../Core/Ref.h"
@@ -9,16 +8,39 @@ namespace fg {
 
 class Renderer;
 
+enum class ImageUsage : uint8_t {
+  None = 0,
+  Depth,
+  ColorAttachment,
+  Staging,
+  ShaderResource,
+};
+
+enum class ImageFormat {
+  None,
+  RGBA8,
+  RGB8,
+  RGBA16F,
+  R8,
+  R8Unsigned,
+  D32,
+};
+
+enum class ImageType {
+  None,
+  Type1D,
+  Type2D,
+  Type3D,
+};
+
 struct ImageDescription {
     const char* Name = nullptr;
-    VkImageType Type;
-    VkFormat Format;
-    uint32_t Width = 1, Height = 1, Depth = 1;
+    ImageFormat Format = ImageFormat::None;
+    ImageType Type = ImageType::None;
+    ImageUsage Usage = ImageUsage::None;
+    uint32_t Width = 0, Height = 0, Depth = 0;
     // 0 Zero for full mip level generation
     uint32_t MipLevels = 1;
-    VkImageUsageFlagBits Usage;
-    VkImageLayout InitialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    bool Stage = false;
 };
 
 struct ImageViewDesc { };
@@ -26,20 +48,36 @@ struct ImageViewDesc { };
 class VulkanImage : public RefBase {
   public:
     VulkanImage(Renderer* renderer, const ImageDescription& desc, const Buffer buffer = Buffer());
-    VkImageView CreateView();
     ~VulkanImage() = default;
+
+    VkImageView CreateView();
+
     void SetState(ResourceState state) {
       m_State = state;
     }
+
     ResourceState State() const {
       return m_State;
+    }
+    void SetData(Buffer data);
+    VkImage GetVkImage() const {
+      return m_VmaImage;
+    }
+
+    uint32_t Width() const {
+      return m_Desc.Width;
+    }
+    uint32_t Height() const {
+      return m_Desc.Height;
+    }
+    uint32_t Depth() const {
+      return m_Desc.Depth;
     }
 
   private:
     ResourceState m_State = ResourceState::Unknown;
-    Renderer* m_Renderer;
     ImageDescription m_Desc;
-    ImageWrapper m_Image;
+    VmaImageWrapper m_VmaImage;
     VkDeviceMemory m_Memory;
 };
 
