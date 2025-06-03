@@ -59,7 +59,7 @@ class VulkanImage : public RefBase {
     ResourceState State() const {
       return m_State;
     }
-    void SetData(Buffer data);
+
     VkImage GetVkImage() const {
       return m_VmaImage;
     }
@@ -78,7 +78,6 @@ class VulkanImage : public RefBase {
     ResourceState m_State = ResourceState::Unknown;
     ImageDescription m_Desc;
     VmaImageWrapper m_VmaImage;
-    VkDeviceMemory m_Memory;
 };
 
 }  // namespace fg
