@@ -17,7 +17,9 @@
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "src/Renderer/VulkanBuffer.h"
+#include "src/Renderer/VulkanImage.h"
 #include <imgui.h>
+#include <stb_image.h>
 namespace FooGame {
 
 Application* Application::s_Instance = nullptr;
@@ -28,6 +30,7 @@ static void GLFWErrorCallback(int err, const char* desc) {
 
 fg::Ref<fg::VulkanBuffer> m_VertexBuffer;
 fg::Ref<fg::VulkanBuffer> m_UniformBuffer;
+fg::Ref<fg::VulkanImage> m_Texture;
 VkDescriptorSet m_DescriptorSet = 0;
 
 struct UBO {
@@ -136,6 +139,30 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
     wds.descriptorCount = 1;
     wds.pBufferInfo = &uboInfo;
     m_Renderer->GetLogicalDevice()->UpdateDescriptorSets(1, &wds, 0, nullptr);
+
+    int width = 0, height = 0, channel = 0;
+    fg::Buffer pixelData;
+    stbi_uc* pixels =
+        stbi_load("Assets/textures/texture.jpg", &width, &height, &channel, STBI_rgb_alpha);
+    pixelData.Data = pixels;
+
+    pixelData.Size = width * height * channel;
+    fg::ImageDescription imageDesc {};
+    if (channel == 3) {
+      imageDesc.Format = fg::ImageFormat::RGB8;
+    } else if (channel == 4) {
+      imageDesc.Format = fg::ImageFormat::RGBA8;
+    }
+
+    imageDesc.Width = width;
+    imageDesc.Height = height;
+    imageDesc.Depth = 1;
+    imageDesc.MipLevels = 1;
+    imageDesc.Usage = fg::ImageUsage::ShaderResource;
+    imageDesc.Type = fg::ImageType::Type2D;
+    imageDesc.Name = "Texture";
+
+    m_Texture = m_Renderer->CreateImage(imageDesc, pixelData);
   }
 
   // AssetManager::Init();
@@ -212,6 +239,7 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
 }
 Application::~Application() {
   AssetManager::DeInit();
+  m_Texture->Release();
   m_VertexBuffer->Release();
   m_UniformBuffer->Release();
   m_Pipeline->Release();
