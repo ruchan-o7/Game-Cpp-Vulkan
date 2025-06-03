@@ -31,7 +31,7 @@ DescriptorPoolWrapper VulkanLogicalDevice::CreateDescriptorPool(
   return {std::move(handle), GetPtr()};
 }
 
-VmaAllocationWrapper VulkanLogicalDevice::CreateVMABuffer(
+VmaBufferWrapper VulkanLogicalDevice::CreateVMABuffer(
     const VkBufferCreateInfo& info, const VmaAllocationCreateInfo& allocInfo) const {
   VkBuffer handle = VK_NULL_HANDLE;
   VmaAllocation allocation = VK_NULL_HANDLE;
@@ -39,7 +39,19 @@ VmaAllocationWrapper VulkanLogicalDevice::CreateVMABuffer(
   if (res != VK_SUCCESS) {
     FOO_CORE_ERROR("Can not allocate memory");
   }
-  return VmaAllocationWrapper(std::move(handle), std::move(allocation), GetPtr());
+  return {std::move(handle), std::move(allocation), GetPtr()};
+}
+
+VmaImageWrapper VulkanLogicalDevice::CreateVMAImage(
+    const VkImageCreateInfo& info, const VmaAllocationCreateInfo& allocInfo) const {
+  FOO_ASSERT(info.sType == VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
+  VkImage handle = VK_NULL_HANDLE;
+  VmaAllocation allocation = VK_NULL_HANDLE;
+  auto res = vmaCreateImage(m_VMA, &info, &allocInfo, &handle, &allocation, nullptr);
+  if (res != VK_SUCCESS) {
+    FOO_CORE_ERROR("Can not allocate memory");
+  }
+  return {std::move(handle), std::move(allocation), GetPtr()};
 }
 
 void VulkanLogicalDevice::ResetFence(VkFence& fence) {
@@ -205,7 +217,13 @@ void VulkanLogicalDevice::DestroyObject(MemoryWrapper&& handle) const {
   handle.m_VulkanObject = VK_NULL_HANDLE;
 }
 
-void VulkanLogicalDevice::DestroyObject(VmaAllocationWrapper&& handle) const {
+void VulkanLogicalDevice::DestroyObject(VmaImageWrapper&& handle) const {
+  vmaDestroyImage(m_VMA, handle.m_VulkanObject, handle.m_VmaAllocation);
+  handle.m_VulkanObject = VK_NULL_HANDLE;
+  handle.m_VmaAllocation = nullptr;
+}
+
+void VulkanLogicalDevice::DestroyObject(VmaBufferWrapper&& handle) const {
   vmaDestroyBuffer(m_VMA, handle.m_VulkanObject, handle.m_VmaAllocation);
   handle.m_VulkanObject = VK_NULL_HANDLE;
   handle.m_VmaAllocation = nullptr;

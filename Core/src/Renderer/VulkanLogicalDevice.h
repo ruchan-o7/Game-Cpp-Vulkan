@@ -8,6 +8,9 @@ namespace fg {
 template <class T>
 class VulkanObject;
 
+template <class TResource>
+class VmaAllocationWrapper;
+
 using ShaderModuleWrapper = VulkanObject<VkShaderModule>;
 using PipelineWrapper = VulkanObject<VkPipeline>;
 using PipelineLayoutWrapper = VulkanObject<VkPipelineLayout>;
@@ -19,10 +22,11 @@ using BufferWrapper = VulkanObject<VkBuffer>;
 using MemoryWrapper = VulkanObject<VkDeviceMemory>;
 using DescriptorSetLayoutWrapper = VulkanObject<VkDescriptorSetLayout>;
 using DescriptorPoolWrapper = VulkanObject<VkDescriptorPool>;
+using VmaBufferWrapper = VmaAllocationWrapper<VkBuffer>;
+using VmaImageWrapper = VmaAllocationWrapper<VkImage>;
 
 class VulkanPhysicalDevice;
 class Renderer;
-class VmaAllocationWrapper;
 
 class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDevice> {
   public:
@@ -64,7 +68,8 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     void DestroyObject(FenceWrapper&& handle) const;
     void DestroyObject(ImageWrapper&& handle) const;
     void DestroyObject(MemoryWrapper&& handle) const;
-    void DestroyObject(VmaAllocationWrapper&& handle) const;
+    void DestroyObject(VmaBufferWrapper&& handle) const;
+    void DestroyObject(VmaImageWrapper&& handle) const;
     void DestroyObject(DescriptorSetLayoutWrapper&& handle) const;
     void DestroyObject(DescriptorPoolWrapper&& handle) const;
     void WaitFence(VkFence fence);
@@ -80,7 +85,8 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     FenceWrapper CreateFence(const VkFenceCreateInfo& info, const char* name = nullptr)const;
     ImageWrapper CreateImage(const VkImageCreateInfo& info, const char* name = nullptr)const;
     BufferWrapper CreateBuffer(const VkBufferCreateInfo& info, const char* name = nullptr)const;
-    VmaAllocationWrapper CreateVMABuffer(const VkBufferCreateInfo& info,const VmaAllocationCreateInfo& allocInfo) const;
+    VmaBufferWrapper CreateVMABuffer(const VkBufferCreateInfo& info,const VmaAllocationCreateInfo& allocInfo) const;
+    VmaImageWrapper CreateVMAImage(const VkImageCreateInfo& info,const VmaAllocationCreateInfo& allocInfo) const;
     DescriptorSetLayoutWrapper CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& info, const char* name = nullptr)const;
     DescriptorPoolWrapper CreateDescriptorPool(const VkDescriptorPoolCreateInfo& info, const char* name = nullptr)const;
     // clang-format on
