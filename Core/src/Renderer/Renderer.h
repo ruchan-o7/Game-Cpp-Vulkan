@@ -62,6 +62,13 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
       return m_VMA;
     }
 
+    std::shared_ptr<VulkanInstance> GetVkInstance() const {
+      return m_Instance;
+    }
+    const VulkanInstance& GetVkInstance2() const {
+      return *m_Instance;
+    }
+
     VkCommandBuffer GetTransientCmdBuffer() const;
     void SubmitTransientCommandBuffer(VkCommandBuffer cmd) const;
 
