@@ -147,12 +147,9 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
     pixelData.Data = pixels;
 
     pixelData.Size = width * height * channel;
-    fg::ImageDescription imageDesc {};
-    if (channel == 3) {
-      imageDesc.Format = fg::ImageFormat::RGB8;
-    } else if (channel == 4) {
-      imageDesc.Format = fg::ImageFormat::RGBA8;
-    }
+
+    fg::ImageDescription imageDesc;
+    imageDesc.Format = fg::ImageFormat::RGBA8;
 
     imageDesc.Width = width;
     imageDesc.Height = height;
