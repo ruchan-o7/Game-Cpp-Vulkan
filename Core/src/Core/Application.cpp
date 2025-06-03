@@ -212,6 +212,10 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
 }
 Application::~Application() {
   AssetManager::DeInit();
+  m_VertexBuffer->Release();
+  m_UniformBuffer->Release();
+  m_Pipeline->Release();
+  m_Swapchain.reset();
   m_Renderer->Destroy();
 }
 void Application::PushLayer(Layer* layer) {
