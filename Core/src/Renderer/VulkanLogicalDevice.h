@@ -93,6 +93,7 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
 
     // TODO: Should allocate from pool ?
     VkCommandBuffer AllocateCmdBuffer(const VkCommandBufferAllocateInfo& info) const;
+    void FreeCmdBuffer(VkCommandPool pool, VkCommandBuffer cmd) const;
 
     VkMemoryRequirements GetImageMemReq(VkImage image) const;
     VkMemoryRequirements GetBufferMemReq(VkBuffer buffer) const;

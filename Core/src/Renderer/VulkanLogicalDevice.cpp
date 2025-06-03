@@ -185,6 +185,10 @@ VkCommandBuffer VulkanLogicalDevice::AllocateCmdBuffer(
   return handle;
 }
 
+void VulkanLogicalDevice::FreeCmdBuffer(VkCommandPool pool, VkCommandBuffer cmd) const {
+  vkFreeCommandBuffers(m_Device, pool, 1, &cmd);
+}
+
 void VulkanLogicalDevice::DestroyObject(BufferWrapper&& handle) const {
   vkDestroyBuffer(m_Device, handle, m_Allocator);
   handle.m_VulkanObject = VK_NULL_HANDLE;
