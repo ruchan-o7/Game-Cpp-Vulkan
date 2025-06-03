@@ -42,7 +42,7 @@ class VulkanBuffer : public RefBase {
   private:
     BufferDescription m_Desc;
     ResourceState m_State = ResourceState::Unknown;
-    VmaAllocationWrapper m_Allocation;
+    VmaBufferWrapper m_Allocation;
     VmaAllocator m_Allocator;
     void* m_MapPtr = nullptr;
 };
