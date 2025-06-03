@@ -216,8 +216,10 @@ void Renderer::BindDescriptorSet(const VkDescriptorSet& set) {
                           &set, 0, nullptr);
 }
 
-Ref<VulkanImage> Renderer::CreateImage(const ImageDescription& desc, VkImage handle) {
-  return nullptr;
+Ref<VulkanImage> Renderer::CreateImage(const ImageDescription& desc, const Buffer data) {
+  FOO_ASSERT(desc.Width != 0);
+  FOO_ASSERT(desc.Height != 0);
+  return MakeRef<VulkanImage>(this, desc, data);
 }
 
 Ref<VulkanBuffer> Renderer::CreateBuffer(const BufferDescription& desc, Buffer bufferData) const {
@@ -246,6 +248,53 @@ void Renderer::CopyBuffer(const CopyBufferAttr& attr) const {
   }
 
   FOO_CORE_ERROR("Renderer::CopyBuffer did not implmenetd");
+}
+
+void Renderer::CopyImage(const CopyImageAttr& attr) const {
+  FOO_ASSERT(attr.Src != nullptr);
+  FOO_ASSERT(attr.Dst != nullptr);
+  FOO_CORE_CRITICAL("Renderer::CopyImage - did not implemented");
+}
+
+void Renderer::CopyBufferToImage(const CopyBufferToImageAttr attr) const {
+  FOO_ASSERT(attr.Src != nullptr);
+  FOO_ASSERT(attr.Dst != nullptr);
+  auto cmd = GetTransientCmdBuffer();
+
+  VkImageMemoryBarrier barrier {};
+  barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+  barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.image = attr.Dst->GetVkImage();
+  barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  barrier.subresourceRange.baseMipLevel = 0;
+  barrier.subresourceRange.levelCount = 1;
+  barrier.subresourceRange.baseArrayLayer = 0;
+  barrier.subresourceRange.layerCount = 1;
+  barrier.srcAccessMask = 0;
+  barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
+                       nullptr, 0, nullptr, 1, &barrier);
+
+  {
+    VkBufferImageCopy region {};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+    region.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    region.imageOffset = {0, 0, 0};
+    region.imageExtent = {attr.Dst->Width(), attr.Dst->Height(), attr.Dst->Depth()};
+    vkCmdCopyBufferToImage(cmd, attr.Src->GetVkBuffer(), attr.Dst->GetVkImage(),
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+  }
+  barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+  barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                       0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+  SubmitTransientCommandBuffer(cmd);
 }
 
 void Renderer::BeginRendering() {

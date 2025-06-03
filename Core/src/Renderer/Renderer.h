@@ -21,6 +21,16 @@ struct CopyBufferAttr {
     VkBufferCopy Regions[4];
     uint32_t RegionCount = 0;
 };
+struct CopyImageAttr {
+    VulkanImage* Src = nullptr;
+    VulkanImage* Dst = nullptr;
+    VkBufferCopy Regions[4];
+    uint32_t RegionCount = 0;
+};
+struct CopyBufferToImageAttr {
+    VulkanImage* Dst = nullptr;
+    VulkanBuffer* Src = nullptr;
+};
 
 class Renderer : public std::enable_shared_from_this<Renderer> {
   public:
@@ -40,11 +50,13 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
     Ref<VulkanShader> CreateShader(const ShaderDescription& desc) const;
 
     Ref<VulkanGraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDescription& desc);
-    Ref<VulkanImage> CreateImage(const ImageDescription& desc, VkImage handle);
+    Ref<VulkanImage> CreateImage(const ImageDescription& desc, const Buffer data = Buffer());
     Ref<VulkanBuffer> CreateBuffer(const BufferDescription& desc,
                                    Buffer bufferData = Buffer()) const;
 
     void CopyBuffer(const CopyBufferAttr& attr) const;
+    void CopyImage(const CopyImageAttr& attr) const;
+    void CopyBufferToImage(const CopyBufferToImageAttr attr) const;
 
     std::shared_ptr<VulkanSwapchain> GetSwapchain() const {
       return m_Swapchain;
