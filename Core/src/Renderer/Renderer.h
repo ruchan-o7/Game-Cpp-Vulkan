@@ -1,13 +1,16 @@
 #pragma once
-#include "../Renderer/VulkanGraphicsPipeline.h"
-#include "../Renderer/VulkanShader.h"
-#include "../Renderer/VulkanSwapchain.h"
-#include "../Renderer/VulkanBuffer.h"
-#include "../Renderer/VulkanImage.h"
+#include "VulkanGraphicsPipeline.h"
+#include "VulkanShader.h"
+#include "VulkanSwapchain.h"
+#include "VulkanBuffer.h"
+#include "VulkanImage.h"
+#include "VulkanCommandBuffer.h"
 
 typedef struct GLFWwindow GLFWwindow;
 
 namespace fg {
+class VulkanCommandBufferPool;
+class CommandPoolManager;
 
 struct DrawAttributes {
     uint32_t VertexCount = 0;
@@ -51,12 +54,7 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
 
     Ref<VulkanGraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDescription& desc);
     Ref<VulkanImage> CreateImage(const ImageDescription& desc, const Buffer data = Buffer());
-    Ref<VulkanBuffer> CreateBuffer(const BufferDescription& desc,
-                                   Buffer bufferData = Buffer()) const;
-
-    void CopyBuffer(const CopyBufferAttr& attr) const;
-    void CopyImage(const CopyImageAttr& attr) const;
-    void CopyBufferToImage(const CopyBufferToImageAttr attr) const;
+    Ref<VulkanBuffer> CreateBuffer(const BufferDescription& desc, Buffer bufferData = Buffer());
 
     std::shared_ptr<VulkanSwapchain> GetSwapchain() const {
       return m_Swapchain;
@@ -81,8 +79,9 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
       return *m_Instance;
     }
 
-    VkCommandBuffer GetTransientCmdBuffer() const;
-    void SubmitTransientCommandBuffer(VkCommandBuffer cmd) const;
+    void AllocateTransientCmdPool(CommandPoolWrapper& pool, VulkanCommandBuffer& cmd,
+                                  const char* debugName = nullptr);
+    void ExecuteAndDisposeTransientCmdBuff(VkCommandBuffer cmd, CommandPoolWrapper&& pool);
 
     void BeginRendering();
     void BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline);
@@ -95,7 +94,7 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
     VkResult Flush(const std::function<VkResult(VkQueue, VkCommandBuffer)>& func);
 
     VkCommandBuffer GetCurrentCmdBuffer() const {
-      return m_Cmd;
+      return m_Cmd.Get();
     }
 
     VkResult Present(VkPresentInfoKHR& info);
@@ -113,11 +112,14 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
 
     const VkAllocationCallbacks* m_AllocCB;
     VkQueue m_VkQueue = VK_NULL_HANDLE;
-    VkCommandBuffer m_Cmd = VK_NULL_HANDLE;
-    CommandPoolWrapper m_CmdPool;
+    // VkCommandBuffer m_Cmd = VK_NULL_HANDLE;
+    VulkanCommandBuffer m_Cmd;
+    // CommandPoolWrapper m_CmdPool;
     Ref<VulkanGraphicsPipeline> m_CurrentPipeline;
     GLFWwindow* m_Window = nullptr;
     VmaAllocator m_VMA = nullptr;
+    std::unique_ptr<CommandPoolManager> m_TransientCmdPoolManager;
+    std::unique_ptr<VulkanCommandBufferPool> m_CmdPool;
 };
 
 }  // namespace fg

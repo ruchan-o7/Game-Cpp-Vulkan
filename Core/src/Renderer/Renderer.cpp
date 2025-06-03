@@ -2,6 +2,9 @@
 #define VMA_IMPLEMENTATION
 #include "Renderer.h"
 
+#include "CommandPoolManager.h"
+#include "VulkanCommandBufferPool.h"
+
 #include "../Core/Ref.h"
 #include "../Core/Assert.h"
 #include "../Core/Log.h"
@@ -115,36 +118,6 @@ Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& in
       m_AllocCB(alloc) {
 }
 
-VkCommandBuffer Renderer::GetTransientCmdBuffer() const {
-  VkCommandBufferAllocateInfo allocInfo {};
-  allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocInfo.commandPool = m_CmdPool;
-  allocInfo.commandBufferCount = 1;
-
-  VkCommandBuffer commandBuffer = m_LogicalDevice->AllocateCmdBuffer(allocInfo);
-
-  VkCommandBufferBeginInfo beginInfo {};
-  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-  vkBeginCommandBuffer(commandBuffer, &beginInfo);
-  return commandBuffer;
-}
-
-void Renderer::SubmitTransientCommandBuffer(VkCommandBuffer cmd) const {
-  vkEndCommandBuffer(cmd);
-
-  VkSubmitInfo submitInfo {};
-  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = &cmd;
-
-  vkQueueSubmit(m_VkQueue, 1, &submitInfo, VK_NULL_HANDLE);
-  vkQueueWaitIdle(m_VkQueue);
-
-  vkFreeCommandBuffers(m_LogicalDevice->GetHandle(), m_CmdPool, 1, &cmd);
-}
 void Renderer::CreateDeviceAndSwapchain() {
   uint32_t queueIndex = m_PhysicalDevice->GetQueuFamilyIndices(VK_QUEUE_GRAPHICS_BIT);
   VkDeviceQueueCreateInfo queueInfo {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
@@ -196,24 +169,20 @@ void Renderer::CreateDeviceAndSwapchain() {
 
   m_Swapchain = std::make_shared<VulkanSwapchain>(m_Window, GetPtr(), m_Instance, m_LogicalDevice,
                                                   *m_PhysicalDevice);
-  {
-    VkCommandPoolCreateInfo cmdPool {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
-    cmdPool.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    m_CmdPool = m_LogicalDevice->CreateCommandPool(cmdPool);
-    VkCommandBufferAllocateInfo allocInfo {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = m_CmdPool;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = 1;
-    m_Cmd = m_LogicalDevice->AllocateCmdBuffer(allocInfo);
-  }
+
+  CommandPoolManager::CreateInfo poolInfo {*m_LogicalDevice, "Transient command pool", 0,
+                                           VK_COMMAND_POOL_CREATE_TRANSIENT_BIT};
+
+  m_TransientCmdPoolManager = std::make_unique<CommandPoolManager>(poolInfo);
+  m_CmdPool = std::make_unique<VulkanCommandBufferPool>(
+      m_LogicalDevice->GetPtr(), 0,
+      VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 }
 
 void Renderer::BindDescriptorSet(const VkDescriptorSet& set) {
   FOO_ASSERT(m_CurrentPipeline != nullptr);
-  auto cmd = GetCurrentCmdBuffer();
-  vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CurrentPipeline->Layout(), 0, 1,
-                          &set, 0, nullptr);
+  m_Cmd.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_CurrentPipeline->Layout(), 0, 1, &set,
+                           0, nullptr);
 }
 
 Ref<VulkanImage> Renderer::CreateImage(const ImageDescription& desc, const Buffer data) {
@@ -222,7 +191,7 @@ Ref<VulkanImage> Renderer::CreateImage(const ImageDescription& desc, const Buffe
   return MakeRef<VulkanImage>(this, desc, data);
 }
 
-Ref<VulkanBuffer> Renderer::CreateBuffer(const BufferDescription& desc, Buffer bufferData) const {
+Ref<VulkanBuffer> Renderer::CreateBuffer(const BufferDescription& desc, Buffer bufferData) {
   FOO_ASSERT(desc.Usage != BufferUsage::None);
 
   if (desc.Usage == BufferUsage::Index || desc.Usage == BufferUsage::Vertex) {
@@ -232,91 +201,15 @@ Ref<VulkanBuffer> Renderer::CreateBuffer(const BufferDescription& desc, Buffer b
   return buffer;
 }
 
-void Renderer::CopyBuffer(const CopyBufferAttr& attr) const {
-  FOO_ASSERT(attr.Src != nullptr);
-  FOO_ASSERT(attr.Dst != nullptr);
-  if (attr.RegionCount == 0) {
-    // Whole buffer
-    auto cmd = GetTransientCmdBuffer();
-    VkBufferCopy whole {};
-    whole.dstOffset = 0;
-    whole.srcOffset = 0;
-    whole.size = attr.Src->GetDesc().Size;
-    vkCmdCopyBuffer(cmd, attr.Src->GetVkBuffer(), attr.Dst->GetVkBuffer(), 1, &whole);
-    SubmitTransientCommandBuffer(cmd);
-    return;
-  }
-
-  FOO_CORE_ERROR("Renderer::CopyBuffer did not implmenetd");
-}
-
-void Renderer::CopyImage(const CopyImageAttr& attr) const {
-  FOO_ASSERT(attr.Src != nullptr);
-  FOO_ASSERT(attr.Dst != nullptr);
-  FOO_CORE_CRITICAL("Renderer::CopyImage - did not implemented");
-}
-
-void Renderer::CopyBufferToImage(const CopyBufferToImageAttr attr) const {
-  FOO_ASSERT(attr.Src != nullptr);
-  FOO_ASSERT(attr.Dst != nullptr);
-  auto cmd = GetTransientCmdBuffer();
-
-  VkImageMemoryBarrier barrier {};
-  barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-  barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  barrier.image = attr.Dst->GetVkImage();
-  barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  barrier.subresourceRange.baseMipLevel = 0;
-  barrier.subresourceRange.levelCount = 1;
-  barrier.subresourceRange.baseArrayLayer = 0;
-  barrier.subresourceRange.layerCount = 1;
-  barrier.srcAccessMask = 0;
-  barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
-                       nullptr, 0, nullptr, 1, &barrier);
-
-  {
-    VkBufferImageCopy region {};
-    region.bufferOffset = 0;
-    region.bufferRowLength = 0;
-    region.bufferImageHeight = 0;
-    region.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-    region.imageOffset = {0, 0, 0};
-    region.imageExtent = {attr.Dst->Width(), attr.Dst->Height(), attr.Dst->Depth()};
-    vkCmdCopyBufferToImage(cmd, attr.Src->GetVkBuffer(), attr.Dst->GetVkImage(),
-                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-  }
-  barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-  barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-  vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                       0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-  SubmitTransientCommandBuffer(cmd);
-}
-
 void Renderer::BeginRendering() {
-  auto cmd = GetCurrentCmdBuffer();
-  vkResetCommandBuffer(cmd, 0);
+  auto cmd = m_CmdPool->Get();
+  m_Cmd.SetVkCommandBuffer(cmd, 0, 0);
 
-  VkCommandBufferBeginInfo info {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-  vkBeginCommandBuffer(cmd, &info);
-  {
-    VkImageMemoryBarrier barrier {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-    barrier.image = m_Swapchain->GetCurrentImage();
-    barrier.srcAccessMask = 0;
-    barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr,
-                         1, &barrier);
-  }
+  VkImageSubresourceRange range {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+  m_Cmd.TransitionImageLayout(m_Swapchain->GetCurrentImage(), VK_IMAGE_LAYOUT_UNDEFINED,
+                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, range,
+                              VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
   VkRenderingInfoKHR beginInfo {VK_STRUCTURE_TYPE_RENDERING_INFO, 0};
   beginInfo.renderArea = {
@@ -338,48 +231,45 @@ void Renderer::BeginRendering() {
 
   beginInfo.colorAttachmentCount = colorAttachments.size();
   beginInfo.pColorAttachments = colorAttachments.data();
-
-  vkCmdBeginRendering(cmd, &beginInfo);
+  m_Cmd.BeginRendering(beginInfo);
   VkRect2D scissor {
       {0, 0},
       m_Swapchain->GetExtent()
   };
-  vkCmdSetScissor(cmd, 0, 1, &scissor);
+  m_Cmd.SetScissor(scissor);
   VkViewport vp {
       0,    0,   (float)m_Swapchain->GetExtent().width, (float)m_Swapchain->GetExtent().height,
       0.0f, 1.0f};
-  vkCmdSetViewport(cmd, 0, 1, &vp);
+  m_Cmd.CmdSetViewport(0, 1, vp);
 }
 
 void Renderer::EndRendering() {
-  auto cmd = GetCurrentCmdBuffer();
-  vkCmdEndRenderingKHR(cmd);
-  {
-    VkImageMemoryBarrier barrier {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-    barrier.image = m_Swapchain->GetCurrentImage();
-    barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    barrier.dstAccessMask = 0;
-    barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-    vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1,
-                         &barrier);
-  }
-  vkEndCommandBuffer(cmd);
+  m_Cmd.EndRendering();
+  VkImageSubresourceRange range {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+  m_Cmd.TransitionImageLayout(
+      m_Swapchain->GetCurrentImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, range, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+  m_Cmd.FlushBarriers();
 }
 void Renderer::BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline) {
   m_CurrentPipeline = pipeline;
-  vkCmdBindPipeline(GetCurrentCmdBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetHandle());
+  m_Cmd.BindGraphicsPipeline(pipeline->GetHandle());
 }
 void Renderer::Draw(const DrawAttributes& attribs) {
   FOO_ASSERT(m_CurrentPipeline != nullptr);
-  vkCmdDraw(GetCurrentCmdBuffer(), attribs.VertexCount, attribs.InstanceCount, attribs.FirstVertex,
-            attribs.FirstInstance);
+  m_Cmd.Draw(attribs.VertexCount, attribs.InstanceCount, attribs.FirstVertex,
+             attribs.FirstInstance);
 }
 
 VkResult Renderer::Flush(const std::function<VkResult(VkQueue, VkCommandBuffer)>& func) {
-  return func(m_VkQueue, GetCurrentCmdBuffer());
+  m_Cmd.EndCommandBuffer();
+
+  auto res = func(m_VkQueue, GetCurrentCmdBuffer());
+
+  m_CmdPool->Recycle(m_Cmd.Get());
+  m_Cmd.Reset();
+  return res;
 }
 VkResult Renderer::Present(VkPresentInfoKHR& info) {
   return vkQueuePresentKHR(m_VkQueue, &info);
@@ -439,10 +329,46 @@ void Renderer::BindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
   for (uint32_t i = 0; i < bindingCount; i++) {
     vkbuffers[i] = buffers[i]->GetVkBuffer();
   }
-  vkCmdBindVertexBuffers(cmd, firstBinding, bindingCount, vkbuffers, offsets);
+  m_Cmd.BindVertexBuffers(firstBinding, bindingCount, vkbuffers, offsets);
+}
+
+void Renderer::AllocateTransientCmdPool(CommandPoolWrapper& pool, VulkanCommandBuffer& cmd,
+                                        const char* debugName) {
+  pool = m_TransientCmdPoolManager->AllocatePool(debugName);
+  VkCommandBufferAllocateInfo buffAllocInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+  buffAllocInfo.commandPool = pool;
+  buffAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  buffAllocInfo.commandBufferCount = 1;
+
+  auto vkCmdBuff = m_LogicalDevice->AllocateCmdBuffer(buffAllocInfo);
+
+  VkCommandBufferBeginInfo cmdBuffBeginInfo {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+  cmdBuffBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+  auto err = vkBeginCommandBuffer(vkCmdBuff, &cmdBuffBeginInfo);
+  FOO_ASSERT(err == VK_SUCCESS);
+  cmd.SetVkCommandBuffer(vkCmdBuff, 0, 0);
+}
+
+void Renderer::ExecuteAndDisposeTransientCmdBuff(VkCommandBuffer cmd, CommandPoolWrapper&& pool) {
+  auto err = vkEndCommandBuffer(cmd);
+  FOO_ASSERT(err == VK_SUCCESS);
+
+  VkSubmitInfo submitInfo {};
+  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submitInfo.commandBufferCount = 1;
+  submitInfo.pCommandBuffers = &cmd;
+
+  vkQueueSubmit(m_VkQueue, 1, &submitInfo, VK_NULL_HANDLE);
+  vkQueueWaitIdle(m_VkQueue);
+  m_TransientCmdPoolManager->DestroyPools();
+
+  m_LogicalDevice->FreeCmdBuffer(pool, cmd);
+  m_TransientCmdPoolManager->Recycle(std::move(pool));
 }
 
 void Renderer::Destroy() {
+  m_TransientCmdPoolManager->DestroyPools();
   WaitGPU();
 }
 

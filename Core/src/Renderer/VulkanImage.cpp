@@ -131,10 +131,28 @@ VulkanImage::VulkanImage(Renderer* renderer, const ImageDescription& desc, const
       stageDesc.Size = m_Desc.Width * m_Desc.Height * GetComponentCount(m_Desc.Format) *
                        ComponentSize(m_Desc.Format);
       auto stage = renderer->CreateBuffer(stageDesc, buffer);
-      CopyBufferToImageAttr attr {};
-      attr.Src = stage.get();
-      attr.Dst = this;
-      renderer->CopyBufferToImage(attr);
+      {
+        CommandPoolWrapper cmdPool;
+        VulkanCommandBuffer cmd;
+
+        renderer->AllocateTransientCmdPool(cmdPool, cmd);
+        VkImageSubresourceRange range {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+        cmd.TransitionImageLayout(
+            m_VmaImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, range,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+        VkBufferImageCopy region {};
+        region.bufferOffset = 0;
+        region.bufferRowLength = 0;
+        region.bufferImageHeight = 0;
+        region.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+        region.imageOffset = {0, 0, 0};
+        region.imageExtent = {Width(), Height(), Depth()};
+        cmd.CopyBufferToImage(stage->GetVkBuffer(), m_VmaImage,
+                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+        cmd.TransitionImageLayout(m_VmaImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,range,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+        cmd.FlushBarriers();
+        renderer->ExecuteAndDisposeTransientCmdBuff(cmd.Get(), std::move(cmdPool));
+      }
     }
   }
 }

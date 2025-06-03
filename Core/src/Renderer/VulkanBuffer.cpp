@@ -49,8 +49,7 @@ VmaMemoryUsage GetVMAUsage(BufferUsage usage) {
   }
 }
 
-VulkanBuffer::VulkanBuffer(const BufferDescription& desc, const Renderer* renderer,
-                           const Buffer data)
+VulkanBuffer::VulkanBuffer(const BufferDescription& desc, Renderer* renderer, const Buffer data)
     : m_Desc(desc) {
   m_Allocator = renderer->GetVMA();
 
@@ -74,15 +73,22 @@ VulkanBuffer::VulkanBuffer(const BufferDescription& desc, const Renderer* render
       stageDesc.Usage = BufferUsage::Staging;
       stageDesc.Name = desc.Name;
 
-      auto stageBuffer = renderer->CreateBuffer(stageDesc);
-      stageBuffer->SetData(data);
+      auto stageBuffer = renderer->CreateBuffer(stageDesc, data);
+      CommandPoolWrapper cmdPool;
+      VulkanCommandBuffer cmd;
+
+      renderer->AllocateTransientCmdPool(cmdPool, cmd);
+      cmd.InsertMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                              VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+      cmd.InsertMemoryBarrier(0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                              VK_PIPELINE_STAGE_TRANSFER_BIT);
+
       VkBufferCopy region[] = {
           {0, 0, m_Desc.Size}
       };
-      CopyBufferAttr attr {};
-      attr.Src = stageBuffer.get();
-      attr.Dst = this;
-      renderer->CopyBuffer(attr);
+      cmd.CopyBuffer(stageBuffer->GetVkBuffer(), m_Allocation, 1, region);
+      renderer->ExecuteAndDisposeTransientCmdBuff(cmd.Get(), std::move(cmdPool));
     }
   }
 }
