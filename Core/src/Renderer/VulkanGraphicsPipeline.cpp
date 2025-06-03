@@ -1,4 +1,5 @@
 #include "VulkanGraphicsPipeline.h"
+#include "VulkanShader.h"
 
 namespace {
 static VkFormat ToVk(fg::ValueType type) {
