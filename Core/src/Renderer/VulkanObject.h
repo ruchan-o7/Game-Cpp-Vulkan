@@ -62,25 +62,29 @@ class VulkanObject {
     friend class VulkanLogicalDevice;
 };
 
-class VmaAllocationWrapper : public VulkanObject<VkBuffer> {
+template <class TResource>
+class VmaAllocationWrapper : public VulkanObject<TResource> {
+    using ResourceType = TResource;
+
   public:
-    VmaAllocationWrapper() : VulkanObject(), m_VmaAllocation(VK_NULL_HANDLE) {
+    VmaAllocationWrapper() : VulkanObject<TResource>(), m_VmaAllocation(VK_NULL_HANDLE) {
     }
 
-    VmaAllocationWrapper(VkBuffer&& handle, VmaAllocation&& allocation,
+    VmaAllocationWrapper(ResourceType&& handle, VmaAllocation&& allocation,
                          const std::shared_ptr<const VulkanLogicalDevice>& device)
-        : VulkanObject(std::move(handle), device), m_VmaAllocation(std::move(allocation)) {
+        : VulkanObject<TResource>(std::move(handle), device),
+          m_VmaAllocation(std::move(allocation)) {
       handle = VK_NULL_HANDLE;
       allocation = VK_NULL_HANDLE;
     }
 
     // Does not take ownership
-    explicit VmaAllocationWrapper(VkBuffer bufferHandle, VmaAllocation allocation)
-        : VulkanObject(bufferHandle), m_VmaAllocation(allocation) {
+    explicit VmaAllocationWrapper(ResourceType bufferHandle, VmaAllocation allocation)
+        : VulkanObject<TResource>(bufferHandle), m_VmaAllocation(allocation) {
     }
 
     VmaAllocationWrapper(VmaAllocationWrapper&& rhs) noexcept
-        : VulkanObject(std::move(rhs.m_VulkanObject), std::move(rhs.m_Device)),
+        : VulkanObject<TResource>(std::move(rhs.m_VulkanObject), std::move(rhs.m_Device)),
           m_VmaAllocation(std::move(rhs.m_VmaAllocation)) {
       rhs.m_VulkanObject = VK_NULL_HANDLE;
       rhs.m_VmaAllocation = VK_NULL_HANDLE;
@@ -88,38 +92,39 @@ class VmaAllocationWrapper : public VulkanObject<VkBuffer> {
 
     VmaAllocationWrapper& operator=(VmaAllocationWrapper&& rhs) noexcept {
       Release();
-      m_Device = std::move(rhs.m_Device);
-      m_VulkanObject = rhs.m_VulkanObject;
+      this->m_Device = std::move(rhs.m_Device);
+      this->m_VulkanObject = rhs.m_VulkanObject;
       m_VmaAllocation = rhs.m_VmaAllocation;
       rhs.m_VulkanObject = VK_NULL_HANDLE;
       rhs.m_VmaAllocation = VK_NULL_HANDLE;
       return *this;
     }
 
-    operator VkBuffer() const {
-      return m_VulkanObject;
+    operator ResourceType() const {
+      return this->m_VulkanObject;
     }
 
     operator VmaAllocation() const {
       return m_VmaAllocation;
     }
 
-    const VkBuffer* operator&() const {
-      return &m_VulkanObject;
+    const ResourceType* operator&() const {
+      return &this->m_VulkanObject;
     }
     const VmaAllocation* VmaPtr() const {
       return &m_VmaAllocation;
     }
     virtual void Release() {
-      if (m_Device && m_VulkanObject != VK_NULL_HANDLE || m_VmaAllocation != VK_NULL_HANDLE) {
-        m_Device->DestroyObject(std::move(*this));
+      if (this->m_Device && this->m_VulkanObject != VK_NULL_HANDLE ||
+          m_VmaAllocation != VK_NULL_HANDLE) {
+        this->m_Device->DestroyObject(std::move(*this));
       }
-      m_VulkanObject = VK_NULL_HANDLE;
-      m_Device.reset();
+      this->m_VulkanObject = VK_NULL_HANDLE;
+      this->m_Device.reset();
     }
 
     operator bool() const {
-      return m_VmaAllocation != nullptr && m_VulkanObject != VK_NULL_HANDLE;
+      return m_VmaAllocation != nullptr && this->m_VulkanObject != VK_NULL_HANDLE;
     }
 
     virtual ~VmaAllocationWrapper() {
