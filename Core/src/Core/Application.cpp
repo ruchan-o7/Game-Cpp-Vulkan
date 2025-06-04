@@ -70,76 +70,6 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
   m_Renderer->CreateDeviceAndSwapchain();
   m_Swapchain = m_Renderer->GetSwapchain();
   {
-    fg::ShaderDescription shaderDesc;
-    shaderDesc.EntryPoint = "main";
-    shaderDesc.Path = "Assets/Shaders/triangle_vert.spv";
-    shaderDesc.Stage = VK_SHADER_STAGE_VERTEX_BIT;
-    auto triVert = m_Renderer->CreateShader(shaderDesc);
-
-    shaderDesc.Path = "Assets/Shaders/triangle_frag.spv";
-    shaderDesc.Stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    auto trifrag = m_Renderer->CreateShader(shaderDesc);
-
-    fg::GraphicsPipelineDescription pipeDesc;
-    pipeDesc.FragmentShader = trifrag.get();
-    pipeDesc.VertexShader = triVert.get();
-    pipeDesc.DynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-    pipeDesc.RenderTargetFormat = m_Swapchain->Format().format;
-    pipeDesc.VertexAttributes = {
-        {0, 0, fg::VT_VEC2},
-        {0, 1, fg::VT_VEC3},
-    };
-    pipeDesc.BindingDescs = {
-        {0, sizeof(glm::vec2) + sizeof(glm::vec3)}
-    };
-    pipeDesc.ShaderVariables = {
-        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT},
-    };
-
-    m_Pipeline = m_Renderer->CreateGraphicsPipeline(pipeDesc);
-
-    struct Vertex {
-        glm::vec2 pos;
-        glm::vec3 color;
-    };
-
-    const Vertex vertices[] = {
-        {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-        { {0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
-    };
-    fg::BufferDescription desc;
-    desc.Size = sizeof(vertices);
-    desc.Name = "Vertex buffer";
-    desc.Usage = fg::BufferUsage::Vertex;
-
-    fg::Buffer data;
-    data.Data = (uint8_t*)vertices;
-    data.Size = sizeof(vertices);
-    m_VertexBuffer = m_Renderer->CreateBuffer(desc, data);
-    {
-      fg::BufferDescription desc;
-      desc.Size = sizeof(UBO);
-      desc.Name = "Uniform buffer";
-      desc.Usage = fg::BufferUsage::Uniform;
-      m_UniformBuffer = m_Renderer->CreateBuffer(desc);
-    }
-    m_DescriptorSet = m_Pipeline->CreateDescriptorSet();
-
-    VkDescriptorBufferInfo uboInfo {};
-    uboInfo.buffer = m_UniformBuffer->GetVkBuffer();
-    uboInfo.offset = 0;
-    uboInfo.range = VK_WHOLE_SIZE;
-    VkWriteDescriptorSet wds {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-    wds.dstSet = m_DescriptorSet;
-    wds.dstBinding = 0;
-    wds.dstArrayElement = 0;
-    wds.pBufferInfo = &uboInfo;
-    wds.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    wds.descriptorCount = 1;
-    wds.pBufferInfo = &uboInfo;
-    m_Renderer->GetLogicalDevice()->UpdateDescriptorSets(1, &wds, 0, nullptr);
-
     int width = 0, height = 0, channel = 0;
     fg::Buffer pixelData;
     stbi_uc* pixels =
@@ -160,6 +90,97 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
     imageDesc.Name = "Texture";
 
     m_Texture = m_Renderer->CreateImage(imageDesc, pixelData);
+  }
+  {
+    fg::BufferDescription desc;
+    desc.Size = sizeof(UBO);
+    desc.Name = "Uniform buffer";
+    desc.Usage = fg::BufferUsage::Uniform;
+    m_UniformBuffer = m_Renderer->CreateBuffer(desc);
+  }
+  {
+    fg::ShaderDescription shaderDesc;
+    shaderDesc.EntryPoint = "main";
+    shaderDesc.Path = "Assets/Shaders/triangle_vert.spv";
+    shaderDesc.Stage = VK_SHADER_STAGE_VERTEX_BIT;
+    auto triVert = m_Renderer->CreateShader(shaderDesc);
+
+    shaderDesc.Path = "Assets/Shaders/triangle_frag.spv";
+    shaderDesc.Stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    auto trifrag = m_Renderer->CreateShader(shaderDesc);
+
+    fg::GraphicsPipelineDescription pipeDesc;
+    pipeDesc.FragmentShader = trifrag.get();
+    pipeDesc.VertexShader = triVert.get();
+    pipeDesc.DynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+    pipeDesc.RenderTargetFormat = m_Swapchain->Format().format;
+    pipeDesc.VertexAttributes = {
+        {0, 0, fg::VT_VEC2},
+        {0, 1, fg::VT_VEC3},
+        {0, 2, fg::VT_VEC2},
+    };
+    pipeDesc.BindingDescs = {
+        {0, sizeof(glm::vec2) + sizeof(glm::vec3)}
+    };
+    pipeDesc.ShaderVariables = {
+        {0,         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,   VK_SHADER_STAGE_VERTEX_BIT},
+        {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+    };
+
+    m_Pipeline = m_Renderer->CreateGraphicsPipeline(pipeDesc);
+    m_DescriptorSet = m_Pipeline->CreateDescriptorSet();
+
+    VkDescriptorBufferInfo uboInfo {};
+    uboInfo.buffer = m_UniformBuffer->GetVkBuffer();
+    uboInfo.offset = 0;
+    uboInfo.range = VK_WHOLE_SIZE;
+
+    VkDescriptorImageInfo imageInfo {};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = m_Texture->GetDefaultView()->GetHandle();
+    imageInfo.sampler = m_Pipeline->GetSampler();
+
+    std::array<VkWriteDescriptorSet, 2> wds {};
+    wds[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    wds[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+
+    wds[0].dstSet = m_DescriptorSet;
+    wds[0].dstBinding = 0;
+    wds[0].dstArrayElement = 0;
+    wds[0].pBufferInfo = &uboInfo;
+    wds[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    wds[0].descriptorCount = 1;
+    wds[0].pBufferInfo = &uboInfo;
+
+    wds[1].dstSet = m_DescriptorSet;
+    wds[1].dstBinding = 1;
+    wds[1].dstArrayElement = 0;
+    wds[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    wds[1].descriptorCount = 1;
+    wds[1].pImageInfo = &imageInfo;
+
+    m_Renderer->GetLogicalDevice()->UpdateDescriptorSets(wds.size(), wds.data(), 0, nullptr);
+
+    struct Vertex {
+        glm::vec2 pos;
+        glm::vec3 color;
+        glm::vec2 texCoord;
+    };
+
+    constexpr std::array<Vertex, 3> vertices = {
+        Vertex {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
+        Vertex { {0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+        Vertex {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}}
+    };
+    fg::BufferDescription desc;
+    desc.Size = vertices.size() * sizeof(Vertex);
+    desc.Name = "Vertex buffer";
+    desc.Usage = fg::BufferUsage::Vertex;
+
+    fg::Buffer data;
+    data.Data = (uint8_t*)vertices.data();
+    data.Size = desc.Size;
+    m_VertexBuffer = m_Renderer->CreateBuffer(desc, data);
   }
 
   // AssetManager::Init();
