@@ -26,6 +26,7 @@ void VulkanLogicalDevice::WaitIdle() const {
 }
 ImageViewWrapper VulkanLogicalDevice::CreateImageView(const VkImageViewCreateInfo& info,
                                                       const char* name) const {
+  FOO_ASSERT(info.sType == VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
   VkImageView handle = 0;
   auto res = vkCreateImageView(m_Device, &info, m_Allocator, &handle);
   return {std::move(handle), GetPtr()};
@@ -154,6 +155,15 @@ CommandPoolWrapper VulkanLogicalDevice::CreateCommandPool(const VkCommandPoolCre
   auto res = vkCreateCommandPool(m_Device, &info, m_Allocator, &handle);
   return CommandPoolWrapper(std::move(handle), GetPtr());
 }
+
+SamplerWrapper VulkanLogicalDevice::CreateSampler(const VkSamplerCreateInfo& info,
+                                                  const char* name) const {
+  FOO_ASSERT(info.sType == VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
+  VkSampler sampler = 0;
+  auto res = vkCreateSampler(m_Device, &info, m_Allocator, &sampler);
+  return {std::move(sampler), GetPtr()};
+}
+
 SemaphoreWrapper VulkanLogicalDevice::CreateVulkanSemaphore(const VkSemaphoreCreateInfo& info,
                                                             const char* name) {
   FOO_ASSERT(info.sType == VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
@@ -202,6 +212,11 @@ void VulkanLogicalDevice::FreeCmdBuffer(VkCommandPool pool, VkCommandBuffer cmd)
 
 void VulkanLogicalDevice::DestroyObject(BufferWrapper&& handle) const {
   vkDestroyBuffer(m_Device, handle, m_Allocator);
+  handle.m_VulkanObject = VK_NULL_HANDLE;
+}
+
+void VulkanLogicalDevice::DestroyObject(SamplerWrapper&& handle) const {
+  vkDestroySampler(m_Device, handle, m_Allocator);
   handle.m_VulkanObject = VK_NULL_HANDLE;
 }
 
