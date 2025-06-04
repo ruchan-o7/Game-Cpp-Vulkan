@@ -259,11 +259,8 @@ void Renderer::SetRenderTargetToSwapchain() {
   auto cmd = m_CmdPool->Get();
   m_Cmd.SetVkCommandBuffer(cmd, 0, 0);
 
-  VkImageSubresourceRange range {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-  m_Cmd.TransitionImageLayout(m_Swapchain->GetCurrentImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, range,
-                              VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+  TransitionImageLayout(m_Swapchain->GetCurrentImageView()->GetImage(),
+                        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
   VkRenderingInfoKHR beginInfo {VK_STRUCTURE_TYPE_RENDERING_INFO, 0};
   beginInfo.renderArea = {
@@ -370,11 +367,8 @@ void Renderer::EndRendering() {
 
 void Renderer::EndRenderingSwapchain() {
   m_Cmd.EndRendering();
-  VkImageSubresourceRange range {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-  m_Cmd.TransitionImageLayout(
-      m_Swapchain->GetCurrentImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, range, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+  TransitionImageLayout(m_Swapchain->GetCurrentImageView()->GetImage(),
+                        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
   m_Cmd.FlushBarriers();
 }
 
