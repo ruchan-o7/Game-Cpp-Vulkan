@@ -31,6 +31,45 @@ struct VertexAttribute {
     uint8_t Binding = 0, Location = 0;
     ValueType Type;
 };
+enum class Filter {
+  Nearest,
+  Linear,
+};
+enum class SamplerAddressMode {
+  Repeat,
+  MirroredRepeat,
+  ClampToEdge,
+  ClampToBorder,
+};
+enum class SamplerBorderColor {
+  FloatTransparentBlack,
+  IntTransparentBlack,
+  FloatOpaqueBlack,
+  IntOpaqueBlack,
+  FloatOpaqueWhite,
+  IntOpaqueWhite,
+  CustomFloat,
+  CustomInt,
+};
+enum class CompareOperation {
+  Never,
+  Less,
+  Equal,
+  LessOrEqual,
+  Greater,
+  NotEqual,
+  GreaterOrEqual,
+  Always,
+};
+struct SamplerInfo {
+    Filter MagFilter = Filter::Linear;
+    Filter MinFilter = Filter::Linear;
+    SamplerAddressMode AddressMode = SamplerAddressMode::Repeat;
+    bool EnableAnisotropy = true;
+    SamplerBorderColor BorderColor = SamplerBorderColor::IntTransparentBlack;
+    bool Compare = false;
+    CompareOperation CompOp = CompareOperation::Always;
+};
 
 struct ShaderVariable {
     uint32_t Binding = 0;
@@ -66,12 +105,12 @@ struct GraphicsPipelineDescription {
     VkCullModeFlags CullMode = VK_CULL_MODE_BACK_BIT;
     VkFrontFace FrontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     VkFormat RenderTargetFormat = VK_FORMAT_UNDEFINED;
+    SamplerInfo Sampler;
 };
 
 class VulkanGraphicsPipeline : public RefBase {
   public:
-    VulkanGraphicsPipeline(const GraphicsPipelineDescription& desc,
-                           const std::shared_ptr<VulkanLogicalDevice>& renderer);
+    VulkanGraphicsPipeline(const GraphicsPipelineDescription& desc, Renderer* renderer);
     virtual ~VulkanGraphicsPipeline() = default;
 
     VkPipeline GetHandle() const {
@@ -80,6 +119,10 @@ class VulkanGraphicsPipeline : public RefBase {
 
     VkPipelineLayout Layout() const {
       return m_Layout;
+    }
+
+    VkSampler GetSampler() const {
+      return m_Sampler;
     }
 
     VkDescriptorSetLayout DescriptorSetLayout() const {
@@ -91,11 +134,12 @@ class VulkanGraphicsPipeline : public RefBase {
 
   private:
     GraphicsPipelineDescription m_Desc;
-    std::shared_ptr<VulkanLogicalDevice> m_LogicalDevice;
+    Renderer* m_Renderer;
 
     DescriptorPoolWrapper m_DescriptorPool;
     PipelineWrapper m_Pipeline;
     PipelineLayoutWrapper m_Layout;
+    SamplerWrapper m_Sampler;  // FIXME: This is looking irrevelant
     std::vector<DescriptorSetLayoutWrapper> m_DescriptorLayouts;
 };
 

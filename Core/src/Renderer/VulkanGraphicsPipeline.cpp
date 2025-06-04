@@ -1,5 +1,7 @@
 #include "VulkanGraphicsPipeline.h"
 #include "VulkanShader.h"
+#include "src/Renderer/Renderer.h"
+#include "src/Renderer/VulkanPhysicalDevice.h"
 
 namespace {
 static VkFormat ToVk(fg::ValueType type) {
@@ -25,15 +27,80 @@ static VkVertexInputRate ToVk(fg::VertexInputRate rate) {
       break;
   }
 }
+static VkFilter ToVk(fg::Filter filter) {
+  switch (filter) {
+    case fg::Filter::Linear:
+      return VK_FILTER_LINEAR;
+    case fg::Filter::Nearest:
+      return VK_FILTER_NEAREST;
+  }
+}
+
+static VkSamplerAddressMode ToVk(fg::SamplerAddressMode mode) {
+  switch (mode) {
+    case fg::SamplerAddressMode::Repeat:
+      return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+      break;
+    case fg::SamplerAddressMode::MirroredRepeat:
+      return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+    case fg::SamplerAddressMode::ClampToEdge:
+      return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    case fg::SamplerAddressMode::ClampToBorder:
+      return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+      break;
+  }
+}
+
+static VkBorderColor ToVk(fg::SamplerBorderColor color) {
+  switch (color) {
+    case fg::SamplerBorderColor::FloatTransparentBlack:
+      return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+    case fg::SamplerBorderColor::IntTransparentBlack:
+      return VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
+    case fg::SamplerBorderColor::FloatOpaqueBlack:
+      return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+    case fg::SamplerBorderColor::IntOpaqueBlack:
+      return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    case fg::SamplerBorderColor::FloatOpaqueWhite:
+      return VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+    case fg::SamplerBorderColor::IntOpaqueWhite:
+      return VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+    case fg::SamplerBorderColor::CustomFloat:
+      return VK_BORDER_COLOR_FLOAT_CUSTOM_EXT;
+    case fg::SamplerBorderColor::CustomInt:
+      return VK_BORDER_COLOR_INT_CUSTOM_EXT;
+  }
+}
+static VkCompareOp ToVk(fg::CompareOperation op) {
+  switch (op) {
+    case fg::CompareOperation::Always:
+      return VK_COMPARE_OP_ALWAYS;
+    case fg::CompareOperation::Never:
+      return VK_COMPARE_OP_NEVER;
+    case fg::CompareOperation::Less:
+      return VK_COMPARE_OP_LESS;
+    case fg::CompareOperation::Equal:
+      return VK_COMPARE_OP_EQUAL;
+    case fg::CompareOperation::NotEqual:
+      return VK_COMPARE_OP_NOT_EQUAL;
+    case fg::CompareOperation::LessOrEqual:
+      return VK_COMPARE_OP_LESS_OR_EQUAL;
+    case fg::CompareOperation::Greater:
+      return VK_COMPARE_OP_GREATER;
+    case fg::CompareOperation::GreaterOrEqual:
+      return VK_COMPARE_OP_GREATER_OR_EQUAL;
+      break;
+  }
+}
 
 }  // namespace
 
 namespace fg {
 
 VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineDescription& desc,
-                                               const std::shared_ptr<VulkanLogicalDevice>& logical)
-    : m_Desc(desc), m_LogicalDevice(logical) {
-  auto device = m_LogicalDevice;
+                                               Renderer* renderer)
+    : m_Desc(desc), m_Renderer(renderer) {
+  auto device = renderer->GetLogicalDevice();
 
   VkPipelineDynamicStateCreateInfo dynamicState {
       VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
@@ -61,7 +128,7 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineDescription
   for (const auto& elem : m_Desc.BindingDescs) {
     VkVertexInputBindingDescription bindingDesc {};
     bindingDesc.binding = elem.Binding;
-    bindingDesc.stride = elem.Stride;
+    bindingDesc.stride = offset;
     bindingDesc.inputRate = ToVk(elem.Rate);
     bindingDescs.push_back(bindingDesc);
   }
@@ -135,8 +202,8 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineDescription
     VkPushConstantRange range {pc.ShaderStage, pc.Offset, pc.Size};
     pcranges.emplace_back(range);
   }
-
-  std::map<uint32_t, std::vector<VkDescriptorSetLayoutBinding>> bindingMap;
+  //       binding location
+  std::vector<VkDescriptorSetLayoutBinding> bindings;
 
   for (const auto& var : m_Desc.ShaderVariables) {
     VkDescriptorSetLayoutBinding binding {};
@@ -145,18 +212,17 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineDescription
     binding.descriptorCount = var.Count;
     binding.stageFlags = var.ShaderStage;
     binding.pImmutableSamplers = VK_NULL_HANDLE;  // TODO:
-    bindingMap[var.Binding].push_back(binding);
+    bindings.push_back(binding);
   }
 
   std::vector<VkDescriptorSetLayout> setLayouts;
-  for (const auto& [idx, bindings] : bindingMap) {
-    VkDescriptorSetLayoutCreateInfo descriptorInfo {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-    descriptorInfo.pBindings = bindings.data();
-    descriptorInfo.bindingCount = (uint32_t)bindings.size();
-    setLayouts.push_back(
-        m_DescriptorLayouts.emplace_back(device->CreateDescriptorSetLayout(descriptorInfo)));
-  }
+
+  VkDescriptorSetLayoutCreateInfo descriptorInfo {
+      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+  descriptorInfo.pBindings = bindings.data();
+  descriptorInfo.bindingCount = (uint32_t)bindings.size();
+  setLayouts.push_back(
+      m_DescriptorLayouts.emplace_back(device->CreateDescriptorSetLayout(descriptorInfo)));
 
   VkPipelineLayoutCreateInfo layoutInfo {};
   layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -215,16 +281,37 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineDescription
 
   m_Pipeline = device->CreateGraphicsPipeline(pipelineInfo, m_Desc.Name);
 
-  VkDescriptorPoolSize poolSize {};
-  poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-  poolSize.descriptorCount = 1;
+  const VkDescriptorPoolSize poolSizes[] = {
+      {        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100},
+      {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100},
+  };
 
   VkDescriptorPoolCreateInfo poolInfo {VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
-  poolInfo.poolSizeCount = 1;
-  poolInfo.pPoolSizes = &poolSize;
+  poolInfo.poolSizeCount = 2;
+  poolInfo.pPoolSizes = poolSizes;
   poolInfo.maxSets = 100;
   poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-  m_DescriptorPool = m_LogicalDevice->CreateDescriptorPool(poolInfo);
+  m_DescriptorPool = device->CreateDescriptorPool(poolInfo);
+
+  VkSamplerCreateInfo samplerInfo {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+  samplerInfo.magFilter = ToVk(m_Desc.Sampler.MagFilter);
+  samplerInfo.minFilter = ToVk(m_Desc.Sampler.MinFilter);
+  samplerInfo.addressModeU = ToVk(m_Desc.Sampler.AddressMode);
+  samplerInfo.addressModeV = ToVk(m_Desc.Sampler.AddressMode);
+  samplerInfo.addressModeW = ToVk(m_Desc.Sampler.AddressMode);
+  samplerInfo.anisotropyEnable = m_Desc.Sampler.EnableAnisotropy;
+  samplerInfo.maxAnisotropy =
+      renderer->GetPhysicalDevice().GetProperties().limits.maxSamplerAnisotropy;
+  samplerInfo.borderColor = ToVk(m_Desc.Sampler.BorderColor);
+  samplerInfo.unnormalizedCoordinates = VK_FALSE;
+  samplerInfo.compareEnable = m_Desc.Sampler.Compare;
+  samplerInfo.compareOp = ToVk(m_Desc.Sampler.CompOp);
+  // TODO:
+  samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+  samplerInfo.mipLodBias = 0.0f;
+  samplerInfo.minLod = 0.0f;
+  samplerInfo.maxLod = 0.0f;
+  m_Sampler = device->CreateSampler(samplerInfo, m_Desc.Name);
 }
 
 VkDescriptorSet VulkanGraphicsPipeline::CreateDescriptorSet() {
@@ -239,7 +326,7 @@ VkDescriptorSet VulkanGraphicsPipeline::CreateDescriptorSet() {
   allocInfo.descriptorSetCount = 1;
   allocInfo.pSetLayouts = setLayouts.data();
   VkDescriptorSet handle = 0;
-  auto vkDevice = m_LogicalDevice->GetHandle();
+  auto vkDevice = m_Renderer->GetLogicalDevice()->GetHandle();
   // TODO: Create wrapper for this:
   auto res = vkAllocateDescriptorSets(vkDevice, &allocInfo, &handle);
   return handle;
