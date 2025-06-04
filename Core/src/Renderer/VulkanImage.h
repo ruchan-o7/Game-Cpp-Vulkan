@@ -106,6 +106,9 @@ class VulkanImageView : public RefBase {
     VulkanImage const* GetImage() const {
       return m_BaseImage;
     }
+    VkImageView GetHandle() const {
+      return m_View;
+    }
 
   private:
     Renderer* m_Renderer;
