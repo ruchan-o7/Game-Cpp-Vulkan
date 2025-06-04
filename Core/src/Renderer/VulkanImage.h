@@ -19,7 +19,9 @@ enum class ImageUsage : uint8_t {
 enum class ImageFormat {
   None,
   RGBA8,
+  RGBA8Unorm,
   RGB8,
+  RGB8Unorm,
   RGBA16F,
   R8,
   R8Unsigned,
@@ -48,7 +50,7 @@ enum class ImageViewType {
   RenderTarget
 };
 struct ImageViewDesc {
-    // ImageViewType ViewType;
+    ImageViewType ViewType;
     ImageType Type;
     ImageFormat Format;
 };
@@ -86,6 +88,7 @@ class VulkanImage : public RefBase {
     Ref<VulkanImageView> GetDefaultView() {
       return m_DefaultView;
     }
+    Ref<VulkanImageView> CreateView(const ImageViewDesc& desc);
 
   private:
     void CreateDefaultViews();
@@ -101,9 +104,15 @@ class VulkanImageView : public RefBase {
   public:
     VulkanImageView(Renderer* renderer, const ImageViewDesc& desc, ImageViewWrapper&& view,
                     VulkanImage* pImage);
+    VulkanImageView(Renderer* renderer, const ImageViewDesc& desc, ImageViewWrapper&& view,
+                    Ref<VulkanImage> pImage);
+
     virtual ~VulkanImageView();
 
     VulkanImage const* GetImage() const {
+      return m_BaseImage;
+    }
+    VulkanImage* GetImage() {
       return m_BaseImage;
     }
     VkImageView GetHandle() const {
@@ -114,7 +123,7 @@ class VulkanImageView : public RefBase {
     Renderer* m_Renderer;
     ImageViewDesc m_Desc;
     ImageViewWrapper m_View;
-    VulkanImage const* m_BaseImage;
+    VulkanImage* m_BaseImage;
     // Strong ref to image for preventing destroying images that created with non-default
     Ref<VulkanImage> m_sBaseImage;
 };

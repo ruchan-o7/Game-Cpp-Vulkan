@@ -46,8 +46,12 @@ VkFormat ToVk(ImageFormat format) {
       return VK_FORMAT_UNDEFINED;
     case ImageFormat::RGBA8:
       return VK_FORMAT_R8G8B8A8_SRGB;
+    case ImageFormat::RGBA8Unorm:
+      return VK_FORMAT_R8G8B8A8_UNORM;
     case ImageFormat::RGB8:
       return VK_FORMAT_R8G8B8_SRGB;
+    case ImageFormat::RGB8Unorm:
+      return VK_FORMAT_R8G8B8_UNORM;
     case ImageFormat::RGBA16F:
       return VK_FORMAT_R16G16B16A16_SFLOAT;
     case ImageFormat::R8:
@@ -201,12 +205,36 @@ void VulkanImage::CreateDefaultViews() {
   m_DefaultView = MakeRef<VulkanImageView>(m_Renderer, desc, std::move(view), this);
 }
 
+Ref<VulkanImageView> VulkanImage::CreateView(const ImageViewDesc& desc) {
+  VkImageViewCreateInfo info {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+  info.image = m_VmaImage;
+  info.viewType = ToVkView(desc.Type);
+  info.format = ToVk(desc.Format);
+  info.components = {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
+                     VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY};
+  if (IsDepthImage(desc.Format)) {
+    info.subresourceRange = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
+  } else {
+    info.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+  }
+  auto view = m_Renderer->GetLogicalDevice()->CreateImageView(info);
+  return MakeRef<VulkanImageView>(m_Renderer, desc, std::move(view), Ref<VulkanImage>(this));
+}
+
 VulkanImageView::VulkanImageView(Renderer* renderer, const ImageViewDesc& desc,
                                  ImageViewWrapper&& view, VulkanImage* pImage)
     : m_Renderer(renderer), m_Desc(desc), m_View(std::move(view)), m_BaseImage(pImage) {
 }
 
+VulkanImageView::VulkanImageView(Renderer* renderer, const ImageViewDesc& desc,
+                                 ImageViewWrapper&& view, Ref<VulkanImage> pImage)
+    : m_Renderer(renderer), m_Desc(desc), m_View(std::move(view)), m_sBaseImage(pImage) {
+}
+
 VulkanImageView::~VulkanImageView() {
   // TODO: Safe release
+  if (m_sBaseImage) {
+    m_sBaseImage->Release();
+  }
 }
 }  // namespace fg
