@@ -36,7 +36,7 @@ class VulkanCommandBuffer {
     inline void BeginRendering(const VkRenderingInfoKHR& info) {
       FOO_ASSERT(m_Cmd != VK_NULL_HANDLE);
       FOO_ASSERT(m_State.GraphicsPipeline == VK_NULL_HANDLE);
-
+      FlushBarriers();
       vkCmdBeginRendering(m_Cmd, &info);
       m_State.InsideRendering = true;
     }
