@@ -192,6 +192,12 @@ Ref<VulkanImage> Renderer::CreateImage(const ImageDescription& desc, const Buffe
   return MakeRef<VulkanImage>(this, desc, data);
 }
 
+Ref<VulkanImage> Renderer::CreateImage(const ImageDescription& desc, ResourceState initialState,
+                                       VkImage image) {
+  FOO_ASSERT(image != VK_NULL_HANDLE);
+  return MakeRef<VulkanImage>(this, desc, initialState, image);
+}
+
 Ref<VulkanBuffer> Renderer::CreateBuffer(const BufferDescription& desc, Buffer bufferData) {
   FOO_ASSERT(desc.Usage != BufferUsage::None);
 
@@ -202,7 +208,7 @@ Ref<VulkanBuffer> Renderer::CreateBuffer(const BufferDescription& desc, Buffer b
   return buffer;
 }
 
-void Renderer::BeginRendering() {
+void Renderer::SetRenderTargetToSwapchain() {
   auto cmd = m_CmdPool->Get();
   m_Cmd.SetVkCommandBuffer(cmd, 0, 0);
 
@@ -222,7 +228,7 @@ void Renderer::BeginRendering() {
   VkRenderingAttachmentInfo colorInfo {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR};
   colorInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   colorInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-  colorInfo.imageView = m_Swapchain->GetCurrentImageView();
+  colorInfo.imageView = m_Swapchain->GetCurrentImageView()->GetHandle();
   colorInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
   colorInfo.clearValue = {
       {0.2f, 0.2f, 0.2f, 1.0f}
@@ -244,7 +250,78 @@ void Renderer::BeginRendering() {
   m_Cmd.CmdSetViewport(0, 1, vp);
 }
 
+void Renderer::SetRenderTargets(uint32_t count, VulkanImageView* views,
+                                VulkanImageView* depthView) {
+  memset(m_BoundImages, 0, sizeof(m_BoundImages));
+  m_BoundImageCount = count;
+
+  auto cmd = m_CmdPool->Get();
+  m_Cmd.SetVkCommandBuffer(cmd, 0, 0);
+  VkImageSubresourceRange range {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+  for (uint32_t i = 0; i < count; i++) {
+    auto* image = views[i].GetImage();
+    m_BoundImages[i] = image;
+    m_Cmd.TransitionImageLayout(
+        image->GetVkImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        range, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+  }
+  const auto* image = views[0].GetImage();
+
+  VkRenderingInfoKHR beginInfo {VK_STRUCTURE_TYPE_RENDERING_INFO, 0};
+  beginInfo.renderArea = {
+      {0, 0}
+  };
+  beginInfo.renderArea.extent.width = image->Width();
+  beginInfo.renderArea.extent.height = image->Height();
+  beginInfo.layerCount = 1;
+
+  VkRenderingAttachmentInfo colorInfos[8];
+  memset(colorInfos, 0, sizeof(colorInfos));
+
+  for (uint32_t i = 0; i < count; i++) {
+    auto& colorInfo = colorInfos[i];
+    colorInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+    colorInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorInfo.imageView = views[i].GetHandle();
+    colorInfo.clearValue = {
+        {0.2f, 0.2f, 0.2f, 1.0f}
+    };
+  }
+  beginInfo.colorAttachmentCount = count;
+  beginInfo.pColorAttachments = colorInfos;
+  VkRenderingAttachmentInfo depthInfo {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR};
+  depthInfo.clearValue = {};
+  depthInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+  depthInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  if (depthView) {
+    depthInfo.imageView = depthView->GetHandle();
+  }
+  beginInfo.pDepthAttachment = depthView != nullptr ? &depthInfo : nullptr;
+  m_Cmd.BeginRendering(beginInfo);
+  VkRect2D scissor {
+      {             0,               0},
+      {image->Width(), image->Height()},
+  };
+  m_Cmd.SetScissor(scissor);
+  VkViewport vp {0, 0, (float)image->Width(), (float)image->Height(), 0.0f, 1.0f};
+  m_Cmd.CmdSetViewport(0, 1, vp);
+}
+
 void Renderer::EndRendering() {
+  m_Cmd.EndRendering();
+  VkImageSubresourceRange range {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+  for (uint32_t i = 0; i < m_BoundImageCount; i++) {
+    auto* image = m_BoundImages[i];
+    m_Cmd.TransitionImageLayout(image->GetVkImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, range,
+                                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+  }
+  m_Cmd.FlushBarriers();
+}
+
+void Renderer::EndRenderingSwapchain() {
   m_Cmd.EndRendering();
   VkImageSubresourceRange range {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
   m_Cmd.TransitionImageLayout(
@@ -253,6 +330,7 @@ void Renderer::EndRendering() {
       VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
   m_Cmd.FlushBarriers();
 }
+
 void Renderer::BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline) {
   m_CurrentPipeline = pipeline;
   m_Cmd.BindGraphicsPipeline(pipeline->GetHandle());

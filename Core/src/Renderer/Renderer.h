@@ -54,6 +54,8 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
 
     Ref<VulkanGraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDescription& desc);
     Ref<VulkanImage> CreateImage(const ImageDescription& desc, const Buffer data = Buffer());
+    Ref<VulkanImage> CreateImage(const ImageDescription& desc, ResourceState initialState,
+                                 VkImage image);
     Ref<VulkanBuffer> CreateBuffer(const BufferDescription& desc, Buffer bufferData = Buffer());
 
     std::shared_ptr<VulkanSwapchain> GetSwapchain() const {
@@ -83,7 +85,11 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
                                   const char* debugName = nullptr);
     void ExecuteAndDisposeTransientCmdBuff(VkCommandBuffer cmd, CommandPoolWrapper&& pool);
 
-    void BeginRendering();
+    // void BeginRendering();
+    void SetRenderTargets(uint32_t count, VulkanImageView* views, VulkanImageView* depthView);
+    void SetRenderTargetToSwapchain();
+    void EndRenderingSwapchain();
+    void ClearTarget();
     void BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline);
     void Draw(const DrawAttributes& attribs);
     void EndRendering();
@@ -120,6 +126,8 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
     VmaAllocator m_VMA = nullptr;
     std::unique_ptr<CommandPoolManager> m_TransientCmdPoolManager;
     std::unique_ptr<VulkanCommandBufferPool> m_CmdPool;
+    VulkanImage* m_BoundImages[8];
+    uint32_t m_BoundImageCount = 0;
 };
 
 }  // namespace fg
