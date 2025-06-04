@@ -2,11 +2,12 @@
 #include "GLFW/glfw3.h"
 
 #include "VulkanInstance.h"
-#include "../Core/Log.h"
 #include "VulkanLogicalDevice.h"
 #include "VulkanPhysicalDevice.h"
 #include "Renderer.h"
-#include "src/Renderer/VulkanImage.h"
+#include "VulkanImage.h"
+
+#include "../Core/Log.h"
 #include <stdexcept>
 
 namespace fg {
@@ -184,6 +185,9 @@ VkResult VulkanSwapchain::AcquireNextImage() {
 
 void VulkanSwapchain::Present() {
   auto renderer = m_Renderer.lock();
+  auto* backBuffer = GetCurrentImageView()->GetImage();
+  renderer->TransitionImageLayout(backBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+  renderer->Flush();
 
   VkSubmitInfo submit {VK_STRUCTURE_TYPE_SUBMIT_INFO};
   VkSemaphore waits[] = {m_ImageAvailable};
