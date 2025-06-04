@@ -202,27 +202,31 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineDescription
     VkPushConstantRange range {pc.ShaderStage, pc.Offset, pc.Size};
     pcranges.emplace_back(range);
   }
-  //       binding location
-  std::vector<VkDescriptorSetLayoutBinding> bindings;
 
-  for (const auto& var : m_Desc.ShaderVariables) {
-    VkDescriptorSetLayoutBinding binding {};
-    binding.binding = var.Binding;
-    binding.descriptorType = var.Type;
-    binding.descriptorCount = var.Count;
-    binding.stageFlags = var.ShaderStage;
-    binding.pImmutableSamplers = VK_NULL_HANDLE;  // TODO:
-    bindings.push_back(binding);
+  std::map<uint32_t, std::vector<ShaderVariableDesc>> groped;
+  for (const auto var : m_Desc.ShaderVariables) {
+    groped[var.Set].push_back(var);
   }
-
   std::vector<VkDescriptorSetLayout> setLayouts;
+  for (const auto& [setIdx, vars] : groped) {
+    std::vector<VkDescriptorSetLayoutBinding> dSetBinding;
+    VkDescriptorSetLayoutBinding binding {};
+    for (const auto& var : vars) {
+      binding.binding = var.Binding;
+      binding.descriptorType = var.Type;
+      binding.descriptorCount = var.Count;
+      binding.stageFlags = var.ShaderStages;
+      binding.pImmutableSamplers = VK_NULL_HANDLE;  // TODO:
+      dSetBinding.push_back(binding);
+    }
 
-  VkDescriptorSetLayoutCreateInfo descriptorInfo {
-      VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-  descriptorInfo.pBindings = bindings.data();
-  descriptorInfo.bindingCount = (uint32_t)bindings.size();
-  setLayouts.push_back(
-      m_DescriptorLayouts.emplace_back(device->CreateDescriptorSetLayout(descriptorInfo)));
+    VkDescriptorSetLayoutCreateInfo setLayoutInfo {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+    setLayoutInfo.pBindings = dSetBinding.data();
+    setLayoutInfo.bindingCount = (uint32_t)dSetBinding.size();
+    setLayouts.emplace_back(
+        m_DescriptorLayouts.emplace_back(device->CreateDescriptorSetLayout(setLayoutInfo)));
+  }
 
   VkPipelineLayoutCreateInfo layoutInfo {};
   layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
