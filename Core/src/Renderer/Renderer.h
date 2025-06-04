@@ -87,7 +87,7 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
     void BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline);
     void Draw(const DrawAttributes& attribs);
     void EndRendering();
-    void BindDescriptorSet(const VkDescriptorSet& set);
+    void BindDescriptorSet(VulkanDescriptorSet* set);
     void BindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, VulkanBuffer** buffers,
                            VkDeviceSize* offsets) const;
 

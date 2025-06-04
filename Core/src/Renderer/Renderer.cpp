@@ -179,10 +179,11 @@ void Renderer::CreateDeviceAndSwapchain() {
       VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 }
 
-void Renderer::BindDescriptorSet(const VkDescriptorSet& set) {
+void Renderer::BindDescriptorSet(VulkanDescriptorSet* set) {
   FOO_ASSERT(m_CurrentPipeline != nullptr);
-  m_Cmd.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_CurrentPipeline->Layout(), 0, 1, &set,
-                           0, nullptr);
+  auto vkSet = set->GetHandle();
+  m_Cmd.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_CurrentPipeline->Layout(), 0, 1,
+                           &vkSet, 0, nullptr);
 }
 
 Ref<VulkanImage> Renderer::CreateImage(const ImageDescription& desc, const Buffer data) {
