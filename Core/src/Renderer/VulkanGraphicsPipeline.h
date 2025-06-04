@@ -75,8 +75,8 @@ struct ShaderVariableDesc {
     uint32_t Binding = 0;
     uint32_t Set = 0;
     VkDescriptorType Type;
-    uint32_t Count = 1;
     VkShaderStageFlags ShaderStages;
+    uint32_t Count = 1;
 };
 
 struct VertexInputBindingDesc {
