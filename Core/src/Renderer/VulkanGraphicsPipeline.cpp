@@ -1,99 +1,8 @@
 #include "VulkanGraphicsPipeline.h"
 #include "VulkanShader.h"
-#include "src/Renderer/Renderer.h"
-#include "src/Renderer/VulkanPhysicalDevice.h"
-
-namespace {
-static VkFormat ToVk(fg::ValueType type) {
-  switch (type) {
-    case fg::VT_FLOAT:
-      return VK_FORMAT_R32_SFLOAT;
-    case fg::VT_VEC2:
-      return VK_FORMAT_R32G32_SFLOAT;
-    case fg::VT_VEC3:
-      return VK_FORMAT_R32G32B32_SFLOAT;
-    case fg::VT_VEC4:
-      return VK_FORMAT_R32G32B32A32_SFLOAT;
-      break;
-  }
-}
-
-static VkVertexInputRate ToVk(fg::VertexInputRate rate) {
-  switch (rate) {
-    case fg::VertexInputRate::Vertex:
-      return VK_VERTEX_INPUT_RATE_VERTEX;
-    case fg::VertexInputRate::Instance:
-      return VK_VERTEX_INPUT_RATE_INSTANCE;
-      break;
-  }
-}
-static VkFilter ToVk(fg::Filter filter) {
-  switch (filter) {
-    case fg::Filter::Linear:
-      return VK_FILTER_LINEAR;
-    case fg::Filter::Nearest:
-      return VK_FILTER_NEAREST;
-  }
-}
-
-static VkSamplerAddressMode ToVk(fg::SamplerAddressMode mode) {
-  switch (mode) {
-    case fg::SamplerAddressMode::Repeat:
-      return VK_SAMPLER_ADDRESS_MODE_REPEAT;
-      break;
-    case fg::SamplerAddressMode::MirroredRepeat:
-      return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
-    case fg::SamplerAddressMode::ClampToEdge:
-      return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    case fg::SamplerAddressMode::ClampToBorder:
-      return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-      break;
-  }
-}
-
-static VkBorderColor ToVk(fg::SamplerBorderColor color) {
-  switch (color) {
-    case fg::SamplerBorderColor::FloatTransparentBlack:
-      return VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
-    case fg::SamplerBorderColor::IntTransparentBlack:
-      return VK_BORDER_COLOR_INT_TRANSPARENT_BLACK;
-    case fg::SamplerBorderColor::FloatOpaqueBlack:
-      return VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
-    case fg::SamplerBorderColor::IntOpaqueBlack:
-      return VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    case fg::SamplerBorderColor::FloatOpaqueWhite:
-      return VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-    case fg::SamplerBorderColor::IntOpaqueWhite:
-      return VK_BORDER_COLOR_INT_OPAQUE_WHITE;
-    case fg::SamplerBorderColor::CustomFloat:
-      return VK_BORDER_COLOR_FLOAT_CUSTOM_EXT;
-    case fg::SamplerBorderColor::CustomInt:
-      return VK_BORDER_COLOR_INT_CUSTOM_EXT;
-  }
-}
-static VkCompareOp ToVk(fg::CompareOperation op) {
-  switch (op) {
-    case fg::CompareOperation::Always:
-      return VK_COMPARE_OP_ALWAYS;
-    case fg::CompareOperation::Never:
-      return VK_COMPARE_OP_NEVER;
-    case fg::CompareOperation::Less:
-      return VK_COMPARE_OP_LESS;
-    case fg::CompareOperation::Equal:
-      return VK_COMPARE_OP_EQUAL;
-    case fg::CompareOperation::NotEqual:
-      return VK_COMPARE_OP_NOT_EQUAL;
-    case fg::CompareOperation::LessOrEqual:
-      return VK_COMPARE_OP_LESS_OR_EQUAL;
-    case fg::CompareOperation::Greater:
-      return VK_COMPARE_OP_GREATER;
-    case fg::CompareOperation::GreaterOrEqual:
-      return VK_COMPARE_OP_GREATER_OR_EQUAL;
-      break;
-  }
-}
-
-}  // namespace
+#include "Renderer.h"
+#include "VulkanPhysicalDevice.h"
+#include "TypeConversions.h"
 
 namespace fg {
 
@@ -213,7 +122,7 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineDescription
     VkDescriptorSetLayoutBinding binding {};
     for (const auto& var : vars) {
       binding.binding = var.Binding;
-      binding.descriptorType = var.Type;
+      binding.descriptorType = ToVk(var.Type);
       binding.descriptorCount = var.Count;
       binding.stageFlags = var.ShaderStages;
       binding.pImmutableSamplers = VK_NULL_HANDLE;  // TODO:
@@ -318,22 +227,8 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineDescription
   m_Sampler = device->CreateSampler(samplerInfo, m_Desc.Name);
 }
 
-VkDescriptorSet VulkanGraphicsPipeline::CreateDescriptorSet() {
-  std::vector<VkDescriptorSetLayout> setLayouts;
-  setLayouts.reserve(m_DescriptorLayouts.size());
-  for (const auto& l : m_DescriptorLayouts) {
-    setLayouts.emplace_back(l);
-  }
-  VkDescriptorSetAllocateInfo allocInfo {};
-  allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-  allocInfo.descriptorPool = m_DescriptorPool;
-  allocInfo.descriptorSetCount = 1;
-  allocInfo.pSetLayouts = setLayouts.data();
-  VkDescriptorSet handle = 0;
-  auto vkDevice = m_Renderer->GetLogicalDevice()->GetHandle();
-  // TODO: Create wrapper for this:
-  auto res = vkAllocateDescriptorSets(vkDevice, &allocInfo, &handle);
-  return handle;
+Ref<VulkanDescriptorSet> VulkanGraphicsPipeline::CreateDescriptorSet() {
+  return MakeRef<VulkanDescriptorSet>(this, m_Renderer);
 }
 
 }  // namespace fg

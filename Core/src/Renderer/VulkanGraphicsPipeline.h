@@ -1,5 +1,8 @@
 #pragma once
 #include "VulkanObject.h"
+#include "Misc.h"
+#include "VulkanDescriptorSet.h"
+
 #include "../Core/Ref.h"
 #include "../Core/Assert.h"
 
@@ -7,60 +10,6 @@ namespace fg {
 
 class VulkanShader;
 
-enum ValueType : uint8_t {
-  VT_FLOAT = sizeof(float),
-  VT_VEC2 = VT_FLOAT * 2,
-  VT_VEC3 = VT_FLOAT * 3,
-  VT_VEC4 = VT_FLOAT * 4,
-
-  VT_UINT = sizeof(uint32_t),
-  VT_IVEC2 = VT_UINT * 2,
-  VT_IVEC3 = VT_UINT * 3,
-  VT_IVEC4 = VT_UINT * 4,
-
-  VT_DOUBLE = sizeof(double),
-};
-
-enum class VertexInputRate : uint8_t {
-  Vertex = 0,
-  Instance,
-};
-
-// Vertex input binding and attribute description
-struct VertexAttribute {
-    uint8_t Binding = 0, Location = 0;
-    ValueType Type;
-};
-enum class Filter {
-  Nearest,
-  Linear,
-};
-enum class SamplerAddressMode {
-  Repeat,
-  MirroredRepeat,
-  ClampToEdge,
-  ClampToBorder,
-};
-enum class SamplerBorderColor {
-  FloatTransparentBlack,
-  IntTransparentBlack,
-  FloatOpaqueBlack,
-  IntOpaqueBlack,
-  FloatOpaqueWhite,
-  IntOpaqueWhite,
-  CustomFloat,
-  CustomInt,
-};
-enum class CompareOperation {
-  Never,
-  Less,
-  Equal,
-  LessOrEqual,
-  Greater,
-  NotEqual,
-  GreaterOrEqual,
-  Always,
-};
 struct SamplerInfo {
     Filter MagFilter = Filter::Linear;
     Filter MinFilter = Filter::Linear;
@@ -69,14 +18,6 @@ struct SamplerInfo {
     SamplerBorderColor BorderColor = SamplerBorderColor::IntTransparentBlack;
     bool Compare = false;
     CompareOperation CompOp = CompareOperation::Always;
-};
-
-struct ShaderVariableDesc {
-    uint32_t Binding = 0;
-    uint32_t Set = 0;
-    VkDescriptorType Type;
-    VkShaderStageFlags ShaderStages;
-    uint32_t Count = 1;
 };
 
 struct VertexInputBindingDesc {
@@ -123,13 +64,23 @@ class VulkanGraphicsPipeline : public RefBase {
     VkSampler GetSampler() const {
       return m_Sampler;
     }
+    VkDescriptorPool GetPool() const {
+      return m_DescriptorPool;
+    }
+    const GraphicsPipelineDescription& GetDesc() const {
+      return m_Desc;
+    }
 
     VkDescriptorSetLayout DescriptorSetLayout() const {
       FOO_ASSERT(m_DescriptorLayouts.size() > 0);
       return m_DescriptorLayouts[0];
     }
+    const std::vector<DescriptorSetLayoutWrapper>& GetSetLayouts() {
+      return m_DescriptorLayouts;
+    }
 
-    VkDescriptorSet CreateDescriptorSet();
+    // VkDescriptorSet CreateDescriptorSet();
+    Ref<VulkanDescriptorSet> CreateDescriptorSet();
 
   private:
     GraphicsPipelineDescription m_Desc;
@@ -138,7 +89,7 @@ class VulkanGraphicsPipeline : public RefBase {
     DescriptorPoolWrapper m_DescriptorPool;
     PipelineWrapper m_Pipeline;
     PipelineLayoutWrapper m_Layout;
-    SamplerWrapper m_Sampler;  // FIXME: This is looking irrevelant
+    SamplerWrapper m_Sampler;
     std::vector<DescriptorSetLayoutWrapper> m_DescriptorLayouts;
 };
 
