@@ -16,8 +16,8 @@
 #include "GLFW/glfw3.h"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
-#include "src/Renderer/VulkanBuffer.h"
-#include "src/Renderer/VulkanImage.h"
+#include "../Renderer/VulkanBuffer.h"
+#include "../Renderer/VulkanImage.h"
 #include <imgui.h>
 #include <stb_image.h>
 namespace FooGame {
@@ -32,6 +32,7 @@ fg::Ref<fg::VulkanBuffer> m_VertexBuffer;
 fg::Ref<fg::VulkanBuffer> m_UniformBuffer;
 fg::Ref<fg::VulkanImage> m_Texture;
 fg::Ref<fg::VulkanDescriptorSet> m_DescriptorSet;
+fg::Ref<fg::VulkanImage> m_RenderTarget;
 
 struct UBO {
     glm::mat4 Model;
@@ -90,6 +91,18 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
     imageDesc.Name = "Texture";
 
     m_Texture = m_Renderer->CreateImage(imageDesc, pixelData);
+  }
+  {
+    fg::ImageDescription imageDesc;
+    imageDesc.Format = fg::ImageFormat::RGBA8;
+    imageDesc.Width = 1600;
+    imageDesc.Height = 900;
+    imageDesc.Depth = 1;
+    imageDesc.MipLevels = 1;
+    imageDesc.Usage = fg::ImageUsage::ShaderResource;
+    imageDesc.Type = fg::ImageType::Type2D;
+    imageDesc.Name = "Texture";
+    m_RenderTarget = m_Renderer->CreateImage(imageDesc);
   }
   {
     fg::BufferDescription desc;
@@ -293,7 +306,9 @@ void Application::Run() {
       //   l->OnImGuiRender();
       // }
       // m_ImGuiLayer->End();
-      m_Renderer->BeginRendering();
+      // auto view = m_RenderTarget->GetDefaultView();
+      // m_Renderer->SetRenderTargets(1, view.get(), nullptr);
+      m_Renderer->SetRenderTargetToSwapchain();
 
       m_Renderer->BindPipeline(m_Pipeline);
       UBO ubo {};
@@ -331,7 +346,8 @@ void Application::Run() {
       m_Renderer->BindVertexBuffers(0, 1, buffer, offset);
       m_Renderer->Draw({3, 1, 0, 0});
 
-      m_Renderer->EndRendering();
+      // m_Renderer->EndRendering();
+      m_Renderer->EndRenderingSwapchain();
 
       m_Swapchain->Present();
     }
