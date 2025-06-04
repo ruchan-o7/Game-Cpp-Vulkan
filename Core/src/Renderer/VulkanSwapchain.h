@@ -1,5 +1,6 @@
 #pragma once
 #include "VulkanObject.h"
+#include "../Core/Ref.h"
 
 typedef struct GLFWwindow GLFWwindow;
 
@@ -10,6 +11,7 @@ class VulkanPhysicalDevice;
 class VulkanPhysicalDevice;
 class VulkanLogicalDevice;
 class Renderer;
+class VulkanImageView;
 
 class VulkanSwapchain {
   public:
@@ -31,8 +33,8 @@ class VulkanSwapchain {
     VkSurfaceFormatKHR Format() const {
       return m_SurfaceFormat;
     }
-    VkImageView GetCurrentImageView() const {
-      return m_Views[m_FrameIndex];
+    VulkanImageView* GetCurrentImageView() const {
+      return m_BackbufferRtvs[m_FrameIndex].get();
     }
     VkImage GetCurrentImage() const {
       return m_Images[m_FrameIndex];
@@ -58,14 +60,12 @@ class VulkanSwapchain {
     std::shared_ptr<VulkanLogicalDevice> m_Device;
     std::weak_ptr<Renderer> m_Renderer;
     const VulkanPhysicalDevice& m_PhysicalDevice;
-    std::vector<VkImageView> m_Views;
+    std::vector<Ref<VulkanImageView>> m_BackbufferRtvs;
     // TODO: Remove this
     std::vector<VkImage> m_Images;
     SemaphoreWrapper m_ImageAvailable;
     SemaphoreWrapper m_RenderFinished;
     FenceWrapper m_InFlight;
-    // std::vector<VkSemaphore> m_Semaphores;
-    // std::vector<VkFence> m_Fences;
     uint32_t m_FrameIndex = 0;
     uint32_t m_ImageCount = 0;
 };

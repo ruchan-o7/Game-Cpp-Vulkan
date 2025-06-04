@@ -6,6 +6,7 @@
 #include "VulkanLogicalDevice.h"
 #include "VulkanPhysicalDevice.h"
 #include "Renderer.h"
+#include "src/Renderer/VulkanImage.h"
 #include <stdexcept>
 
 namespace fg {
@@ -29,9 +30,7 @@ VulkanSwapchain::VulkanSwapchain(GLFWwindow* window,
 }
 
 VulkanSwapchain::~VulkanSwapchain() {
-  for (auto& view : m_Views) {
-    vkDestroyImageView(m_Device->GetHandle(), view, m_Device->GetAllocator());
-  }
+  m_BackbufferRtvs.clear();
   m_ImageAvailable.Release();
   m_RenderFinished.Release();
   m_InFlight.Release();
@@ -105,33 +104,25 @@ void VulkanSwapchain::CreateSwapchain() {
   m_Images.resize(viewCount);
   vkGetSwapchainImagesKHR(m_Device->GetHandle(), m_Swapchain, &viewCount, m_Images.data());
 
-  m_Views.resize(viewCount);
+  m_BackbufferRtvs.resize(viewCount);
+  auto renderer = m_Renderer.lock();
+  for (uint32_t i = 0; i < viewCount; i++) {
+    ImageDescription backBufferDesc;
+    backBufferDesc.Type = ImageType::Type2D;
+    backBufferDesc.Width = m_Extent.width;
+    backBufferDesc.Height = m_Extent.height;
+    backBufferDesc.Format = ImageFormat::RGBA8Unorm;
+    backBufferDesc.Usage = ImageUsage::ColorAttachment;
+    backBufferDesc.MipLevels = 1;
+    Ref<VulkanImage> backBufferImage =
+        renderer->CreateImage(backBufferDesc, ResourceState::Undefined, m_Images[i]);
 
-  VkImageViewCreateInfo viewInfo {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-  viewInfo.format = m_SurfaceFormat.format;
-  viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-  viewInfo.components = {
-      VK_COMPONENT_SWIZZLE_IDENTITY,
-      VK_COMPONENT_SWIZZLE_IDENTITY,
-      VK_COMPONENT_SWIZZLE_IDENTITY,
-      VK_COMPONENT_SWIZZLE_IDENTITY,
-  };
-  viewInfo.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-  VkDevice dev = m_Device->GetHandle();
-  for (int i = 0; i < m_Views.size(); i++) {
-    viewInfo.image = m_Images[i];
-    vkCreateImageView(dev, &viewInfo, m_VkInstance->GetAllocator(), &m_Views[i]);
+    ImageViewDesc rtViewDesc;
+    rtViewDesc.ViewType = ImageViewType::RenderTarget;
+    rtViewDesc.Type = ImageType::Type2D;
+    rtViewDesc.Format = backBufferDesc.Format;
+    m_BackbufferRtvs[i] = backBufferImage->CreateView(rtViewDesc);
   }
-
-  // for (auto& f : m_Fences) {
-  //   vkDestroyFence(m_Device->GetHandle(), f, m_VkInstance->GetAllocator());
-  // }
-  // for (auto& s : m_Semaphores) {
-  //   vkDestroySemaphore(m_Device->GetHandle(), s, m_VkInstance->GetAllocator());
-  // }
-
-  // m_Semaphores.resize(viewCount);
-  // m_Fences.resize(viewCount);
   m_InFlight = {};
   m_RenderFinished = {};
   m_ImageAvailable = {};
@@ -142,11 +133,6 @@ void VulkanSwapchain::CreateSwapchain() {
   m_InFlight = m_Device->CreateFence(fenceInfo);
   m_RenderFinished = m_Device->CreateVulkanSemaphore(semInfo);
   m_ImageAvailable = m_Device->CreateVulkanSemaphore(semInfo);
-  // for (uint32_t i = 0; i < viewCount; i++) {
-  //   vkCreateSemaphore(m_Device->GetHandle(), &semInfo, m_VkInstance->GetAllocator(),
-  //                     &m_Semaphores[i]);
-  //   vkCreateFence(m_Device->GetHandle(), &fenceInfo, m_VkInstance->GetAllocator(), &m_Fences[i]);
-  // }
 }
 
 void VulkanSwapchain::RecreateSwapchain() {
@@ -169,7 +155,7 @@ void VulkanSwapchain::DestroySwapchainRes(bool destroySwapchain) {
   }
   m_Device->WaitIdle();
   WaitForImageAcquiredFences();
-  m_Views.clear();
+  m_BackbufferRtvs.clear();
   m_Images.clear();
   m_ImageAvailable.Release();
   m_RenderFinished.Release();
@@ -197,6 +183,8 @@ VkResult VulkanSwapchain::AcquireNextImage() {
 }
 
 void VulkanSwapchain::Present() {
+  auto renderer = m_Renderer.lock();
+
   VkSubmitInfo submit {VK_STRUCTURE_TYPE_SUBMIT_INFO};
   VkSemaphore waits[] = {m_ImageAvailable};
 
@@ -209,7 +197,6 @@ void VulkanSwapchain::Present() {
   VkSemaphore signalSems[] = {m_RenderFinished};
   submit.signalSemaphoreCount = 1;
   submit.pSignalSemaphores = signalSems;
-  auto renderer = m_Renderer.lock();
   if (!renderer) {
     FOO_CORE_ERROR("Renderer disposed before swapchain");
     return;
