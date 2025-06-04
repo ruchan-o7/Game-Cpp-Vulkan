@@ -1,4 +1,6 @@
 #include "TypeConversions.h"
+#include "../Core/Assert.h"
+#include "Misc.h"
 
 namespace fg {
 
@@ -112,4 +114,105 @@ VkCompareOp ToVk(fg::CompareOperation op) {
   }
 }
 
+ResourceState VkImageLayoutToResouceState(VkImageLayout layout) {
+  switch (layout) {
+    case VK_IMAGE_LAYOUT_UNDEFINED:
+      return ResourceState::Undefined;
+    case VK_IMAGE_LAYOUT_GENERAL:
+      return ResourceState::Unknown;
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+      return ResourceState::RenderTarget;
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+      return ResourceState::DepthWrite;
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
+      return ResourceState::DepthRead;
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+      return ResourceState::ShaderResource;
+    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+      return ResourceState::CopySource;
+    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+      return ResourceState::CopyDest;
+    case VK_IMAGE_LAYOUT_PREINITIALIZED:
+      FOO_ASSERT(false, "Unexpected layout");
+      return ResourceState::Undefined;
+    case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL:
+      FOO_ASSERT(false, "Unexpected layout");
+      return ResourceState::Undefined;
+    case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:
+      FOO_ASSERT(false, "Unexpected layout");
+      return ResourceState::Undefined;
+    case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
+      return ResourceState::Present;
+    default:
+      FOO_ASSERT(false, "Unexpected layout");
+      return ResourceState::Undefined;
+  }
+}
+
+bool ResourceStateHasWriteAccess(ResourceState state) {
+  switch (state) {
+    case ResourceState::RenderTarget:
+    case ResourceState::CopyDest:
+      return true;
+    default:
+      return false;
+  }
+}
+VkImageLayout ResourceStateToVkImageLayout(ResourceState state) {
+  switch (state) {
+    case ResourceState::Unknown:
+    case ResourceState::Undefined:
+      return VK_IMAGE_LAYOUT_UNDEFINED;
+    case ResourceState::Vertex_buffer:
+    case ResourceState::UniformBuffer:
+    case ResourceState::IndexBuffer:
+      FOO_ASSERT(false, "Unexpected state");
+      return VK_IMAGE_LAYOUT_UNDEFINED;
+    case ResourceState::RenderTarget:
+      return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    case ResourceState::DepthWrite:
+      return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    case ResourceState::DepthRead:
+      return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    case ResourceState::InputAttachment:
+    case ResourceState::ShaderResource:
+      return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    case ResourceState::CopyDest:
+      return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    case ResourceState::CopySource:
+      return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    case ResourceState::Present:
+      return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+      break;
+  }
+}
+
+VkPipelineStageFlags ResourceStateFlagsToVkPipelineStageFlags(ResourceState state) {
+  switch (state) {
+    case ResourceState::Unknown:
+      FOO_ASSERT(false, "Unexpected");
+    case ResourceState::Undefined:
+      return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    case ResourceState::Vertex_buffer:
+    case ResourceState::IndexBuffer:
+      return VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+    case ResourceState::UniformBuffer:
+    case ResourceState::ShaderResource:
+      return VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+    case ResourceState::RenderTarget:
+      return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    case ResourceState::DepthWrite:
+      return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    case ResourceState::DepthRead:
+      return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    case ResourceState::CopyDest:
+    case ResourceState::CopySource:
+      return VK_PIPELINE_STAGE_TRANSFER_BIT;
+    case ResourceState::InputAttachment:
+      return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    case ResourceState::Present:
+      return VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+      break;
+  }
+}
 }  // namespace fg

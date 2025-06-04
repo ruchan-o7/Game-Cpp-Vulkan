@@ -15,4 +15,9 @@ VkSamplerAddressMode ToVk(fg::SamplerAddressMode mode);
 VkBorderColor ToVk(fg::SamplerBorderColor color);
 VkCompareOp ToVk(fg::CompareOperation op);
 
+ResourceState VkImageLayoutToResouceState(VkImageLayout layout);
+bool ResourceStateHasWriteAccess(ResourceState oldState);
+VkImageLayout ResourceStateToVkImageLayout(ResourceState state);
+VkPipelineStageFlags ResourceStateFlagsToVkPipelineStageFlags(ResourceState state);
+
 }  // namespace fg
