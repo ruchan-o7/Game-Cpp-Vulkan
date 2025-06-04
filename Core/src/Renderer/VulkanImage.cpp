@@ -1,7 +1,6 @@
 #include "VulkanImage.h"
 #include "Renderer.h"
 #include "../Core/Assert.h"
-#include "vulkan/vulkan_core.h"
 
 namespace fg {
 

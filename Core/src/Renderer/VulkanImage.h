@@ -1,8 +1,10 @@
 #pragma once
 #include "Misc.h"
+#include "VulkanObject.h"
+
 #include "../Core/Buffer.h"
 #include "../Core/Ref.h"
-#include "../Renderer/VulkanObject.h"
+#include "../Core/Assert.h"
 
 namespace fg {
 
@@ -68,6 +70,14 @@ class VulkanImage : public RefBase {
       m_State = state;
     }
 
+    bool IsInKnownState() const {
+      return m_State != ResourceState::Unknown;
+    }
+    bool CheckState(ResourceState state) {
+      FOO_ASSERT(IsInKnownState(), "Texture state is unknown");
+      return m_State == state;
+    }
+
     ResourceState State() const {
       return m_State;
     }
@@ -84,6 +94,9 @@ class VulkanImage : public RefBase {
     }
     uint32_t Depth() const {
       return m_Desc.Depth;
+    }
+    const ImageDescription& GetDesc() const {
+      return m_Desc;
     }
     Ref<VulkanImageView> GetDefaultView() {
       return m_DefaultView;
@@ -113,6 +126,10 @@ class VulkanImageView : public RefBase {
       return m_BaseImage;
     }
     VulkanImage* GetImage() {
+      if (m_BaseImage == nullptr) {
+          FOO_ASSERT(m_sBaseImage!= nullptr);
+          return m_sBaseImage.get();
+      }
       return m_BaseImage;
     }
     VkImageView GetHandle() const {
@@ -123,7 +140,7 @@ class VulkanImageView : public RefBase {
     Renderer* m_Renderer;
     ImageViewDesc m_Desc;
     ImageViewWrapper m_View;
-    VulkanImage* m_BaseImage;
+    VulkanImage* m_BaseImage = nullptr;
     // Strong ref to image for preventing destroying images that created with non-default
     Ref<VulkanImage> m_sBaseImage;
 };
