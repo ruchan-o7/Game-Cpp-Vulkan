@@ -42,15 +42,25 @@ struct ImageDescription {
     // 0 Zero for full mip level generation
     uint32_t MipLevels = 1;
 };
-
-struct ImageViewDesc { };
+enum class ImageViewType {
+  DepthStencil,
+  ReadOnlyDepthStencil,
+  RenderTarget
+};
+struct ImageViewDesc {
+    // ImageViewType ViewType;
+    ImageType Type;
+    ImageFormat Format;
+};
+class VulkanImageView;
 
 class VulkanImage : public RefBase {
   public:
+    // For new image
     VulkanImage(Renderer* renderer, const ImageDescription& desc, const Buffer buffer = Buffer());
-    ~VulkanImage() = default;
-
-    VkImageView CreateView();
+    VulkanImage(Renderer* renderer, const ImageDescription& desc, ResourceState initialState,
+                VkImage imageHandle);
+    virtual ~VulkanImage() = default;
 
     void SetState(ResourceState state) {
       m_State = state;
@@ -73,11 +83,37 @@ class VulkanImage : public RefBase {
     uint32_t Depth() const {
       return m_Desc.Depth;
     }
+    Ref<VulkanImageView> GetDefaultView() {
+      return m_DefaultView;
+    }
 
   private:
+    void CreateDefaultViews();
+
+  private:
+    Renderer* m_Renderer;
     ResourceState m_State = ResourceState::Unknown;
     ImageDescription m_Desc;
     VmaImageWrapper m_VmaImage;
+    Ref<VulkanImageView> m_DefaultView;
+};
+class VulkanImageView : public RefBase {
+  public:
+    VulkanImageView(Renderer* renderer, const ImageViewDesc& desc, ImageViewWrapper&& view,
+                    VulkanImage* pImage);
+    virtual ~VulkanImageView();
+
+    VulkanImage const* GetImage() const {
+      return m_BaseImage;
+    }
+
+  private:
+    Renderer* m_Renderer;
+    ImageViewDesc m_Desc;
+    ImageViewWrapper m_View;
+    VulkanImage const* m_BaseImage;
+    // Strong ref to image for preventing destroying images that created with non-default
+    Ref<VulkanImage> m_sBaseImage;
 };
 
 }  // namespace fg

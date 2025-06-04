@@ -1,6 +1,7 @@
 #include "VulkanImage.h"
 #include "Renderer.h"
 #include "../Core/Assert.h"
+#include "vulkan/vulkan_core.h"
 
 namespace fg {
 
@@ -85,8 +86,13 @@ uint32_t ComponentSize(ImageFormat format) {
   }
 }
 
+VulkanImage::VulkanImage(Renderer* renderer, const ImageDescription& desc,
+                         ResourceState initialState, VkImage imageHandle)
+    : m_Renderer(renderer), m_Desc(desc), m_State(initialState), m_VmaImage(imageHandle, nullptr) {
+}
+
 VulkanImage::VulkanImage(Renderer* renderer, const ImageDescription& desc, const Buffer buffer)
-    : m_Desc(desc) {
+    : m_Renderer(renderer), m_Desc(desc) {
   FOO_ASSERT(m_Desc.Type != ImageType::None);
   FOO_ASSERT(m_Desc.Format != ImageFormat::None);
   FOO_ASSERT(m_Desc.Usage != ImageUsage::None);
@@ -149,17 +155,58 @@ VulkanImage::VulkanImage(Renderer* renderer, const ImageDescription& desc, const
         region.imageExtent = {Width(), Height(), Depth()};
         cmd.CopyBufferToImage(stage->GetVkBuffer(), m_VmaImage,
                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-        cmd.TransitionImageLayout(m_VmaImage,VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,range,VK_PIPELINE_STAGE_TRANSFER_BIT,VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+        cmd.TransitionImageLayout(m_VmaImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, range,
+                                  VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
         cmd.FlushBarriers();
         renderer->ExecuteAndDisposeTransientCmdBuff(cmd.Get(), std::move(cmdPool));
       }
     }
   }
+  CreateDefaultViews();
+}
+VkImageViewType ToVkView(ImageType type) {
+  switch (type) {
+    case ImageType::None:
+      return VK_IMAGE_VIEW_TYPE_MAX_ENUM;
+    case ImageType::Type1D:
+      return VK_IMAGE_VIEW_TYPE_1D;
+    case ImageType::Type2D:
+      return VK_IMAGE_VIEW_TYPE_2D;
+    case ImageType::Type3D:
+      return VK_IMAGE_VIEW_TYPE_3D;
+  }
+}
+bool IsDepthImage(ImageFormat format) {
+  return format == ImageFormat::D32;
+}
+void VulkanImage::CreateDefaultViews() {
+  VkImageViewCreateInfo info {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+  info.image = m_VmaImage;
+  info.viewType = ToVkView(m_Desc.Type);
+  info.format = ToVk(m_Desc.Format);
+  info.components = {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
+                     VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY};
+  if (IsDepthImage(m_Desc.Format)) {
+    info.subresourceRange = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
+  } else {
+    info.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+  }
+  auto view = m_Renderer->GetLogicalDevice()->CreateImageView(info);
+  ImageViewDesc desc;
+  // desc.ViewType = m_Desc.Type;
+  desc.Format = m_Desc.Format;
+  desc.Type = m_Desc.Type;
+  m_DefaultView = MakeRef<VulkanImageView>(m_Renderer, desc, std::move(view), this);
 }
 
-VkImageView VulkanImage::CreateView() {
-  FOO_ASSERT(false, "VulkanImage::CreateView - Did not implemented");
-  return 0;
+VulkanImageView::VulkanImageView(Renderer* renderer, const ImageViewDesc& desc,
+                                 ImageViewWrapper&& view, VulkanImage* pImage)
+    : m_Renderer(renderer), m_Desc(desc), m_View(std::move(view)), m_BaseImage(pImage) {
 }
 
+VulkanImageView::~VulkanImageView() {
+  // TODO: Safe release
+}
 }  // namespace fg
