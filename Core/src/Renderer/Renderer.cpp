@@ -315,7 +315,7 @@ Ref<VulkanShader> Renderer::CreateShader(const ShaderDescription& desc) const {
 Ref<VulkanGraphicsPipeline> Renderer::CreateGraphicsPipeline(
     const GraphicsPipelineDescription& desc) {
   FOO_ASSERT(desc.RenderTargetFormat != VK_FORMAT_UNDEFINED);
-  return MakeRef<VulkanGraphicsPipeline>(desc, m_LogicalDevice);
+  return MakeRef<VulkanGraphicsPipeline>(desc, this);
 }
 
 void Renderer::BindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
