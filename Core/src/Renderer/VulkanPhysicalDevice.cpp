@@ -3,19 +3,21 @@
 namespace fg {
 
 VulkanPhysicalDevice ::VulkanPhysicalDevice(VkPhysicalDevice device) : m_Device(device) {
+  vkGetPhysicalDeviceProperties(m_Device, &m_Properties);
+  uint32_t count = 0;
+  vkGetPhysicalDeviceQueueFamilyProperties(m_Device, &count, nullptr);
+  m_QueueFamilyProps.resize(count);
+  vkGetPhysicalDeviceQueueFamilyProperties(m_Device, &count, m_QueueFamilyProps.data());
 }
 
 int VulkanPhysicalDevice::GetQueuFamilyIndices(VkQueueFlagBits flags) {
   flags = VK_QUEUE_GRAPHICS_BIT;
-  uint32_t count = 0;
-  VkQueueFamilyProperties props[30];
-  vkGetPhysicalDeviceQueueFamilyProperties(m_Device, &count, nullptr);
-  vkGetPhysicalDeviceQueueFamilyProperties(m_Device, &count, props);
-  for (int i = 0; i < count; i++) {
-    const auto& prop = props[i];
+  int idx = 0;
+  for (const auto& prop : m_QueueFamilyProps) {
     if (prop.queueFlags & flags) {
-      return i;
+      return idx;
     }
+    idx++;
   }
   return 0;
 }
