@@ -133,6 +133,13 @@ PipelineLayoutWrapper VulkanLogicalDevice::CreatePipelineLayout(
   return PipelineLayoutWrapper(std::move(layout), GetPtr());
 }
 
+DescriptorSetWrapper VulkanLogicalDevice::AllocateDescriptorSet(
+    const VkDescriptorSetAllocateInfo& info) const {
+  VkDescriptorSet handle = 0;
+  auto res = vkAllocateDescriptorSets(m_Device, &info, &handle);
+  return {std::move(handle), GetPtr()};
+}
+
 PipelineWrapper VulkanLogicalDevice::CreateGraphicsPipeline(
     const VkGraphicsPipelineCreateInfo& info, const char* name) const {
   FOO_ASSERT(info.sType == VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
@@ -213,6 +220,16 @@ void VulkanLogicalDevice::FreeCmdBuffer(VkCommandPool pool, VkCommandBuffer cmd)
 void VulkanLogicalDevice::DestroyObject(BufferWrapper&& handle) const {
   vkDestroyBuffer(m_Device, handle, m_Allocator);
   handle.m_VulkanObject = VK_NULL_HANDLE;
+}
+
+void VulkanLogicalDevice::FreeDescriptorSet(DescriptorSetWrapper&& handle,
+                                            VkDescriptorPool pool) const {
+  VkDescriptorSet set = handle;
+  vkFreeDescriptorSets(m_Device, pool, 1, &set);
+  handle.m_VulkanObject = VK_NULL_HANDLE;
+}
+void VulkanLogicalDevice::DestroyObject(DescriptorSetWrapper&& handle) const {
+  FOO_ASSERT(handle == nullptr);
 }
 
 void VulkanLogicalDevice::DestroyObject(SamplerWrapper&& handle) const {

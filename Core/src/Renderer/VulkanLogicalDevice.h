@@ -22,6 +22,7 @@ using ImageViewWrapper = VulkanObject<VkImageView>;
 using BufferWrapper = VulkanObject<VkBuffer>;
 using MemoryWrapper = VulkanObject<VkDeviceMemory>;
 using DescriptorSetLayoutWrapper = VulkanObject<VkDescriptorSetLayout>;
+using DescriptorSetWrapper = VulkanObject<VkDescriptorSet>;
 using DescriptorPoolWrapper = VulkanObject<VkDescriptorPool>;
 using SamplerWrapper = VulkanObject<VkSampler>;
 using VmaBufferWrapper = VmaAllocationWrapper<VkBuffer>;
@@ -76,6 +77,7 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     void DestroyObject(SamplerWrapper&& handle) const;
     void DestroyObject(DescriptorSetLayoutWrapper&& handle) const;
     void DestroyObject(DescriptorPoolWrapper&& handle) const;
+    void DestroyObject(DescriptorSetWrapper&& handle) const;
     void WaitFence(VkFence fence);
     void ResetFence(VkFence& fence);
     VkResult GetFenceStatus(VkFence fence);
@@ -95,9 +97,10 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     VmaImageWrapper CreateVMAImage(const VkImageCreateInfo& info,const VmaAllocationCreateInfo& allocInfo) const;
     DescriptorSetLayoutWrapper CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& info, const char* name = nullptr)const;
     DescriptorPoolWrapper CreateDescriptorPool(const VkDescriptorPoolCreateInfo& info, const char* name = nullptr)const;
+    DescriptorSetWrapper AllocateDescriptorSet(const VkDescriptorSetAllocateInfo& info) const;
+    void FreeDescriptorSet(DescriptorSetWrapper&& handle,VkDescriptorPool pool) const;
     // clang-format on
 
-    // TODO: Should allocate from pool ?
     VkCommandBuffer AllocateCmdBuffer(const VkCommandBufferAllocateInfo& info) const;
     void FreeCmdBuffer(VkCommandPool pool, VkCommandBuffer cmd) const;
     void ResetCmdPool(VkCommandPool pool) const;
