@@ -18,6 +18,7 @@ using CommandPoolWrapper = VulkanObject<VkCommandPool>;
 using SemaphoreWrapper = VulkanObject<VkSemaphore>;
 using FenceWrapper = VulkanObject<VkFence>;
 using ImageWrapper = VulkanObject<VkImage>;
+using ImageViewWrapper = VulkanObject<VkImageView>;
 using BufferWrapper = VulkanObject<VkBuffer>;
 using MemoryWrapper = VulkanObject<VkDeviceMemory>;
 using DescriptorSetLayoutWrapper = VulkanObject<VkDescriptorSetLayout>;
@@ -67,6 +68,7 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     void DestroyObject(SemaphoreWrapper&& handle) const;
     void DestroyObject(FenceWrapper&& handle) const;
     void DestroyObject(ImageWrapper&& handle) const;
+    void DestroyObject(ImageViewWrapper&& handle) const;
     void DestroyObject(MemoryWrapper&& handle) const;
     void DestroyObject(VmaBufferWrapper&& handle) const;
     void DestroyObject(VmaImageWrapper&& handle) const;
@@ -84,6 +86,7 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
     SemaphoreWrapper CreateVulkanSemaphore(const VkSemaphoreCreateInfo& info, const char* name = nullptr);
     FenceWrapper CreateFence(const VkFenceCreateInfo& info, const char* name = nullptr)const;
     ImageWrapper CreateImage(const VkImageCreateInfo& info, const char* name = nullptr)const;
+    ImageViewWrapper CreateImageView(const VkImageViewCreateInfo& info, const char* name = nullptr)const;
     BufferWrapper CreateBuffer(const VkBufferCreateInfo& info, const char* name = nullptr)const;
     VmaBufferWrapper CreateVMABuffer(const VkBufferCreateInfo& info,const VmaAllocationCreateInfo& allocInfo) const;
     VmaImageWrapper CreateVMAImage(const VkImageCreateInfo& info,const VmaAllocationCreateInfo& allocInfo) const;

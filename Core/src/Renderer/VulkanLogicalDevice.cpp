@@ -24,6 +24,12 @@ VulkanLogicalDevice::VulkanLogicalDevice(const VkDeviceCreateInfo& info, uint32_
 void VulkanLogicalDevice::WaitIdle() const {
   vkDeviceWaitIdle(m_Device);
 }
+ImageViewWrapper VulkanLogicalDevice::CreateImageView(const VkImageViewCreateInfo& info,
+                                                      const char* name) const {
+  VkImageView handle = 0;
+  auto res = vkCreateImageView(m_Device, &info, m_Allocator, &handle);
+  return {std::move(handle), GetPtr()};
+}
 
 DescriptorPoolWrapper VulkanLogicalDevice::CreateDescriptorPool(
     const VkDescriptorPoolCreateInfo& info, const char* name) const {
@@ -230,6 +236,11 @@ void VulkanLogicalDevice::DestroyObject(VmaImageWrapper&& handle) const {
   vmaDestroyImage(m_VMA, handle.m_VulkanObject, handle.m_VmaAllocation);
   handle.m_VulkanObject = VK_NULL_HANDLE;
   handle.m_VmaAllocation = nullptr;
+}
+
+void VulkanLogicalDevice::DestroyObject(ImageViewWrapper&& handle) const {
+  vkDestroyImageView(m_Device, handle, m_Allocator);
+  handle.m_VulkanObject = VK_NULL_HANDLE;
 }
 
 void VulkanLogicalDevice::DestroyObject(VmaBufferWrapper&& handle) const {
