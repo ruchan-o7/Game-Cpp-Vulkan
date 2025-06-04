@@ -71,13 +71,12 @@ struct SamplerInfo {
     CompareOperation CompOp = CompareOperation::Always;
 };
 
-struct ShaderVariable {
+struct ShaderVariableDesc {
     uint32_t Binding = 0;
-    // UNIFORM
+    uint32_t Set = 0;
     VkDescriptorType Type;
     uint32_t Count = 1;
-    //= VK_SHADER_STAGE_VERTEX_BIT
-    VkShaderStageFlagBits ShaderStage;
+    VkShaderStageFlags ShaderStages;
 };
 
 struct VertexInputBindingDesc {
@@ -98,7 +97,7 @@ struct GraphicsPipelineDescription {
     std::vector<VertexAttribute> VertexAttributes;
     std::vector<VertexInputBindingDesc> BindingDescs;
     std::vector<PushConstantRange> PushConstants;
-    std::vector<ShaderVariable> ShaderVariables;
+    std::vector<ShaderVariableDesc> ShaderVariables;
     VkPrimitiveTopology Topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     VkPolygonMode PolygonMode = VK_POLYGON_MODE_FILL;
     float LineWidth = 1.0f;
