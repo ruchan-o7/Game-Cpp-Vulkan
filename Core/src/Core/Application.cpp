@@ -31,7 +31,7 @@ static void GLFWErrorCallback(int err, const char* desc) {
 fg::Ref<fg::VulkanBuffer> m_VertexBuffer;
 fg::Ref<fg::VulkanBuffer> m_UniformBuffer;
 fg::Ref<fg::VulkanImage> m_Texture;
-VkDescriptorSet m_DescriptorSet = 0;
+fg::Ref<fg::VulkanDescriptorSet> m_DescriptorSet;
 
 struct UBO {
     glm::mat4 Model;
@@ -123,43 +123,23 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
         {0, sizeof(glm::vec2) + sizeof(glm::vec3)}
     };
     pipeDesc.ShaderVariables = {
-        {0, 0,         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,   VK_SHADER_STAGE_VERTEX_BIT},
-        {1, 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {       "UBO", 0, 0,        fg::DescriptorType::UniformBuffer,   fg::ShaderStages::Vertex},
+        {"texSampler", 1, 0, fg::DescriptorType::CombinedImageSampler, fg::ShaderStages::Fragment},
     };
 
     m_Pipeline = m_Renderer->CreateGraphicsPipeline(pipeDesc);
     m_DescriptorSet = m_Pipeline->CreateDescriptorSet();
 
-    VkDescriptorBufferInfo uboInfo {};
-    uboInfo.buffer = m_UniformBuffer->GetVkBuffer();
-    uboInfo.offset = 0;
-    uboInfo.range = VK_WHOLE_SIZE;
+    auto var = m_DescriptorSet->GetByIndex(0);
 
-    VkDescriptorImageInfo imageInfo {};
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = m_Texture->GetDefaultView()->GetHandle();
-    imageInfo.sampler = m_Pipeline->GetSampler();
-
-    std::array<VkWriteDescriptorSet, 2> wds {};
-    wds[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    wds[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-
-    wds[0].dstSet = m_DescriptorSet;
-    wds[0].dstBinding = 0;
-    wds[0].dstArrayElement = 0;
-    wds[0].pBufferInfo = &uboInfo;
-    wds[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    wds[0].descriptorCount = 1;
-    wds[0].pBufferInfo = &uboInfo;
-
-    wds[1].dstSet = m_DescriptorSet;
-    wds[1].dstBinding = 1;
-    wds[1].dstArrayElement = 0;
-    wds[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    wds[1].descriptorCount = 1;
-    wds[1].pImageInfo = &imageInfo;
-
-    m_Renderer->GetLogicalDevice()->UpdateDescriptorSets(wds.size(), wds.data(), 0, nullptr);
+    if (var) {
+      var->SetBuffer(m_UniformBuffer.get());
+    }
+    var = m_DescriptorSet->GetByIndex(1);
+    if (var) {
+      auto view = m_Texture->GetDefaultView();
+      var->SetImageView(view.get(), 0);
+    }
 
     struct Vertex {
         glm::vec2 pos;
@@ -317,14 +297,27 @@ void Application::Run() {
 
       m_Renderer->BindPipeline(m_Pipeline);
       UBO ubo {};
-      ubo.Model =
-          glm::rotate(glm::mat4(1.f), (float)time * glm::radians(90.f), glm::vec3(0.f, 0.f, 1.0f));
-      ubo.View =
-          glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f), glm::vec3(0.f, 0.f, 1.0f));
+      // clang-format off
+      ubo.Model = glm::rotate(
+            glm::mat4(1.f),
+            (float)time * glm::radians(90.f),
+            glm::vec3(0.f, 0.f, 1.0f)
+      );
+      ubo.View = glm::lookAt(
+            glm::vec3(2.0f, 2.0f, 2.0f),
+            glm::vec3(0.0f),
+            glm::vec3(0.f, 0.f, 1.0f)
+      );
+      float aspecRatio = (float)m_Swapchain->GetExtent().width / m_Swapchain->GetExtent().height; 
       ubo.Proj = glm::perspective(
           glm::radians(45.f),
-          (float)m_Swapchain->GetExtent().width / m_Swapchain->GetExtent().height, 0.001f, 100.f);
+          aspecRatio,
+          0.001f, 100.f
+      );
+      // clang-format on
+
       ubo.Proj[1][1] *= -1;
+
       uint8_t CHUNK_BOI[192];
       fg::Buffer mvp;
       mvp.Data = CHUNK_BOI;
@@ -334,7 +327,7 @@ void Application::Run() {
 
       fg::VulkanBuffer* buffer[1] = {m_VertexBuffer.get()};
       VkDeviceSize offset[] = {0};
-      m_Renderer->BindDescriptorSet(m_DescriptorSet);
+      m_Renderer->BindDescriptorSet(m_DescriptorSet.get());
       m_Renderer->BindVertexBuffers(0, 1, buffer, offset);
       m_Renderer->Draw({3, 1, 0, 0});
 
