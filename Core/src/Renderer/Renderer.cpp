@@ -13,6 +13,7 @@
 #include "VulkanInstance.h"
 #include "VulkanPhysicalDevice.h"
 #include "VulkanShader.h"
+#include "TypeConversions.h"
 
 #include <GLFW/glfw3.h>
 #include <fstream>
@@ -208,6 +209,52 @@ Ref<VulkanBuffer> Renderer::CreateBuffer(const BufferDescription& desc, Buffer b
   return buffer;
 }
 
+void Renderer::TransitionImageLayout(VulkanImage* image, VkImageLayout newLayout) {
+  if (!image->IsInKnownState()) {
+    FOO_CORE_ERROR("Can not transition image because image is in unknown state");
+    return;
+  }
+  auto newState = VkImageLayoutToResouceState(newLayout);
+  if (!image->CheckState(newState)) {
+    TransitionImageState(*image, ResourceState::Unknown, newState);
+  }
+}
+void Renderer::TransitionImageState(VulkanImage& image, ResourceState oldState,
+                                    ResourceState newState) {
+  if (oldState == ResourceState::Unknown) {
+    if (image.IsInKnownState()) {
+      oldState = image.State();
+    } else {
+      FOO_CORE_ERROR("Failed to transition the state of the texture");
+    }
+  } else {
+    if (image.IsInKnownState() && image.State() != oldState) {
+      FOO_CORE_ERROR("State is not match");
+    }
+  }
+  auto vkImg = image.GetVkImage();
+  VkImageSubresourceRange range {};
+  range.aspectMask = 0;
+  range.baseArrayLayer = 0;
+  range.layerCount = VK_REMAINING_ARRAY_LAYERS;
+  range.baseMipLevel = 0;
+  range.levelCount = VK_REMAINING_MIP_LEVELS;
+
+  const auto& desc = image.GetDesc();
+  if (desc.Format == ImageFormat::D32) {
+    range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+  } else {
+    range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+  }
+  const bool hasWriteAccess = ResourceStateHasWriteAccess(oldState);
+  const auto oldLayout = ResourceStateToVkImageLayout(oldState);
+  const auto newLayout = ResourceStateToVkImageLayout(newState);
+  const auto oldStages = ResourceStateFlagsToVkPipelineStageFlags(oldState);
+  const auto newStages = ResourceStateFlagsToVkPipelineStageFlags(newState);
+  m_Cmd.TransitionImageLayout(vkImg, oldLayout, newLayout, range, oldStages, newStages);
+  image.SetState(newState);
+}
+
 void Renderer::SetRenderTargetToSwapchain() {
   auto cmd = m_CmdPool->Get();
   m_Cmd.SetVkCommandBuffer(cmd, 0, 0);
@@ -341,6 +388,25 @@ void Renderer::Draw(const DrawAttributes& attribs) {
              attribs.FirstInstance);
 }
 
+void Renderer::Flush() {
+  auto vkCmd = m_Cmd.Get();
+  if (vkCmd != nullptr) {
+    if (m_Cmd.GetState().InsideRendering) {
+      m_Cmd.EndRendering();
+    }
+  }
+  m_Cmd.FlushBarriers();
+  return;
+  VkSubmitInfo submit {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+  submit.commandBufferCount = 1;
+  submit.pCommandBuffers = &vkCmd;
+  submit.waitSemaphoreCount = 0;
+  submit.signalSemaphoreCount = 0;
+  FOO_ASSERT(false, "did not implemented");
+}
+
+void Renderer::ExecuteCommandBuffer(const VkSubmitInfo& info, VkFence* fence) {
+}
 VkResult Renderer::Flush(const std::function<VkResult(VkQueue, VkCommandBuffer)>& func) {
   m_Cmd.EndCommandBuffer();
 

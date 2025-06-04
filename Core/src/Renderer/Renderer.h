@@ -81,9 +81,12 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
       return *m_Instance;
     }
 
+    void TransitionImageLayout(VulkanImage* image, VkImageLayout newLayout);
+    void TransitionImageState(VulkanImage& image, ResourceState oldState, ResourceState newState);
     void AllocateTransientCmdPool(CommandPoolWrapper& pool, VulkanCommandBuffer& cmd,
                                   const char* debugName = nullptr);
     void ExecuteAndDisposeTransientCmdBuff(VkCommandBuffer cmd, CommandPoolWrapper&& pool);
+    void ExecuteCommandBuffer(const VkSubmitInfo& info, VkFence* fence);
 
     // void BeginRendering();
     void SetRenderTargets(uint32_t count, VulkanImageView* views, VulkanImageView* depthView);
@@ -98,6 +101,7 @@ class Renderer : public std::enable_shared_from_this<Renderer> {
                            VkDeviceSize* offsets) const;
 
     VkResult Flush(const std::function<VkResult(VkQueue, VkCommandBuffer)>& func);
+    void Flush();
 
     VkCommandBuffer GetCurrentCmdBuffer() const {
       return m_Cmd.Get();
