@@ -9,6 +9,8 @@
 #include "VulkanPhysicalDevice.h"
 #include "VulkanShader.h"
 #include "TypeConversions.h"
+#include "RenderContext.h"
+#include "VulkanQueue.h"
 
 #include "../Core/Ref.h"
 #include "../Core/Assert.h"
@@ -23,112 +25,120 @@
 
 namespace fg {
 
-const char* validationLayers[] = {
-    "VK_LAYER_KHRONOS_validation",
-};
+// const char* validationLayers[] = {
+//     "VK_LAYER_KHRONOS_validation",
+// };
 
-Renderer::Renderer(RendererFactory* factory, const EngineInfo& info,
+Renderer::Renderer(ReferenceCounter* counter, RendererFactory* factory, const EngineInfo& info,
                    std::shared_ptr<VulkanInstance> instance,
                    std::unique_ptr<VulkanPhysicalDevice> physicalDevice,
                    std::shared_ptr<VulkanLogicalDevice> logicalDevice, Ref<VulkanQueue> queue)
-    : m_Factory(factory),
+    : RefBase(counter),
+      m_Factory(factory),
       m_PhysicalDevice(std::move(physicalDevice)),
       m_Instance(instance),
       m_LogicalDevice(std::move(logicalDevice)),
       m_Queue(queue) {
-  FOO_CORE_WARN("Renderer::Renderer - Did not implemented");
+  CommandPoolManager::CreateInfo poolInfo {*m_LogicalDevice, "Transient command pool", 0,
+                                           VK_COMMAND_POOL_CREATE_TRANSIENT_BIT};
+
+  m_TransientCmdPoolManager = std::make_unique<CommandPoolManager>(poolInfo);
+  m_CmdPool = std::make_unique<VulkanCommandBufferPool>(
+      m_LogicalDevice->GetPtr(), 0,
+      VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 }
-std::shared_ptr<Renderer> Renderer::Create(GLFWwindow* window, const VkAllocationCallbacks* acb) {
-  if (volkInitialize() != VK_SUCCESS) {
-    return nullptr;
-  }
-  VkInstance vkInstance = VK_NULL_HANDLE;
-
-  VkApplicationInfo appInfo {VK_STRUCTURE_TYPE_APPLICATION_INFO};
-  appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
-  appInfo.pApplicationName = "Foo game engine";
-  appInfo.pEngineName = "FG Engine";
-  appInfo.apiVersion = VK_API_VERSION_1_3;
-
-  VkInstanceCreateInfo pCreateInfo {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
-  pCreateInfo.pApplicationInfo = &appInfo;
-
-  uint32_t extCount = 0;
-  const char** glfwExtensions = nullptr;
-  glfwExtensions = glfwGetRequiredInstanceExtensions(&extCount);
-  std::vector<const char*> instanceExtensions;
-  instanceExtensions.reserve(extCount + 1);
-  for (int i = 0; i < extCount; i++) {
-    instanceExtensions.emplace_back(glfwExtensions[i]);
-  }
-  instanceExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-
-  pCreateInfo.ppEnabledExtensionNames = instanceExtensions.data();
-  pCreateInfo.enabledExtensionCount = instanceExtensions.size();
-  pCreateInfo.ppEnabledLayerNames = validationLayers;
-  pCreateInfo.enabledLayerCount = 1;
-
-  VkResult res = vkCreateInstance(&pCreateInfo, acb, &vkInstance);
-
-  volkLoadInstance(vkInstance);
-
-  if (res != VK_SUCCESS) {
-    throw std::runtime_error("Can not create vulkan instance");
-  }
-
-  auto Instance = std::make_shared<VulkanInstance>(vkInstance, acb);
-
-  auto messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
-                         VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                         VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-  auto messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                     VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                     VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-  SetupDebugUtils(vkInstance, messageSeverity, messageType, 0, nullptr);
-
-  VkPhysicalDevice physicalDevices[8];
-  uint32_t physicalDeviceCount = 0;
-  vkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, nullptr);
-  vkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, physicalDevices);
-  if (physicalDeviceCount == 0) {
-    throw std::runtime_error("Can not supported physical GPU device");
-  }
-  VkPhysicalDevice selected = VK_NULL_HANDLE;
-  for (uint32_t i = 0; i < physicalDeviceCount; i++) {
-    VkPhysicalDeviceProperties props;
-    vkGetPhysicalDeviceProperties(physicalDevices[i], &props);
-    if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-      selected = physicalDevices[i];
-      break;
-    }
-  }
-  if (selected == VK_NULL_HANDLE) {
-    FOO_CORE_INFO("Can not find discrete GPU, selecting first one");
-    selected = physicalDevices[0];
-  }
-  VkPhysicalDeviceProperties pDeviceProps {};
-  vkGetPhysicalDeviceProperties(selected, &pDeviceProps);
-  FOO_CORE_INFO("Selected GPU: {}", pDeviceProps.deviceName);
-
-  auto physicalDevice = std::make_unique<VulkanPhysicalDevice>(selected);
-
-  Renderer* renderer = new Renderer(window, Instance, std::move(physicalDevice), acb);
-
-  return std::shared_ptr<Renderer>(renderer);
-}
+// std::shared_ptr<Renderer> Renderer::Create(GLFWwindow* window, const VkAllocationCallbacks* acb)
+// {
+//   if (volkInitialize() != VK_SUCCESS) {
+//     return nullptr;
+//   }
+//   VkInstance vkInstance = VK_NULL_HANDLE;
+//
+//   VkApplicationInfo appInfo {VK_STRUCTURE_TYPE_APPLICATION_INFO};
+//   appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
+//   appInfo.pApplicationName = "Foo game engine";
+//   appInfo.pEngineName = "FG Engine";
+//   appInfo.apiVersion = VK_API_VERSION_1_3;
+//
+//   VkInstanceCreateInfo pCreateInfo {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
+//   pCreateInfo.pApplicationInfo = &appInfo;
+//
+//   uint32_t extCount = 0;
+//   const char** glfwExtensions = nullptr;
+//   glfwExtensions = glfwGetRequiredInstanceExtensions(&extCount);
+//   std::vector<const char*> instanceExtensions;
+//   instanceExtensions.reserve(extCount + 1);
+//   for (int i = 0; i < extCount; i++) {
+//     instanceExtensions.emplace_back(glfwExtensions[i]);
+//   }
+//   instanceExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+//
+//   pCreateInfo.ppEnabledExtensionNames = instanceExtensions.data();
+//   pCreateInfo.enabledExtensionCount = instanceExtensions.size();
+//   pCreateInfo.ppEnabledLayerNames = validationLayers;
+//   pCreateInfo.enabledLayerCount = 1;
+//
+//   VkResult res = vkCreateInstance(&pCreateInfo, acb, &vkInstance);
+//
+//   volkLoadInstance(vkInstance);
+//
+//   if (res != VK_SUCCESS) {
+//     throw std::runtime_error("Can not create vulkan instance");
+//   }
+//
+//   auto Instance = std::make_shared<VulkanInstance>(vkInstance, acb);
+//
+//   auto messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+//                          VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+//                          VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+//   auto messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+//                      VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+//                      VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+//   SetupDebugUtils(vkInstance, messageSeverity, messageType, 0, nullptr);
+//
+//   VkPhysicalDevice physicalDevices[8];
+//   uint32_t physicalDeviceCount = 0;
+//   vkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, nullptr);
+//   vkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, physicalDevices);
+//   if (physicalDeviceCount == 0) {
+//     throw std::runtime_error("Can not supported physical GPU device");
+//   }
+//   VkPhysicalDevice selected = VK_NULL_HANDLE;
+//   for (uint32_t i = 0; i < physicalDeviceCount; i++) {
+//     VkPhysicalDeviceProperties props;
+//     vkGetPhysicalDeviceProperties(physicalDevices[i], &props);
+//     if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+//       selected = physicalDevices[i];
+//       break;
+//     }
+//   }
+//   if (selected == VK_NULL_HANDLE) {
+//     FOO_CORE_INFO("Can not find discrete GPU, selecting first one");
+//     selected = physicalDevices[0];
+//   }
+//   VkPhysicalDeviceProperties pDeviceProps {};
+//   vkGetPhysicalDeviceProperties(selected, &pDeviceProps);
+//   FOO_CORE_INFO("Selected GPU: {}", pDeviceProps.deviceName);
+//
+//   auto physicalDevice = std::make_unique<VulkanPhysicalDevice>(selected);
+//
+//   Renderer* renderer = new Renderer(window, Instance, std::move(physicalDevice), acb);
+//
+//   return std::shared_ptr<Renderer>(renderer);
+// }
 
 void Renderer::WaitGPU() const {
   m_LogicalDevice->WaitIdle();
 }
 
-Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& instance,
-                   std::unique_ptr<VulkanPhysicalDevice> pDevice,
-                   const VkAllocationCallbacks* alloc)
-    : m_Instance(instance),
-      m_Window(window),
-      m_PhysicalDevice(std::move(pDevice)),
-      m_AllocCB(alloc) {
-}
+// Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& instance,
+//                    std::unique_ptr<VulkanPhysicalDevice> pDevice,
+//                    const VkAllocationCallbacks* alloc)
+//     : m_Instance(instance),
+//       m_Window(window),
+//       m_PhysicalDevice(std::move(pDevice)),
+//       m_AllocCB(alloc) {
+// }
 
 void Renderer::CreateDeviceAndContext() {
   uint32_t queueIndex = 0;
@@ -156,19 +166,19 @@ void Renderer::CreateDeviceAndContext() {
       VK_TRUE,
   };
 
-  VkDeviceCreateInfo info {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
-  info.pQueueCreateInfos = &queueInfo;
-  info.queueCreateInfoCount = 1;
-  info.pEnabledFeatures = &features;
-  info.enabledExtensionCount = 2;
-  info.ppEnabledExtensionNames = extensions;
-  info.enabledLayerCount = 1;
-  info.ppEnabledLayerNames = validationLayers;
-  info.pNext = &dynamicRendering;
+  // VkDeviceCreateInfo info {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
+  // info.pQueueCreateInfos = &queueInfo;
+  // info.queueCreateInfoCount = 1;
+  // info.pEnabledFeatures = &features;
+  // info.enabledExtensionCount = 2;
+  // info.ppEnabledExtensionNames = extensions;
+  // info.enabledLayerCount = 1;
+  // info.ppEnabledLayerNames = validationLayers;
+  // info.pNext = &dynamicRendering;
 
-  m_LogicalDevice =
-      std::make_shared<VulkanLogicalDevice>(info, queueIndex, nullptr /*TODO:*/, m_AllocCB);
-  m_VkQueue = m_LogicalDevice->GetQueue(0);
+  // m_LogicalDevice =
+  //     std::make_shared<VulkanLogicalDevice>(info, queueIndex, nullptr /*TODO:*/, m_AllocCB);
+  // m_VkQueue = m_LogicalDevice->GetQueue(0);
 
   VmaAllocatorCreateInfo allocatorInfo {};
   allocatorInfo.device = m_LogicalDevice->GetHandle();
@@ -193,13 +203,6 @@ void Renderer::CreateDeviceAndContext() {
   m_CmdPool = std::make_unique<VulkanCommandBufferPool>(
       m_LogicalDevice->GetPtr(), 0,
       VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-}
-
-std::shared_ptr<VulkanSwapchain> Renderer::CreateSwapchain() {
-  m_Swapchain = std::make_shared<VulkanSwapchain>(m_Window, nullptr /*TODO:*/
-                                                  ,
-                                                  m_Instance, m_LogicalDevice, *m_PhysicalDevice);
-  return m_Swapchain;
 }
 
 // void Renderer::BindDescriptorSet(VulkanDescriptorSet* set) {
@@ -410,8 +413,8 @@ void Renderer::Flush() {
     if (m_Cmd.GetState().InsideRendering) {
       m_Cmd.EndRendering();
     }
+    m_Cmd.FlushBarriers();
   }
-  m_Cmd.FlushBarriers();
   return;
   VkSubmitInfo submit {VK_STRUCTURE_TYPE_SUBMIT_INFO};
   submit.commandBufferCount = 1;
@@ -422,18 +425,24 @@ void Renderer::Flush() {
 }
 
 void Renderer::ExecuteCommandBuffer(const VkSubmitInfo& info, VkFence* fence) {
+  auto err = m_Queue->Submit(info);
+  if (err != VK_SUCCESS) {
+    FOO_CORE_ERROR("Can not submit queue");
+  }
 }
-VkResult Renderer::Flush(const std::function<VkResult(VkQueue, VkCommandBuffer)>& func) {
-  m_Cmd.EndCommandBuffer();
+VkResult Renderer::Flush(const std::function<VkResult(VulkanQueue*)>& func) {
+  //m_Cmd.EndCommandBuffer();
 
-  auto res = func(m_VkQueue, GetCurrentCmdBuffer());
+  auto res = func(m_Queue.get());
 
-  m_CmdPool->Recycle(m_Cmd.Get());
-  m_Cmd.Reset();
+  //m_CmdPool->Recycle(m_Cmd.Get());
+  //m_Cmd.Reset();
+
   return res;
 }
 VkResult Renderer::Present(VkPresentInfoKHR& info) {
-  return vkQueuePresentKHR(m_VkQueue, &info);
+  return m_Queue->Present(info);
+  // return vkQueuePresentKHR(m_VkQueue, &info);
 }
 
 Ref<VulkanShader> Renderer::CreateShader(const ShaderDescription& desc) const {
@@ -519,9 +528,8 @@ void Renderer::ExecuteAndDisposeTransientCmdBuff(VkCommandBuffer cmd, CommandPoo
   submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers = &cmd;
-
-  vkQueueSubmit(m_VkQueue, 1, &submitInfo, VK_NULL_HANDLE);
-  vkQueueWaitIdle(m_VkQueue);
+  m_Queue->Submit(submitInfo);
+  m_Queue->WaitIdle();
   m_TransientCmdPoolManager->DestroyPools();
 
   m_LogicalDevice->FreeCmdBuffer(pool, cmd);

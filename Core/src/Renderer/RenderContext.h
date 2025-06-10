@@ -43,8 +43,9 @@ struct DrawAttributes {
 
 class RenderContext : public RefBase {
   public:
-    RenderContext(Ref<Renderer> renderer, const RenderContextInfo& info);
-    ~RenderContext() = default;
+    RenderContext(ReferenceCounter* refCounter, Ref<Renderer> renderer,
+                  const RenderContextInfo& info);
+    virtual ~RenderContext() = default;
 
     RenderContext(RenderContext&&) = delete;
     RenderContext(const RenderContext&) = delete;
@@ -61,10 +62,13 @@ class RenderContext : public RefBase {
 
     void TransitionImageLayout(VulkanImage* image, VkImageLayout newLayout);
     void TransitionImageState(VulkanImage& image, ResourceState oldState, ResourceState newState);
+    void AddSignalSemaphore(VkSemaphore sem);
 
   private:
     void PrepareCmdBuffer();
-
+    void DisposeCurrentCmdBuffer();
+    void DisposeVkCmdBuffer(VkCommandBuffer cmd);
+    void FinishFrame();
   private:
     std::vector<Ref<VulkanImage>> m_BoundImages;
     Ref<VulkanSwapchain> m_Swapchain;
@@ -74,6 +78,8 @@ class RenderContext : public RefBase {
     Ref<VulkanGraphicsPipeline> m_BoundPipeline;
     std::unique_ptr<VulkanCommandBufferPool> m_CmdPool;
     VulkanCommandBuffer m_Cmd;
+
+    std::vector<VkSemaphore> m_SignalSemaphores;
 
     uint64_t m_FrameNumber = 0;
     RenderContextInfo m_Info;

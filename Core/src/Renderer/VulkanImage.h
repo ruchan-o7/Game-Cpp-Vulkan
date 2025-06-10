@@ -61,9 +61,11 @@ class VulkanImageView;
 class VulkanImage : public RefBase {
   public:
     // For new image
-    VulkanImage(Renderer* renderer, const ImageDescription& desc, const Buffer buffer = Buffer());
-    VulkanImage(Renderer* renderer, const ImageDescription& desc, ResourceState initialState,
-                VkImage imageHandle);
+    VulkanImage(ReferenceCounter* counter, Renderer* renderer, const ImageDescription& desc,
+                const Buffer buffer = Buffer());
+
+    VulkanImage(ReferenceCounter* counter, Renderer* renderer, const ImageDescription& desc,
+                ResourceState initialState, VkImage imageHandle);
     virtual ~VulkanImage() = default;
 
     void SetState(ResourceState state) {
@@ -115,10 +117,10 @@ class VulkanImage : public RefBase {
 };
 class VulkanImageView : public RefBase {
   public:
-    VulkanImageView(Renderer* renderer, const ImageViewDesc& desc, ImageViewWrapper&& view,
-                    VulkanImage* pImage);
-    VulkanImageView(Renderer* renderer, const ImageViewDesc& desc, ImageViewWrapper&& view,
-                    Ref<VulkanImage> pImage);
+    VulkanImageView(ReferenceCounter* counter, Renderer* renderer, const ImageViewDesc& desc,
+                    ImageViewWrapper&& view, VulkanImage* pImage);
+    VulkanImageView(ReferenceCounter* counter, Renderer* renderer, const ImageViewDesc& desc,
+                    ImageViewWrapper&& view, Ref<VulkanImage> pImage);
 
     virtual ~VulkanImageView();
 
@@ -127,8 +129,8 @@ class VulkanImageView : public RefBase {
     }
     VulkanImage* GetImage() {
       if (m_BaseImage == nullptr) {
-          FOO_ASSERT(m_sBaseImage!= nullptr);
-          return m_sBaseImage.get();
+        FOO_ASSERT(m_sBaseImage != nullptr);
+        return m_sBaseImage.get();
       }
       return m_BaseImage;
     }

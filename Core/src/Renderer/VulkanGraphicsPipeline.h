@@ -50,7 +50,8 @@ struct GraphicsPipelineDescription {
 
 class VulkanGraphicsPipeline : public RefBase {
   public:
-    VulkanGraphicsPipeline(const GraphicsPipelineDescription& desc, Renderer* renderer);
+    VulkanGraphicsPipeline(ReferenceCounter* counter, const GraphicsPipelineDescription& desc,
+                           Renderer* renderer);
     virtual ~VulkanGraphicsPipeline() = default;
 
     VkPipeline GetHandle() const {

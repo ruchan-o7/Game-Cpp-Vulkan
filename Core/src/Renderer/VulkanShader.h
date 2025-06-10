@@ -18,8 +18,9 @@ struct ShaderDescription {
 
 class VulkanShader : public RefBase {
   public:
-    VulkanShader(const ShaderDescription& desc, ShaderModuleWrapper&& module)
-        : m_Desc(desc), m_Handle(std::move(module)) {
+    VulkanShader(ReferenceCounter* counter, const ShaderDescription& desc,
+                 ShaderModuleWrapper&& module)
+        : RefBase(counter), m_Desc(desc), m_Handle(std::move(module)) {
     }
     virtual ~VulkanShader() = default;
 

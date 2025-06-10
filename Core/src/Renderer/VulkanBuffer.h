@@ -24,7 +24,8 @@ struct BufferDescription {
 
 class VulkanBuffer : public RefBase {
   public:
-    VulkanBuffer(const BufferDescription& desc, Renderer* renderer, const Buffer data = Buffer());
+    VulkanBuffer(ReferenceCounter* counter, const BufferDescription& desc, Renderer* renderer,
+                 const Buffer data = Buffer());
     virtual ~VulkanBuffer();
 
     const BufferDescription& GetDesc() const {

@@ -89,13 +89,19 @@ uint32_t ComponentSize(ImageFormat format) {
   }
 }
 
-VulkanImage::VulkanImage(Renderer* renderer, const ImageDescription& desc,
-                         ResourceState initialState, VkImage imageHandle)
-    : m_Renderer(renderer), m_Desc(desc), m_State(initialState), m_VmaImage(imageHandle, nullptr) {
+VulkanImage::VulkanImage(ReferenceCounter* counter, Renderer* renderer,
+                         const ImageDescription& desc, ResourceState initialState,
+                         VkImage imageHandle)
+    : RefBase(counter),
+      m_Renderer(renderer),
+      m_Desc(desc),
+      m_State(initialState),
+      m_VmaImage(imageHandle, nullptr) {
 }
 
-VulkanImage::VulkanImage(Renderer* renderer, const ImageDescription& desc, const Buffer buffer)
-    : m_Renderer(renderer), m_Desc(desc) {
+VulkanImage::VulkanImage(ReferenceCounter* counter, Renderer* renderer,
+                         const ImageDescription& desc, const Buffer buffer)
+    : RefBase(counter), m_Renderer(renderer), m_Desc(desc) {
   FOO_ASSERT(m_Desc.Type != ImageType::None);
   FOO_ASSERT(m_Desc.Format != ImageFormat::None);
   FOO_ASSERT(m_Desc.Usage != ImageUsage::None);
@@ -220,14 +226,24 @@ Ref<VulkanImageView> VulkanImage::CreateView(const ImageViewDesc& desc) {
   return MakeRef<VulkanImageView>(m_Renderer, desc, std::move(view), Ref<VulkanImage>(this));
 }
 
-VulkanImageView::VulkanImageView(Renderer* renderer, const ImageViewDesc& desc,
-                                 ImageViewWrapper&& view, VulkanImage* pImage)
-    : m_Renderer(renderer), m_Desc(desc), m_View(std::move(view)), m_BaseImage(pImage) {
+VulkanImageView::VulkanImageView(ReferenceCounter* counter, Renderer* renderer,
+                                 const ImageViewDesc& desc, ImageViewWrapper&& view,
+                                 VulkanImage* pImage)
+    : RefBase(counter),
+      m_Renderer(renderer),
+      m_Desc(desc),
+      m_View(std::move(view)),
+      m_BaseImage(pImage) {
 }
 
-VulkanImageView::VulkanImageView(Renderer* renderer, const ImageViewDesc& desc,
-                                 ImageViewWrapper&& view, Ref<VulkanImage> pImage)
-    : m_Renderer(renderer), m_Desc(desc), m_View(std::move(view)), m_sBaseImage(pImage) {
+VulkanImageView::VulkanImageView(ReferenceCounter* counter, Renderer* renderer,
+                                 const ImageViewDesc& desc, ImageViewWrapper&& view,
+                                 Ref<VulkanImage> pImage)
+    : RefBase(counter),
+      m_Renderer(renderer),
+      m_Desc(desc),
+      m_View(std::move(view)),
+      m_sBaseImage(pImage) {
 }
 
 VulkanImageView::~VulkanImageView() {

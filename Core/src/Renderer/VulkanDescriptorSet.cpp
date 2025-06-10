@@ -6,8 +6,9 @@
 
 namespace fg {
 
-VulkanDescriptorSet::VulkanDescriptorSet(VulkanGraphicsPipeline* pipeline, Renderer* renderer)
-    : m_Renderer(renderer), m_Pipeline(pipeline) {
+VulkanDescriptorSet::VulkanDescriptorSet(ReferenceCounter* counter,
+                                         VulkanGraphicsPipeline* pipeline, Renderer* renderer)
+    : RefBase(counter), m_Renderer(renderer), m_Pipeline(pipeline) {
   const auto& pipeDesc = pipeline->GetDesc();
   const auto& layouts = pipeline->GetSetLayouts();
 

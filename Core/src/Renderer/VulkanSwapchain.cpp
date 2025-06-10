@@ -1,36 +1,42 @@
 #include "VulkanSwapchain.h"
 #include "GLFW/glfw3.h"
 
+#include "RenderContext.h"
 #include "VulkanInstance.h"
 #include "VulkanLogicalDevice.h"
 #include "VulkanPhysicalDevice.h"
 #include "Renderer.h"
 #include "VulkanImage.h"
+#include "VulkanQueue.h"
 
 #include "../Core/Log.h"
 #include <stdexcept>
 
 namespace fg {
 
-// clang-format off
-// VulkanSwapchain::VulkanSwapchain(GLFWwindow* window, 
+//// clang-format off
+// VulkanSwapchain::VulkanSwapchain(GLFWwindow* window,
 //                     std::weak_ptr<Renderer> renderer,
 //                     std::shared_ptr<VulkanInstance> instance,
 //                     std::shared_ptr<VulkanLogicalDevice> logicalDevice,
 //                     const VulkanPhysicalDevice& pDev)
 //     : m_Window(window),
 //       m_Renderer(renderer),
-//       m_Device(logicalDevice), 
-//       m_PhysicalDevice(pDev), 
-//       m_VkInstance(std::move(instance)) 
+//       m_Device(logicalDevice),
+//       m_PhysicalDevice(pDev),
+//       m_VkInstance(std::move(instance))
 // {
 //   // clang-format on
 //   CreateSurface();
 //   CreateSwapchain();
 //   AcquireNextImage();
 // }
-VulkanSwapchain::VulkanSwapchain(GLFWwindow* window, Ref<Renderer> renderer,
-                                 WeakRef<RenderContext> context):m_Window(window),m_Renderer(renderer),m_Ctx(context) {
+VulkanSwapchain::VulkanSwapchain(ReferenceCounter* counter, GLFWwindow* window,
+                                 Ref<Renderer> renderer, WeakRef<RenderContext> context)
+    : RefBase(counter), m_Window(window), m_Renderer(renderer), m_Ctx(context) {
+  CreateSurface();
+  CreateSwapchain();
+  AcquireNextImage();
 }
 
 VulkanSwapchain::~VulkanSwapchain() {
@@ -43,16 +49,15 @@ VulkanSwapchain::~VulkanSwapchain() {
     vkDestroySwapchainKHR(device->GetHandle(), m_Swapchain, device->GetAllocator());
   }
   if (m_Surface) {
-
-      vkDestroySurfaceKHR(m_Renderer->GetVkInstance2().GetHandle(), m_Surface,
-                          device->GetAllocator());
+    vkDestroySurfaceKHR(m_Renderer->GetVkInstance2().GetHandle(), m_Surface,
+                        device->GetAllocator());
   }
 }
 
 void VulkanSwapchain::CreateSurface() {
   auto& vkInstance = m_Renderer->GetVkInstance2();
-  auto res = glfwCreateWindowSurface(vkInstance.GetHandle(), m_Window,
-                                     vkInstance.GetAllocator(), &m_Surface);
+  auto res = glfwCreateWindowSurface(vkInstance.GetHandle(), m_Window, vkInstance.GetAllocator(),
+                                     &m_Surface);
   if (res != VK_SUCCESS) {
     FOO_CORE_ERROR("Can not create window surface");
     throw std::runtime_error("Can not create window surface");
@@ -103,8 +108,8 @@ void VulkanSwapchain::CreateSwapchain() {
   info.pQueueFamilyIndices = famIndicies;
   info.preTransform = caps.currentTransform;
   info.presentMode = m_PresentMode;
-  auto res = vkCreateSwapchainKHR(device->GetHandle(), &info, vkInstance.GetAllocator(),
-                                  &m_Swapchain);
+  auto res =
+      vkCreateSwapchainKHR(device->GetHandle(), &info, vkInstance.GetAllocator(), &m_Swapchain);
   if (res != VK_SUCCESS) {
     throw std::runtime_error("Can not create swapchain");
   }
@@ -196,9 +201,16 @@ VkResult VulkanSwapchain::AcquireNextImage() {
 }
 
 void VulkanSwapchain::Present() {
+  auto context = m_Ctx.Lock();
+  if (!context) {
+    FOO_CORE_ERROR("Context has been released");
+    return;
+  }
+
   auto* backBuffer = GetCurrentImageView()->GetImage();
-  m_Renderer->TransitionImageLayout(backBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-  m_Renderer->Flush();
+  context->TransitionImageLayout(backBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+  context->AddSignalSemaphore(m_RenderFinished);
+  context->Flush();
 
   VkSubmitInfo submit {VK_STRUCTURE_TYPE_SUBMIT_INFO};
   VkSemaphore waits[] = {m_ImageAvailable};
@@ -216,10 +228,9 @@ void VulkanSwapchain::Present() {
     FOO_CORE_ERROR("Renderer disposed before swapchain");
     return;
   }
-  auto res = m_Renderer->Flush([&](VkQueue queue, VkCommandBuffer cmd) -> VkResult {
-    submit.commandBufferCount = 1;
-    submit.pCommandBuffers = &cmd;
-    return vkQueueSubmit(queue, 1, &submit, m_InFlight);
+  auto res = m_Renderer->Flush([&](VulkanQueue* queue) -> VkResult {
+   
+    return queue->Submit(submit, 1, m_InFlight);
   });
 
   VkPresentInfoKHR presentInfo {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};

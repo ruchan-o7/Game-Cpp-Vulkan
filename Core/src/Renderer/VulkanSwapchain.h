@@ -17,12 +17,8 @@ class RenderContext;
 class VulkanSwapchain : public RefBase {
   public:
     // clang-format off
-    VulkanSwapchain(GLFWwindow* window, 
-                    std::weak_ptr<Renderer> renderer,
-                    std::shared_ptr<VulkanInstance> instance,
-                    std::shared_ptr<VulkanLogicalDevice> logicalDevice,
-                    const VulkanPhysicalDevice& pDev);
-    VulkanSwapchain(GLFWwindow* window, 
+    VulkanSwapchain(ReferenceCounter* counter,
+                    GLFWwindow* window, 
                     Ref<Renderer> renderer,
                     WeakRef<RenderContext> context);
     // clang-format on

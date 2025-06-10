@@ -6,9 +6,10 @@
 
 namespace fg {
 
-VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineDescription& desc,
+VulkanGraphicsPipeline::VulkanGraphicsPipeline(ReferenceCounter* counter,
+                                               const GraphicsPipelineDescription& desc,
                                                Renderer* renderer)
-    : m_Desc(desc), m_Renderer(renderer) {
+    : RefBase(counter), m_Desc(desc), m_Renderer(renderer) {
   auto device = renderer->GetLogicalDevice();
 
   VkPipelineDynamicStateCreateInfo dynamicState {

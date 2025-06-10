@@ -34,6 +34,8 @@ void RendererFactory::CreateDeviceAndContexts(const EngineInfo& info, Ref<Render
     return;
   }
 
+  volkInitialize();
+
   VkInstance vkInstance = VK_NULL_HANDLE;
 
   VkApplicationInfo appInfo {VK_STRUCTURE_TYPE_APPLICATION_INFO};
@@ -144,7 +146,7 @@ void RendererFactory::CreateDeviceAndContexts(const EngineInfo& info, Ref<Render
   devInfo.pNext = &dynamicRendering;
 
   auto logicalDevice =
-      std::make_shared<VulkanLogicalDevice>(devInfo, queueIndex, *physicalDevice, info);
+      std::make_shared<VulkanLogicalDevice>(devInfo, queueIndex, *physicalDevice, info.Allocator);
 
   RenderContextInfo ctxInfo;
   ctxInfo.Id = queueIndex;
@@ -169,6 +171,7 @@ void RendererFactory::CreateDeviceAndContexts(const EngineInfo& info, Ref<Render
     logicalDevice->SetVMAInstance(vma);
   }
   AttachDevices(Instance, std::move(physicalDevice), logicalDevice, info, queue, renderer, context);
+  ( *renderer )->SetVMA(vma);
 }
 void RendererFactory::AttachDevices(std::shared_ptr<VulkanInstance> vkInstance,
                                     std::unique_ptr<VulkanPhysicalDevice> physicalDevice,
@@ -186,12 +189,12 @@ void RendererFactory::AttachDevices(std::shared_ptr<VulkanInstance> vkInstance,
   const auto queueType = queueProps[queue->GetFamilyIndex()];
 
   *context = MakeRef<RenderContext>(
-      renderer->get(), info, RenderContextInfo {"Graphics Context", 0, queueType.queueFlags});
+      *renderer, RenderContextInfo {"Graphics Context", 0, queueType.queueFlags});
   (*renderer)->SetContext(*context);
 }
 Ref<VulkanSwapchain> RendererFactory::CreateSwapchain(Ref<Renderer> renderer,
                                                       Ref<RenderContext> ctx, GLFWwindow* window) {
-  return MakeRef<VulkanSwapchain>(window, renderer, ctx);
+  return MakeRef<VulkanSwapchain>(window, renderer, WeakRef(ctx));
 }
 
 }  // namespace fg

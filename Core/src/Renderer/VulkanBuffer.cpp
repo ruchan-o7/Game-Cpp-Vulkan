@@ -49,8 +49,9 @@ VmaMemoryUsage GetVMAUsage(BufferUsage usage) {
   }
 }
 
-VulkanBuffer::VulkanBuffer(const BufferDescription& desc, Renderer* renderer, const Buffer data)
-    : m_Desc(desc) {
+VulkanBuffer::VulkanBuffer(ReferenceCounter* counter, const BufferDescription& desc,
+                           Renderer* renderer, const Buffer data)
+    : RefBase(counter), m_Desc(desc) {
   m_Allocator = renderer->GetVMA();
 
   VkBufferCreateInfo info {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};

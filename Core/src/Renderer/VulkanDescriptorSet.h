@@ -42,7 +42,8 @@ class ShaderVariable {
 
 class VulkanDescriptorSet : public RefBase {
   public:
-    VulkanDescriptorSet(VulkanGraphicsPipeline* pipeline, Renderer* renderer);
+    VulkanDescriptorSet(ReferenceCounter* counter, VulkanGraphicsPipeline* pipeline,
+                        Renderer* renderer);
 
     ~VulkanDescriptorSet();
     ShaderVariable* GetByIndex(uint32_t);

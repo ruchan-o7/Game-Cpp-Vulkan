@@ -8,12 +8,16 @@ class VulkanLogicalDevice;
 
 class VulkanQueue : public RefBase {
   public:
-    VulkanQueue(std::shared_ptr<VulkanLogicalDevice> logicalDevice, const RenderContextInfo& info,
-                uint32_t queueIndex);
+    VulkanQueue(ReferenceCounter* counter, std::shared_ptr<VulkanLogicalDevice> logicalDevice,
+                const RenderContextInfo& info, uint32_t queueIndex);
     uint32_t GetFamilyIndex() const {
       return m_QueueIndex;
     }
     virtual ~VulkanQueue();
+    VkResult Submit(const VkSubmitInfo& submitInfo, uint32_t count = 1,
+                    VkFence fence = VK_NULL_HANDLE);
+    VkResult Present(const VkPresentInfoKHR& info);
+    void WaitIdle();
 
   private:
     std::shared_ptr<VulkanLogicalDevice> m_LogicalDevice;

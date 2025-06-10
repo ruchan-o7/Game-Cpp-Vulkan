@@ -5,13 +5,15 @@
 #include "TypeConversions.h"
 
 #include "src/Core/Assert.h"
+#include "src/Core/Ref.h"
 
 #include <cstring>
 #include <memory>
 
 namespace fg {
-RenderContext::RenderContext(Ref<Renderer> renderer, const RenderContextInfo& info)
-    : m_Renderer(renderer), m_Info(info) {
+RenderContext::RenderContext(ReferenceCounter* refCounter, Ref<Renderer> renderer,
+                             const RenderContextInfo& info)
+    : RefBase(refCounter), m_Renderer(renderer), m_Info(info) {
   auto device = m_Renderer->GetLogicalDevice();
   uint32_t queuIndex = m_Renderer->GetQueue()->GetFamilyIndex();
   m_CmdPool = std::make_unique<VulkanCommandBufferPool>(
@@ -58,6 +60,43 @@ void RenderContext::BindVertexBuffers(const VertexBufferBindingAttr& attr) {
 void RenderContext::Draw(const DrawAttributes& attr) {
   FOO_ASSERT(m_BoundPipeline != nullptr);
   m_Cmd.Draw(attr.VertexCount, attr.InstanceCount, attr.FirstVertex, attr.FirstInstance);
+}
+
+void RenderContext::Flush() {
+  auto vkCmdBuffer = m_Cmd.Get();
+  if (m_Cmd.GetState().InsideRendering) {
+    m_Cmd.EndRendering();
+    m_Cmd.FlushBarriers();
+    m_Cmd.EndCommandBuffer();
+  }
+  VkSubmitInfo submitInfo {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+  submitInfo.commandBufferCount = 1;
+  submitInfo.pCommandBuffers = &vkCmdBuffer;
+  submitInfo.waitSemaphoreCount = m_SignalSemaphores.size();
+  submitInfo.pWaitSemaphores = m_SignalSemaphores.data();
+  m_Renderer->ExecuteCommandBuffer(submitInfo, VK_NULL_HANDLE);
+
+  m_SignalSemaphores.clear();
+
+  DisposeCurrentCmdBuffer();
+  m_BoundDepthStencil = nullptr;
+  m_BoundPipeline = nullptr;
+  m_BoundImages.clear();
+}
+void RenderContext::DisposeCurrentCmdBuffer() {
+  FOO_ASSERT(!m_Cmd.GetState().InsideRendering, "Disposing cmd buffer while rendering");
+  auto vkcmd = m_Cmd.Get();
+  if (vkcmd != VK_NULL_HANDLE) {
+    DisposeVkCmdBuffer(vkcmd);
+    m_Cmd.Reset();
+  }
+}
+void RenderContext::DisposeVkCmdBuffer(VkCommandBuffer cmd) {
+  m_CmdPool->Recycle(std::move(cmd));
+}
+
+void RenderContext::FinishFrame() {
+  m_FrameNumber++;
 }
 
 void RenderContext::BindPipeline(Ref<VulkanGraphicsPipeline> pipeline) {
@@ -180,6 +219,10 @@ void RenderContext::TransitionImageState(VulkanImage& image, ResourceState oldSt
   const auto newStages = ResourceStateFlagsToVkPipelineStageFlags(newState);
   m_Cmd.TransitionImageLayout(vkImg, oldLayout, newLayout, range, oldStages, newStages);
   image.SetState(newState);
+}
+
+void RenderContext::AddSignalSemaphore(VkSemaphore sem) {
+  m_SignalSemaphores.emplace_back(sem);
 }
 
 }  // namespace fg
