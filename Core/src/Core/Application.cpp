@@ -1,3 +1,5 @@
+#include "GLFW/glfw3.h"
+
 #include "Application.h"
 #include "../ImGui/ImGuiLayer.h"
 #include "../Core/AssetManager.h"
@@ -10,14 +12,15 @@
 #include "../Renderer/Renderer.h"
 #include "../Renderer/VulkanGraphicsPipeline.h"
 #include "../Renderer/VulkanShader.h"
+#include "../Renderer/RendererFactory.h"
 #include "Buffer.h"
 
 #include <mutex>
-#include "GLFW/glfw3.h"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "../Renderer/VulkanBuffer.h"
 #include "../Renderer/VulkanImage.h"
+#include "src/Renderer/RenderContext.h"
 #include <imgui.h>
 #include <stb_image.h>
 namespace FooGame {
@@ -67,9 +70,17 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
     return;
   }
 
-  m_Renderer = fg::Renderer::Create(m_Window, nullptr);
-  m_Renderer->CreateDeviceAndSwapchain();
-  m_Swapchain = m_Renderer->GetSwapchain();
+  auto& factory = fg::RendererFactory::Get();
+  fg::EngineInfo engineInfo;
+  engineInfo.WindowHandle = m_Window;
+
+  factory.CreateDeviceAndContexts(engineInfo, &m_Renderer, &m_RenderContext);
+
+  m_Swapchain = factory.CreateSwapchain(m_Renderer, m_RenderContext, m_Window);
+
+  // m_Renderer = fg::Renderer::Create(m_Window, nullptr);
+  // m_Renderer->CreateDeviceAndSwapchain();
+  // m_Swapchain = m_Renderer->GetSwapchain();
   {
     int width = 0, height = 0, channel = 0;
     fg::Buffer pixelData;
@@ -254,7 +265,7 @@ Application::~Application() {
   m_VertexBuffer->Release();
   m_UniformBuffer->Release();
   m_Pipeline->Release();
-  m_Swapchain.reset();
+  m_Swapchain->Release();
   m_Renderer->Destroy();
 }
 void Application::PushLayer(Layer* layer) {
@@ -308,9 +319,14 @@ void Application::Run() {
       // m_ImGuiLayer->End();
       // auto view = m_RenderTarget->GetDefaultView();
       // m_Renderer->SetRenderTargets(1, view.get(), nullptr);
-      m_Renderer->SetRenderTargetToSwapchain();
 
-      m_Renderer->BindPipeline(m_Pipeline);
+      fg::RenderTargetAttr attr {};
+      attr.RenderTargetCount = 1;
+      attr.ppRenderTargets[0] = m_Swapchain->GetCurrentImageView();
+
+      m_RenderContext->SetRenderTargets(attr);
+
+      m_RenderContext->BindPipeline(m_Pipeline);
       UBO ubo {};
       // clang-format off
       ubo.Model = glm::rotate(
@@ -340,14 +356,16 @@ void Application::Run() {
       mvp.Size = sizeof(ubo);
       m_UniformBuffer->SetData(mvp);
 
+      fg::VulkanDescriptorSet* sets[] = {m_DescriptorSet.get()};
+      m_RenderContext->BindDescriptorSets(sets, 1);
+
       fg::VulkanBuffer* buffer[1] = {m_VertexBuffer.get()};
       VkDeviceSize offset[] = {0};
-      m_Renderer->BindDescriptorSet(m_DescriptorSet.get());
-      m_Renderer->BindVertexBuffers(0, 1, buffer, offset);
-      m_Renderer->Draw({3, 1, 0, 0});
+      m_RenderContext->BindVertexBuffers({0, 1, buffer, offset});
+      // m_RenderContext->Draw({3, 1, 0, 0});
 
-      // m_Renderer->EndRendering();
-      m_Renderer->EndRenderingSwapchain();
+      // m_RenderContext->EndRendering();
+      m_RenderContext->EndRendering();
 
       m_Swapchain->Present();
     }

@@ -1,18 +1,20 @@
 #pragma once
 
-#include <functional>
-#include <mutex>
-#include "../Core/Assert.h"
-#include "../Core/Window.h"
+#include "Assert.h"
 #include "LayerStack.h"
 #include "../Events/ApplicationEvent.h"
 #include "../ImGui/ImGuiLayer.h"
 #include "Ref.h"
-int main(int argc, char** argv);
 
+#include <functional>
+#include <mutex>
+
+int main(int argc, char** argv);
+typedef struct GLFWwindow GLFWwindow;
 namespace fg {
 class Renderer;
 class VulkanSwapchain;
+class RenderContext;
 class VulkanGraphicsPipeline;
 }  // namespace fg
 namespace FooGame {
@@ -51,7 +53,7 @@ class Application {
     static Application& Get() {
       return *s_Instance;
     }
-    std::shared_ptr<fg::Renderer> GetRenderer() const {
+    fg::Ref<fg::Renderer> GetRenderer() const {
       return m_Renderer;
     }
     const ApplicationSpecifications& GetSpecifications() const {
@@ -72,9 +74,10 @@ class Application {
     LayerStack m_LayerStack;
     GLFWwindow* m_Window;
     ImGuiLayer* m_ImGuiLayer = nullptr;
-    std::shared_ptr<fg::Renderer> m_Renderer;
-    std::shared_ptr<fg::VulkanSwapchain> m_Swapchain;
+    fg::Ref<fg::Renderer> m_Renderer;
+    fg::Ref<fg::RenderContext> m_RenderContext;
     fg::Ref<fg::VulkanGraphicsPipeline> m_Pipeline;
+    fg::Ref<fg::VulkanSwapchain> m_Swapchain;
     bool m_Running = true;
     bool m_Minimized = false;
     float m_LastFrameTime = 0.0f;
