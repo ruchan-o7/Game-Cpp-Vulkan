@@ -34,16 +34,16 @@ class Renderer;
 class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDevice> {
   public:
     VulkanLogicalDevice(const VkDeviceCreateInfo& info, uint32_t queueIndex,
-                        std::weak_ptr<Renderer> renderer, const VkAllocationCallbacks* allocator);
+                        const VulkanPhysicalDevice& physicalDevice,
+                        const VkAllocationCallbacks* allocator);
 
     VulkanLogicalDevice(const VulkanLogicalDevice&) = delete;
     VulkanLogicalDevice(VulkanLogicalDevice&&) = delete;
     VulkanLogicalDevice& operator=(const VulkanLogicalDevice&) = delete;
     VulkanLogicalDevice& operator=(VulkanLogicalDevice&&) = delete;
 
-    VkQueue GetQueue() const {
-      return m_Queue;
-    }
+    VkQueue GetQueue(uint32_t index) const;
+
     std::shared_ptr<VulkanLogicalDevice> GetPtr() {
       return shared_from_this();
     }
@@ -119,7 +119,6 @@ class VulkanLogicalDevice : public std::enable_shared_from_this<VulkanLogicalDev
 
   private:
     const VkAllocationCallbacks* m_Allocator;
-    std::weak_ptr<Renderer> m_Renderer;
     VkDevice m_Device;
     VkQueue m_Queue;
     uint32_t m_QueueIndex;
