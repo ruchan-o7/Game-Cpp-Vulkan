@@ -10,10 +10,14 @@ class VulkanPhysicalDevice {
     VkPhysicalDevice GetHandle() const {
       return m_Device;
     }
-    int GetQueuFamilyIndices(VkQueueFlagBits flags);
+    int GetQueuFamilyIndices(VkQueueFlags flags);
     uint32_t FindMemTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags flags) const;
+
     VkPhysicalDeviceProperties GetProperties() const {
       return m_Properties;
+    }
+    const std::vector<VkQueueFamilyProperties> GetQueueProps() const {
+      return m_QueueFamilyProps;
     }
 
   private:

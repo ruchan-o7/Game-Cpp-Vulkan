@@ -1,4 +1,8 @@
+#include <stdexcept>
+#define NOMINMAX
+
 #include "VulkanPhysicalDevice.h"
+#include <limits>
 
 namespace fg {
 
@@ -10,16 +14,32 @@ VulkanPhysicalDevice ::VulkanPhysicalDevice(VkPhysicalDevice device) : m_Device(
   vkGetPhysicalDeviceQueueFamilyProperties(m_Device, &count, m_QueueFamilyProps.data());
 }
 
-int VulkanPhysicalDevice::GetQueuFamilyIndices(VkQueueFlagBits flags) {
-  flags = VK_QUEUE_GRAPHICS_BIT;
-  int idx = 0;
-  for (const auto& prop : m_QueueFamilyProps) {
-    if (prop.queueFlags & flags) {
-      return idx;
+int VulkanPhysicalDevice::GetQueuFamilyIndices(VkQueueFlags flags) {
+  // flags = VK_QUEUE_GRAPHICS_BIT;
+  //
+  static constexpr uint32_t invalidQueueFam = std::numeric_limits<uint32_t>::max();
+
+  int idx = invalidQueueFam;
+  for (uint32_t i = 0; i < m_QueueFamilyProps.size(); i++) {
+    const auto& prop = m_QueueFamilyProps[i];
+    if (prop.queueFlags == flags) {
+      idx = i;
+      break;
     }
-    idx++;
   }
-  return 0;
+  if (idx == invalidQueueFam) {
+    for (uint32_t i = 0; i < m_QueueFamilyProps.size(); i++) {
+      const auto& prop = m_QueueFamilyProps[i];
+      if (prop.queueFlags & flags) {
+        idx = i;
+        break;
+      }
+    }
+  }
+  if (idx == invalidQueueFam) {
+    throw std::runtime_error("Can not find suitable queue family indices for flag");
+  }
+  return idx;
 }
 uint32_t VulkanPhysicalDevice::FindMemTypeIndex(uint32_t typeBits,
                                                 VkMemoryPropertyFlags flags) const {
