@@ -3,6 +3,37 @@
 
 namespace fg {
 
+template <class T>
+class WeakRef;
+
+template <class T>
+class Ref;
+
+template <class T>
+class ReferenceCounter {
+  public:
+    template <class... Args>
+    explicit ReferenceCounter(Args&&... args) {
+    }
+
+    void AddStrong() const {
+      m_StrongRef.fetch_add(1, std::memory_order_relaxed);
+    }
+    void RelRef() const {
+      auto count = m_StrongRef.fetch_sub(1, std::memory_order_acq_rel);
+    }
+    void AddWeakRef() const {
+      m_WeakRef.fetch_add(1, std::memory_order_relaxed);
+    }
+    void RelWeakRef() const {
+      m_WeakRef.fetch_sub(1, std::memory_order_acq_rel);
+    }
+
+  private:
+    mutable std::atomic<uint32_t> m_StrongRef = 0;
+    mutable std::atomic<uint32_t> m_WeakRef = 0;
+};
+
 class RefBase {
   public:
     virtual ~RefBase() = default;
@@ -124,6 +155,17 @@ class Ref {
       m_Ptr->RelRef();
       m_Ptr = nullptr;
     }
+    void AddWeakRef() {
+      if (m_Ptr) {
+        m_Ptr->AddWeakRef();
+      }
+    }
+    void RelWeakRef() {
+      if (m_Ptr) {
+        m_Ptr->RelWeakRef();
+      }
+    }
+    friend class WeakRef<T>;
 };
 
 template <typename T>
@@ -136,6 +178,12 @@ class WeakRef {
         strongRef->AddWeakRef();
       }
       m_Ptr = strongRef.m_Ptr;
+    }
+    WeakRef(Ref<T> ref) {
+      if (ref) {
+        ref->AddWeakRef();
+      }
+      m_Ptr = ref.m_Ptr;
     }
 
     WeakRef(const WeakRef& other) : m_Ptr(other.m_Ptr) {
