@@ -13,21 +13,24 @@
 namespace fg {
 
 // clang-format off
-VulkanSwapchain::VulkanSwapchain(GLFWwindow* window, 
-                    std::weak_ptr<Renderer> renderer,
-                    std::shared_ptr<VulkanInstance> instance,
-                    std::shared_ptr<VulkanLogicalDevice> logicalDevice,
-                    const VulkanPhysicalDevice& pDev)
-    : m_Window(window),
-      m_Renderer(renderer),
-      m_Device(logicalDevice), 
-      m_PhysicalDevice(pDev), 
-      m_VkInstance(std::move(instance)) 
-{
-  // clang-format on
-  CreateSurface();
-  CreateSwapchain();
-  AcquireNextImage();
+// VulkanSwapchain::VulkanSwapchain(GLFWwindow* window, 
+//                     std::weak_ptr<Renderer> renderer,
+//                     std::shared_ptr<VulkanInstance> instance,
+//                     std::shared_ptr<VulkanLogicalDevice> logicalDevice,
+//                     const VulkanPhysicalDevice& pDev)
+//     : m_Window(window),
+//       m_Renderer(renderer),
+//       m_Device(logicalDevice), 
+//       m_PhysicalDevice(pDev), 
+//       m_VkInstance(std::move(instance)) 
+// {
+//   // clang-format on
+//   CreateSurface();
+//   CreateSwapchain();
+//   AcquireNextImage();
+// }
+VulkanSwapchain::VulkanSwapchain(GLFWwindow* window, Ref<Renderer> renderer,
+                                 WeakRef<RenderContext> context):m_Window(window),m_Renderer(renderer),m_Ctx(context) {
 }
 
 VulkanSwapchain::~VulkanSwapchain() {
@@ -35,31 +38,36 @@ VulkanSwapchain::~VulkanSwapchain() {
   m_ImageAvailable.Release();
   m_RenderFinished.Release();
   m_InFlight.Release();
+  auto device = m_Renderer->GetLogicalDevice();
   if (m_Swapchain) {
-    vkDestroySwapchainKHR(m_Device->GetHandle(), m_Swapchain, m_Device->GetAllocator());
+    vkDestroySwapchainKHR(device->GetHandle(), m_Swapchain, device->GetAllocator());
   }
   if (m_Surface) {
-    if (auto renderer = m_Renderer.lock()) {
-      vkDestroySurfaceKHR(renderer->GetVkInstance2().GetHandle(), m_Surface,
-                          m_Device->GetAllocator());
-    }
+
+      vkDestroySurfaceKHR(m_Renderer->GetVkInstance2().GetHandle(), m_Surface,
+                          device->GetAllocator());
   }
 }
 
 void VulkanSwapchain::CreateSurface() {
-  auto res = glfwCreateWindowSurface(m_VkInstance->GetHandle(), m_Window,
-                                     m_VkInstance->GetAllocator(), &m_Surface);
+  auto& vkInstance = m_Renderer->GetVkInstance2();
+  auto res = glfwCreateWindowSurface(vkInstance.GetHandle(), m_Window,
+                                     vkInstance.GetAllocator(), &m_Surface);
   if (res != VK_SUCCESS) {
     FOO_CORE_ERROR("Can not create window surface");
     throw std::runtime_error("Can not create window surface");
   }
 }
+
 void VulkanSwapchain::CreateSwapchain() {
+  auto& physicalDevice = m_Renderer->GetPhysicalDevice();
+  auto& vkInstance = m_Renderer->GetVkInstance2();
+  auto device = m_Renderer->GetLogicalDevice();
   uint32_t surfaceCount = 0;
-  vkGetPhysicalDeviceSurfaceFormatsKHR(m_PhysicalDevice.GetHandle(), m_Surface, &surfaceCount,
+  vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice.GetHandle(), m_Surface, &surfaceCount,
                                        nullptr);
   VkSurfaceFormatKHR formats[16];
-  vkGetPhysicalDeviceSurfaceFormatsKHR(m_PhysicalDevice.GetHandle(), m_Surface, &surfaceCount,
+  vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice.GetHandle(), m_Surface, &surfaceCount,
                                        formats);
   for (uint32_t i = 0; i < surfaceCount; i++) {
     // TODO: Improve
@@ -70,7 +78,7 @@ void VulkanSwapchain::CreateSwapchain() {
   m_SurfaceFormat.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 
   VkSurfaceCapabilitiesKHR caps {};
-  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalDevice.GetHandle(), m_Surface, &caps);
+  vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice.GetHandle(), m_Surface, &caps);
 
   m_Extent.width = caps.currentExtent.width;
   m_Extent.height = caps.currentExtent.height;
@@ -95,18 +103,18 @@ void VulkanSwapchain::CreateSwapchain() {
   info.pQueueFamilyIndices = famIndicies;
   info.preTransform = caps.currentTransform;
   info.presentMode = m_PresentMode;
-  auto res = vkCreateSwapchainKHR(m_Device->GetHandle(), &info, m_VkInstance->GetAllocator(),
+  auto res = vkCreateSwapchainKHR(device->GetHandle(), &info, vkInstance.GetAllocator(),
                                   &m_Swapchain);
   if (res != VK_SUCCESS) {
     throw std::runtime_error("Can not create swapchain");
   }
   uint32_t viewCount = 0;
-  vkGetSwapchainImagesKHR(m_Device->GetHandle(), m_Swapchain, &viewCount, nullptr);
-  m_Images.resize(viewCount);
-  vkGetSwapchainImagesKHR(m_Device->GetHandle(), m_Swapchain, &viewCount, m_Images.data());
+  vkGetSwapchainImagesKHR(device->GetHandle(), m_Swapchain, &viewCount, nullptr);
+  std::vector<VkImage> images;
+  images.resize(viewCount);
+  vkGetSwapchainImagesKHR(device->GetHandle(), m_Swapchain, &viewCount, images.data());
 
   m_BackbufferRtvs.resize(viewCount);
-  auto renderer = m_Renderer.lock();
   for (uint32_t i = 0; i < viewCount; i++) {
     ImageDescription backBufferDesc;
     backBufferDesc.Type = ImageType::Type2D;
@@ -116,7 +124,7 @@ void VulkanSwapchain::CreateSwapchain() {
     backBufferDesc.Usage = ImageUsage::ColorAttachment;
     backBufferDesc.MipLevels = 1;
     Ref<VulkanImage> backBufferImage =
-        renderer->CreateImage(backBufferDesc, ResourceState::Undefined, m_Images[i]);
+        m_Renderer->CreateImage(backBufferDesc, ResourceState::Undefined, images[i]);
 
     ImageViewDesc rtViewDesc;
     rtViewDesc.ViewType = ImageViewType::RenderTarget;
@@ -131,19 +139,21 @@ void VulkanSwapchain::CreateSwapchain() {
   VkSemaphoreCreateInfo semInfo {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
   VkFenceCreateInfo fenceInfo {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
   fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-  m_InFlight = m_Device->CreateFence(fenceInfo);
-  m_RenderFinished = m_Device->CreateVulkanSemaphore(semInfo);
-  m_ImageAvailable = m_Device->CreateVulkanSemaphore(semInfo);
+  m_InFlight = device->CreateFence(fenceInfo);
+  m_RenderFinished = device->CreateVulkanSemaphore(semInfo);
+  m_ImageAvailable = device->CreateVulkanSemaphore(semInfo);
 }
 
 void VulkanSwapchain::RecreateSwapchain() {
+  auto& physicalDevice = m_Renderer->GetPhysicalDevice();
+  auto device = m_Renderer->GetLogicalDevice();
   DestroySwapchainRes(false);
   VkSurfaceCapabilitiesKHR caps {};
   auto err =
-      vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalDevice.GetHandle(), m_Surface, &caps);
+      vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice.GetHandle(), m_Surface, &caps);
   if (err == VK_ERROR_SURFACE_LOST_KHR) {
     if (m_Swapchain != VK_NULL_HANDLE) {
-      vkDestroySwapchainKHR(m_Device->GetHandle(), m_Swapchain, m_Device->GetAllocator());
+      vkDestroySwapchainKHR(device->GetHandle(), m_Swapchain, device->GetAllocator());
       m_Swapchain = VK_NULL_HANDLE;
     }
     CreateSurface();
@@ -154,40 +164,41 @@ void VulkanSwapchain::DestroySwapchainRes(bool destroySwapchain) {
   if (m_Swapchain == VK_NULL_HANDLE) {
     return;
   }
-  m_Device->WaitIdle();
+  auto device = m_Renderer->GetLogicalDevice();
+  device->WaitIdle();
   WaitForImageAcquiredFences();
   m_BackbufferRtvs.clear();
-  m_Images.clear();
   m_ImageAvailable.Release();
   m_RenderFinished.Release();
   m_InFlight.Release();
   m_FrameIndex = 0;
   if (destroySwapchain) {
-    vkDestroySwapchainKHR(m_Device->GetHandle(), m_Swapchain, m_Device->GetAllocator());
+    vkDestroySwapchainKHR(device->GetHandle(), m_Swapchain, device->GetAllocator());
     m_Swapchain = VK_NULL_HANDLE;
   }
 }
 
 void VulkanSwapchain::WaitForImageAcquiredFences() {
+  auto device = m_Renderer->GetLogicalDevice();
   VkFence fence = m_InFlight;
-  if (m_Device->GetFenceStatus(fence) == VK_NOT_READY) {
-    m_Device->WaitFence(fence);
+  if (device->GetFenceStatus(fence) == VK_NOT_READY) {
+    device->WaitFence(fence);
   }
 }
 
 VkResult VulkanSwapchain::AcquireNextImage() {
-  m_Device->WaitFence(m_InFlight);
+  auto device = m_Renderer->GetLogicalDevice();
+  device->WaitFence(m_InFlight);
   VkFence fence = m_InFlight;
-  m_Device->ResetFence(fence);
-  return vkAcquireNextImageKHR(m_Device->GetHandle(), m_Swapchain, UINT64_MAX, m_ImageAvailable,
+  device->ResetFence(fence);
+  return vkAcquireNextImageKHR(device->GetHandle(), m_Swapchain, UINT64_MAX, m_ImageAvailable,
                                VK_NULL_HANDLE, &m_FrameIndex);
 }
 
 void VulkanSwapchain::Present() {
-  auto renderer = m_Renderer.lock();
   auto* backBuffer = GetCurrentImageView()->GetImage();
-  renderer->TransitionImageLayout(backBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-  renderer->Flush();
+  m_Renderer->TransitionImageLayout(backBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+  m_Renderer->Flush();
 
   VkSubmitInfo submit {VK_STRUCTURE_TYPE_SUBMIT_INFO};
   VkSemaphore waits[] = {m_ImageAvailable};
@@ -201,11 +212,11 @@ void VulkanSwapchain::Present() {
   VkSemaphore signalSems[] = {m_RenderFinished};
   submit.signalSemaphoreCount = 1;
   submit.pSignalSemaphores = signalSems;
-  if (!renderer) {
+  if (!m_Renderer) {
     FOO_CORE_ERROR("Renderer disposed before swapchain");
     return;
   }
-  auto res = renderer->Flush([&](VkQueue queue, VkCommandBuffer cmd) -> VkResult {
+  auto res = m_Renderer->Flush([&](VkQueue queue, VkCommandBuffer cmd) -> VkResult {
     submit.commandBufferCount = 1;
     submit.pCommandBuffers = &cmd;
     return vkQueueSubmit(queue, 1, &submit, m_InFlight);
@@ -219,7 +230,7 @@ void VulkanSwapchain::Present() {
   presentInfo.pImageIndices = &m_FrameIndex;
   VkResult result = VK_SUCCESS;
   presentInfo.pResults = &result;
-  res = renderer->Present(presentInfo);
+  res = m_Renderer->Present(presentInfo);
   if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR) {
     RecreateSwapchain();
     m_FrameIndex = m_ImageCount - 1;

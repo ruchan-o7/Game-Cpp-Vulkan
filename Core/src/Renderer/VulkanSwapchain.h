@@ -12,8 +12,9 @@ class VulkanPhysicalDevice;
 class VulkanLogicalDevice;
 class Renderer;
 class VulkanImageView;
+class RenderContext;
 
-class VulkanSwapchain {
+class VulkanSwapchain : public RefBase {
   public:
     // clang-format off
     VulkanSwapchain(GLFWwindow* window, 
@@ -21,6 +22,9 @@ class VulkanSwapchain {
                     std::shared_ptr<VulkanInstance> instance,
                     std::shared_ptr<VulkanLogicalDevice> logicalDevice,
                     const VulkanPhysicalDevice& pDev);
+    VulkanSwapchain(GLFWwindow* window, 
+                    Ref<Renderer> renderer,
+                    WeakRef<RenderContext> context);
     // clang-format on
     ~VulkanSwapchain();
 
@@ -33,11 +37,8 @@ class VulkanSwapchain {
     VkSurfaceFormatKHR Format() const {
       return m_SurfaceFormat;
     }
-    VulkanImageView* GetCurrentImageView() const {
-      return m_BackbufferRtvs[m_FrameIndex].get();
-    }
-    VkImage GetCurrentImage() const {
-      return m_Images[m_FrameIndex];
+    Ref<VulkanImageView> GetCurrentImageView() const {
+      return m_BackbufferRtvs[m_FrameIndex];
     }
     VkResult AcquireNextImage();
     void Present();
@@ -50,22 +51,21 @@ class VulkanSwapchain {
     void WaitForImageAcquiredFences();
 
   private:
+    Ref<Renderer> m_Renderer;
+    WeakRef<RenderContext> m_Ctx;
+
     VkSurfaceFormatKHR m_SurfaceFormat;
     VkPresentModeKHR m_PresentMode = VK_PRESENT_MODE_FIFO_KHR;
     GLFWwindow* m_Window = nullptr;
     VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
     VkSwapchainKHR m_Swapchain = VK_NULL_HANDLE;
     VkExtent2D m_Extent;
-    std::shared_ptr<VulkanInstance> m_VkInstance;
-    std::shared_ptr<VulkanLogicalDevice> m_Device;
-    std::weak_ptr<Renderer> m_Renderer;
-    const VulkanPhysicalDevice& m_PhysicalDevice;
     std::vector<Ref<VulkanImageView>> m_BackbufferRtvs;
-    // TODO: Remove this
-    std::vector<VkImage> m_Images;
+
     SemaphoreWrapper m_ImageAvailable;
     SemaphoreWrapper m_RenderFinished;
     FenceWrapper m_InFlight;
+
     uint32_t m_FrameIndex = 0;
     uint32_t m_ImageCount = 0;
 };
