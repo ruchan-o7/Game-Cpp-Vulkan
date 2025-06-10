@@ -69,7 +69,7 @@ target_include_directories("${PROJECT_NAME}" PUBLIC
 	"${TINY_OBJ_LOADER_INCLUDE_DIR}"
 	"./"
 )
-add_compile_definitions(-DVK_NO_PROTOTYPES)
+add_compile_definitions(-DVK_NO_PROTOTYPES -DNOMINMAX)
 if(WIN32)
 	add_compile_definitions(-DVK_USE_PLATFORM_WIN32_KHR)
 endif()
