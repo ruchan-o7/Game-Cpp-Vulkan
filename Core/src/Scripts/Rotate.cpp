@@ -1,18 +1,15 @@
 #include "Rotate.h"
 #include <cmath>
 #include "../Scene/Component.h"
-#include "../Core/Window.h"
-namespace FooGame::Script
-{
+#include "../Core/Time.h"
+namespace FooGame::Script {
 
-    void RotateScript::OnCreate()
-    {
-        m_Transform = &GetComponent<TransformComponent>();
-    }
-    void RotateScript::OnUpdate(float ts)
-    {
-        double time                = Window::Get().GetTime();
-        m_Transform->Translation.x = sin(time);
-    }
+void RotateScript::OnCreate() {
+  m_Transform = &GetComponent<TransformComponent>();
+}
+void RotateScript::OnUpdate(float ts) {
+  double time = Time::CurrentTime();
+  m_Transform->Translation.x = sin(time);
+}
 
 }  // namespace FooGame::Script
