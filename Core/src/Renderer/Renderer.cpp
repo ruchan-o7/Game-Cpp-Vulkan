@@ -1,13 +1,8 @@
 #define VOLK_IMPLEMENTATION
 #define VMA_IMPLEMENTATION
 #include "Renderer.h"
-
 #include "CommandPoolManager.h"
 #include "VulkanCommandBufferPool.h"
-
-#include "../Core/Ref.h"
-#include "../Core/Assert.h"
-#include "../Core/Log.h"
 #include "VulkanDebug.h"
 #include "VulkanGraphicsPipeline.h"
 #include "VulkanInstance.h"
@@ -15,11 +10,16 @@
 #include "VulkanShader.h"
 #include "TypeConversions.h"
 
+#include "../Core/Ref.h"
+#include "../Core/Assert.h"
+#include "../Core/Log.h"
+
 #include <GLFW/glfw3.h>
 #include <fstream>
 #include <ios>
 #include <memory>
 #include <stdexcept>
+#include <cstdlib>
 
 namespace fg {
 
@@ -27,6 +27,17 @@ const char* validationLayers[] = {
     "VK_LAYER_KHRONOS_validation",
 };
 
+Renderer::Renderer(RendererFactory* factory, const EngineInfo& info,
+                   std::shared_ptr<VulkanInstance> instance,
+                   std::unique_ptr<VulkanPhysicalDevice> physicalDevice,
+                   std::shared_ptr<VulkanLogicalDevice> logicalDevice, Ref<VulkanQueue> queue)
+    : m_Factory(factory),
+      m_PhysicalDevice(std::move(physicalDevice)),
+      m_Instance(instance),
+      m_LogicalDevice(std::move(logicalDevice)),
+      m_Queue(queue) {
+  FOO_CORE_WARN("Renderer::Renderer - Did not implemented");
+}
 std::shared_ptr<Renderer> Renderer::Create(GLFWwindow* window, const VkAllocationCallbacks* acb) {
   if (volkInitialize() != VK_SUCCESS) {
     return nullptr;
@@ -119,8 +130,14 @@ Renderer::Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& in
       m_AllocCB(alloc) {
 }
 
-void Renderer::CreateDeviceAndSwapchain() {
-  uint32_t queueIndex = m_PhysicalDevice->GetQueuFamilyIndices(VK_QUEUE_GRAPHICS_BIT);
+void Renderer::CreateDeviceAndContext() {
+  uint32_t queueIndex = 0;
+  try {
+    queueIndex = m_PhysicalDevice->GetQueuFamilyIndices(VK_QUEUE_GRAPHICS_BIT);
+  } catch (const std::runtime_error& err) {
+    FOO_CORE_ERROR("Can't find suitable queue family. Aborting!");
+    exit(1);
+  }
   VkDeviceQueueCreateInfo queueInfo {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
   queueInfo.queueFamilyIndex = queueIndex;
   queueInfo.queueCount = 1;
@@ -149,8 +166,9 @@ void Renderer::CreateDeviceAndSwapchain() {
   info.ppEnabledLayerNames = validationLayers;
   info.pNext = &dynamicRendering;
 
-  m_LogicalDevice = std::make_shared<VulkanLogicalDevice>(info, queueIndex, GetPtr(), m_AllocCB);
-  m_VkQueue = m_LogicalDevice->GetQueue();
+  m_LogicalDevice =
+      std::make_shared<VulkanLogicalDevice>(info, queueIndex, nullptr /*TODO:*/, m_AllocCB);
+  m_VkQueue = m_LogicalDevice->GetQueue(0);
 
   VmaAllocatorCreateInfo allocatorInfo {};
   allocatorInfo.device = m_LogicalDevice->GetHandle();
@@ -168,9 +186,6 @@ void Renderer::CreateDeviceAndSwapchain() {
   }
   m_LogicalDevice->SetVMAInstance(m_VMA);
 
-  m_Swapchain = std::make_shared<VulkanSwapchain>(m_Window, GetPtr(), m_Instance, m_LogicalDevice,
-                                                  *m_PhysicalDevice);
-
   CommandPoolManager::CreateInfo poolInfo {*m_LogicalDevice, "Transient command pool", 0,
                                            VK_COMMAND_POOL_CREATE_TRANSIENT_BIT};
 
@@ -180,12 +195,19 @@ void Renderer::CreateDeviceAndSwapchain() {
       VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 }
 
-void Renderer::BindDescriptorSet(VulkanDescriptorSet* set) {
-  FOO_ASSERT(m_CurrentPipeline != nullptr);
-  auto vkSet = set->GetHandle();
-  m_Cmd.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_CurrentPipeline->Layout(), 0, 1,
-                           &vkSet, 0, nullptr);
+std::shared_ptr<VulkanSwapchain> Renderer::CreateSwapchain() {
+  m_Swapchain = std::make_shared<VulkanSwapchain>(m_Window, nullptr /*TODO:*/
+                                                  ,
+                                                  m_Instance, m_LogicalDevice, *m_PhysicalDevice);
+  return m_Swapchain;
 }
+
+// void Renderer::BindDescriptorSet(VulkanDescriptorSet* set) {
+//   FOO_ASSERT(m_CurrentPipeline != nullptr);
+//   auto vkSet = set->GetHandle();
+//   m_Cmd.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_CurrentPipeline->Layout(), 0, 1,
+//                            &vkSet, 0, nullptr);
+// }
 
 Ref<VulkanImage> Renderer::CreateImage(const ImageDescription& desc, const Buffer data) {
   FOO_ASSERT(desc.Width != 0);
@@ -255,132 +277,132 @@ void Renderer::TransitionImageState(VulkanImage& image, ResourceState oldState,
   image.SetState(newState);
 }
 
-void Renderer::SetRenderTargetToSwapchain() {
-  auto cmd = m_CmdPool->Get();
-  m_Cmd.SetVkCommandBuffer(cmd, 0, 0);
+// void Renderer::SetRenderTargetToSwapchain() {
+//   auto cmd = m_CmdPool->Get();
+//   m_Cmd.SetVkCommandBuffer(cmd, 0, 0);
+//
+//   TransitionImageLayout(m_Swapchain->GetCurrentImageView()->GetImage(),
+//                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+//
+//   VkRenderingInfoKHR beginInfo {VK_STRUCTURE_TYPE_RENDERING_INFO, 0};
+//   beginInfo.renderArea = {
+//       {0, 0},
+//       m_Swapchain->GetExtent()
+//   };
+//   beginInfo.layerCount = 1;
+//
+//   VkRenderingAttachmentInfo colorInfo {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR};
+//   colorInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+//   colorInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+//   colorInfo.imageView = m_Swapchain->GetCurrentImageView()->GetHandle();
+//   colorInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+//   colorInfo.clearValue = {
+//       {0.2f, 0.2f, 0.2f, 1.0f}
+//   };
+//   std::vector<VkRenderingAttachmentInfo> colorAttachments;
+//   colorAttachments.push_back(colorInfo);
+//
+//   beginInfo.colorAttachmentCount = colorAttachments.size();
+//   beginInfo.pColorAttachments = colorAttachments.data();
+//   m_Cmd.BeginRendering(beginInfo);
+//   VkRect2D scissor {
+//       {0, 0},
+//       m_Swapchain->GetExtent()
+//   };
+//   m_Cmd.SetScissor(scissor);
+//   VkViewport vp {
+//       0,    0,   (float)m_Swapchain->GetExtent().width, (float)m_Swapchain->GetExtent().height,
+//       0.0f, 1.0f};
+//   m_Cmd.CmdSetViewport(0, 1, vp);
+// }
 
-  TransitionImageLayout(m_Swapchain->GetCurrentImageView()->GetImage(),
-                        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-  VkRenderingInfoKHR beginInfo {VK_STRUCTURE_TYPE_RENDERING_INFO, 0};
-  beginInfo.renderArea = {
-      {0, 0},
-      m_Swapchain->GetExtent()
-  };
-  beginInfo.layerCount = 1;
-
-  VkRenderingAttachmentInfo colorInfo {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR};
-  colorInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  colorInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-  colorInfo.imageView = m_Swapchain->GetCurrentImageView()->GetHandle();
-  colorInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-  colorInfo.clearValue = {
-      {0.2f, 0.2f, 0.2f, 1.0f}
-  };
-  std::vector<VkRenderingAttachmentInfo> colorAttachments;
-  colorAttachments.push_back(colorInfo);
-
-  beginInfo.colorAttachmentCount = colorAttachments.size();
-  beginInfo.pColorAttachments = colorAttachments.data();
-  m_Cmd.BeginRendering(beginInfo);
-  VkRect2D scissor {
-      {0, 0},
-      m_Swapchain->GetExtent()
-  };
-  m_Cmd.SetScissor(scissor);
-  VkViewport vp {
-      0,    0,   (float)m_Swapchain->GetExtent().width, (float)m_Swapchain->GetExtent().height,
-      0.0f, 1.0f};
-  m_Cmd.CmdSetViewport(0, 1, vp);
-}
-
-void Renderer::SetRenderTargets(uint32_t count, VulkanImageView* views,
-                                VulkanImageView* depthView) {
-  memset(m_BoundImages, 0, sizeof(m_BoundImages));
-  m_BoundImageCount = count;
-
-  auto cmd = m_CmdPool->Get();
-  m_Cmd.SetVkCommandBuffer(cmd, 0, 0);
-  VkImageSubresourceRange range {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-  for (uint32_t i = 0; i < count; i++) {
-    auto* image = views[i].GetImage();
-    m_BoundImages[i] = image;
-    m_Cmd.TransitionImageLayout(
-        image->GetVkImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        range, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-  }
-  const auto* image = views[0].GetImage();
-
-  VkRenderingInfoKHR beginInfo {VK_STRUCTURE_TYPE_RENDERING_INFO, 0};
-  beginInfo.renderArea = {
-      {0, 0}
-  };
-  beginInfo.renderArea.extent.width = image->Width();
-  beginInfo.renderArea.extent.height = image->Height();
-  beginInfo.layerCount = 1;
-
-  VkRenderingAttachmentInfo colorInfos[8];
-  memset(colorInfos, 0, sizeof(colorInfos));
-
-  for (uint32_t i = 0; i < count; i++) {
-    auto& colorInfo = colorInfos[i];
-    colorInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-    colorInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorInfo.imageView = views[i].GetHandle();
-    colorInfo.clearValue = {
-        {0.2f, 0.2f, 0.2f, 1.0f}
-    };
-  }
-  beginInfo.colorAttachmentCount = count;
-  beginInfo.pColorAttachments = colorInfos;
-  VkRenderingAttachmentInfo depthInfo {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR};
-  depthInfo.clearValue = {};
-  depthInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-  depthInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-  if (depthView) {
-    depthInfo.imageView = depthView->GetHandle();
-  }
-  beginInfo.pDepthAttachment = depthView != nullptr ? &depthInfo : nullptr;
-  m_Cmd.BeginRendering(beginInfo);
-  VkRect2D scissor {
-      {             0,               0},
-      {image->Width(), image->Height()},
-  };
-  m_Cmd.SetScissor(scissor);
-  VkViewport vp {0, 0, (float)image->Width(), (float)image->Height(), 0.0f, 1.0f};
-  m_Cmd.CmdSetViewport(0, 1, vp);
-}
-
-void Renderer::EndRendering() {
-  m_Cmd.EndRendering();
-  VkImageSubresourceRange range {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-  for (uint32_t i = 0; i < m_BoundImageCount; i++) {
-    auto* image = m_BoundImages[i];
-    m_Cmd.TransitionImageLayout(image->GetVkImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, range,
-                                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
-  }
-  m_Cmd.FlushBarriers();
-}
-
-void Renderer::EndRenderingSwapchain() {
-  m_Cmd.EndRendering();
-  TransitionImageLayout(m_Swapchain->GetCurrentImageView()->GetImage(),
-                        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-  m_Cmd.FlushBarriers();
-}
-
-void Renderer::BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline) {
-  m_CurrentPipeline = pipeline;
-  m_Cmd.BindGraphicsPipeline(pipeline->GetHandle());
-}
-void Renderer::Draw(const DrawAttributes& attribs) {
-  FOO_ASSERT(m_CurrentPipeline != nullptr);
-  m_Cmd.Draw(attribs.VertexCount, attribs.InstanceCount, attribs.FirstVertex,
-             attribs.FirstInstance);
-}
+// void Renderer::SetRenderTargets(uint32_t count, VulkanImageView* views,
+//                                 VulkanImageView* depthView) {
+//   memset(m_BoundImages, 0, sizeof(m_BoundImages));
+//   m_BoundImageCount = count;
+//
+//   auto cmd = m_CmdPool->Get();
+//   m_Cmd.SetVkCommandBuffer(cmd, 0, 0);
+//   VkImageSubresourceRange range {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+//   for (uint32_t i = 0; i < count; i++) {
+//     auto* image = views[i].GetImage();
+//     m_BoundImages[i] = image;
+//     m_Cmd.TransitionImageLayout(
+//         image->GetVkImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+//         range, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+//   }
+//   const auto* image = views[0].GetImage();
+//
+//   VkRenderingInfoKHR beginInfo {VK_STRUCTURE_TYPE_RENDERING_INFO, 0};
+//   beginInfo.renderArea = {
+//       {0, 0}
+//   };
+//   beginInfo.renderArea.extent.width = image->Width();
+//   beginInfo.renderArea.extent.height = image->Height();
+//   beginInfo.layerCount = 1;
+//
+//   VkRenderingAttachmentInfo colorInfos[8];
+//   memset(colorInfos, 0, sizeof(colorInfos));
+//
+//   for (uint32_t i = 0; i < count; i++) {
+//     auto& colorInfo = colorInfos[i];
+//     colorInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+//     colorInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+//     colorInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+//     colorInfo.imageView = views[i].GetHandle();
+//     colorInfo.clearValue = {
+//         {0.2f, 0.2f, 0.2f, 1.0f}
+//     };
+//   }
+//   beginInfo.colorAttachmentCount = count;
+//   beginInfo.pColorAttachments = colorInfos;
+//   VkRenderingAttachmentInfo depthInfo {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR};
+//   depthInfo.clearValue = {};
+//   depthInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+//   depthInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+//   if (depthView) {
+//     depthInfo.imageView = depthView->GetHandle();
+//   }
+//   beginInfo.pDepthAttachment = depthView != nullptr ? &depthInfo : nullptr;
+//   m_Cmd.BeginRendering(beginInfo);
+//   VkRect2D scissor {
+//       {             0,               0},
+//       {image->Width(), image->Height()},
+//   };
+//   m_Cmd.SetScissor(scissor);
+//   VkViewport vp {0, 0, (float)image->Width(), (float)image->Height(), 0.0f, 1.0f};
+//   m_Cmd.CmdSetViewport(0, 1, vp);
+// }
+//
+// void Renderer::EndRendering() {
+//   m_Cmd.EndRendering();
+//   VkImageSubresourceRange range {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+//   for (uint32_t i = 0; i < m_BoundImageCount; i++) {
+//     auto* image = m_BoundImages[i];
+//     m_Cmd.TransitionImageLayout(image->GetVkImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+//                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, range,
+//                                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+//                                 VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+//   }
+//   m_Cmd.FlushBarriers();
+// }
+//
+// void Renderer::EndRenderingSwapchain() {
+//   m_Cmd.EndRendering();
+//   TransitionImageLayout(m_Swapchain->GetCurrentImageView()->GetImage(),
+//                         VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+//   m_Cmd.FlushBarriers();
+// }
+//
+// void Renderer::BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline) {
+//   m_CurrentPipeline = pipeline;
+//   m_Cmd.BindGraphicsPipeline(pipeline->GetHandle());
+// }
+// void Renderer::Draw(const DrawAttributes& attribs) {
+//   // FOO_ASSERT(m_CurrentPipeline != nullptr);
+//   // m_Cmd.Draw(attribs.VertexCount, attribs.InstanceCount, attribs.FirstVertex,
+//   //            attribs.FirstInstance);
+// }
 
 void Renderer::Flush() {
   auto vkCmd = m_Cmd.Get();
@@ -457,19 +479,19 @@ Ref<VulkanGraphicsPipeline> Renderer::CreateGraphicsPipeline(
   return MakeRef<VulkanGraphicsPipeline>(desc, this);
 }
 
-void Renderer::BindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
-                                 VulkanBuffer** buffers, VkDeviceSize* offsets) const {
-  FOO_ASSERT(bindingCount > 0);
-  FOO_ASSERT(buffers != nullptr);
-  FOO_ASSERT(offsets != nullptr);
-  auto cmd = GetCurrentCmdBuffer();
-  VkBuffer vkbuffers[8];
-  memset(vkbuffers, 0, sizeof(vkbuffers));
-  for (uint32_t i = 0; i < bindingCount; i++) {
-    vkbuffers[i] = buffers[i]->GetVkBuffer();
-  }
-  m_Cmd.BindVertexBuffers(firstBinding, bindingCount, vkbuffers, offsets);
-}
+// void Renderer::BindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
+//                                  VulkanBuffer** buffers, VkDeviceSize* offsets) const {
+//   FOO_ASSERT(bindingCount > 0);
+//   FOO_ASSERT(buffers != nullptr);
+//   FOO_ASSERT(offsets != nullptr);
+//   auto cmd = GetCurrentCmdBuffer();
+//   VkBuffer vkbuffers[8];
+//   memset(vkbuffers, 0, sizeof(vkbuffers));
+//   for (uint32_t i = 0; i < bindingCount; i++) {
+//     vkbuffers[i] = buffers[i]->GetVkBuffer();
+//   }
+//   m_Cmd.BindVertexBuffers(firstBinding, bindingCount, vkbuffers, offsets);
+// }
 
 void Renderer::AllocateTransientCmdPool(CommandPoolWrapper& pool, VulkanCommandBuffer& cmd,
                                         const char* debugName) {
