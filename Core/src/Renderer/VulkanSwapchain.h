@@ -20,7 +20,7 @@ class VulkanSwapchain : public RefBase {
     VulkanSwapchain(ReferenceCounter* counter,
                     GLFWwindow* window, 
                     Ref<Renderer> renderer,
-                    WeakRef<RenderContext> context);
+                    RenderContext* context);
     // clang-format on
     ~VulkanSwapchain();
 
@@ -36,7 +36,7 @@ class VulkanSwapchain : public RefBase {
     Ref<VulkanImageView> GetCurrentImageView() const {
       return m_BackbufferRtvs[m_FrameIndex];
     }
-    VkResult AcquireNextImage();
+    VkResult AcquireNextImage(RenderContext* context);
     void Present();
 
   private:

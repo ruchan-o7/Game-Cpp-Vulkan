@@ -32,11 +32,11 @@ namespace fg {
 //   AcquireNextImage();
 // }
 VulkanSwapchain::VulkanSwapchain(ReferenceCounter* counter, GLFWwindow* window,
-                                 Ref<Renderer> renderer, WeakRef<RenderContext> context)
+                                 Ref<Renderer> renderer, RenderContext* context)
     : RefBase(counter), m_Window(window), m_Renderer(renderer), m_Ctx(context) {
   CreateSurface();
   CreateSwapchain();
-  AcquireNextImage();
+  AcquireNextImage(context);
 }
 
 VulkanSwapchain::~VulkanSwapchain() {
@@ -191,13 +191,19 @@ void VulkanSwapchain::WaitForImageAcquiredFences() {
   }
 }
 
-VkResult VulkanSwapchain::AcquireNextImage() {
+VkResult VulkanSwapchain::AcquireNextImage(RenderContext* context) {
   auto device = m_Renderer->GetLogicalDevice();
-  device->WaitFence(m_InFlight);
   VkFence fence = m_InFlight;
+  const auto fenceStatus = device->GetFenceStatus(fence);
+  if (fenceStatus == VK_NOT_READY) {
+    device->WaitFence(fence);
+  }
   device->ResetFence(fence);
-  return vkAcquireNextImageKHR(device->GetHandle(), m_Swapchain, UINT64_MAX, m_ImageAvailable,
-                               VK_NULL_HANDLE, &m_FrameIndex);
+  auto res = vkAcquireNextImageKHR(device->GetHandle(), m_Swapchain, UINT64_MAX, m_ImageAvailable,
+                                   fence, &m_FrameIndex);
+  context->AddWaitSemaphore(m_ImageAvailable, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                                  VK_PIPELINE_STAGE_TRANSFER_BIT);
+  return res;
 }
 
 void VulkanSwapchain::Present() {
@@ -212,54 +218,53 @@ void VulkanSwapchain::Present() {
   context->AddSignalSemaphore(m_RenderFinished);
   context->Flush();
 
-  VkSubmitInfo submit {VK_STRUCTURE_TYPE_SUBMIT_INFO};
-  VkSemaphore waits[] = {m_ImageAvailable};
+  // VkSubmitInfo submit {VK_STRUCTURE_TYPE_SUBMIT_INFO};
 
-  VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-  submit.waitSemaphoreCount = 1;
-  submit.pWaitSemaphores = waits;
-  submit.pWaitDstStageMask = waitStages;
-  submit.commandBufferCount = 1;
+  // VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+  // submit.waitSemaphoreCount = 1;
+  // submit.pWaitSemaphores = waits;
+  // submit.pWaitDstStageMask = waitStages;
+  // submit.commandBufferCount = 1;
 
-  VkSemaphore signalSems[] = {m_RenderFinished};
-  submit.signalSemaphoreCount = 1;
-  submit.pSignalSemaphores = signalSems;
-  if (!m_Renderer) {
-    FOO_CORE_ERROR("Renderer disposed before swapchain");
-    return;
-  }
-  auto res = m_Renderer->Flush([&](VulkanQueue* queue) -> VkResult {
-   
-    return queue->Submit(submit, 1, m_InFlight);
-  });
+  // submit.signalSemaphoreCount = 1;
+  // submit.pSignalSemaphores = signalSems;
+  // auto res = m_Renderer->Flush([&](VulkanQueue* queue) -> VkResult {
+  //
+  //   return queue->Submit(submit, 1, m_InFlight);
+  // });
+
+  VkSemaphore waitSemaphores[] = {m_RenderFinished};
 
   VkPresentInfoKHR presentInfo {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
   presentInfo.waitSemaphoreCount = 1;
-  presentInfo.pWaitSemaphores = signalSems;
+  presentInfo.pWaitSemaphores = waitSemaphores;
+
   presentInfo.pSwapchains = &m_Swapchain;
   presentInfo.swapchainCount = 1;
   presentInfo.pImageIndices = &m_FrameIndex;
   VkResult result = VK_SUCCESS;
   presentInfo.pResults = &result;
-  res = m_Renderer->Present(presentInfo);
-  if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR) {
+  auto res = m_Renderer->Present(presentInfo);
+  FOO_ASSERT(res == result);
+  if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR) {
     RecreateSwapchain();
     m_FrameIndex = m_ImageCount - 1;
   } else {
-    if (res != VK_SUCCESS) {
+    if (result != VK_SUCCESS) {
       FOO_CORE_ERROR("Presentation failed");
     }
   }
 
-  res = AcquireNextImage();
-  if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR) {
+  result = AcquireNextImage(context.get());
+  if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR) {
     RecreateSwapchain();
     m_FrameIndex = m_ImageCount - 1;
   } else {
-    if (res != VK_SUCCESS) {
+    if (result != VK_SUCCESS) {
       FOO_CORE_ERROR("Presentation failed");
     }
   }
+  context->FinishFrame();
 }
 
 }  // namespace fg
