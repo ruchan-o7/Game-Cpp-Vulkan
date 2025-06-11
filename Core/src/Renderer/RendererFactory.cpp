@@ -77,8 +77,7 @@ void RendererFactory::CreateDeviceAndContexts(const EngineInfo& info, Ref<Render
   auto messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
                          VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
                          VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-  auto messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                     VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+  auto messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
                      VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
   SetupDebugUtils(vkInstance, messageSeverity, messageType, 0, nullptr);
 
@@ -171,7 +170,7 @@ void RendererFactory::CreateDeviceAndContexts(const EngineInfo& info, Ref<Render
     logicalDevice->SetVMAInstance(vma);
   }
   AttachDevices(Instance, std::move(physicalDevice), logicalDevice, info, queue, renderer, context);
-  ( *renderer )->SetVMA(vma);
+  (*renderer)->SetVMA(vma);
 }
 void RendererFactory::AttachDevices(std::shared_ptr<VulkanInstance> vkInstance,
                                     std::unique_ptr<VulkanPhysicalDevice> physicalDevice,
@@ -194,7 +193,7 @@ void RendererFactory::AttachDevices(std::shared_ptr<VulkanInstance> vkInstance,
 }
 Ref<VulkanSwapchain> RendererFactory::CreateSwapchain(Ref<Renderer> renderer,
                                                       Ref<RenderContext> ctx, GLFWwindow* window) {
-  return MakeRef<VulkanSwapchain>(window, renderer, WeakRef(ctx));
+  return MakeRef<VulkanSwapchain>(window, renderer, ctx.get());
 }
 
 }  // namespace fg
