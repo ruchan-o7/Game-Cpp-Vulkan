@@ -71,16 +71,12 @@ Application::Application(const ApplicationSpecifications& spec) : m_Specs(spec) 
   }
 
   auto& factory = fg::RendererFactory::Get();
+
   fg::EngineInfo engineInfo;
   engineInfo.WindowHandle = m_Window;
 
   factory.CreateDeviceAndContexts(engineInfo, &m_Renderer, &m_RenderContext);
-
   m_Swapchain = factory.CreateSwapchain(m_Renderer, m_RenderContext, m_Window);
-
-  // m_Renderer = fg::Renderer::Create(m_Window, nullptr);
-  // m_Renderer->CreateDeviceAndSwapchain();
-  // m_Swapchain = m_Renderer->GetSwapchain();
   {
     int width = 0, height = 0, channel = 0;
     fg::Buffer pixelData;
@@ -334,12 +330,15 @@ void Application::Run() {
             (float)time * glm::radians(90.f),
             glm::vec3(0.f, 0.f, 1.0f)
       );
+
       ubo.View = glm::lookAt(
             glm::vec3(2.0f, 2.0f, 2.0f),
             glm::vec3(0.0f),
             glm::vec3(0.f, 0.f, 1.0f)
       );
+
       float aspecRatio = (float)m_Swapchain->GetExtent().width / m_Swapchain->GetExtent().height; 
+
       ubo.Proj = glm::perspective(
           glm::radians(45.f),
           aspecRatio,
@@ -364,7 +363,6 @@ void Application::Run() {
       m_RenderContext->BindVertexBuffers({0, 1, buffer, offset});
       m_RenderContext->Draw({3, 1, 0, 0});
 
-      // m_RenderContext->EndRendering();
       m_RenderContext->EndRendering();
 
       m_Swapchain->Present();
@@ -383,7 +381,6 @@ bool Application::OnWindowResize(WindowResizeEvent& e) {
   }
   m_Minimized = false;
   return false;
-  // return Backend::OnWindowResized(e);
 }
 void Application::ExecuteMainThreadQueue() {
   std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);

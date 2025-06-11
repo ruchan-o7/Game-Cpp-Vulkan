@@ -17,13 +17,6 @@ class CommandPoolManager;
 class VulkanQueue;
 class RenderContext;
 
-struct DrawAttributes;
-// struct DrawAttributes {
-//     uint32_t VertexCount = 0;
-//     uint32_t InstanceCount = 0;
-//     uint32_t FirstVertex = 0;
-//     uint32_t FirstInstance = 0;
-// };
 struct CopyBufferAttr {
     VulkanBuffer* Src = nullptr;
     VulkanBuffer* Dst = nullptr;
@@ -48,8 +41,6 @@ class Renderer : public RefBase {
              std::unique_ptr<VulkanPhysicalDevice> physicalDevice,
              std::shared_ptr<VulkanLogicalDevice> logicalDevice, Ref<VulkanQueue> queue);
 
-    // static std::shared_ptr<Renderer> Create(GLFWwindow* window,
-    //                                         const VkAllocationCallbacks* alloc = nullptr);
     void CreateDeviceAndContext();
     void Destroy();
 
@@ -97,18 +88,6 @@ class Renderer : public RefBase {
     void ExecuteAndDisposeTransientCmdBuff(VkCommandBuffer cmd, CommandPoolWrapper&& pool);
     void ExecuteCommandBuffer(const VkSubmitInfo& info, VkFence* fence);
 
-    // void BeginRendering();
-    // void SetRenderTargets(uint32_t count, VulkanImageView* views, VulkanImageView* depthView);
-    // void SetRenderTargetToSwapchain();
-    // void EndRenderingSwapchain();
-    // void ClearTarget();
-    // void BindPipeline(const Ref<VulkanGraphicsPipeline>& pipeline);
-    // void Draw(const DrawAttributes& attribs);
-    // void EndRendering();
-    // void BindDescriptorSet(VulkanDescriptorSet* set);
-    // void BindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, VulkanBuffer** buffers,
-    //                        VkDeviceSize* offsets) const;
-
     VkResult Flush(const std::function<VkResult(VulkanQueue*)>& func);
     void Flush();
 
@@ -123,10 +102,6 @@ class Renderer : public RefBase {
     }
 
   private:
-    // Renderer(GLFWwindow* window, const std::shared_ptr<VulkanInstance>& instance,
-    //          std::unique_ptr<VulkanPhysicalDevice> pDevice, const VkAllocationCallbacks* alloc);
-
-  private:
     RendererFactory* m_Factory;
     std::unique_ptr<VulkanPhysicalDevice> m_PhysicalDevice;
     std::shared_ptr<VulkanInstance> m_Instance;
@@ -135,15 +110,15 @@ class Renderer : public RefBase {
 
     const VkAllocationCallbacks* m_AllocCB;
     Ref<VulkanQueue> m_Queue;
-    //VkQueue m_VkQueue = VK_NULL_HANDLE;
+    // VkQueue m_VkQueue = VK_NULL_HANDLE;
     VulkanCommandBuffer m_Cmd;
     Ref<VulkanGraphicsPipeline> m_CurrentPipeline;
     GLFWwindow* m_Window = nullptr;
     VmaAllocator m_VMA = nullptr;
     std::unique_ptr<CommandPoolManager> m_TransientCmdPoolManager;
     std::unique_ptr<VulkanCommandBufferPool> m_CmdPool;
-    //VulkanImage* m_BoundImages[8];
-    //uint32_t m_BoundImageCount = 0;
+    // VulkanImage* m_BoundImages[8];
+    // uint32_t m_BoundImageCount = 0;
     WeakRef<RenderContext> m_Ctx;
 };
 

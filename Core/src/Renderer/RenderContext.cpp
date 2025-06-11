@@ -174,15 +174,6 @@ void RenderContext::SetRenderTargets(const RenderTargetAttr& attr) {
 
 void RenderContext::EndRendering() {
   m_Cmd.EndRendering();
-  // VkImageSubresourceRange range {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-  // for (auto& image : m_BoundImages) {
-  //   TransitionImageLayout(image.get(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-  //   // m_Cmd.TransitionImageLayout(image->GetVkImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-  //   //                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, range,
-  //   //                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-  //   //                             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
-  // }
-  // m_Cmd.FlushBarriers();
 }
 
 void RenderContext::TransitionImageLayout(VulkanImage* image, VkImageLayout newLayout) {

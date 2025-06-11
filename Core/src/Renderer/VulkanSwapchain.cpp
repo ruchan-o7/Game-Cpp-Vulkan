@@ -14,23 +14,6 @@
 
 namespace fg {
 
-//// clang-format off
-// VulkanSwapchain::VulkanSwapchain(GLFWwindow* window,
-//                     std::weak_ptr<Renderer> renderer,
-//                     std::shared_ptr<VulkanInstance> instance,
-//                     std::shared_ptr<VulkanLogicalDevice> logicalDevice,
-//                     const VulkanPhysicalDevice& pDev)
-//     : m_Window(window),
-//       m_Renderer(renderer),
-//       m_Device(logicalDevice),
-//       m_PhysicalDevice(pDev),
-//       m_VkInstance(std::move(instance))
-// {
-//   // clang-format on
-//   CreateSurface();
-//   CreateSwapchain();
-//   AcquireNextImage();
-// }
 VulkanSwapchain::VulkanSwapchain(ReferenceCounter* counter, GLFWwindow* window,
                                  Ref<Renderer> renderer, RenderContext* context)
     : RefBase(counter), m_Window(window), m_Renderer(renderer), m_Ctx(context) {
@@ -217,21 +200,6 @@ void VulkanSwapchain::Present() {
   context->TransitionImageLayout(backBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
   context->AddSignalSemaphore(m_RenderFinished);
   context->Flush();
-
-  // VkSubmitInfo submit {VK_STRUCTURE_TYPE_SUBMIT_INFO};
-
-  // VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-  // submit.waitSemaphoreCount = 1;
-  // submit.pWaitSemaphores = waits;
-  // submit.pWaitDstStageMask = waitStages;
-  // submit.commandBufferCount = 1;
-
-  // submit.signalSemaphoreCount = 1;
-  // submit.pSignalSemaphores = signalSems;
-  // auto res = m_Renderer->Flush([&](VulkanQueue* queue) -> VkResult {
-  //
-  //   return queue->Submit(submit, 1, m_InFlight);
-  // });
 
   VkSemaphore waitSemaphores[] = {m_RenderFinished};
 
