@@ -14,23 +14,23 @@ namespace FooGame
     {
         public:
             static void Init();
-            static std::shared_ptr<spdlog::async_logger>& GetCoreLogger() { return s_CoreLogger; }
-            static std::shared_ptr<spdlog::async_logger>& GetEngineLogger()
+            static std::shared_ptr<spdlog::logger>& GetCoreLogger() { return s_CoreLogger; }
+            static std::shared_ptr<spdlog::logger>& GetEngineLogger()
             {
                 return s_EngineLogger;
             }
-            static std::shared_ptr<spdlog::async_logger>& GetEditorLogger()
+            static std::shared_ptr<spdlog::logger>& GetEditorLogger()
             {
                 return s_EditorLogger;
             }
-            static std::shared_ptr<spdlog::async_logger>& GetGameLogger() { return s_GameLogger; }
+            static std::shared_ptr<spdlog::logger>& GetGameLogger() { return s_GameLogger; }
 
         private:
-            static std::shared_ptr<spdlog::async_logger> s_CoreLogger;
-            static std::shared_ptr<spdlog::async_logger> s_EngineLogger;
-            static std::shared_ptr<spdlog::async_logger> s_EditorLogger;
-            static std::shared_ptr<spdlog::async_logger> s_GameLogger;
-            static std::shared_ptr<spdlog::details::thread_pool> s_LoggerThreadPool;
+            static std::shared_ptr<spdlog::logger> s_CoreLogger;
+            static std::shared_ptr<spdlog::logger> s_EngineLogger;
+            static std::shared_ptr<spdlog::logger> s_EditorLogger;
+            static std::shared_ptr<spdlog::logger> s_GameLogger;
+            //static std::shared_ptr<spdlog::details::thread_pool> s_LoggerThreadPool;
     };
 }  // namespace FooGame
 
