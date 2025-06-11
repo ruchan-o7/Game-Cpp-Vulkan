@@ -66,14 +66,20 @@ void RenderContext::Flush() {
   auto vkCmdBuffer = m_Cmd.Get();
   if (m_Cmd.GetState().InsideRendering) {
     m_Cmd.EndRendering();
-    m_Cmd.FlushBarriers();
-    m_Cmd.EndCommandBuffer();
   }
+  m_Cmd.FlushBarriers();
+  m_Cmd.EndCommandBuffer();
   VkSubmitInfo submitInfo {VK_STRUCTURE_TYPE_SUBMIT_INFO};
   submitInfo.commandBufferCount = 1;
   submitInfo.pCommandBuffers = &vkCmdBuffer;
-  submitInfo.waitSemaphoreCount = m_SignalSemaphores.size();
-  submitInfo.pWaitSemaphores = m_SignalSemaphores.data();
+  submitInfo.waitSemaphoreCount = m_WaitSemaphores.size();
+  submitInfo.pWaitSemaphores = m_WaitSemaphores.data();
+  submitInfo.pWaitDstStageMask =
+      submitInfo.waitSemaphoreCount != 0 ? m_WaitDstStageMasks.data() : nullptr;
+  submitInfo.signalSemaphoreCount = m_SignalSemaphores.size();
+  submitInfo.pSignalSemaphores =
+      m_SignalSemaphores.size() == 0 ? nullptr : m_SignalSemaphores.data();
+
   m_Renderer->ExecuteCommandBuffer(submitInfo, VK_NULL_HANDLE);
 
   m_SignalSemaphores.clear();
@@ -82,6 +88,10 @@ void RenderContext::Flush() {
   m_BoundDepthStencil = nullptr;
   m_BoundPipeline = nullptr;
   m_BoundImages.clear();
+  m_WaitDstStageMasks.clear();
+  m_WaitSemaphores.clear();
+  m_SignalSemaphores.clear();
+  m_Cmd.Reset();
 }
 void RenderContext::DisposeCurrentCmdBuffer() {
   FOO_ASSERT(!m_Cmd.GetState().InsideRendering, "Disposing cmd buffer while rendering");
@@ -114,10 +124,9 @@ void RenderContext::SetRenderTargets(const RenderTargetAttr& attr) {
   for (uint32_t i = 0; i < attr.RenderTargetCount; i++) {
     auto* image = attr.ppRenderTargets[i]->GetImage();
     m_BoundImages.push_back(image);
-    m_Cmd.TransitionImageLayout(
-        image->GetVkImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        range, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+    TransitionImageLayout(image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
   }
+  m_Cmd.FlushBarriers();
   const auto* image = attr.ppRenderTargets[0]->GetImage();
 
   VkRenderingInfoKHR beginInfo {VK_STRUCTURE_TYPE_RENDERING_INFO, 0};
@@ -137,6 +146,7 @@ void RenderContext::SetRenderTargets(const RenderTargetAttr& attr) {
     colorInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     colorInfo.imageView = attr.ppRenderTargets[i]->GetHandle();
+    colorInfo.imageLayout = ResourceStateToVkImageLayout(m_BoundImages[i]->State());
     colorInfo.clearValue = {
         {0.2f, 0.2f, 0.2f, 1.0f}
     };
@@ -164,14 +174,15 @@ void RenderContext::SetRenderTargets(const RenderTargetAttr& attr) {
 
 void RenderContext::EndRendering() {
   m_Cmd.EndRendering();
-  VkImageSubresourceRange range {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-  for (auto& image : m_BoundImages) {
-    m_Cmd.TransitionImageLayout(image->GetVkImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, range,
-                                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
-  }
-  m_Cmd.FlushBarriers();
+  // VkImageSubresourceRange range {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+  // for (auto& image : m_BoundImages) {
+  //   TransitionImageLayout(image.get(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+  //   // m_Cmd.TransitionImageLayout(image->GetVkImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+  //   //                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, range,
+  //   //                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+  //   //                             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+  // }
+  // m_Cmd.FlushBarriers();
 }
 
 void RenderContext::TransitionImageLayout(VulkanImage* image, VkImageLayout newLayout) {
@@ -223,6 +234,11 @@ void RenderContext::TransitionImageState(VulkanImage& image, ResourceState oldSt
 
 void RenderContext::AddSignalSemaphore(VkSemaphore sem) {
   m_SignalSemaphores.emplace_back(sem);
+}
+
+void RenderContext::AddWaitSemaphore(VkSemaphore sem, VkPipelineStageFlags waitStgMask) {
+  m_WaitDstStageMasks.emplace_back(waitStgMask);
+  m_WaitSemaphores.emplace_back(sem);
 }
 
 }  // namespace fg

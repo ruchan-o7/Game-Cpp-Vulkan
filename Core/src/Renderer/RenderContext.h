@@ -63,12 +63,14 @@ class RenderContext : public RefBase {
     void TransitionImageLayout(VulkanImage* image, VkImageLayout newLayout);
     void TransitionImageState(VulkanImage& image, ResourceState oldState, ResourceState newState);
     void AddSignalSemaphore(VkSemaphore sem);
+    void AddWaitSemaphore(VkSemaphore sem, VkPipelineStageFlags waitStgMask);
+    void FinishFrame();
 
   private:
     void PrepareCmdBuffer();
     void DisposeCurrentCmdBuffer();
     void DisposeVkCmdBuffer(VkCommandBuffer cmd);
-    void FinishFrame();
+
   private:
     std::vector<Ref<VulkanImage>> m_BoundImages;
     Ref<VulkanSwapchain> m_Swapchain;
@@ -80,6 +82,8 @@ class RenderContext : public RefBase {
     VulkanCommandBuffer m_Cmd;
 
     std::vector<VkSemaphore> m_SignalSemaphores;
+    std::vector<VkSemaphore> m_WaitSemaphores;
+    std::vector<VkPipelineStageFlags> m_WaitDstStageMasks;
 
     uint64_t m_FrameNumber = 0;
     RenderContextInfo m_Info;
