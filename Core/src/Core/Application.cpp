@@ -362,7 +362,7 @@ void Application::Run() {
       fg::VulkanBuffer* buffer[1] = {m_VertexBuffer.get()};
       VkDeviceSize offset[] = {0};
       m_RenderContext->BindVertexBuffers({0, 1, buffer, offset});
-      // m_RenderContext->Draw({3, 1, 0, 0});
+      m_RenderContext->Draw({3, 1, 0, 0});
 
       // m_RenderContext->EndRendering();
       m_RenderContext->EndRendering();
